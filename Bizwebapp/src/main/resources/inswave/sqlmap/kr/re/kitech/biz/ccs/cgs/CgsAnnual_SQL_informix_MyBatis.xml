@@ -1,0 +1,1327 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+<!-- 소멸연차 조회 -->
+<select id="selectCgsAnnual" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo" resultType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo">
+SELECT	/* kr.re.kitech.biz.ccs.cgs.selectCgsAnnual */
+       CAST(#{anal_yr} AS CHAR(4)) AS anal_yr
+     , x0.syspayno
+     , MAX(DECODE(x0.anal_yr, CAST(#{anal_yr} AS SMALLINT) - 3, x0.creat_anal_qty, 0)) 
+       + MAX(DECODE(x0.anal_yr, CAST(#{anal_yr} AS SMALLINT) - 3, x0.cryfwd_anal_qty, 0)) 
+       - SUM(DECODE( x0.is_expire,'f', x0.use_anal_qty, 0)) AS will_expire_qty
+FROM cgsanulmhold AS x0
+JOIN humbasicinfo AS x1 ON x1.syspayno = x0.syspayno
+WHERE (x1.retire_ymd = '' OR x1.work_clsf != 'HAG090')
+AND x0.anal_yr BETWEEN CAST(#{anal_yr} AS SMALLINT) - 3 AND #{anal_yr}
+<if test='syspayno != null'> AND x0.syspayno = #{syspayno} </if>
+GROUP BY x0.syspayno
+HAVING MAX(DECODE(x0.anal_yr, CAST(#{anal_yr} AS SMALLINT) - 3, x0.creat_anal_qty, 0)) 
+		+ MAX(DECODE(x0.anal_yr, CAST(#{anal_yr} AS SMALLINT) - 3, x0.cryfwd_anal_qty, 0)) 
+		- SUM(DECODE( x0.is_expire,'f', x0.use_anal_qty, 0)) > 0
+</select>
+
+<!-- 연차소멸 계산시 사용한 전년도 포함 4년간의 사용연차를 금년 계산 중지 -->
+<update id="updateCgsAnnual" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo">
+MERGE	/* kr.re.kitech.biz.ccs.cgs.updateCgsAnnual */
+INTO cgsanulmhold AS wt
+USING (
+	SELECT x1.anal_yr, x1.syspayno
+	FROM cgsanulmhold AS x0
+	JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno AND x1.anal_yr <![CDATA[ <= ]]> x0.anal_yr AND x1.anal_yr >= CAST(#{anal_yr} AS SMALLINT) - 4
+	WHERE x0.is_expire = 'f'
+	AND x0.expired_cnt > 0
+	AND x0.anal_yr = CAST(#{anal_yr} AS SMALLINT) - 1
+	AND x0.syspayno = #{syspayno}
+) AS wh ON wh.anal_yr = wt.anal_yr AND wh.syspayno = wt.syspayno
+WHEN MATCHED THEN
+	UPDATE 
+	SET wt.is_expire = 't'
+</update>
+
+<delete id="deleteCgsAnUlmHold" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo">
+DELETE	/* kr.re.kitech.biz.ccs.cgs.deleteCgsAnUlmHold */
+FROM cgsanulmhold
+WHERE anal_yr = #{anal_yr}
+<if test='syspayno != null and syspayno != ""'> AND syspayno = #{syspayno} </if>
+<if test='target != null and target == "REGULAR"'> 
+AND syspayno IN (
+              SELECT x0.syspayno
+              FROM humbasicinfo AS x0
+              WHERE (x0.entr_ymd != '' AND x0.entr_ymd IS NOT NULL)
+              AND (TRIM(x0.retire_ymd) = '' OR x0.retire_ymd[1,4] = #{anal_yr})
+              AND x0.work_clsf  NOT IN ('HAG090', '') /* 퇴직 */
+              AND x0.posi_cd NOT IN ('110010','330010','210015','250040','354010','350020','351020') /* 임원, 파견관, 연구별정(단), 행정별정(단), 연수생 */
+              AND ((x0.occugrp_cd = 'HAA030' AND x0.occutyp_cd = '353000') OR x0.occugrp_cd != 'HAA030') /* 기타 직군의 이공계인턴쉽 포함, 기타직군은 미포함 */
+)
+</if>
+<if test='target != null and target == "STUDENT"'> 
+AND syspayno IN (
+            SELECT x0.syspayno
+            FROM humbasicinfo AS x0
+            JOIN humrctbasinfo AS x1 ON x1.syspayno = x0.syspayno
+            JOIN xomxintfatab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'    
+            WHERE (x0.entr_ymd != '' AND x0.entr_ymd IS NOT NULL)
+            AND (TRIM(x0.retire_ymd) = '' OR x0.retire_ymd[1,4] = #{anal_yr})
+            AND x0.work_clsf NOT IN ('HAG090', '') /* 퇴직 */
+            AND x0.posi_cd IN ('351020', '350020', '354010') /* 학생연구원 */
+          )
+</if>
+<if test='target != null and target == "ARBEIT"'> 
+AND syspayno IN (
+          SELECT DISTINCT x0.syspayno
+          FROM humrctbasinfo AS x0 
+          JOIN humbasicinfo AS x1 ON x1.syspayno = x0.syspayno
+          JOIN xodxcommst AS x3 ON x3.cd_clsf='HST' AND x3.cd = x0.week_work_day
+          JOIN xomxintfatab AS x4 ON x4.req_no = x0.req_no AND x4.apr_state = 'XAD100'
+          WHERE (x1.entr_ymd != '' AND x1.entr_ymd IS NOT NULL)
+          AND (TRIM(x1.retire_ymd) = '' OR x1.retire_ymd[1,4] = #{anal_yr})
+          AND x1.work_clsf NOT IN ('HAG090', '') /* 퇴직 */
+          AND x0.posi_cd IN ('210015', '250040') /* 아르바이트 */
+          AND x3.mngmt_no_1 != 1 /*주1회 근무가 아닌 건 */
+      )
+</if>
+<if test='target != null and target == "FLEXTIME"'> 
+AND syspayno IN (
+         SELECT DISTINCT x0.syspayno
+         FROM humrctbasinfo AS x0 
+         JOIN humbasicinfo AS x1 ON x1.syspayno = x0.syspayno
+         WHERE (x1.entr_ymd != '' AND x1.entr_ymd IS NOT NULL)
+         AND (TRIM(x1.retire_ymd) = '' OR x1.retire_ymd[1,4] = #{anal_yr})
+         AND x1.work_clsf NOT IN ('HAG090', '') /* 퇴직 */
+         AND x0.posi_cd IN ('170010', '170020', '170030','170040','170050')
+       )
+</if>
+<if test='target != null and target == "PARTTIME"'> 
+AND syspayno IN (
+       SELECT DISTINCT x0.syspayno
+       FROM humrctbasinfo AS x0 
+       JOIN humbasicinfo AS x1 ON x1.syspayno = x0.syspayno
+       WHERE (x1.entr_ymd != '' AND x1.entr_ymd IS NOT NULL)
+       AND (TRIM(x1.retire_ymd) = '' OR x1.retire_ymd[1,4] = #{anal_yr})
+       AND x1.work_clsf NOT IN ('HAG090', '') /* 퇴직 */
+       AND x0.employ_type = 'HYZ002' /* 장애우 */
+       AND x0.posi_cd IN ('310010', '310070', '310051', '310032') /* 비상근 */
+    )
+</if>
+</delete>
+
+<!-- 연차생성 대상자 조회(3년간의 휴가정보, 연차정보 포함: 연차이월제 버전) -->
+<select id="selectHumBasicInfo" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCrtYmHolVo">
+SELECT /* kr.re.kitech.biz.ccs.cgs.selectHumBasicInfo */
+      x.syspayno
+    , x.entr_ymd
+    , x.cur_hol_used
+    , x.pre_hol_remain - dedct_anal_time AS pre_hol_remain
+    , x.pre_expire_qty
+    , cryfwd_com_qty - dedct_reward_time AS cryfwd_com_qty
+    , creat_com_qty
+    , use_com_qty
+    , LEAST(x.pre_hol_create,x.pre_hol_remain) as create_save_qty01 
+    , x.create_save_qty01 AS create_save_qty02
+    , x.create_save_qty02 AS create_save_qty03
+    , x.create_save_qty03 AS create_save_qty04
+    , x.create_save_qty04 AS create_save_qty05
+    , x.create_save_qty05 AS create_save_qty06
+    , x.create_save_qty06 AS create_save_qty07
+    , x.create_save_qty07 AS create_save_qty08
+    , x.create_save_qty08 AS create_save_qty09
+    , x.create_save_qty09 AS create_save_qty10
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'01'),0) from dual ) as use_save_qty01
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'02'),0) from dual )  as use_save_qty02
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'03'),0) from dual )  as use_save_qty03
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'04'),0) from dual )  as use_save_qty04
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'05'),0) from dual )  as use_save_qty05
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'06'),0) from dual )  as use_save_qty06
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'07'),0) from dual )  as use_save_qty07
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'08'),0) from dual )  as use_save_qty08
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'09'),0) from dual )  as use_save_qty09
+    , (select nvl(fun_cgs_use_yr(x.anal_yr,x.syspayno,'10'),0) from dual )  as use_save_qty10
+    , (select nvl(fun_cgs_use_yr(anal_yr,x.syspayno,'00'),0) from dual ) as  use_save_qty00
+FROM (
+    SELECT
+          x0.syspayno
+        , NVL(x1.anal_yr + 1,to_char(current,'%Y')) as anal_yr        
+        , NVL(x0.entr_ymd, '') AS entr_ymd
+        , NVL(( SELECT SUM(a.holiday_daycnt)
+                 FROM cgslapp AS a 
+                 JOIN xomxintfatab AS b ON a.req_no = b.req_no
+                 WHERE a.holiday_start_ymd[1,4] = #{anal_yr}
+                 AND a.holiday_clsf IN ('HBI006', 'HBI019', 'HBI020', 'HBI025')
+                 AND a.req_psn_syspayno = x0.syspayno
+                 AND b.apr_state = 'XAD100'
+                 GROUP BY a.req_psn_syspayno 
+              ), 0) AS cur_hol_used
+        , NVL(x1.remidr_anal_qty, 0) AS pre_hol_remain
+        , NVL(x1.creat_anal_qty, 0) AS pre_hol_create
+        , NVL(x1.expired_cnt, 0) AS pre_expire_qty
+        , NVL((SELECT DISTINCT SUM( NVL(y1.rwd_ovr_wk_mm, 0) / 60 * 0.125)  AS reward_tot
+               FROM cgsanulmhold AS y0 
+               LEFT JOIN humslmmovrwkmst AS y1 ON y1.syspayno = y0.syspayno AND y1.work_yrmon[1,4] = y0.anal_yr
+               LEFT JOIN xomxintfatab AS y2 ON y2.req_no = y1.req_no
+               WHERE y2.apr_state = 'XAD100'
+               AND y0.syspayno = x0.syspayno
+               AND y0.anal_yr <![CDATA[ < ]]> #{anal_yr}
+            ), 0) - NVL((SELECT DISTINCT  SUM( y0.holiday_daycnt) AS rwrd_daycnt
+                       FROM cgslapp AS y0 
+                       JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state = 'XAD100'
+                       WHERE y0.holiday_clsf = 'HBI080'
+                       AND y0.req_psn_syspayno = x0.syspayno
+                       AND y0.holiday_start_ymd[1,4] <![CDATA[< ]]> #{anal_yr}
+              ), 0) AS cryfwd_com_qty
+        , NVL((SELECT DISTINCT SUM( NVL(y1.rwd_ovr_wk_mm, 0) / 60 * 0.125)  AS reward_tot
+               FROM humslmmovrwkmst AS y1 
+               LEFT JOIN xomxintfatab AS y2 ON y2.req_no = y1.req_no
+               WHERE y2.apr_state = 'XAD100'
+               AND y1.syspayno = x0.syspayno
+               AND y1.work_yrmon[1,4] = #{anal_yr}
+            ),0) AS creat_com_qty
+         , NVL((SELECT DISTINCT  SUM( y0.holiday_daycnt) AS rwrd_daycnt
+                FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state = 'XAD100'
+                WHERE y0.holiday_clsf = 'HBI080'
+                AND y0.req_psn_syspayno = x0.syspayno
+                AND y0.holiday_start_ymd[1,4] = #{anal_yr}
+            ), 0 ) AS use_com_qty
+        , NVL(x3.dedct_reward_time, 0) AS dedct_reward_time
+        , NVL(x3.dedct_anal_time, 0) AS dedct_anal_time
+        , NVL(x1.remidr_save_qty01,0) AS create_save_qty01
+        , NVL(x1.remidr_save_qty02,0) AS create_save_qty02
+        , NVL(x1.remidr_save_qty03,0) AS create_save_qty03
+        , NVL(x1.remidr_save_qty04,0) AS create_save_qty04
+        , NVL(x1.remidr_save_qty05,0) AS create_save_qty05
+        , NVL(x1.remidr_save_qty06,0) AS create_save_qty06
+        , NVL(x1.remidr_save_qty07,0) AS create_save_qty07
+        , NVL(x1.remidr_save_qty08,0) AS create_save_qty08
+        , NVL(x1.remidr_save_qty09,0) AS create_save_qty09
+    FROM humbasicinfo AS x0
+    LEFT JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno AND x1.anal_yr = #{anal_yr} -1    -- 전년도
+    LEFT JOIN (
+        SELECT SUBSTR(yyyymm,1,4) AS anal_yr, syspayno, SUM(dedct_reward_time) AS dedct_reward_time, SUM(dedct_anal_time) AS dedct_anal_time
+          FROM cwsworktimeadlog
+         GROUP by 1,2
+    ) AS x3 ON x3.syspayno = x1.syspayno AND x3.anal_yr = x1.anal_yr   -- 연차공제, 보상공제
+    WHERE (x0.entr_ymd != '' AND x0.entr_ymd IS NOT NULL)
+    AND (TRIM(x0.retire_ymd) = '' OR x0.retire_ymd[1,4] = #{anal_yr})
+    AND x0.work_clsf  NOT IN ('HAG090', '')    -- 퇴직(조건절변경시 kitech.ccs.cgs.xda.CgsHumHolMS01 쿼리 동일하게 수정요)
+    AND x0.posi_cd NOT IN ('110010','330010','210015','250040','354010','350020','351020') -- 임원, 파견관, 연구별정(단), 행정별정(단), 연수생
+    AND ((x0.occugrp_cd = 'HAA030' AND x0.occutyp_cd = '353000') OR x0.occugrp_cd != 'HAA030') -- 기타 직군의 이공계인턴쉽 포함, 기타직군은 미포함
+    <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+) AS x
+ORDER BY x.syspayno
+</select>
+
+<!-- 연월차 관리-등록 -->
+<insert id="insertCgsAnulmHold" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCrtYmHolVo">
+INSERT /* kr.re.kitech.biz.ccs.cgs.insertCgsAnulmHold */
+   INTO cgsanulmhold (
+      anal_yr
+    , syspayno
+    , expired_cnt
+    , cryfwd_anal_qty
+    , creat_anal_qty
+    , creat_mhold_qty
+    , remidr_anal_qty
+    , duty_use_anal_qty
+    , use_anal_qty
+    , cryfwd_com_qty
+    , creat_com_qty
+    , use_com_qty
+    , rmk
+    , final_ymd
+    , regst_psn_syspayno
+    , regst_daytm
+    , create_save_qty01
+    , create_save_qty02
+    , create_save_qty03
+    , create_save_qty04
+    , create_save_qty05
+    , create_save_qty06
+    , create_save_qty07
+    , create_save_qty08
+    , create_save_qty09
+    , create_save_qty10
+    , use_save_qty00
+    , use_save_qty01
+    , use_save_qty02
+    , use_save_qty03
+    , use_save_qty04
+    , use_save_qty05
+    , use_save_qty06
+    , use_save_qty07
+    , use_save_qty08
+    , use_save_qty09
+    , use_save_qty10
+    , remidr_save_qty01
+    , remidr_save_qty02
+    , remidr_save_qty03
+    , remidr_save_qty04
+    , remidr_save_qty05
+    , remidr_save_qty06
+    , remidr_save_qty07
+    , remidr_save_qty08
+    , remidr_save_qty09
+    , remidr_save_qty10
+) VALUES (  #{anal_yr}
+          , #{syspayno}
+          , #{expired_cnt}
+          , #{cryfwd_anal_qty}
+          , #{creat_anal_qty}
+          , #{creat_mhold_qty}
+          , #{remidr_anal_qty}
+          , #{duty_use_anal_qty}
+          , #{use_anal_qty}
+          , #{cryfwd_com_qty}
+          , #{creat_com_qty}
+          , #{use_com_qty}
+          , #{rmk}
+          , #{final_ymd}
+          , #{regst_syspayno}
+          , SYSDATE
+          , #{create_save_qty01}
+          , #{create_save_qty02}
+          , #{create_save_qty03}
+          , #{create_save_qty04}
+          , #{create_save_qty05}
+          , #{create_save_qty06}
+          , #{create_save_qty07}
+          , #{create_save_qty08}
+          , #{create_save_qty09}
+          , #{create_save_qty10}
+          , #{use_save_qty00}
+          , #{use_save_qty01}
+          , #{use_save_qty02}
+          , #{use_save_qty03}
+          , #{use_save_qty04}
+          , #{use_save_qty05}
+          , #{use_save_qty06}
+          , #{use_save_qty07}
+          , #{use_save_qty08}
+          , #{use_save_qty09}
+          , #{use_save_qty10}
+          , #{remidr_save_qty01}
+          , #{remidr_save_qty02}
+          , #{remidr_save_qty03}
+          , #{remidr_save_qty04}
+          , #{remidr_save_qty05}
+          , #{remidr_save_qty06}
+          , #{remidr_save_qty07}
+          , #{remidr_save_qty08}
+          , #{remidr_save_qty09}
+          , #{remidr_save_qty10}
+       )
+</insert>
+
+<!-- 학생연구원 월차대상 병합(생성) -->
+<update id="updateCgsAnulmHoldStuMon" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo">
+MERGE /* kr.re.kitech.biz.ccs.cgs.updateCgsAnulmHoldStuMon */
+  INTO cgsanulmhold AS d
+USING (
+    SELECT
+          syspayno
+        , anal_yr
+        , create_save_qty03 - (SELECT NVL(fun_cgs_use_yr(anal_yr,syspayno,'03'),0) FROM dual ) AS expired_cnt
+        , pre_hol_remain - expired_cnt AS cryfwd_anal_qty
+        , creat_anal_qty
+        , 0 AS creat_mhold_qty
+        , (creat_anal_qty + pre_hol_remain) - (cur_hol_used + expired_cnt) AS remidr_anal_qty
+        , creat_anal_qty AS duty_use_anal_qty
+        , cur_hol_used AS use_anal_qty
+        , '학생 월차 적용' AS rmk
+        , curr_ymd AS final_ymd 
+        , DECODE(reg_syspayno, '', 'TmsSystem', reg_syspayno) AS reg_syspayno     
+        , create_save_qty01 
+        , create_save_qty02 
+        , create_save_qty03 
+        , CASE WHEN anal_yr > '2022' THEN create_save_qty04 ELSE 0 END AS create_save_qty04
+        , create_save_qty05
+        , create_save_qty06 
+        , create_save_qty07 
+        , create_save_qty08 
+        , create_save_qty09  
+        , create_save_qty10
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'01'),0) from dual ) as use_save_qty01
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'02'),0) from dual )  as use_save_qty02
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'03'),0) from dual )  as use_save_qty03
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'04'),0) from dual )  as use_save_qty04
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'05'),0) from dual )  as use_save_qty05
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'06'),0) from dual )  as use_save_qty06
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'07'),0) from dual )  as use_save_qty07
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'08'),0) from dual )  as use_save_qty08
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'09'),0) from dual )  as use_save_qty09
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'10'),0) from dual )  as use_save_qty10
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'00'),0) from dual ) as  use_save_qty00  
+    FROM (
+        SELECT
+              x0.syspayno 
+            , LEFT( x0.curr_ymd, 4) AS anal_yr
+            , x0.entr_ymd
+            , x0.curr_ymd
+            , x0.open_ymd
+            , x0.clos_ymd
+            , x0.mons_diff
+            , x0.mons_creat_qty
+            , x0.year_creat_qty
+            , x0.append_anal_qty
+            , x0.create_anal_qty + x0.append_anal_qty AS creat_anal_qty
+            , NVL(x1.remidr_anal_qty, 0) AS pre_hol_remain
+            , NVL(x1.creat_anal_qty, 0) AS pre_hol_create
+            , NVL((SELECT SUM(a.holiday_daycnt)
+                FROM cgslapp AS a JOIN xomxintfatab AS b ON a.req_no = b.req_no
+                WHERE LEFT( a.holiday_start_ymd, 4) = LEFT(x0.clos_ymd, 4)
+                AND a.holiday_clsf IN ('HBI006', 'HBI019', 'HBI020', 'HBI025')
+                AND b.apr_state = 'XAD100'
+                AND a.req_psn_syspayno = x0.syspayno
+               ), 0) AS cur_hol_used
+            , 0 AS expired_cnt
+            , CAST(#{regst_syspayno} AS VARCHAR(8)) AS reg_syspayno
+            , NVL(LEAST(x1.creat_anal_qty,x1.remidr_anal_qty),0) as create_save_qty01
+            , NVL(x1.remidr_save_qty01,0) as create_save_qty02
+            , NVL(x1.remidr_save_qty02,0) as create_save_qty03
+            , NVL(x1.remidr_save_qty03,0) as create_save_qty04
+            , NVL(x1.remidr_save_qty04,0) as create_save_qty05
+            , NVL(x1.remidr_save_qty05,0) as create_save_qty06
+            , NVL(x1.remidr_save_qty06,0) as create_save_qty07
+            , NVL(x1.remidr_save_qty07,0) as create_save_qty08
+            , NVL(x1.remidr_save_qty08,0) as create_save_qty09
+            , NVL(x1.remidr_save_qty09,0) as create_save_qty10
+        FROM (
+            SELECT
+                  x0.syspayno 
+                , x0.entr_ymd
+                , x0.curr_ymd
+                , MIN(x0.open_ymd) AS open_ymd
+                , MAX(x0.clos_ymd) AS clos_ymd
+                , SUM(ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'), TO_DATE(x0.open_ymd, '%Y%m%d')))) AS mons_diff
+                , GREATEST(TRUNC(( LEFT( MAX(x0.clos_ymd), 4) - LEFT( x0.entr_ymd, 4) -3) / 2), 0) AS append_anal_qty
+                , CASE WHEN LEFT( x0.entr_ymd,4) <![CDATA[ < ]]> LEFT( MAX(x0.clos_ymd),4) 
+                    THEN SUM(x0.year_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d'))))
+                    ELSE SUM(x0.mons_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d'))))
+                    END AS create_anal_qty
+                , SUM(x0.mons_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d')))) AS mons_creat_qty
+                , SUM(x0.year_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d')))) AS year_creat_qty
+            FROM (
+                SELECT
+                    x1.req_no
+                    , x1.syspayno 
+                    , x0.entr_ymd
+                    , CAST(#{cur_ymd} AS VARCHAR(8)) AS curr_ymd
+                    , x1.contrct_clsf
+                    , x1.week_work_time
+                    , (x1.week_work_time / 40 * 8 * 0.125) AS mons_anal_qty 
+                    , 15 * (x1.week_work_time / 40 * 8 * 0.125) / 12 AS year_anal_qty 
+                    , x1.contrct_start_ymd
+                    , x1.contrct_cls_ymd
+                    , GREATEST( x1.contrct_start_ymd, '${anal_yr}'|| '0101') AS open_ymd
+                    , MIN(LEAST( 
+                          NVL( TO_CHAR( TO_DATE(x3.contrct_start_ymd, '%Y%m%d') - 1 UNITS DAY, '%Y%m%d'), x1.contrct_cls_ymd)
+                        , x1.contrct_cls_ymd
+                        , TO_CHAR( TO_DATE(x0.entr_ymd, '%Y%m%d') +1 UNITS YEAR, '%Y%m%d')
+                        , '${cur_ymd}')) AS clos_ymd
+                FROM humbasicinfo AS x0
+                JOIN humrctbasinfo AS x1 ON x1.syspayno = x0.syspayno
+                JOIN xomxintfatab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'
+                LEFT JOIN ( 
+                    SELECT
+                          x1.req_no
+                        , x1.syspayno
+                        , x1.contrct_start_ymd
+                        , x1.contrct_cls_ymd  
+                    FROM humbasicinfo AS x0
+                    JOIN humrctbasinfo AS x1 ON x1.syspayno = x0.syspayno
+                    JOIN xomxintfatab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'
+                    WHERE x0.retire_ymd = '' AND x0.entr_ymd IS NOT NULL AND x0.posi_cd IN ('351020', '350020', '354010')
+                    <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+                    AND x1.contrct_cls_ymd >= #{anal_yr} || '0101'
+                    AND x1.contrct_start_ymd <![CDATA[ <=]]> TO_CHAR( TO_DATE(x0.entr_ymd, '%Y%m%d') +1 UNITS YEAR, '%Y%m%d')
+                    ORDER BY x1.syspayno, x1.contrct_start_ymd, x1.contrct_cls_ymd
+                ) AS x3 ON x3.req_no > x1.req_no  AND x3.syspayno = x1.syspayno
+                WHERE x0.retire_ymd = '' AND x0.entr_ymd IS NOT NULL AND x0.posi_cd IN ('351020', '350020', '354010')
+                <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+                AND x1.contrct_cls_ymd >= #{anal_yr} || '0101'
+                AND x1.contrct_start_ymd <![CDATA[ <=]]> TO_CHAR( TO_DATE(x0.entr_ymd, '%Y%m%d') +1 UNITS YEAR, '%Y%m%d')
+                GROUP BY 1,2,3,4,5,6,7,8,9,10,11
+                ORDER BY x1.syspayno, x1.contrct_start_ymd, x1.contrct_cls_ymd
+            ) AS x0
+            WHERE x0.open_ymd <![CDATA[< ]]> x0.clos_ymd
+            GROUP BY 1,2,3
+        ) AS x0
+        LEFT JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno AND x1.anal_yr = #{anal_yr} -1    -- 전년도
+    )
+) AS s ON s.syspayno = d.syspayno AND s.anal_yr = d.anal_yr
+WHEN MATCHED THEN
+    UPDATE SET
+          d.expired_cnt = s.expired_cnt
+        , d.cryfwd_anal_qty = s.cryfwd_anal_qty
+        , d.creat_anal_qty = s.creat_anal_qty
+        , d.creat_mhold_qty = s.creat_mhold_qty
+        , d.remidr_anal_qty = s.remidr_anal_qty
+        , d.duty_use_anal_qty = s.duty_use_anal_qty
+        , d.use_anal_qty = s.use_anal_qty
+        , d.rmk = s.rmk
+        , d.final_ymd = s.final_ymd
+        , d.updt_psn_syspayno = s.reg_syspayno
+        , d.updt_daytm = CURRENT
+        , d.create_save_qty01 = s.create_save_qty01 , d.create_save_qty02 = s.create_save_qty02 , d.create_save_qty03 = s.create_save_qty03
+        , d.create_save_qty04 = s.create_save_qty04 , d.create_save_qty05 = s.create_save_qty05 , d.create_save_qty06 = s.create_save_qty06
+        , d.create_save_qty07 = s.create_save_qty07 , d.create_save_qty08 = s.create_save_qty08 , d.create_save_qty09 = s.create_save_qty09, d.create_save_qty10 = s.create_save_qty10
+        , d.use_save_qty01 = s.use_save_qty01, d.use_save_qty02 = s.use_save_qty02, d.use_save_qty03 = s.use_save_qty03, d.use_save_qty04 = s.use_save_qty04
+        , d.use_save_qty05 = s.use_save_qty05, d.use_save_qty06 = s.use_save_qty06, d.use_save_qty07 = s.use_save_qty07, d.use_save_qty08 = s.use_save_qty08
+        , d.use_save_qty09 = s.use_save_qty09, d.use_save_qty10 = s.use_save_qty10, d.use_save_qty00 = s.use_save_qty00
+        , d.remidr_save_qty01 = s.create_save_qty01 - s.use_save_qty01, d.remidr_save_qty02 = s.create_save_qty02 - s.use_save_qty02, d.remidr_save_qty03 = s.create_save_qty03 - s.use_save_qty03
+        , d.remidr_save_qty04 = s.create_save_qty04 - s.use_save_qty04, d.remidr_save_qty05 = s.create_save_qty05 - s.use_save_qty05, d.remidr_save_qty06 = s.create_save_qty06 - s.use_save_qty06
+        , d.remidr_save_qty07 = s.create_save_qty07 - s.use_save_qty07, d.remidr_save_qty08 = s.create_save_qty08 - s.use_save_qty08, d.remidr_save_qty09 = s.create_save_qty09 - s.use_save_qty09
+        , d.remidr_save_qty10 = s.create_save_qty10 - s.use_save_qty10
+WHEN NOT MATCHED THEN
+    INSERT (
+          d.anal_yr, d.syspayno, d.expired_cnt, d.cryfwd_anal_qty, d.creat_anal_qty, d.creat_mhold_qty, d.remidr_anal_qty
+        , d.duty_use_anal_qty, d.use_anal_qty, d.rmk, d.final_ymd, d.regst_psn_syspayno, d.regst_daytm
+        , d.create_save_qty01, d.create_save_qty02, d.create_save_qty03, d.create_save_qty04, d.create_save_qty05
+        , d.create_save_qty06, d.create_save_qty07, d.create_save_qty08, d.create_save_qty09, d.create_save_qty10
+        , d.use_save_qty01, d.use_save_qty02, d.use_save_qty03, d.use_save_qty04, d.use_save_qty05
+        , d.use_save_qty06, d.use_save_qty07, d.use_save_qty08, d.use_save_qty09, d.use_save_qty10, d.use_save_qty00
+        , d.remidr_save_qty01, d.remidr_save_qty02, d.remidr_save_qty03, d.remidr_save_qty04, d.remidr_save_qty05
+        , d.remidr_save_qty06, d.remidr_save_qty07, d.remidr_save_qty08, d.remidr_save_qty09, d.remidr_save_qty10
+    ) 
+    VALUES ( 
+          s.anal_yr, s.syspayno, s.expired_cnt, s.cryfwd_anal_qty, s.creat_anal_qty, s.creat_mhold_qty, s.remidr_anal_qty
+        , s.duty_use_anal_qty, s.use_anal_qty, s.rmk, s.final_ymd, s.reg_syspayno, CURRENT
+        , s.create_save_qty01, s.create_save_qty02, s.create_save_qty03, s.create_save_qty04, s.create_save_qty05
+        , s.create_save_qty06, s.create_save_qty07, s.create_save_qty08, s.create_save_qty09, s.create_save_qty10
+        , s.use_save_qty01, s.use_save_qty02, s.use_save_qty03, s.use_save_qty04, s.use_save_qty05
+        , s.use_save_qty06, s.use_save_qty07, s.use_save_qty08, s.use_save_qty09, s.use_save_qty10, s.use_save_qty00
+        , s.create_save_qty01 - s.use_save_qty01, s.create_save_qty02 - s.use_save_qty02, s.create_save_qty03 - s.use_save_qty03, s.create_save_qty04 - s.use_save_qty04, s.create_save_qty05 - s.use_save_qty05
+        , s.create_save_qty06 - s.use_save_qty06, s.create_save_qty07 - s.use_save_qty07, s.create_save_qty08 - s.use_save_qty08, s.create_save_qty09 - s.use_save_qty09, s.create_save_qty10 - s.use_save_qty10
+    )
+</update>
+
+<!-- 학생연구원 연차대상 병합(생성) -->
+<update id="updateCgsAnulmHoldStuYr" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo">
+MERGE /* kr.re.kitech.biz.ccs.cgs.updateCgsAnulmHoldStuYr */
+  INTO cgsanulmhold AS d
+USING (
+    SELECT
+          syspayno
+        , anal_yr
+        , create_save_qty03 - (SELECT NVL(fun_cgs_use_yr(anal_yr,syspayno,'03'),0) FROM dual ) AS expired_cnt
+        , pre_hol_remain - expired_cnt AS cryfwd_anal_qty
+        , creat_anal_qty
+        , 0 AS creat_mhold_qty
+        , (creat_anal_qty + pre_hol_remain) - (cur_hol_used + expired_cnt) AS remidr_anal_qty
+        , creat_anal_qty AS duty_use_anal_qty
+        , cur_hol_used AS use_anal_qty
+        , '학생 연차 적용' AS rmk
+        , curr_ymd AS final_ymd 
+        , DECODE(reg_syspayno, '', 'TmsSystem', reg_syspayno) AS reg_syspayno   
+        , create_save_qty01 ,create_save_qty02 ,create_save_qty03 
+        , CASE WHEN anal_yr > '2022' THEN create_save_qty04 ELSE 0 END AS create_save_qty04
+        , create_save_qty05, create_save_qty06 ,create_save_qty07 ,create_save_qty08 ,create_save_qty09  ,create_save_qty10
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'01'),0) from dual ) as use_save_qty01
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'02'),0) from dual )  as use_save_qty02
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'03'),0) from dual )  as use_save_qty03
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'04'),0) from dual )  as use_save_qty04
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'05'),0) from dual )  as use_save_qty05
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'06'),0) from dual )  as use_save_qty06
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'07'),0) from dual )  as use_save_qty07
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'08'),0) from dual )  as use_save_qty08
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'09'),0) from dual )  as use_save_qty09
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'10'),0) from dual )  as use_save_qty10
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'00'),0) from dual ) as  use_save_qty00    
+    FROM (
+
+        SELECT
+              x0.syspayno 
+            , LEFT( x0.curr_ymd, 4) AS anal_yr
+            , x0.entr_ymd
+            , x0.curr_ymd
+            , x0.open_ymd
+            , x0.clos_ymd
+            , x0.mons_diff
+            , x0.mons_creat_qty
+            , x0.year_creat_qty
+            , x0.append_anal_qty
+            , x0.year_creat_qty + x0.append_anal_qty AS creat_anal_qty
+            , NVL(x1.remidr_anal_qty, 0) AS pre_hol_remain
+            , NVL(x1.creat_anal_qty, 0) AS pre_hol_create
+            , NVL((SELECT SUM(a.holiday_daycnt)
+                FROM cgslapp AS a JOIN xomxintfatab AS b ON a.req_no = b.req_no
+                WHERE LEFT( a.holiday_start_ymd, 4) = LEFT(x0.curr_ymd, 4)
+                AND a.holiday_clsf IN ('HBI006', 'HBI019', 'HBI020', 'HBI025')
+                AND b.apr_state = 'XAD100'
+                AND a.req_psn_syspayno = x0.syspayno
+            ), 0) AS cur_hol_used
+            , NVL(x1.remidr_save_qty03,0) AS expired_cnt
+            , CAST(#{regst_syspayno} AS VARCHAR(8)) AS reg_syspayno   
+            , NVL(LEAST(x1.creat_anal_qty,x1.remidr_anal_qty),0) as create_save_qty01
+            , NVL(x1.remidr_save_qty01,0) as create_save_qty02
+            , NVL(x1.remidr_save_qty02,0) as create_save_qty03
+            , NVL(x1.remidr_save_qty03,0) as create_save_qty04
+            , NVL(x1.remidr_save_qty04,0) as create_save_qty05
+            , NVL(x1.remidr_save_qty05,0) as create_save_qty06
+            , NVL(x1.remidr_save_qty06,0) as create_save_qty07
+            , NVL(x1.remidr_save_qty07,0) as create_save_qty08
+            , NVL(x1.remidr_save_qty08,0) as create_save_qty09
+            , NVL(x1.remidr_save_qty09,0) as create_save_qty10
+        FROM (
+            SELECT
+                  x0.syspayno 
+                , x0.entr_ymd
+                , x0.curr_ymd
+                , MIN(x0.open_ymd) AS open_ymd
+                , MAX(x0.clos_ymd) AS clos_ymd
+                , SUM(ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'), TO_DATE(x0.open_ymd, '%Y%m%d')))) AS mons_diff
+                , GREATEST(TRUNC(( LEFT( MAX(x0.clos_ymd), 4) - LEFT( x0.entr_ymd, 4) -3) / 2), 0) AS append_anal_qty
+                , SUM(x0.mons_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d')))) AS mons_creat_qty
+                , SUM(x0.year_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d')))) AS year_creat_qty
+            FROM (
+                SELECT
+                      x1.req_no
+                    , x1.syspayno 
+                    , x0.entr_ymd
+                    , CAST(#{cur_ymd} AS VARCHAR(8)) AS curr_ymd
+                    , x1.contrct_clsf
+                    , x1.week_work_time
+                    , (x1.week_work_time / 40 * 8 * 0.125) AS mons_anal_qty 
+                    , 15 * (x1.week_work_time / 40 * 8 * 0.125) / 12 AS year_anal_qty 
+                    , x1.contrct_start_ymd
+                    , x1.contrct_cls_ymd
+                    , GREATEST( x1.contrct_start_ymd, TRUNC('${anal_yr}' -1) || '0101') AS open_ymd
+                    , MIN(LEAST( 
+                        NVL( TO_CHAR( TO_DATE(x3.contrct_start_ymd, '%Y%m%d') -1 UNITS DAY, '%Y%m%d'), x1.contrct_cls_ymd)
+                        , x1.contrct_cls_ymd
+                        , TRUNC('${anal_yr}' -1) || '1231')) AS clos_ymd
+                FROM humbasicinfo AS x0
+                JOIN humrctbasinfo AS x1 ON x1.syspayno = x0.syspayno
+                JOIN xomxintfatab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'
+                LEFT JOIN ( 
+                    SELECT
+                        x1.req_no
+                        , x1.syspayno
+                        , x1.contrct_start_ymd
+                        , x1.contrct_cls_ymd  
+                    FROM humbasicinfo AS x0
+                    JOIN humrctbasinfo AS x1 ON x1.syspayno = x0.syspayno
+                    JOIN xomxintfatab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'
+                    WHERE x0.retire_ymd = '' AND x0.entr_ymd IS NOT NULL AND x0.posi_cd IN ('351020', '350020', '354010')
+                    <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+                    AND x1.contrct_cls_ymd >= TRUNC(#{anal_yr}-1) || '0101'
+                    AND x1.contrct_start_ymd <![CDATA[<= ]]> TRUNC(#{anal_yr}-1) || '1231'
+                    ORDER BY x1.syspayno, x1.contrct_start_ymd, x1.contrct_cls_ymd
+                ) AS x3 ON x3.req_no > x1.req_no  AND x3.syspayno = x1.syspayno
+                WHERE x0.retire_ymd = '' AND x0.entr_ymd IS NOT NULL AND x0.posi_cd IN ('351020', '350020', '354010')
+                 <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+                AND #{anal_yr} - LEFT( x0.entr_ymd, 4) >= 1
+                AND x1.contrct_cls_ymd >= TRUNC(#{anal_yr} -1) || '0101'
+                AND x1.contrct_start_ymd <![CDATA[ <= ]]> TRUNC(#{anal_yr} -1) || '1231'
+                GROUP BY 1,2,3,4,5,6,7,8,9,10,11
+                ORDER BY x1.syspayno, x1.contrct_start_ymd, x1.contrct_cls_ymd
+            ) AS x0
+            WHERE x0.open_ymd <![CDATA[ < ]]> x0.clos_ymd
+            GROUP BY 1,2,3
+        ) AS x0
+        LEFT JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno AND x1.anal_yr = #{anal_yr} -1    -- 전년도
+    )
+) AS s ON s.syspayno = d.syspayno AND s.anal_yr = d.anal_yr
+WHEN MATCHED THEN
+    UPDATE SET
+          d.creat_anal_qty = d.creat_anal_qty + s.creat_anal_qty
+        , d.remidr_anal_qty = d.remidr_anal_qty + s.creat_anal_qty
+        , d.duty_use_anal_qty = d.duty_use_anal_qty + s.creat_anal_qty
+        , d.rmk = d.rmk || ', ' || s.rmk
+        , d.final_ymd = s.final_ymd
+        , d.updt_psn_syspayno = s.reg_syspayno
+        , d.updt_daytm = CURRENT
+        , d.create_save_qty01 = s.create_save_qty01 , d.create_save_qty02 = s.create_save_qty02 , d.create_save_qty03 = s.create_save_qty03
+        , d.create_save_qty04 = s.create_save_qty04 , d.create_save_qty05 = s.create_save_qty05 , d.create_save_qty06 = s.create_save_qty06
+        , d.create_save_qty07 = s.create_save_qty07 , d.create_save_qty08 = s.create_save_qty08 , d.create_save_qty09 = s.create_save_qty09, d.create_save_qty10 = s.create_save_qty10
+        , d.use_save_qty01 = s.use_save_qty01, d.use_save_qty02 = s.use_save_qty02, d.use_save_qty03 = s.use_save_qty03, d.use_save_qty04 = s.use_save_qty04
+        , d.use_save_qty05 = s.use_save_qty05, d.use_save_qty06 = s.use_save_qty06, d.use_save_qty07 = s.use_save_qty07, d.use_save_qty08 = s.use_save_qty08
+        , d.use_save_qty09 = s.use_save_qty09, d.use_save_qty10 = s.use_save_qty10, d.use_save_qty00 = s.use_save_qty00
+        , d.remidr_save_qty01 = s.create_save_qty01 - s.use_save_qty01, d.remidr_save_qty02 = s.create_save_qty02 - s.use_save_qty02, d.remidr_save_qty03 = s.create_save_qty03 - s.use_save_qty03
+        , d.remidr_save_qty04 = s.create_save_qty04 - s.use_save_qty04, d.remidr_save_qty05 = s.create_save_qty05 - s.use_save_qty05, d.remidr_save_qty06 = s.create_save_qty06 - s.use_save_qty06
+        , d.remidr_save_qty07 = s.create_save_qty07 - s.use_save_qty07, d.remidr_save_qty08 = s.create_save_qty08 - s.use_save_qty08, d.remidr_save_qty09 = s.create_save_qty09 - s.use_save_qty09
+        , d.remidr_save_qty10 = s.create_save_qty10 - s.use_save_qty10
+WHEN NOT MATCHED THEN
+    INSERT (
+          d.anal_yr, d.syspayno, d.expired_cnt, d.cryfwd_anal_qty, d.creat_anal_qty, d.creat_mhold_qty, d.remidr_anal_qty
+        , d.duty_use_anal_qty, d.use_anal_qty, d.rmk, d.final_ymd, d.regst_psn_syspayno, d.regst_daytm
+        , d.create_save_qty01, d.create_save_qty02, d.create_save_qty03, d.create_save_qty04, d.create_save_qty05
+        , d.create_save_qty06, d.create_save_qty07, d.create_save_qty08, d.create_save_qty09, d.create_save_qty10
+        , d.use_save_qty01, d.use_save_qty02, d.use_save_qty03, d.use_save_qty04, d.use_save_qty05
+        , d.use_save_qty06, d.use_save_qty07, d.use_save_qty08, d.use_save_qty09, d.use_save_qty10, d.use_save_qty00
+        , d.remidr_save_qty01, d.remidr_save_qty02, d.remidr_save_qty03, d.remidr_save_qty04, d.remidr_save_qty05
+        , d.remidr_save_qty06, d.remidr_save_qty07, d.remidr_save_qty08, d.remidr_save_qty09, d.remidr_save_qty10
+    ) 
+    VALUES ( 
+          s.anal_yr, s.syspayno, s.expired_cnt, s.cryfwd_anal_qty, s.creat_anal_qty, s.creat_mhold_qty, s.remidr_anal_qty
+        , s.duty_use_anal_qty, s.use_anal_qty, s.rmk, s.final_ymd, s.reg_syspayno, CURRENT
+        , s.create_save_qty01, s.create_save_qty02, s.create_save_qty03, s.create_save_qty04, s.create_save_qty05
+        , s.create_save_qty06, s.create_save_qty07, s.create_save_qty08, s.create_save_qty09, s.create_save_qty10
+        , s.use_save_qty01, s.use_save_qty02, s.use_save_qty03, s.use_save_qty04, s.use_save_qty05
+        , s.use_save_qty06, s.use_save_qty07, s.use_save_qty08, s.use_save_qty09, s.use_save_qty10, s.use_save_qty00
+        , s.create_save_qty01 - s.use_save_qty01, s.create_save_qty02 - s.use_save_qty02, s.create_save_qty03 - s.use_save_qty03, s.create_save_qty04 - s.use_save_qty04, s.create_save_qty05 - s.use_save_qty05
+        , s.create_save_qty06 - s.use_save_qty06, s.create_save_qty07 - s.use_save_qty07, s.create_save_qty08 - s.use_save_qty08, s.create_save_qty09 - s.use_save_qty09, s.create_save_qty10 - s.use_save_qty10
+    )
+</update>
+
+<!-- 아르바이트 , 연구별정(단)/ 행정별정(단) 대상자 조회 -->
+<select id="selectHumBasicInfoArb" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCrtYmHolVo">
+SELECT /* kr.re.kitech.biz.ccs.cgs.selectHumBasicInfoArb */
+      x0.rank::VARCHAR(5) AS rank
+    , x0.syspayno
+    , x0.entr_ymd
+    , x0.month_work_time
+    , x0.contrct_clsf
+    , x0.contrct_clsf_nm
+    , x0.days
+    , x0.start_dt
+    , x0.close_dt
+    , x0.work_days
+    , NVL( x1.holiday_daycnt, 0) AS cur_hol_used
+    , NVL( x2.remidr_anal_qty, 0) AS pre_hol_remain
+    , 0 AS pre_expire_qty
+--  , TRUNC( x0.work_days / 29.5) * DECODE(x0.days, 2, 0.125*4, 3, 0.125*5, 4, 0.125*7, 5, 0.125*8) AS creat_anal_qty
+--  , TRUNC( x0.work_days / 28) * DECODE(x0.days, 2, 0.125*4, 3, 0.125*5, 4, 0.125*7, 5, 0.125*8) AS creat_anal_qty
+    , x0.work_months * DECODE(x0.days, 2, 0.125*4, 3, 0.125*5, 4, 0.125*7, 5, 0.125*8) AS creat_anal_qty
+    , x0.use_qty AS use_save_qty00
+    , NVL(LEAST(x2.creat_anal_qty,x2.remidr_anal_qty),0) as create_save_qty01
+    , NVL(x2.remidr_save_qty01,0) as create_save_qty02
+    , NVL(x2.remidr_save_qty02,0) as create_save_qty03
+    , NVL(x2.remidr_save_qty03,0) as create_save_qty04
+    , NVL(x2.remidr_save_qty04,0) as create_save_qty05
+    , NVL(x2.remidr_save_qty05,0) as create_save_qty06
+    , NVL(x2.remidr_save_qty06,0) as create_save_qty07
+    , NVL(x2.remidr_save_qty07,0) as create_save_qty08
+    , NVL(x2.remidr_save_qty08,0) as create_save_qty09
+    , NVL(x2.remidr_save_qty09,0) as create_save_qty10
+    , NVL(use_qty00,0) as use_save_qty01
+    , NVL(use_qty01,0) as use_save_qty02
+    , NVL(use_qty02,0) as use_save_qty03
+    , NVL(use_qty03,0) as use_save_qty04
+    , NVL(use_qty04,0) as use_save_qty05
+    , NVL(use_qty05,0) as use_save_qty06
+    , NVL(use_qty06,0) as use_save_qty07
+    , NVL(use_qty07,0) as use_save_qty08
+    , NVL(use_qty08,0) as use_save_qty09
+    , NVL(use_qty09,0) as use_save_qty10
+FROM (        
+    SELECT
+          DENSE_RANK() OVER (PARTITION BY y0.syspayno ORDER BY y0.req_ymd ) AS rank
+        , y0.month_work_time
+        , y0.days
+        , y0.syspayno
+        , y0.entr_ymd
+        , y0.req_ymd
+        , y0.contrct_clsf
+        , y0.contrct_clsf_nm
+        , y0.contrct_start_ymd
+        , y0.contrct_cls_ymd
+        , y0.start_dt
+        , y0.close_dt        
+        , TO_DATE(y0.close_dt,'%Y%m%d')::DATE - TO_DATE(y0.start_dt, '%Y%m%d')::DATE  AS work_days          
+        , TRUNC(MONTHS_BETWEEN(TO_DATE(y0.close_dt,'%Y%m%d') + 6 UNITS DAY, TO_DATE(y0.start_dt,'%Y%m%d'))) AS work_months
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'00'),0) from dual ) as use_qty
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'01'),0) from dual ) as use_qty00
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'02'),0) from dual ) as use_qty01
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'03'),0) from dual ) as use_qty02
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'04'),0) from dual ) as use_qty03
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'05'),0) from dual ) as use_qty04
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'06'),0) from dual ) as use_qty05
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'07'),0) from dual ) as use_qty06
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'08'),0) from dual ) as use_qty07
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'09'),0) from dual ) as use_qty08
+        , (select nvl(fun_cgs_use_yr(substr(y0.start_dt,0,4),y0.syspayno,'10'),0) from dual ) as use_qty09
+    FROM (
+        SELECT x1.month_work_time * 60 UNITS MINUTE::INTERVAL HOUR(5) TO MINUTE AS month_work_time
+             , x3.mngmt_no_1 AS days
+             , x0.syspayno 
+             , NVL(x0.entr_ymd, '') AS entr_ymd
+             , x0.occutyp_cd
+             , x1.req_ymd
+             , x1.contrct_clsf
+             , fun_xodxcommst_cd_nm(x1.contrct_clsf, 0) AS contrct_clsf_nm 
+             , x1.contrct_start_ymd
+             , x1.contrct_cls_ymd
+             , GREATEST( x1.contrct_start_ymd, '${anal_yr}' || '0101') AS start_dt
+             , MIN(LEAST( NVL( TO_CHAR( TO_DATE(x4.contrct_start_ymd, '%Y%m%d') - 1 UNITS DAY, '%Y%m%d'), x1.contrct_cls_ymd), x1.contrct_cls_ymd, '${anal_yr}' || '1231', TO_CHAR(TODAY, '%Y%m%d'))) AS close_dt
+        FROM humbasicinfo x0
+        JOIN humrctbasinfo x1 ON x1.syspayno = x0.syspayno
+        JOIN xomxintfatab x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'
+        JOIN xodxcommst x3 ON x3.cd_clsf='HST' AND x3.cd = x1.week_work_day
+        LEFT JOIN ( 
+                 SELECT
+                       x1.req_no
+                     , x1.syspayno
+                     , x1.contrct_start_ymd
+                     , x1.contrct_cls_ymd    
+                 FROM humbasicinfo x0
+                 JOIN humrctbasinfo x1 ON x1.syspayno = x0.syspayno
+                 JOIN xomxintfatab x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'
+                 JOIN xodxcommst x3 ON x3.cd_clsf='HST' AND x3.cd = x1.week_work_day
+                 WHERE x0.retire_ymd = ''
+                 AND x0.entr_ymd IS NOT NULL
+                 AND x0.posi_cd IN ('210015', '250040')
+                 AND x3.mngmt_no_1 != 1  -- 주1회 근무가 아닌 건
+                <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+                 AND x1.contrct_cls_ymd >= #{anal_yr} || '0101'
+                 AND x1.contrct_start_ymd <![CDATA[<= ]]> #{anal_yr} || '1231'                
+              ) AS x4 ON x4.req_no > x1.req_no AND x4.syspayno = x1.syspayno
+        WHERE x0.retire_ymd = ''
+        AND x0.entr_ymd IS NOT NULL
+        AND x0.posi_cd IN ('210015', '250040')
+        AND x3.mngmt_no_1 != 1  -- 주1회 근무가 아닌 건
+        <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+        AND x1.contrct_cls_ymd >= #{anal_yr} || '0101'
+        AND x1.contrct_start_ymd <![CDATA[ <=]]>  #{anal_yr} || '1231'
+        GROUP BY 1,2,3,4,5,6,7,8,9,10,11
+        ORDER BY x0.syspayno, x1.contrct_start_ymd, x1.contrct_cls_ymd
+    ) AS y0
+    WHERE y0.start_dt <![CDATA[ < ]]> y0.close_dt
+) AS x0
+LEFT JOIN (
+    SELECT x0.req_psn_syspayno
+         , SUM(x0.holiday_daycnt) AS holiday_daycnt
+      FROM cgslapp AS x0 
+      JOIN xomxintfatab AS x1 ON x0.req_no = x1.req_no
+     WHERE x0.holiday_clsf IN ('HBI006', 'HBI019', 'HBI020', 'HBI025')
+       AND x1.apr_state = 'XAD100'
+      <if test='syspayno != null and syspayno != ""'> AND x0.req_psn_syspayno = #{syspayno} </if>
+       AND x0.holiday_start_ymd[1,4] = #{anal_yr}
+    GROUP BY x0.req_psn_syspayno
+   ) x1 ON x1.req_psn_syspayno = x0.syspayno
+LEFT JOIN cgsanulmhold x2 ON x2.syspayno = x0.syspayno AND x2.anal_yr = #{anal_yr} -1    -- 전년도
+</select>
+
+<!-- 아르바이트 , 연구별정(단)/ 행정별정(단) 연차관리 수정 -->
+<update id="updateCgsAnulmHoldArb" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCrtYmHolVo">
+UPDATE /* kr.re.kitech.biz.ccs.cgs.updateCgsAnulmHoldArb */
+        cgsanulmhold 
+   SET creat_anal_qty = creat_anal_qty + #{creat_anal_qty}
+     , duty_use_anal_qty = duty_use_anal_qty + #{creat_anal_qty}
+     , remidr_anal_qty = remidr_anal_qty + #{creat_anal_qty}
+     , rmk = rmk || #{rmk}
+     , updt_daytm = CURRENT
+ WHERE anal_yr = #{anal_yr}
+   AND syspayno = #{syspayno}
+</update>
+
+<!-- 시간선택제 대상자 조회 -->
+<select id="selectHumBasicInfoTime" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCrtYmHolVo">
+SELECT /* kr.re.kitech.biz.ccs.cgs.selectHumBasicInfoTime */
+      x0.syspayno 
+    , x0.entr_ymd
+    , x0.start_dt
+    , x0.close_dt
+    , x0.month_diff
+    , x0.month_ctreat_qty
+    , x0.year_ctreat_qty
+    , x0.append_anal_qty
+    , x0.create_anal_qty + x0.append_anal_qty AS creat_anal_qty
+    , NVL(x1.remidr_anal_qty, 0) AS pre_hol_remain
+    , NVL(x1.creat_anal_qty, 0) AS pre_hol_create
+    , NVL(( SELECT SUM(a.holiday_daycnt)
+            FROM cgslapp AS a JOIN xomxintfatab AS b ON a.req_no = b.req_no
+            WHERE a.holiday_start_ymd[1,4] = CAST(#{anal_yr} AS VARCHAR(4))
+            AND a.holiday_clsf IN ('HBI006', 'HBI019', 'HBI020', 'HBI025')
+            AND b.apr_state = 'XAD100'
+            AND a.req_psn_syspayno = x0.syspayno
+        ), 0) AS cur_hol_used
+    , NVL(x1.expired_cnt, 0) AS pre_expire_qty
+    , NVL((SELECT DISTINCT SUM( NVL(y1.rwd_ovr_wk_mm, 0) / 60 * 0.125)  AS reward_tot
+            FROM cgsanulmhold AS y0 
+            LEFT JOIN humslmmovrwkmst AS y1 ON y1.syspayno = y0.syspayno AND y1.work_yrmon[1,4] = y0.anal_yr
+            LEFT JOIN xomxintfatab AS y2 ON y2.req_no = y1.req_no
+            WHERE y2.apr_state = 'XAD100'
+            AND y0.syspayno = x0.syspayno
+            AND y0.anal_yr <![CDATA[ < ]]> #{anal_yr}
+        ), 0) - NVL((SELECT DISTINCT  SUM( y0.holiday_daycnt) AS rwrd_daycnt
+            FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state = 'XAD100'
+            WHERE y0.holiday_clsf = 'HBI080'
+            AND y0.req_psn_syspayno = x0.syspayno
+            AND y0.holiday_start_ymd[1,4] <![CDATA[ < ]]> #{anal_yr}
+      ), 0) AS cryfwd_com_qty
+    , NVL((SELECT DISTINCT SUM( NVL(y1.rwd_ovr_wk_mm, 0) / 60 * 0.125)  AS reward_tot
+                FROM humslmmovrwkmst AS y1 
+                LEFT JOIN xomxintfatab AS y2 ON y2.req_no = y1.req_no
+                WHERE y2.apr_state = 'XAD100'
+                AND y1.syspayno = x0.syspayno
+                AND y1.work_yrmon[1,4] = #{anal_yr}
+      ), 0) AS creat_com_qty
+    , NVL((SELECT DISTINCT  SUM( y0.holiday_daycnt) AS rwrd_daycnt
+        FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state = 'XAD100'
+        WHERE y0.holiday_clsf = 'HBI080'
+        AND y0.req_psn_syspayno = x0.syspayno
+        AND y0.holiday_start_ymd[1,4] = #{anal_yr}
+      ), 0) AS use_com_qty
+    ,NVL(LEAST(x1.creat_anal_qty,x1.remidr_anal_qty),0) as create_save_qty01
+    ,NVL(x1.remidr_save_qty01,0) as create_save_qty02
+    ,NVL(x1.remidr_save_qty02,0) as create_save_qty03
+    ,NVL(x1.remidr_save_qty03,0) as create_save_qty04 
+    ,NVL(x1.remidr_save_qty04,0) as create_save_qty05
+    ,NVL(x1.remidr_save_qty05,0) as create_save_qty06
+    ,NVL(x1.remidr_save_qty06,0) as create_save_qty07
+    ,NVL(x1.remidr_save_qty07,0) as create_save_qty08
+    ,NVL(x1.remidr_save_qty08,0) as create_save_qty09
+    ,NVL(x1.remidr_save_qty09,0) as create_save_qty10
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'01'),0) from dual ) as use_save_qty01
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'02'),0) from dual ) as use_save_qty02
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'03'),0) from dual ) as use_save_qty03
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'04'),0) from dual ) as use_save_qty04
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'05'),0) from dual ) as use_save_qty05
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'06'),0) from dual ) as use_save_qty06
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'07'),0) from dual ) as use_save_qty07
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'08'),0) from dual ) as use_save_qty08
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'09'),0) from dual ) as use_save_qty09
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'10'),0) from dual ) as use_save_qty10
+    , (select nvl(fun_cgs_use_yr(substr(start_dt,0,4),x0.syspayno,'00'),0) from dual ) as  use_qty
+FROM (
+    SELECT
+          x0.syspayno 
+        , x0.entr_ymd
+        , MIN(x0.start_dt) AS start_dt
+        , MAX(x0.close_dt) AS close_dt
+        , ROUND((SUBSTR( MAX(x0.close_dt),1,4) - SUBSTR( x0.entr_ymd,1,4) - 3) / 2 * 0.5, 0) AS append_anal_qty
+        , CASE WHEN SUBSTR( x0.entr_ymd,1,4) <![CDATA[ < ]]> SUBSTR( MAX(x0.close_dt),1,4) 
+               THEN SUM(x0.year_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.close_dt, '%Y%m%d'),  TO_DATE(x0.start_dt, '%Y%m%d'))))
+               ELSE SUM(x0.month_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.close_dt, '%Y%m%d'),  TO_DATE(x0.start_dt, '%Y%m%d'))))
+          END AS create_anal_qty
+        , SUM(ROUND(MONTHS_BETWEEN( TO_DATE(x0.close_dt, '%Y%m%d'), TO_DATE(x0.start_dt, '%Y%m%d')))) AS month_diff
+        , SUM(x0.month_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.close_dt, '%Y%m%d'),  TO_DATE(x0.start_dt, '%Y%m%d')))) AS month_ctreat_qty
+        , SUM(x0.year_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.close_dt, '%Y%m%d'),  TO_DATE(x0.start_dt, '%Y%m%d')))) AS year_ctreat_qty
+    FROM (
+        SELECT
+                x0.syspayno 
+                , x0.entr_ymd
+                , 20 AS week_work_time
+                , (20 / 40 * 8 * 0.125) AS month_anal_qty 
+                , 15 * (20 / 40 * 8 * 0.125) / 12 AS year_anal_qty 
+                , GREATEST( x0.entr_ymd, '${anal_yr}' || '0101') AS start_dt
+                , MIN('${anal_yr}'||'1231') AS close_dt    
+            FROM humbasicinfo AS x0
+            WHERE x0.retire_ymd = '' AND x0.entr_ymd IS NOT NULL AND x0.posi_cd IN ('170010', '170020', '170030','170040','170050')
+            <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+            GROUP BY 1,2,3,4,5
+            ORDER BY x0.syspayno, x0.entr_ymd
+    ) AS x0
+    WHERE x0.start_dt <![CDATA[ < ]]> x0.close_dt
+    GROUP BY 1,2
+) AS x0
+LEFT JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno AND x1.anal_yr = #{anal_yr} -1    -- 전년도
+</select>
+
+<!-- [TMS/BIZ] 비상근직급 계약이력에 따른 월차 생성 -->
+<update id="updateCgsAnulmHoldTimeMon" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo">
+MERGE /* kr.re.kitech.biz.ccs.cgs.updateCgsAnulmHoldTimeMon */
+   INTO cgsanulmhold AS d
+USING (
+    SELECT
+          syspayno
+        , anal_yr
+        , create_save_qty03 - (SELECT NVL(fun_cgs_use_yr(anal_yr,syspayno,'03'),0) FROM dual ) AS expired_cnt
+        , pre_hol_remain - expired_cnt AS cryfwd_anal_qty
+        , creat_anal_qty
+        , 0 AS creat_mhold_qty
+        , (creat_anal_qty + pre_hol_remain) - (cur_hol_used + expired_cnt) AS remidr_anal_qty
+        , creat_anal_qty AS duty_use_anal_qty
+        , cur_hol_used AS use_anal_qty
+        , '비상근 월차 적용' AS rmk
+        , curr_ymd AS final_ymd 
+        , DECODE(reg_syspayno, '', 'TmsSystem', reg_syspayno) AS reg_syspayno  
+        , create_save_qty01 
+        , create_save_qty02 
+        , create_save_qty03 
+        , CASE WHEN anal_yr > '2022' THEN create_save_qty04 ELSE 0 END AS create_save_qty04
+        , create_save_qty05
+        , create_save_qty06 
+        , create_save_qty07 
+        , create_save_qty08 
+        , create_save_qty09  
+        , create_save_qty10
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'01'),0) from dual ) as use_save_qty01
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'02'),0) from dual )  as use_save_qty02
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'03'),0) from dual )  as use_save_qty03
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'04'),0) from dual )  as use_save_qty04
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'05'),0) from dual )  as use_save_qty05
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'06'),0) from dual )  as use_save_qty06
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'07'),0) from dual )  as use_save_qty07
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'08'),0) from dual )  as use_save_qty08
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'09'),0) from dual )  as use_save_qty09
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'10'),0) from dual )  as use_save_qty10
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'00'),0) from dual ) as  use_save_qty00  
+    FROM (
+        SELECT
+              x0.syspayno 
+            , LEFT( x0.curr_ymd, 4) AS anal_yr
+            , x0.entr_ymd
+            , x0.curr_ymd
+            , x0.open_ymd
+            , x0.clos_ymd
+            , x0.mons_diff
+            , x0.mons_creat_qty
+            , x0.year_creat_qty
+            , x0.append_anal_qty
+            , x0.create_anal_qty + x0.append_anal_qty AS creat_anal_qty
+            , NVL(x1.remidr_anal_qty, 0) AS pre_hol_remain
+            , NVL(x1.creat_anal_qty, 0) AS pre_hol_create
+            , NVL((SELECT SUM(a.holiday_daycnt)
+                FROM cgslapp AS a JOIN xomxintfatab AS b ON a.req_no = b.req_no
+                WHERE LEFT( a.holiday_start_ymd, 4) = LEFT(x0.clos_ymd, 4)
+                AND a.holiday_clsf IN ('HBI006', 'HBI019', 'HBI020', 'HBI025')
+                AND b.apr_state = 'XAD100'
+                AND a.req_psn_syspayno = x0.syspayno
+            ), 0) AS cur_hol_used
+            , 0 AS expired_cnt
+            , CAST(#{regst_syspayno} AS VARCHAR(8)) AS reg_syspayno
+            , NVL(LEAST(x1.creat_anal_qty,x1.remidr_anal_qty),0) as create_save_qty01
+            , NVL(x1.remidr_save_qty01,0) as create_save_qty02
+            , NVL(x1.remidr_save_qty02,0) as create_save_qty03
+            , NVL(x1.remidr_save_qty03,0) as create_save_qty04
+            , NVL(x1.remidr_save_qty04,0) as create_save_qty05
+            , NVL(x1.remidr_save_qty05,0) as create_save_qty06
+            , NVL(x1.remidr_save_qty06,0) as create_save_qty07
+            , NVL(x1.remidr_save_qty07,0) as create_save_qty08
+            , NVL(x1.remidr_save_qty08,0) as create_save_qty09
+            , NVL(x1.remidr_save_qty09,0) as create_save_qty10
+        FROM (
+            SELECT
+                  x0.syspayno 
+                , x0.entr_ymd
+                , x0.curr_ymd
+                , MIN(x0.open_ymd) AS open_ymd
+                , MAX(x0.clos_ymd) AS clos_ymd
+                , SUM(ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'), TO_DATE(x0.open_ymd, '%Y%m%d')))) AS mons_diff
+                , GREATEST(TRUNC(( LEFT( MAX(x0.clos_ymd), 4) - LEFT( x0.entr_ymd, 4) -3) / 2), 0) AS append_anal_qty
+                , CASE WHEN LEFT( x0.entr_ymd,4) <![CDATA[< ]]> LEFT( MAX(x0.clos_ymd),4) 
+                    THEN SUM(x0.year_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d'))))
+                    ELSE SUM(x0.mons_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d'))))
+                END AS create_anal_qty
+                , SUM(x0.mons_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d')))) AS mons_creat_qty
+                , SUM(x0.year_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d')))) AS year_creat_qty
+            FROM (
+                SELECT
+                      x1.req_no
+                    , x1.syspayno 
+                    , x0.entr_ymd
+                    , CAST(#{cur_ymd} AS VARCHAR(8)) AS curr_ymd
+                    , x1.contrct_clsf
+                    , x1.month_work_time
+                    --  월 60시간 비상근의 경우) 1일 *  (60시간/4주)/40시간 * 8시간 = 3시간 (0.125 * 3시간= 0.375개)
+                    -- 월 128시간 비상근의 경우) 1일 * (128시간/4주)/40시간 * 8시간 = 6.4시간 (0.125 * 6.4시간= 0.8개)
+                    , (x1.month_work_time / 4 / 40 * 8 * 0.125) AS mons_anal_qty 
+                    , 15 * (x1.month_work_time/ 4 / 40 * 8 * 0.125) / 12 AS year_anal_qty 
+                    , x1.contrct_start_ymd
+                    , x1.contrct_cls_ymd
+                    , GREATEST( x1.contrct_start_ymd, '${anal_yr}' || '0101') AS open_ymd
+                    , MIN(LEAST( 
+                          NVL( TO_CHAR( TO_DATE(x3.contrct_start_ymd, '%Y%m%d') - 1 UNITS DAY, '%Y%m%d'), x1.contrct_cls_ymd)
+                        , x1.contrct_cls_ymd
+                        , TO_CHAR( TO_DATE(x0.entr_ymd, '%Y%m%d') +1 UNITS YEAR, '%Y%m%d')
+                        , '${cur_ymd}')) AS clos_ymd
+                FROM humbasicinfo AS x0
+                JOIN humrctbasinfo AS x1 ON x1.syspayno = x0.syspayno
+                JOIN xomxintfatab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'
+                LEFT JOIN ( 
+                    SELECT
+                          x1.req_no
+                        , x1.syspayno
+                        , x1.contrct_start_ymd
+                        , x1.contrct_cls_ymd  
+                    FROM humbasicinfo AS x0
+                    JOIN humrctbasinfo AS x1 ON x1.syspayno = x0.syspayno
+                    JOIN xomxintfatab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'
+                    WHERE x0.retire_ymd = '' AND x0.entr_ymd IS NOT NULL AND x0.posi_cd IN ('310010', '310070', '310051', '310032')
+                    AND x1.employ_type = 'HYZ002'
+                    AND x1.month_work_time > 59
+                    <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+                    AND x1.contrct_cls_ymd >= #{anal_yr} || '0101'
+                    AND x1.contrct_start_ymd <![CDATA[ <= ]]> TO_CHAR( TO_DATE(x0.entr_ymd, '%Y%m%d') +1 UNITS YEAR, '%Y%m%d')
+                    ORDER BY x1.syspayno, x1.contrct_start_ymd, x1.contrct_cls_ymd
+                ) AS x3 ON x3.req_no > x1.req_no  AND x3.syspayno = x1.syspayno
+                WHERE x0.retire_ymd = '' AND x0.entr_ymd IS NOT NULL AND x0.posi_cd IN ('310010', '310070', '310051', '310032')
+                AND x1.employ_type = 'HYZ002'
+                AND x1.month_work_time > 59
+                <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+                AND x1.contrct_cls_ymd >= #{anal_yr} || '0101'
+                AND x1.contrct_start_ymd <![CDATA[ <= ]]> TO_CHAR( TO_DATE(x0.entr_ymd, '%Y%m%d') +1 UNITS YEAR, '%Y%m%d')
+                GROUP BY 1,2,3,4,5,6,7,8,9,10,11
+                ORDER BY x1.syspayno, x1.contrct_start_ymd, x1.contrct_cls_ymd
+            ) AS x0
+            WHERE x0.open_ymd <![CDATA[ < ]]> x0.clos_ymd
+            GROUP BY 1,2,3
+        ) AS x0
+        LEFT JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno AND x1.anal_yr = #{anal_yr} -1    -- 전년도
+    )
+) AS s ON s.syspayno = d.syspayno AND s.anal_yr = d.anal_yr
+WHEN MATCHED THEN
+    UPDATE SET
+          d.expired_cnt = s.expired_cnt
+        , d.cryfwd_anal_qty = s.cryfwd_anal_qty
+        , d.creat_anal_qty = s.creat_anal_qty
+        , d.creat_mhold_qty = s.creat_mhold_qty
+        , d.remidr_anal_qty = s.remidr_anal_qty
+        , d.duty_use_anal_qty = s.duty_use_anal_qty
+        , d.use_anal_qty = s.use_anal_qty
+        , d.rmk = s.rmk
+        , d.final_ymd = s.final_ymd
+        , d.updt_psn_syspayno = s.reg_syspayno
+        , d.updt_daytm = CURRENT
+        , d.create_save_qty01 = s.create_save_qty01 , d.create_save_qty02 = s.create_save_qty02 , d.create_save_qty03 = s.create_save_qty03
+        , d.create_save_qty04 = s.create_save_qty04 , d.create_save_qty05 = s.create_save_qty05 , d.create_save_qty06 = s.create_save_qty06
+        , d.create_save_qty07 = s.create_save_qty07 , d.create_save_qty08 = s.create_save_qty08 , d.create_save_qty09 = s.create_save_qty09, d.create_save_qty10 = s.create_save_qty10
+        , d.use_save_qty01 = s.use_save_qty01, d.use_save_qty02 = s.use_save_qty02, d.use_save_qty03 = s.use_save_qty03, d.use_save_qty04 = s.use_save_qty04
+        , d.use_save_qty05 = s.use_save_qty05, d.use_save_qty06 = s.use_save_qty06, d.use_save_qty07 = s.use_save_qty07, d.use_save_qty08 = s.use_save_qty08
+        , d.use_save_qty09 = s.use_save_qty09, d.use_save_qty10 = s.use_save_qty10, d.use_save_qty00 = s.use_save_qty00
+        , d.remidr_save_qty01 = s.create_save_qty01 - s.use_save_qty01, d.remidr_save_qty02 = s.create_save_qty02 - s.use_save_qty02, d.remidr_save_qty03 = s.create_save_qty03 - s.use_save_qty03
+        , d.remidr_save_qty04 = s.create_save_qty04 - s.use_save_qty04, d.remidr_save_qty05 = s.create_save_qty05 - s.use_save_qty05, d.remidr_save_qty06 = s.create_save_qty06 - s.use_save_qty06
+        , d.remidr_save_qty07 = s.create_save_qty07 - s.use_save_qty07, d.remidr_save_qty08 = s.create_save_qty08 - s.use_save_qty08, d.remidr_save_qty09 = s.create_save_qty09 - s.use_save_qty09
+        , d.remidr_save_qty10 = s.create_save_qty10 - s.use_save_qty10
+WHEN NOT MATCHED THEN
+    INSERT (
+          d.anal_yr, d.syspayno, d.expired_cnt, d.cryfwd_anal_qty, d.creat_anal_qty, d.creat_mhold_qty, d.remidr_anal_qty
+        , d.duty_use_anal_qty, d.use_anal_qty, d.rmk, d.final_ymd, d.regst_psn_syspayno, d.regst_daytm
+        , d.create_save_qty01, d.create_save_qty02, d.create_save_qty03, d.create_save_qty04, d.create_save_qty05
+        , d.create_save_qty06, d.create_save_qty07, d.create_save_qty08, d.create_save_qty09, d.create_save_qty10
+        , d.use_save_qty01, d.use_save_qty02, d.use_save_qty03, d.use_save_qty04, d.use_save_qty05
+        , d.use_save_qty06, d.use_save_qty07, d.use_save_qty08, d.use_save_qty09, d.use_save_qty10, d.use_save_qty00
+        , d.remidr_save_qty01, d.remidr_save_qty02, d.remidr_save_qty03, d.remidr_save_qty04, d.remidr_save_qty05
+        , d.remidr_save_qty06, d.remidr_save_qty07, d.remidr_save_qty08, d.remidr_save_qty09, d.remidr_save_qty10
+    ) 
+    VALUES ( 
+          s.anal_yr, s.syspayno, s.expired_cnt, s.cryfwd_anal_qty, s.creat_anal_qty, s.creat_mhold_qty, s.remidr_anal_qty
+        , s.duty_use_anal_qty, s.use_anal_qty, s.rmk, s.final_ymd, s.reg_syspayno, CURRENT
+        , s.create_save_qty01, s.create_save_qty02, s.create_save_qty03, s.create_save_qty04, s.create_save_qty05
+        , s.create_save_qty06, s.create_save_qty07, s.create_save_qty08, s.create_save_qty09, s.create_save_qty10
+        , s.use_save_qty01, s.use_save_qty02, s.use_save_qty03, s.use_save_qty04, s.use_save_qty05
+        , s.use_save_qty06, s.use_save_qty07, s.use_save_qty08, s.use_save_qty09, s.use_save_qty10, s.use_save_qty00
+        , s.create_save_qty01 - s.use_save_qty01, s.create_save_qty02 - s.use_save_qty02, s.create_save_qty03 - s.use_save_qty03, s.create_save_qty04 - s.use_save_qty04, s.create_save_qty05 - s.use_save_qty05
+        , s.create_save_qty06 - s.use_save_qty06, s.create_save_qty07 - s.use_save_qty07, s.create_save_qty08 - s.use_save_qty08, s.create_save_qty09 - s.use_save_qty09, s.create_save_qty10 - s.use_save_qty10
+    )
+</update>
+
+<!-- [TMS/BIZ] 비상근 계약이력에 따른 연차 생성 -->
+<update id="updateCgsAnulmHoldTimeYr" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo">
+MERGE /* kr.re.kitech.biz.ccs.cgs.updateCgsAnulmHoldTimeYr */
+   INTO cgsanulmhold AS d
+USING (
+    SELECT
+          syspayno
+        , anal_yr
+        , create_save_qty03 - (SELECT NVL(fun_cgs_use_yr(anal_yr,syspayno,'03'),0) FROM dual ) AS expired_cnt
+        , pre_hol_remain - expired_cnt AS cryfwd_anal_qty
+        , creat_anal_qty
+        , 0 AS creat_mhold_qty
+        , (creat_anal_qty + pre_hol_remain) - (cur_hol_used + expired_cnt) AS remidr_anal_qty
+        , creat_anal_qty AS duty_use_anal_qty
+        , cur_hol_used AS use_anal_qty
+        , '비상근 연차 적용' AS rmk
+        , curr_ymd AS final_ymd 
+        , DECODE(reg_syspayno, '', 'TmsSystem', reg_syspayno) AS reg_syspayno
+        , create_save_qty01 
+        , create_save_qty02 
+        , create_save_qty03 
+        , CASE WHEN anal_yr > '2022' THEN create_save_qty04 ELSE 0 END AS create_save_qty04
+        , create_save_qty05
+        , create_save_qty06 
+        , create_save_qty07 
+        , create_save_qty08 
+        , create_save_qty09  
+        , create_save_qty10
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'01'),0) from dual ) as use_save_qty01
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'02'),0) from dual )  as use_save_qty02
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'03'),0) from dual )  as use_save_qty03
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'04'),0) from dual )  as use_save_qty04
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'05'),0) from dual )  as use_save_qty05
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'06'),0) from dual )  as use_save_qty06
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'07'),0) from dual )  as use_save_qty07
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'08'),0) from dual )  as use_save_qty08
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'09'),0) from dual )  as use_save_qty09
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'10'),0) from dual )  as use_save_qty10
+        , (select nvl(fun_cgs_use_yr(anal_yr,syspayno,'00'),0) from dual ) as  use_save_qty00     
+    FROM (
+
+        SELECT
+              x0.syspayno 
+            , LEFT( x0.curr_ymd, 4) AS anal_yr
+            , x0.entr_ymd
+            , x0.curr_ymd
+            , x0.open_ymd
+            , x0.clos_ymd
+            , x0.mons_diff
+            , x0.mons_creat_qty
+            , x0.year_creat_qty
+            , x0.append_anal_qty
+            , x0.year_creat_qty + x0.append_anal_qty AS creat_anal_qty
+            , NVL(x1.remidr_anal_qty, 0) AS pre_hol_remain
+            , NVL(x1.creat_anal_qty, 0) AS pre_hol_create
+            , NVL((SELECT SUM(a.holiday_daycnt)
+                FROM cgslapp AS a JOIN xomxintfatab AS b ON a.req_no = b.req_no
+                WHERE LEFT( a.holiday_start_ymd, 4) = LEFT(x0.curr_ymd, 4)
+                AND a.holiday_clsf IN ('HBI006', 'HBI019', 'HBI020', 'HBI025')
+                AND b.apr_state = 'XAD100'
+                AND a.req_psn_syspayno = x0.syspayno
+            ), 0) AS cur_hol_used
+            , NVL(x1.remidr_save_qty03,0) AS expired_cnt
+            , CAST(#{regst_syspayno} AS VARCHAR(8)) AS reg_syspayno  
+            , NVL(LEAST(x1.creat_anal_qty,x1.remidr_anal_qty),0) as create_save_qty01
+            , NVL(x1.remidr_save_qty01,0) as create_save_qty02
+            , NVL(x1.remidr_save_qty02,0) as create_save_qty03
+            , NVL(x1.remidr_save_qty03,0) as create_save_qty04
+            , NVL(x1.remidr_save_qty04,0) as create_save_qty05
+            , NVL(x1.remidr_save_qty05,0) as create_save_qty06
+            , NVL(x1.remidr_save_qty06,0) as create_save_qty07
+            , NVL(x1.remidr_save_qty07,0) as create_save_qty08
+            , NVL(x1.remidr_save_qty08,0) as create_save_qty09
+            , NVL(x1.remidr_save_qty09,0) as create_save_qty10
+        FROM (
+            SELECT
+                  x0.syspayno 
+                , x0.entr_ymd
+                , x0.curr_ymd
+                , MIN(x0.open_ymd) AS open_ymd
+                , MAX(x0.clos_ymd) AS clos_ymd
+                , SUM(ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'), TO_DATE(x0.open_ymd, '%Y%m%d')))) AS mons_diff
+                , GREATEST(TRUNC(( LEFT( MAX(x0.clos_ymd), 4) - LEFT( x0.entr_ymd, 4) -3) / 2), 0) AS append_anal_qty
+                , SUM(x0.mons_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d')))) AS mons_creat_qty
+                , SUM(x0.year_anal_qty * ROUND(MONTHS_BETWEEN( TO_DATE(x0.clos_ymd, '%Y%m%d'),  TO_DATE(x0.open_ymd, '%Y%m%d')))) AS year_creat_qty
+            FROM (
+                SELECT
+                      x1.req_no
+                    , x1.syspayno 
+                    , x0.entr_ymd
+                    , CAST(#{cur_ymd} AS VARCHAR(8)) AS curr_ymd
+                    , x1.contrct_clsf
+                    , x1.month_work_time
+                    --  월 60시간 비상근의 경우) 1일 *  (60시간/4주)/40시간 * 8시간 = 3시간 (0.125 * 3시간= 0.375개)
+                    -- 월 128시간 비상근의 경우) 1일 * (128시간/4주)/40시간 * 8시간 = 6.4시간 (0.125 * 6.4시간= 0.8개)
+                    , (x1.month_work_time / 4 / 40 * 8 * 0.125) AS mons_anal_qty 
+                    , 15 * (x1.month_work_time/ 4 / 40 * 8 * 0.125) / 12 AS year_anal_qty 
+                    , x1.contrct_start_ymd
+                    , x1.contrct_cls_ymd
+                    , GREATEST( x1.contrct_start_ymd, TRUNC('${anal_yr}' -1) || '0101') AS open_ymd
+                    , MIN(LEAST( 
+                        NVL( TO_CHAR( TO_DATE(x3.contrct_start_ymd, '%Y%m%d') -1 UNITS DAY, '%Y%m%d'), x1.contrct_cls_ymd)
+                        , x1.contrct_cls_ymd
+                        , TRUNC('${anal_yr}' -1) || '1231')) AS clos_ymd
+                FROM humbasicinfo AS x0
+                JOIN humrctbasinfo AS x1 ON x1.syspayno = x0.syspayno
+                JOIN xomxintfatab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'      
+                LEFT JOIN ( 
+                    SELECT
+                        x1.req_no
+                        , x1.syspayno
+                        , x1.contrct_start_ymd
+                        , x1.contrct_cls_ymd  
+                    FROM humbasicinfo AS x0
+                    JOIN humrctbasinfo AS x1 ON x1.syspayno = x0.syspayno
+                    JOIN xomxintfatab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state = 'XAD100'
+                    WHERE x0.retire_ymd = '' AND x0.entr_ymd IS NOT NULL AND x0.posi_cd IN ('310010', '310070', '310051', '310032')
+                    AND x1.employ_type = 'HYZ002'
+                    AND x1.month_work_time > 59
+                    <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+                    AND x1.contrct_cls_ymd >= TRUNC(#{anal_yr} -1) || '0101'
+                    AND x1.contrct_start_ymd <![CDATA[ <= ]]> TRUNC(#{anal_yr} -1) || '1231'
+                    ORDER BY x1.syspayno, x1.contrct_start_ymd, x1.contrct_cls_ymd
+                ) AS x3 ON x3.req_no > x1.req_no  AND x3.syspayno = x1.syspayno
+                WHERE x0.retire_ymd = '' AND x0.entr_ymd IS NOT NULL AND x0.posi_cd IN ('310010', '310070', '310051', '310032')
+                AND x1.employ_type = 'HYZ002'
+                AND x1.month_work_time > 59
+               <if test='syspayno != null and syspayno != ""'> AND x0.syspayno = #{syspayno} </if>
+                AND #{anal_yr} - LEFT( x0.entr_ymd, 4) >= 1
+                AND x1.contrct_cls_ymd >= TRUNC(#{anal_yr} -1) || '0101'
+                AND x1.contrct_start_ymd <![CDATA[ <=]]> TRUNC(#{anal_yr} -1) || '1231'
+                GROUP BY 1,2,3,4,5,6,7,8,9,10,11
+                ORDER BY x1.syspayno, x1.contrct_start_ymd, x1.contrct_cls_ymd
+            ) AS x0
+            WHERE x0.open_ymd <![CDATA[ < ]]> x0.clos_ymd
+            GROUP BY 1,2,3
+        ) AS x0
+        LEFT JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno AND x1.anal_yr = #{anal_yr} -1    -- 전년도
+    )
+) AS s ON s.syspayno = d.syspayno AND s.anal_yr = d.anal_yr
+WHEN MATCHED THEN
+    UPDATE SET
+          d.creat_anal_qty = d.creat_anal_qty + s.creat_anal_qty
+        , d.remidr_anal_qty = d.remidr_anal_qty + s.creat_anal_qty
+        , d.duty_use_anal_qty = d.duty_use_anal_qty + s.creat_anal_qty
+        , d.rmk = d.rmk || ', ' || s.rmk
+        , d.final_ymd = s.final_ymd
+        , d.updt_psn_syspayno = s.reg_syspayno
+        , d.updt_daytm = CURRENT
+        , d.create_save_qty01 = s.create_save_qty01 , d.create_save_qty02 = s.create_save_qty02 , d.create_save_qty03 = s.create_save_qty03
+        , d.create_save_qty04 = s.create_save_qty04 , d.create_save_qty05 = s.create_save_qty05 , d.create_save_qty06 = s.create_save_qty06
+        , d.create_save_qty07 = s.create_save_qty07 , d.create_save_qty08 = s.create_save_qty08 , d.create_save_qty09 = s.create_save_qty09, d.create_save_qty10 = s.create_save_qty10
+        , d.use_save_qty01 = s.use_save_qty01, d.use_save_qty02 = s.use_save_qty02, d.use_save_qty03 = s.use_save_qty03, d.use_save_qty04 = s.use_save_qty04
+        , d.use_save_qty05 = s.use_save_qty05, d.use_save_qty06 = s.use_save_qty06, d.use_save_qty07 = s.use_save_qty07, d.use_save_qty08 = s.use_save_qty08
+        , d.use_save_qty09 = s.use_save_qty09, d.use_save_qty10 = s.use_save_qty10, d.use_save_qty00 = s.use_save_qty00
+        , d.remidr_save_qty01 = s.create_save_qty01 - s.use_save_qty01, d.remidr_save_qty02 = s.create_save_qty02 - s.use_save_qty02, d.remidr_save_qty03 = s.create_save_qty03 - s.use_save_qty03
+        , d.remidr_save_qty04 = s.create_save_qty04 - s.use_save_qty04, d.remidr_save_qty05 = s.create_save_qty05 - s.use_save_qty05, d.remidr_save_qty06 = s.create_save_qty06 - s.use_save_qty06
+        , d.remidr_save_qty07 = s.create_save_qty07 - s.use_save_qty07, d.remidr_save_qty08 = s.create_save_qty08 - s.use_save_qty08, d.remidr_save_qty09 = s.create_save_qty09 - s.use_save_qty09
+        , d.remidr_save_qty10 = s.create_save_qty10 - s.use_save_qty10
+WHEN NOT MATCHED THEN
+    INSERT (
+          d.anal_yr, d.syspayno, d.expired_cnt, d.cryfwd_anal_qty, d.creat_anal_qty, d.creat_mhold_qty, d.remidr_anal_qty
+        , d.duty_use_anal_qty, d.use_anal_qty, d.rmk, d.final_ymd, d.regst_psn_syspayno, d.regst_daytm
+        , d.create_save_qty01, d.create_save_qty02, d.create_save_qty03, d.create_save_qty04, d.create_save_qty05
+        , d.create_save_qty06, d.create_save_qty07, d.create_save_qty08, d.create_save_qty09, d.create_save_qty10
+        , d.use_save_qty01, d.use_save_qty02, d.use_save_qty03, d.use_save_qty04, d.use_save_qty05
+        , d.use_save_qty06, d.use_save_qty07, d.use_save_qty08, d.use_save_qty09, d.use_save_qty10, d.use_save_qty00
+        , d.remidr_save_qty01, d.remidr_save_qty02, d.remidr_save_qty03, d.remidr_save_qty04, d.remidr_save_qty05
+        , d.remidr_save_qty06, d.remidr_save_qty07, d.remidr_save_qty08, d.remidr_save_qty09, d.remidr_save_qty10
+    ) 
+    VALUES ( 
+          s.anal_yr, s.syspayno, s.expired_cnt, s.cryfwd_anal_qty, s.creat_anal_qty, s.creat_mhold_qty, s.remidr_anal_qty
+        , s.duty_use_anal_qty, s.use_anal_qty, s.rmk, s.final_ymd, s.reg_syspayno, CURRENT
+        , s.create_save_qty01, s.create_save_qty02, s.create_save_qty03, s.create_save_qty04, s.create_save_qty05
+        , s.create_save_qty06, s.create_save_qty07, s.create_save_qty08, s.create_save_qty09, s.create_save_qty10
+        , s.use_save_qty01, s.use_save_qty02, s.use_save_qty03, s.use_save_qty04, s.use_save_qty05
+        , s.use_save_qty06, s.use_save_qty07, s.use_save_qty08, s.use_save_qty09, s.use_save_qty10, s.use_save_qty00
+        , s.create_save_qty01 - s.use_save_qty01, s.create_save_qty02 - s.use_save_qty02, s.create_save_qty03 - s.use_save_qty03, s.create_save_qty04 - s.use_save_qty04, s.create_save_qty05 - s.use_save_qty05
+        , s.create_save_qty06 - s.use_save_qty06, s.create_save_qty07 - s.use_save_qty07, s.create_save_qty08 - s.use_save_qty08, s.create_save_qty09 - s.use_save_qty09, s.create_save_qty10 - s.use_save_qty10
+    )
+</update>
+
+<!-- 저축연차 소멸대상조회(60개이상) -->
+<select id="selectCgsAnulmHoldExpir" parameterType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCrtYmHolVo">
+SELECT /* kr.re.kitech.biz.ccs.cgs.selectCgsAnulmHoldExpir */
+       t1.syspayno
+     , t1.anal_yr
+     , t1.remidr_save_qty01 
+     , t1.remidr_save_qty02 
+     , t1.remidr_save_qty03 
+     , t1.remidr_save_qty04 
+     , t1.remidr_save_qty05 
+     , t1.remidr_save_qty06 
+     , t1.remidr_save_qty07 
+     , t1.remidr_save_qty08 
+     , t1.remidr_save_qty09 
+     , t1.remidr_save_qty10
+  FROM cgsanulmhold t1
+ WHERE t1.anal_yr = #{anal_yr}
+   AND t1.remidr_save_qty01 + t1.remidr_save_qty02 + remidr_save_qty03 + t1.remidr_save_qty04 + remidr_save_qty05 + t1.remidr_save_qty06 + remidr_save_qty07 + t1.remidr_save_qty08 + remidr_save_qty09 + remidr_save_qty10 > 60
+   AND #{anal_yr} >= '2025'
+</select>
+
+<!-- 60개이상 소멸연차 계산 후 저축연자 업데이트 -->
+<update id="updateCgsAnulmHold" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCrtYmHolVo">
+UPDATE /* kr.re.kitech.biz.ccs.cgs.updateCgsAnulmHold */
+       cgsanulmhold
+   SET create_save_qty03 = #{create_save_qty03}
+     , create_save_qty04 = #{create_save_qty04}
+     , create_save_qty05 = #{create_save_qty05}
+     , create_save_qty06 = #{create_save_qty06}
+     , create_save_qty07 = #{create_save_qty07}
+     , create_save_qty08 = #{create_save_qty08}
+     , create_save_qty09 = #{create_save_qty09}
+     , create_save_qty10 = #{create_save_qty10}
+     
+     , remidr_save_qty03 = #{create_save_qty03}
+     , remidr_save_qty04 = #{create_save_qty04}
+     , remidr_save_qty05 = #{create_save_qty05}
+     , remidr_save_qty06 = #{create_save_qty06}
+     , remidr_save_qty07 = #{create_save_qty07}
+     , remidr_save_qty08 = #{create_save_qty08}
+     , remidr_save_qty09 = #{create_save_qty09}
+     , remidr_save_qty10 = #{create_save_qty10}
+WHERE anal_yr = #{anal_yr}
+  AND syspayno = #{syspayno}
+</update>
+
+</mapper>

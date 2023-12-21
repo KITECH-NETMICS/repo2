@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.ccs.cws">
+
+   <select id="selectCommuteCd" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeSearchVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeBasicInfoVo"> 		
+		SELECT
+		      FIRST 1 RANK() OVER (PARTITION BY x.syspayno, x.yyyymm ORDER BY x.basedate DESC) AS rank 
+		    , x.commute_cd
+		    , TRIM( NVL(x.commute_rmk,'')) AS commute_rmk
+		    , TO_CHAR(LAST_DAY(TO_DATE(#{yyyymm} || '01', '%Y%m%d')),'%Y%m%d') AS created_at 
+		FROM cwshuminfolog AS x
+		LEFT JOIN cwsworktime AS y ON y.syspayno = x.syspayno AND y.yyyymm = x.yyyymm AND y.basedate = x.basedate
+		WHERE x.yyyymm = #{yyyymm}
+		AND x.syspayno = #{syspayno}
+		GROUP BY x.syspayno, x.yyyymm, x.basedate, x.commute_cd, x.commute_rmk, y.regst_daytm
+   </select>
+    
+   <select id="selectAnnualDay" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeSearchVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeAnalCountVo"> 		
+		SELECT
+		      syspayno
+		    , anal_yr
+		    , entr_ymd   
+		    , expire_ymd   
+		    , expire_daycnt || ' (' || TRUNC(expire_daycnt) || '일' || TRUNC(MOD(expire_daycnt * 1000, 1000) / 125) || '시간)' AS expire_daycnt
+		    , creat_anal_qty || ' (' || TRUNC(creat_anal_qty) || '일)' AS creat_anal_qty
+		    , cryfwd_anal_qty || ' (' || TRUNC(cryfwd_anal_qty) || '일' || TRUNC(MOD(cryfwd_anal_qty * 1000, 1000) / 125) || '시간)' AS cryfwd_anal_qty
+		    , use_anal_qty || ' (' || TRUNC(use_anal_qty) || '일' || TRUNC(MOD(use_anal_qty * 1000, 1000) / 125) || '시간)' AS use_anal_qty
+		    , remidr_anal_qty || ' (' || TRUNC(remidr_anal_qty) || '일' || TRUNC(MOD(remidr_anal_qty * 1000, 1000) / 125) || '시간)' AS remidr_anal_qty
+		    , duty_use_anal_qty || ' (' || TRUNC(duty_use_anal_qty) || '일)' AS duty_use_anal_qty
+		    , tot_com_cnt || ' (' || TRUNC(tot_com_cnt) || '일' || TRUNC(MOD(tot_com_cnt * 1000, 1000) / 125) || '시간)' AS tot_com_cnt
+		    , use_com_cnt || ' (' || TRUNC(use_com_cnt) || '일' || TRUNC(MOD(use_com_cnt * 1000, 1000) / 125) || '시간)' AS use_com_cnt
+		    , remain_com_cnt || ' (' || TRUNC(remain_com_cnt) || '일' || TRUNC(MOD(remain_com_cnt * 1000, 1000) / 125) || '시간)' AS remain_com_cnt
+		    , use_alt_days
+		    , use_chd_days
+		    , use_sck_days
+		    , dedct_reward_time || ' (' || TRUNC(dedct_reward_time) || '일' || TRUNC(MOD(dedct_reward_time * 1000, 1000) / 125) || '시간)' AS dedct_reward_time
+		    , dedct_anal_time || ' (' || TRUNC(dedct_anal_time) || '일' || TRUNC(MOD(dedct_anal_time * 1000, 1000) / 125) || '시간)' AS dedct_anal_time
+		    , cryfwd_com_cnt || ' (' || TRUNC(cryfwd_com_cnt) || '일' || TRUNC(MOD(cryfwd_com_cnt * 1000, 1000) / 125) || '시간)' AS cryfwd_com_cnt
+		FROM (
+		    SELECT 
+		          x0.syspayno
+		        , x0.entr_ymd
+		        , x1.anal_yr
+		        , NVL(TRUNC(x1.anal_yr+1)||'0101', 0) AS expire_ymd
+		        , DECODE( x1.is_expire, 't', 0, x1.expired_cnt) AS expire_daycnt
+		        , x1.creat_anal_qty
+		        , x1.cryfwd_anal_qty
+		        , x1.use_anal_qty
+		        , ROUND(x1.remidr_anal_qty - NVL(x9.dedct_anal_time,0), 5) AS remidr_anal_qty
+		        , x1.duty_use_anal_qty
+		        , ROUND( NVL(x1.creat_com_qty,0), 5) AS tot_com_cnt
+		        , ROUND( NVL(x1.use_com_qty,0), 5) AS use_com_cnt
+		        , ROUND( NVL(x1.creat_com_qty,0) + NVL(x1.cryfwd_com_qty,0) - NVL(x1.use_com_qty,0) - NVL(x9.dedct_reward_time ,0), 5) AS remain_com_cnt
+		        , NVL((SELECT SUM(y0.holiday_daycnt)
+		                FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.ctr_req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020'
+		                WHERE y0.holiday_clsf = 'HBI090' AND y0.req_psn_syspayno = x1.syspayno AND y0.holiday_start_ymd[1,4] = x1.anal_yr), 0
+		        ) AS use_alt_days
+		        , NVL((SELECT SUM(y0.holiday_daycnt)
+		                FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020'
+		                WHERE y0.holiday_clsf = 'HBI012' AND y0.req_psn_syspayno = x1.syspayno AND y0.holiday_start_ymd[1,4] = x1.anal_yr), 0
+		        ) AS use_chd_days
+		        , NVL((SELECT SUM(y0.holiday_daycnt)
+		                FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020'
+		                WHERE y0.holiday_clsf = 'HBI008' AND y0.req_psn_syspayno = x1.syspayno AND y0.holiday_start_ymd[1,4] = x1.anal_yr), 0
+		        ) AS use_sck_days
+		        , NVL(x9.dedct_reward_time, 0) AS dedct_reward_time
+		        , NVL(x9.dedct_anal_time, 0) AS dedct_anal_time
+		        , ROUND(NVL(x1.cryfwd_com_qty,0),5) AS cryfwd_com_cnt
+		    FROM humbasicinfo AS x0
+		    JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno
+		    LEFT JOIN (
+		        SELECT substr(yyyymm,1,4) AS anal_yr, syspayno, sum(dedct_reward_time) AS dedct_reward_time, sum(dedct_anal_time) AS dedct_anal_time
+		            FROM cwsworktimeadlog
+		          GROUP BY 1,2
+		    ) AS x9 ON x9.syspayno = x1.syspayno AND x9.anal_yr = x1.anal_yr
+		    WHERE x0.syspayno = #{syspayno}
+		    AND x1.anal_yr = #{year}
+		)
+   </select>
+   
+   <select id="selectExtWorkInfo" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeSearchVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeStatusVo"> 		
+		SELECT
+		      syspayno
+		    , empnm
+		    , TO_CHAR(basedate, '%Y%m%d') AS basedate
+		    , except_cd
+		    , commute_cd
+		    , work_type
+		    , preiod_label
+		    , target_times
+		    , work_times AS cur_work_tiems
+		    , remain_times AS wll_remain_times
+		    , (extend_min UNITS MINUTE)::INTERVAL HOUR(5) TO MINUTE AS extend_times
+		    , (ctr_extend_min UNITS MINUTE)::INTERVAL HOUR(5) TO MINUTE AS ctr_extend_times
+		    , (mon_comp_sav_min UNITS MINUTE)::INTERVAL HOUR(5) TO MINUTE AS mon_comp_sav_times
+		    , mon_comp_use_times
+		    , wek_comp_use_times
+		    , mon_alt_days
+		    , wek_alt_days
+		    , CASE WHEN commute_cd IN ('HWT030','HWT035','HWT025') THEN wek_comp_use_times ELSE mon_comp_use_times END AS comp_use_times
+		    , CASE WHEN commute_cd IN ('HWT030','HWT035','HWT025') THEN wek_alt_days ELSE mon_alt_days END AS alt_days
+		    , target_times::INTERVAL MINUTE(5) TO MINUTE::VARCHAR(8)::INT AS target_min
+		    , work_times::INTERVAL MINUTE(5) TO MINUTE::VARCHAR(8)::INT AS cur_work_min 
+		    , remain_times::INTERVAL MINUTE(5) TO MINUTE::VARCHAR(8)::INT AS wll_remain_min
+		    , extend_min
+		    , ctr_extend_min
+		    , mon_comp_sav_min 
+		    , mon_comp_use_times::INTERVAL MINUTE(5) TO MINUTE AS mon_comp_use_min 
+		    , wek_comp_use_times::INTERVAL MINUTE(5) TO MINUTE AS wek_comp_use_min 
+		FROM (
+		    SELECT 
+		          x0.syspayno
+		        , x0.empnm  
+		        , x0.basedate
+		        , DECODE( x0.except_cd, 'HWF110', 'HWGX01', 'HWF120', 'HWGX02', x0.except_cd) AS except_cd
+		        , x0.commute_cd
+		        , (CASE WHEN x0.commute_rmk LIKE '%보직자%' THEN '유연근무제' ELSE x0.work_type END) AS work_type
+		        , (CASE WHEN x0.commute_cd IN ('HWT010', 'HWT020') THEN x0.mon_preiod ELSE x0.wek_preiod END) AS preiod_label
+		        , NVL((CASE 
+		            WHEN x0.commute_cd IN ('HWT010', 'HWT020') THEN x0.mon_work_time                      -- 유연근무제
+		            WHEN x0.commute_cd IN ('HWT030','HWT035','HWT025') THEN x0.wek_work_time -- 표준근무제, 시차출퇴근제
+		            WHEN x0.commute_cd IN ('HWT040') THEN x0.mon_work_time                   -- 시간선택제
+		            WHEN x0.commute_cd IN ('HWT050') THEN x0.mon_work_time                   -- 비상근         
+		        END),('0:00')::INTERVAL HOUR(5) TO MINUTE) AS work_times
+		        , NVL((CASE 
+		            WHEN x0.commute_cd IN ('HWT010', 'HWT020') THEN x0.mon_target_time                      -- 유연근무제
+		            WHEN x0.commute_cd IN ('HWT030','HWT035','HWT025') THEN x0.wek_target_time -- 표준근무제, 시차출퇴근제
+		            WHEN x0.commute_cd IN ('HWT040') THEN x0.mon_target_time                   -- 시간선택제
+		            WHEN x0.commute_cd IN ('HWT050') THEN x0.part_time                         -- 비상근         
+		        END),('0:00')::INTERVAL HOUR(5) TO MINUTE) AS target_times
+		        , NVL((CASE 
+		            WHEN x0.commute_cd IN ('HWT010', 'HWT020') THEN x0.remain_days * DECODE( x0.except_cd, 'HWF120', 0, 3) UNITS HOUR::INTERVAL HOUR(5) TO MINUTE  -- 유연근무제
+		            WHEN x0.commute_cd IN ('HWT030','HWT035','HWT025') THEN x0.wek_target_time - DECODE( x0.except_cd, 'HWF120', x0.wek_target_time, x0.wek_work_time)  -- 표준근무제, 시차출퇴근제
+		            WHEN x0.commute_cd IN ('HWT040') THEN x0.mon_target_time - x0.mon_work_time                   -- 시간선택제 
+		            WHEN x0.commute_cd IN ('HWT050') THEN x0.part_time - x0.mon_work_time                         -- 비상근        
+		        END),('0:00')::INTERVAL HOUR(5) TO MINUTE) AS remain_times
+		        , NVL((CASE 
+		            WHEN x0.commute_cd IN ('HWT010', 'HWT020') THEN x0.mon_extend_min                      -- 유연근무제
+		            WHEN x0.commute_cd IN ('HWT030','HWT035','HWT025') THEN x0.wek_extend_min -- 표준근무제, 시차출퇴근제
+		            WHEN x0.commute_cd IN ('HWT040') THEN x0.mon_extend_min                   -- 시간선택제
+		            WHEN x0.commute_cd IN ('HWT050') THEN x0.mon_extend_min                   -- 비상근         
+		          END), 0) AS extend_min
+		        , NVL((CASE 
+		            WHEN x0.commute_cd IN ('HWT010', 'HWT020') THEN x0.mon_ctrext_min                      -- 유연근무제
+		            WHEN x0.commute_cd IN ('HWT030','HWT035','HWT025') THEN x0.wek_ctrext_min -- 표준근무제, 시차출퇴근제
+		            WHEN x0.commute_cd IN ('HWT040') THEN x0.mon_ctrext_min                   -- 시간선택제
+		            WHEN x0.commute_cd IN ('HWT050') THEN x0.mon_ctrext_min                   -- 비상근         
+		          END), 0) AS ctr_extend_min          
+		        , x0.mon_comp_sav_min AS mon_comp_sav_min
+		        , (x0.mon_comp_time * 8 UNITS HOUR)::INTERVAL HOUR(5) TO MINUTE AS mon_comp_use_times
+		        , (x0.wek_comp_time * 8 UNITS HOUR)::INTERVAL HOUR(5) TO MINUTE AS wek_comp_use_times
+		        , x0.mon_alt_days
+		        , x0.wek_alt_days
+		    FROM (
+		       SELECT
+		              x0.syspayno
+		            , x0.empnm
+		            , t0.curdate AS basedate
+		            , ('59:00')::INTERVAL HOUR(5) TO MINUTE AS part_time    -- 비상근 목표시간
+		            , TRIM(TO_CHAR(t0.wstdate, '%Y/%m/%d') || '-' || TO_CHAR(t0.weddate, '%Y/%m/%d')) AS wek_preiod
+		            , TRIM(TO_CHAR(t0.mstdate, '%Y/%m/%d') || '-' || TO_CHAR(t0.meddate, '%Y/%m/%d')) AS mon_preiod
+		            , (SELECT NVL(SUM(y0.holiday_daycnt), 0)
+		               FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.ctr_req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020'
+		               WHERE y0.req_psn_syspayno = x0.syspayno AND y0.holiday_clsf = 'HBI090' AND TO_DATE(TRIM(y0.holiday_start_ymd), '%Y%m%d') BETWEEN t0.mstdate AND t0.meddate
+		              ) AS mon_alt_days
+		            , (SELECT NVL(SUM(y0.holiday_daycnt), 0)
+		               FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.ctr_req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020'
+		               WHERE y0.req_psn_syspayno = x0.syspayno AND y0.holiday_clsf = 'HBI090' AND TO_DATE(TRIM(y0.holiday_start_ymd), '%Y%m%d') BETWEEN t0.wstdate AND t0.weddate
+		              ) AS wek_alt_days
+		            , (SELECT NVL(SUM(y0.holiday_daycnt), 0)
+		               FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.ctr_req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020'
+		               WHERE y0.req_psn_syspayno = x0.syspayno AND y0.holiday_clsf = 'HBI080' AND TO_DATE(TRIM(y0.holiday_start_ymd), '%Y%m%d') BETWEEN t0.mstdate AND t0.meddate
+		              ) AS mon_comp_time
+		            , (SELECT NVL(SUM(y0.holiday_daycnt), 0)
+		               FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.ctr_req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020'
+		               WHERE y0.req_psn_syspayno = x0.syspayno AND y0.holiday_clsf = 'HBI080' AND TO_DATE(TRIM(y0.holiday_start_ymd), '%Y%m%d') BETWEEN t0.wstdate AND t0.weddate
+		              ) AS wek_comp_time
+		            , (SELECT NVL(SUM(rwd_ovr_wk_mm), 0) 
+		               FROM humslmmovrwkmst AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020' 
+		               WHERE y0.syspayno = x0.syspayno AND TO_DATE(y0.work_ymd, '%Y%m%d') BETWEEN t0.mstdate AND t0.meddate
+		              ) AS mon_comp_sav_min
+		            , (SELECT NVL(SUM(ovr_wk_tm + ovr_wk_mm), 0) 
+		               FROM humslmmovrwksub AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020' 
+		               WHERE y0.syspayno = x0.syspayno AND TO_DATE(y0.work_ymd, '%Y%m%d') BETWEEN t0.mstdate AND t0.meddate
+		              ) AS mon_extend_min
+		            , (SELECT NVL(SUM(ovr_wk_tm + ovr_wk_mm), 0) 
+		               FROM humslmmovrwksub AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state <![CDATA[>=]]> 'XAD020' 
+		               WHERE y0.syspayno = x0.syspayno AND TO_DATE(y0.work_ymd, '%Y%m%d') BETWEEN t0.wstdate AND t0.weddate
+		              ) AS wek_extend_min
+		            , (SELECT NVL(SUM(y1.ovr_wk_tm + y1.ovr_wk_mm), 0) 
+		                FROM humslmmovrwkmst AS y0 
+		                JOIN humslmmovrwksub AS y1 ON y1.req_no = y0.req_no AND y0.work_resn_cd IN ('HWR002','HWR003','HWR004')
+		                JOIN xomxintfatab AS y2 ON y2.req_no = y0.req_no AND y2.apr_state <![CDATA[>=]]> 'XAD020'  
+		               WHERE y0.syspayno = x0.syspayno AND TO_DATE(y0.work_ymd, '%Y%m%d') BETWEEN t0.mstdate AND t0.meddate
+		              ) AS mon_ctrext_min
+		            , (SELECT NVL(SUM(y1.ovr_wk_tm + y1.ovr_wk_mm), 0) 
+		                FROM humslmmovrwkmst AS y0 
+		                JOIN humslmmovrwksub AS y1 ON y1.req_no = y0.req_no AND y0.work_resn_cd IN ('HWR002','HWR003','HWR004')
+		                JOIN xomxintfatab AS y2 ON y2.req_no = y0.req_no AND y2.apr_state <![CDATA[>=]]> 'XAD020'  
+		               WHERE y0.syspayno = x0.syspayno AND TO_DATE(y0.work_ymd, '%Y%m%d') BETWEEN t0.wstdate AND t0.weddate
+		              ) AS wek_ctrext_min              
+		            , x3.except_cd
+		            , MAX(DECODE(x0.basedate, t0.meddate, x0.commute_cd, '')) AS commute_cd 
+		            , MAX(DECODE(x0.basedate, t0.meddate, x0.commute_rmk, '')) AS commute_rmk
+		            , MAX(DECODE(x0.basedate, t0.meddate, x1.cd_nm, '')) AS work_type
+		            , SUM(CASE WHEN x0.is_holiday = 'f' AND x0.basedate BETWEEN t0.wstdate AND t0.weddate THEN DECODE( x0.commute_cd, 'HWT040', ('8:00')::INTERVAL HOUR(5) TO MINUTE * 0.5, x0.tgt_time)
+		                       ELSE ('0:00')::INTERVAL HOUR(5) TO MINUTE END 
+		                  ) AS wek_target_time
+		            , SUM(CASE WHEN x0.is_holiday = 'f' AND x0.basedate BETWEEN t0.mstdate AND t0.meddate THEN DECODE( x0.commute_cd, 'HWT040', ('8:00')::INTERVAL HOUR(5) TO MINUTE * 0.5, x0.tgt_time)
+		                       ELSE ('0:00')::INTERVAL HOUR(5) TO MINUTE END 
+		                  ) AS mon_target_time
+		            , SUM(CASE WHEN x2.is_holiday = 'f' AND (x2.basedate BETWEEN t0.curdate +1 UNITS DAY AND t0.meddate) AND (x2.sum_wrk_time IS NULL) THEN 1 ELSE 0 END) AS remain_days
+		            , SUM(CASE WHEN (x2.date_cls LIKE '%근무%' OR x2.is_holwork OR x2.is_ctrwork OR x2.is_extwork) AND (x2.basedate BETWEEN t0.mstdate AND t0.meddate) THEN x2.sum_wrk_time ELSE ('00:00')::INTERVAL HOUR(5) TO MINUTE END) AS mon_work_time
+		            , SUM(CASE WHEN (x2.date_cls LIKE '%근무%' OR x2.is_holwork OR x2.is_ctrwork OR x2.is_extwork) AND (x2.basedate BETWEEN t0.wstdate AND t0.weddate) THEN x2.sum_wrk_time ELSE ('00:00')::INTERVAL HOUR(5) TO MINUTE END) AS wek_work_time
+		        FROM cwshuminfolog AS x0 
+		        JOIN (
+		            SELECT (TO_DATE(#{yyyymmdd}, '%Y%m%d') - WEEKDAY(TO_DATE(#{yyyymmdd}, '%Y%m%d')) UNITS DAY)::DATE AS wstdate
+		                , (TO_DATE(#{yyyymmdd}, '%Y%m%d') + (6 - WEEKDAY(TO_DATE(#{yyyymmdd}, '%Y%m%d'))) UNITS DAY)::DATE AS weddate
+		                , TO_DATE(TO_CHAR(TO_DATE(#{yyyymmdd}, '%Y%m%d'), '%Y%m')||'01', '%Y%m%d')::DATE AS mstdate
+		                , LAST_DAY(TO_DATE(#{yyyymmdd}, '%Y%m%d'))::DATE AS meddate
+		                , (TO_DATE(#{yyyymmdd}, '%Y%m%d'))::DATE AS curdate
+		            FROM sysmaster:sysdual
+		        ) AS t0 ON 1=1
+		        JOIN xodxcommst AS x1 ON x1.cd = x0.commute_cd
+		        LEFT JOIN cwsworktime AS x2 ON x2.syspayno = x0.syspayno AND x2.yyyymm = x0.yyyymm AND x2.basedate = x0.basedate
+		        LEFT JOIN cwsworkexcepts AS x3 ON x3.is_use AND x3.syspayno = x0.syspayno AND t0.curdate BETWEEN x3.start_dt AND x3.close_dt
+		        WHERE x0.yyyymm BETWEEN TO_CHAR(TO_DATE(#{yyyymmdd}, '%Y%m%d') - 1 UNITS MONTH, '%Y%m') AND TO_CHAR(TO_DATE(#{yyyymmdd}, '%Y%m%d') + 1 UNITS MONTH, '%Y%m')
+		        AND x0.syspayno = #{syspayno}
+		        GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+		    ) AS x0
+		)
+   </select>
+   
+   <select id="selectWorksDaysCount" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeSearchVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkDaysVo"> 		
+		SELECT FIRST 1
+		      x0.commute_cd
+		    , x0.work_days
+		    , x0.occutyp_cd
+		    , x0.day_no
+		    , x0.except_cd
+		    , DECODE( x0.occutyp_cd, '170000', ('0:00')::INTERVAL HOUR TO MINUTE, x0.target_core_time) AS target_core_time
+		    , DECODE( x0.occutyp_cd, '170000', ('0:00')::INTERVAL HOUR TO MINUTE, x0.target_flex_time) AS target_flex_time
+		    , NVL( x1.month_work_time, x0.target_core_time + target_flex_time) AS target_total_time
+		    , x0.std_over_time
+		    , x0.rmk
+		FROM (
+		    SELECT 
+		          x0.syspayno
+		        , x0.occutyp_cd
+		        , x0.commute_cd
+		        , MAX(x2.cause_rmk) AS rmk
+		        , MAX(x2.day_no) AS day_no
+		        , MAX(x2.except_cd) AS except_cd
+		        , SUM( CASE WHEN '170000' = x0.occutyp_cd   THEN (3 UNITS HOUR)::INTERVAL HOUR TO MINUTE * 0.5  -- 시간선택제: 50%
+		                    WHEN 'HWF110' = x2.except_cd AND x0.basedate BETWEEN x2.start_dt AND x2.close_dt THEN (3 UNITS HOUR)::INTERVAL HOUR TO MINUTE    -- 임산부: 동일
+		                    WHEN 'HWF120' = x2.except_cd AND x0.basedate BETWEEN x2.start_dt AND x2.close_dt THEN x0.tgt_time * 0.375  -- 임금피크제: 
+		                    WHEN 'HWF130' = x2.except_cd AND x0.basedate BETWEEN x2.start_dt AND x2.close_dt THEN (DECODE( x3.day_no, NVL(x2.day_no, 9), 0, 3)  UNITS HOUR)::INTERVAL HOUR TO MINUTE  -- 단축근무 : 학위수학
+		                    ELSE (3 UNITS HOUR)::INTERVAL HOUR TO MINUTE END) AS target_core_time
+		        , SUM( CASE WHEN '170000' = x0.occutyp_cd   THEN (5 UNITS HOUR)::INTERVAL HOUR TO MINUTE * 0.5  -- 시간선택제: 50%
+		                    WHEN 'HWF110' = x2.except_cd AND x0.basedate BETWEEN x2.start_dt AND x2.close_dt THEN x0.tgt_time - (3 UNITS HOUR)::INTERVAL HOUR TO MINUTE   -- 임산부: 1~2시간 제외
+		                    WHEN 'HWF120' = x2.except_cd AND x0.basedate BETWEEN x2.start_dt AND x2.close_dt THEN x0.tgt_time * 0.625  -- 임금피크제:
+		                    WHEN 'HWF130' = x2.except_cd AND x0.basedate BETWEEN x2.start_dt AND x2.close_dt THEN x0.tgt_time - (DECODE( x3.day_no, NVL(x2.day_no, 9), 0, 3)  UNITS HOUR)::INTERVAL HOUR TO MINUTE  -- 단축근무 : 학위수학
+		                    ELSE (5 UNITS HOUR)::INTERVAL HOUR TO MINUTE END) AS target_flex_time
+		        , COUNT(*) AS work_days
+		        , SUM(DECODE( x1.is_extwork, 't', x1.over_am_time + x1.over_pm_time, ('0:00')::INTERVAL HOUR TO MINUTE))AS std_over_time
+		    FROM cwshuminfolog AS x0 
+		    LEFT JOIN cwsworktime AS x1 ON x1.syspayno = x0.syspayno AND x1.yyyymm = x0.yyyymm AND x1.basedate = x0.basedate
+		    LEFT JOIN xomdtmst AS x3 ON x3.ymd = TO_CHAR(x0.basedate, '%Y%m%d') 
+		    LEFT JOIN cwsworkexcepts AS x2 ON x2.is_use AND is_excepts = 'f' AND x2.syspayno = x0.syspayno AND x0.basedate BETWEEN x2.start_dt AND x2.close_dt
+		    WHERE x0.is_target
+		    AND x0.is_holiday = 'f'
+		    AND x0.yyyymm = #{yyyymm}
+		    AND x0.syspayno = #{syspayno}
+		    AND x0.commute_rmk NOT LIKE '%휴직%'
+		    GROUP BY 1,2,3
+		    ) AS x0 LEFT JOIN (
+		        SELECT FIRST 1 
+		            x0.month_work_time * 60 UNITS MINUTE::INTERVAL HOUR(5) TO MINUTE AS month_work_time
+		            , x0.syspayno, x0.occutyp_cd
+		        FROM humrctbasinfo AS x0 
+		            JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+		        WHERE x0.syspayno = #{syspayno}
+		        AND x0.occutyp_cd = '310000'
+		        AND x1.apr_state = 'XAD100'
+		        ORDER BY x0.req_no DESC
+		    ) AS x1 ON x1.syspayno = x0.syspayno AND x1.occutyp_cd = x0.occutyp_cd
+		ORDER BY except_cd DESC
+   </select>
+
+   <select id="selectSmryWorkTime" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeSearchVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsSmryWorkTimeVo"> 		
+		SELECT
+		      FIRST 1
+		      empnm
+		    , commute_cd
+		    , basedate
+		    , work_days
+		    , bsic_times
+		    , over_times
+		    , core_times
+		    , flex_times
+		    , CASE WHEN commute_cd IN ('HWT030','HWT035','HWT025') THEN bsic_times + over_times ELSE core_times + flex_times END AS total_times
+		FROM (
+		    SELECT 
+		          x0.empnm
+		        , x0.commute_cd
+		        , MAX( x0.basedate) AS basedate
+		        , SUM(CASE WHEN x0.is_holiday = 'f' AND x1.basedate BETWEEN stdate AND cldate THEN 1 ELSE 0 END) AS work_days
+		        , NVL( SUM(x1.basic_am_time), ('0:00')::INTERVAL HOUR TO MINUTE) + NVL( SUM(x1.basic_pm_time), ('0:00')::INTERVAL HOUR TO MINUTE) AS bsic_times
+		        , NVL( SUM(x1.over_am_time), ('0:00')::INTERVAL HOUR TO MINUTE) + NVL( SUM(x1.over_pm_time), ('0:00')::INTERVAL HOUR TO MINUTE) AS over_times
+		        , NVL( SUM(x1.core_am_time), ('0:00')::INTERVAL HOUR TO MINUTE) + NVL( SUM(x1.core_pm_time), ('0:00')::INTERVAL HOUR TO MINUTE) AS core_times
+		        , NVL( SUM(x1.flex_am_time), ('0:00')::INTERVAL HOUR TO MINUTE) + NVL( SUM(x1.flex_pm_time), ('0:00')::INTERVAL HOUR TO MINUTE) + NVL( SUM(x1.flex_nt_time), ('0:00')::INTERVAL HOUR TO MINUTE) AS flex_times
+		    FROM cwshuminfolog AS x0
+		    JOIN (
+		        SELECT TO_DATE(#{yyyymm} || '01', '%Y%m%d')::DATE AS stdate
+		             , CASE WHEN LAST_DAY(TO_DATE(#{yyyymm} ||'01', '%Y%m%d'))::DATE <![CDATA[<]]> (TODAY -1 UNITS DAY)::DATE THEN LAST_DAY(TO_DATE(#{yyyymm} ||'01', '%Y%m%d'))::DATE ELSE (TODAY -1 UNITS DAY)::DATE END AS cldate
+		        FROM sysmaster:sysdual
+		    ) AS t0 ON 1=1 
+		    LEFT JOIN cwsworktime AS x1 ON x1.syspayno = x0.syspayno AND x0.yyyymm = x1.yyyymm AND x0.basedate = x1.basedate
+		    WHERE x0.yyyymm = #{yyyymm}
+		    AND x0.syspayno = #{syspayno}
+		    GROUP BY 1,2
+		)
+		ORDER BY basedate DESC
+   </select>
+
+   <select id="selectStdDtlWorkTime" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeSearchVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeDetailVo"> 		
+		SELECT 
+		      basic_am_time + basic_pm_time - basic_revision_time AS sum_basic_time
+		    , over_am_time + over_pm_time AS sum_over_time
+		    , basic_am_time + basic_pm_time + over_am_time + over_pm_time - basic_revision_time AS sum_sub_time
+		    , ctr_local_time
+		    , ctr_dome_time
+		    , ctr_over_time
+		    , full_vacation_time
+		    , half_vacation_time
+		    , basic_am_time + basic_pm_time + over_am_time + over_pm_time AS sum_total_time
+		FROM (
+		    SELECT 
+		          w.syspayno
+		        , w.yyyymm
+		        , NVL(SUM(w.over_am_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS over_am_time
+		        , NVL(SUM(w.basic_am_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS basic_am_time
+		        , NVL(SUM(w.basic_pm_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS basic_pm_time
+		        , NVL(SUM(w.over_pm_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS over_pm_time
+		        , SUM(CASE WHEN w.date_cls LIKE '%시간제연차%' OR w.date_cls LIKE '%임산부정기건강진단%' OR w.trip_cls = '근거리출장'
+		                    THEN NVL(w.ex_core_time, ('0:00')::INTERVAL HOUR TO MINUTE) + NVL(w.lc_core_time, ('0:00')::INTERVAL HOUR TO MINUTE) 
+		                        + NVL(w.ex_flex_time, ('0:00')::INTERVAL HOUR TO MINUTE) + NVL(w.lc_flex_time, ('0:00')::INTERVAL HOUR TO MINUTE) 
+		                   WHEN (w.date_cls LIKE '%경조%' OR w.date_cls LIKE '%연차%' OR w.date_cls LIKE '%병가%' OR w.date_cls LIKE '%공가%' 
+		                     OR w.date_cls LIKE '%배우자출산%' OR w.date_cls LIKE '%산전/산후휴가%' OR w.date_cls LIKE '%자녀돌봄휴가%'
+		                     OR w.date_cls LIKE '%무급휴가%' OR w.date_cls LIKE '%입양휴가%' OR w.date_cls LIKE '%건강검진%' OR w.date_cls LIKE '%유산/사산휴가%' 
+		                     OR w.date_cls LIKE '%난임휴가%' OR w.date_cls LIKE '%여성보건%' OR w.date_cls LIKE '%퇴직휴가%' OR w.date_cls LIKE '%보상휴가%'
+		                     OR w.trip_cls IN ('근거리출장','국내출장','해외출장')) AND w.date_cls NOT LIKE '%시간제연차%' 
+		                   THEN ('8:00')::INTERVAL HOUR TO MINUTE ELSE ('0:00')::INTERVAL HOUR(5) TO MINUTE END
+		            ) AS basic_revision_time
+		        , SUM(DECODE(w.trip_cls,'근거리출장', NVL(w.lc_core_time, ('0:00')::INTERVAL HOUR TO MINUTE) + NVL(lc_flex_time, ('0:00')::INTERVAL HOUR TO MINUTE), ('0:00')::INTERVAL HOUR(5) TO MINUTE)) AS ctr_local_time
+		        , SUM(DECODE(w.trip_cls,'국내출장', ('8:00')::INTERVAL HOUR(5) TO MINUTE, ('0:00')::INTERVAL HOUR(5) TO MINUTE)) AS ctr_dome_time
+		        , SUM(DECODE(w.trip_cls,'해외출장', ('8:00')::INTERVAL HOUR(5) TO MINUTE, ('0:00')::INTERVAL HOUR(5) TO MINUTE)) AS ctr_over_time
+		        , SUM(CASE WHEN (w.date_cls LIKE '%경조%' OR w.date_cls LIKE '%연차%' OR w.date_cls LIKE '%병가%' OR w.date_cls LIKE '%공가%' 
+		                     OR w.date_cls LIKE '%배우자출산%' OR w.date_cls LIKE '%산전/산후휴가%' OR w.date_cls LIKE '%자녀돌봄휴가%'
+		                     OR w.date_cls LIKE '%무급휴가%' OR w.date_cls LIKE '%입양휴가%' OR w.date_cls LIKE '%건강검진%' OR w.date_cls LIKE '%유산/사산휴가%' 
+		                     OR w.date_cls LIKE '%난임휴가%' OR w.date_cls LIKE '%여성보건%' OR w.date_cls LIKE '%퇴직휴가%' OR w.date_cls LIKE '%보상휴가%')
+		                     AND w.date_cls NOT LIKE '%시간제연차%'
+		                   THEN ('8:00')::INTERVAL HOUR(5) TO MINUTE ELSE ('0:00')::INTERVAL HOUR(5) TO MINUTE END) AS full_vacation_time
+		        , SUM(CASE WHEN w.date_cls LIKE '%시간제연차%' OR w.date_cls LIKE '%임산부정기건강진단%'
+		                   THEN NVL(w.ex_core_time, ('0:00')::INTERVAL HOUR(5) TO MINUTE) + NVL(w.ex_flex_time, ('0:00')::INTERVAL HOUR(5) TO MINUTE) ELSE ('0:00')::INTERVAL HOUR(5) TO MINUTE END) AS half_vacation_time
+		    FROM imis.cwsworktime AS w
+		    JOIN imis.xomdtmst AS x ON x.ymd = TO_CHAR(w.basedate, '%Y%m%d')
+		    WHERE (w.is_holiday = 'f' OR (w.is_holiday = 't' AND (w.is_extwork = 't' OR  w.is_ctrwork = 't')))
+		    AND w.syspayno = #{syspayno}
+		    AND w.yyyymm = #{yyyymm}
+		    GROUP BY 1,2
+		)
+   </select>
+
+   <select id="selectFlxDtlWorkTime" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeSearchVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeDetailFlexVo"> 		
+		SELECT 
+		      core_am_time + core_pm_time - core_revision_time AS sum_core_time
+		    , flex_am_time + flex_pm_time + flex_nt_time - flex_revision_time AS sum_flex_time
+		    , flex_am_time + core_am_time + core_pm_time + flex_pm_time + flex_nt_time - core_revision_time - flex_revision_time AS sum_sub_time
+		    , ctr_local_time
+		    , ctr_dome_time
+		    , ctr_over_time
+		    , full_vacation_time
+		    , half_vacation_time
+		    , flex_am_time + core_am_time + core_pm_time + flex_pm_time + flex_nt_time AS sum_total_time
+		FROM (
+		    SELECT
+		          w.syspayno
+		        , w.yyyymm
+		        , NVL(SUM( w.flex_am_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS flex_am_time
+		        , NVL(SUM( w.core_am_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS core_am_time
+		        , NVL(SUM( w.core_pm_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS core_pm_time
+		        , NVL(SUM( w.flex_pm_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS flex_pm_time
+		        , NVL(SUM( w.flex_nt_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS flex_nt_time
+		        , NVL(SUM( w.over_am_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS over_am_time
+		        , NVL(SUM( w.over_pm_time), ('0:00')::INTERVAL HOUR(5) TO MINUTE) AS over_pm_time
+		        , SUM(CASE WHEN w.date_cls LIKE '%시간제연차%' OR w.date_cls LIKE '%임산부정기건강진단%' OR w.trip_cls = '근거리출장'
+		                    THEN NVL(w.ex_core_time, ('0:00')::INTERVAL HOUR TO MINUTE) + NVL(w.lc_core_time, ('0:00')::INTERVAL HOUR TO MINUTE)
+		                   WHEN (w.date_cls LIKE '%경조%' OR w.date_cls LIKE '%연차%' OR w.date_cls LIKE '%병가%' OR w.date_cls LIKE '%공가%'  
+		                     OR w.date_cls LIKE '%배우자출산%' OR w.date_cls LIKE '%산전/산후휴가%' OR w.date_cls LIKE '%자녀돌봄휴가%'
+		                     OR w.date_cls LIKE '%무급휴가%' OR w.date_cls LIKE '%입양휴가%' OR w.date_cls LIKE '%건강검진%' OR w.date_cls LIKE '%유산/사산휴가%' 
+		                     OR w.date_cls LIKE '%난임휴가%' OR w.date_cls LIKE '%여성보건%' OR w.date_cls LIKE '%퇴직휴가%' OR w.date_cls LIKE '%보상휴가%'
+		                     OR w.trip_cls IN ('근거리출장','국내출장','해외출장')) AND w.date_cls NOT LIKE '%시간제연차%' 
+		                    THEN ('3:00')::INTERVAL HOUR TO MINUTE ELSE ('0:00')::INTERVAL HOUR(5) TO MINUTE END
+		          ) AS core_revision_time
+		        , SUM(CASE WHEN w.date_cls LIKE '%시간제연차%' OR w.date_cls LIKE '%임산부정기건강진단%' OR w.trip_cls = '근거리출장'
+		                    THEN NVL(w.ex_flex_time, ('0:00')::INTERVAL HOUR TO MINUTE) + NVL(w.lc_flex_time, ('0:00')::INTERVAL HOUR TO MINUTE) 
+		                   WHEN (w.date_cls LIKE '%경조%' OR w.date_cls LIKE '%연차%' OR w.date_cls LIKE '%병가%' OR w.date_cls LIKE '%공가%' 
+		                     OR w.date_cls LIKE '%배우자출산%' OR w.date_cls LIKE '%산전/산후휴가%' OR w.date_cls LIKE '%자녀돌봄휴가%'
+		                     OR w.date_cls LIKE '%무급휴가%' OR w.date_cls LIKE '%입양휴가%' OR w.date_cls LIKE '%건강검진%' OR w.date_cls LIKE '%유산/사산휴가%' 
+		                     OR w.date_cls LIKE '%난임휴가%' OR w.date_cls LIKE '%여성보건%' OR w.date_cls LIKE '%퇴직휴가%' OR w.date_cls LIKE '%보상휴가%'
+		                     OR w.trip_cls IN ('근거리출장','국내출장','해외출장')) AND w.date_cls NOT LIKE '%시간제연차%' 
+		                   THEN ('5:00')::INTERVAL HOUR TO MINUTE ELSE ('0:00')::INTERVAL HOUR(5) TO MINUTE END
+		          ) AS flex_revision_time
+		        , SUM(DECODE(w.trip_cls,'근거리출장', NVL(w.lc_core_time, ('0:00')::INTERVAL HOUR TO MINUTE) + NVL(lc_flex_time, ('0:00')::INTERVAL HOUR TO MINUTE), ('0:00')::INTERVAL HOUR(5) TO MINUTE)) AS ctr_local_time
+		        , SUM(DECODE(w.trip_cls,'국내출장', ('8:00')::INTERVAL HOUR(5) TO MINUTE, ('0:00')::INTERVAL HOUR(5) TO MINUTE)) AS ctr_dome_time
+		        , SUM(DECODE(w.trip_cls,'해외출장', ('8:00')::INTERVAL HOUR(5) TO MINUTE, ('0:00')::INTERVAL HOUR(5) TO MINUTE)) AS ctr_over_time
+		        , SUM(CASE WHEN (w.date_cls LIKE '%경조%' OR w.date_cls LIKE '%연차%' OR w.date_cls LIKE '%병가%' OR w.date_cls LIKE '%공가%' 
+		                     OR w.date_cls LIKE '%배우자출산%' OR w.date_cls LIKE '%산전/산후휴가%' OR w.date_cls LIKE '%자녀돌봄휴가%'
+		                     OR w.date_cls LIKE '%무급휴가%' OR w.date_cls LIKE '%입양휴가%' OR w.date_cls LIKE '%건강검진%' OR w.date_cls LIKE '%유산/사산휴가%' 
+		                     OR w.date_cls LIKE '%난임휴가%' OR w.date_cls LIKE '%여성보건%' OR w.date_cls LIKE '%퇴직휴가%' OR w.date_cls LIKE '%보상휴가%')
+		                     AND w.date_cls NOT LIKE '%시간제연차%'
+		                   THEN ('8:00')::INTERVAL HOUR(5) TO MINUTE ELSE ('0:00')::INTERVAL HOUR(5) TO MINUTE END) AS full_vacation_time
+		        , SUM(CASE WHEN w.date_cls LIKE '%시간제연차%' OR w.date_cls LIKE '%임산부정기건강진단%'
+		                   THEN w.ex_core_time + w.ex_flex_time ELSE ('0:00')::INTERVAL HOUR(5) TO MINUTE END) AS half_vacation_time
+		    FROM imis.cwsworktime AS w
+		    WHERE (w.is_holiday = 'f' OR (w.is_holiday = 't' AND (w.is_extwork = 't' OR  w.is_ctrwork = 't')))
+		    AND w.syspayno = #{syspayno}
+		    AND w.yyyymm = #{yyyymm}
+		    GROUP BY 1,2
+		)
+   </select>
+
+   <select id="selectStdWorkTimes" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeSearchVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeDaysVo"> 		
+		SELECT 
+		      w.syspayno
+		    , TO_CHAR(w.basedate, '%Y%m%d') AS base_ymd 
+		    , TO_CHAR(w.basedate, '%m월 %d일') || ' (' || x.day || ')' AS base_date
+		    , TO_CHAR(CASE WHEN w.extra_st_dt IS NOT NULL THEN w.extra_st_dt ELSE w.valid_st_dt END, '%d%H%M') AS attend_at
+		    , TO_CHAR(CASE WHEN w.extra_ed_dt IS NOT NULL THEN w.extra_ed_dt ELSE w.valid_ed_dt END, '%d%H%M') AS leave_at
+		    , w.date_cls || (CASE WHEN w.date_cls !='' AND w.trip_cls != '' THEN ',' ELSE '' END) || w.trip_cls AS work_type
+		    , w.off_rmk
+		    , (CASE WHEN is_extwork AND is_holiday THEN w.sum_wrk_time - NVL(w.basic_nt_time, 0 UNITS MINUTE)
+		       ELSE w.sum_wrk_time + NVL(w.over_am_time, 0 UNITS MINUTE) + NVL(w.over_pm_time,0 UNITS MINUTE) END) AS sum_wrk_time
+		    , w.over_am_time
+		    , w.basic_am_time
+		    , w.basic_pm_time
+		    , w.over_pm_time
+		    , w.is_holwork
+		    , w.is_ctrwork
+		    , w.is_extwork
+		    , w.is_holiday
+		    , w.modify_kind
+		FROM imis.cwsworktime AS w
+		JOIN imis.xomdtmst AS x ON x.ymd = TO_CHAR(w.basedate, '%Y%m%d')
+		WHERE w.syspayno = #{syspayno}
+		AND w.yyyymm = #{yyyymm}
+   </select>
+
+   <select id="selectFlxWorkTimes" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeSearchVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsWorkTimeDaysFlexVo"> 		
+		SELECT
+		      w.syspayno
+		    , w.yyyymm
+		    , w.basedate
+		    , TO_CHAR(w.basedate, '%Y%m%d') AS base_ymd 
+		    , TO_CHAR(w.basedate, '%m월 %d일') || ' (' || x.day || ')' AS base_date
+		    , TO_CHAR(w.valid_st_dt, '%d%H%M') AS attend_at
+		    , TO_CHAR(w.valid_ed_dt, '%d%H%M') AS leave_at
+		    , w.date_cls || (CASE WHEN w.date_cls !='' AND w.trip_cls != '' THEN ',' ELSE '' END) ||  w.trip_cls AS work_type
+		    , w.off_rmk
+		    , w.sum_wrk_time
+		    , w.flex_am_time
+		    , w.core_am_time
+		    , w.core_pm_time
+		    , w.flex_pm_time
+		    , w.flex_nt_time
+		    , w.over_am_time
+		    , w.over_pm_time
+		    , w.is_xstsbrk
+		    , w.is_holwork
+		    , w.is_ctrwork
+		    , w.is_extwork
+		    , w.is_holiday
+		    , w.modify_kind
+		    , MAX(CASE WHEN t.rest_type = 'AMFLEX' THEN ('0:00')::INTERVAL HOUR TO MINUTE +t.term_time UNITS MINUTE ELSE NULL END) AS flex_am_rest
+		    , MAX(CASE WHEN t.rest_type = 'PMFLEX' THEN ('0:00')::INTERVAL HOUR TO MINUTE +t.term_time UNITS MINUTE ELSE NULL END) AS flex_pm_rest
+		    , MAX(CASE WHEN t.rest_type = 'NTFLEX' THEN ('0:00')::INTERVAL HOUR TO MINUTE +t.term_time UNITS MINUTE ELSE NULL END) AS flex_nt_rest
+		FROM cwsworktime AS w
+		JOIN xomdtmst AS x ON x.ymd = TO_CHAR(w.basedate, '%Y%m%d')
+		LEFT JOIN cwsresttime AS t ON t.syspayno = w.syspayno AND t.yyyymm = w.yyyymm AND t.basedate = w.basedate
+		WHERE w.syspayno = #{syspayno}
+		AND w.yyyymm = #{yyyymm}
+		GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23
+		ORDER BY w.basedate
+   </select>
+
+</mapper>

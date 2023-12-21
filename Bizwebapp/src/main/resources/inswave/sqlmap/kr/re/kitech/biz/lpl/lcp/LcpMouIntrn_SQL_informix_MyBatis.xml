@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.lpl.lcp">
+  <select id="selectLcpMouIntrn" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouIntrnVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouIntrnVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouIntrnMS03 국제협약 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpMouIntrn */ 
+    mou_no, mou_schdl_ymd, mou_natn, mou_natn_nm, mou_fild, mou_fild_nm, mou_knd, mou_knd_nm,
+    contrct_agncy, contrct_goal, mou_subj, mou_goal, mou_contnt, charg_syspayno,
+    rmk, attach_file_no, contrct_state, contrct_state_nm, mou_contrct_ymd,
+    mou_cls_ymd, --agncy_clsf, 
+    agncy_clsf_nm, krchar_agncy_nm, 
+    contrct_goal_nm1, contrct_goal_nm2, contrct_goal_nm3, contrct_goal_nm4,
+    goal_count, contrct_syspayno, contrct_psn_nm
+from
+    (
+    select
+        a.mou_no
+        ,a.mou_schdl_ymd
+        ,a.mou_natn
+        ,fun_xodxcommst_cd_nm(a.mou_natn, 0) as mou_natn_nm
+        ,a.mou_fild
+        ,fun_xodxcommst_cd_nm(a.mou_fild, 0) as mou_fild_nm
+        ,a.mou_knd
+        ,fun_xodxcommst_cd_nm(a.mou_knd, 0) as mou_knd_nm
+        ,a.contrct_agncy
+        ,a.contrct_goal
+        ,a.mou_subj
+        ,a.mou_goal
+        ,a.mou_contnt
+        ,a.charg_syspayno
+        ,a.rmk
+        ,a.attach_file_no          
+        ,a.contrct_state
+        ,fun_xodxcommst_cd_nm(a.contrct_state, 0) as contrct_state_nm
+        ,a.mou_contrct_ymd
+        ,a.mou_cls_ymd        
+        --,b.agncy_clsf
+        --,fun_xodxcommst_cd_nm(b.agncy_clsf, 0) as agncy_clsf_nm
+        --,nvl(b.cmpy_nm_krchar, ' ') as krchar_agncy_nm
+        ,case when length(a.contrct_goal) = 6 then fun_xodxcommst_cd_nm(a.contrct_goal, 0) end as contrct_goal_nm1
+        ,case when length(a.contrct_goal) = 13 then fun_xodxcommst_cd_nm(trim(substr(a.contrct_goal, 0, 7)), 0)||","||fun_xodxcommst_cd_nm(trim(substr(a.contrct_goal, 7, 7)), 0) end as contrct_goal_nm2
+        , case when length(a.contrct_goal) = 20 then fun_xodxcommst_cd_nm(trim(substr(a.contrct_goal, 0, 7)), 0)||","||fun_xodxcommst_cd_nm(trim(substr(a.contrct_goal, 7, 7)), 0)||","||fun_xodxcommst_cd_nm(trim(substr(a.contrct_goal, 14, 7)), 0) end as contrct_goal_nm3
+        , case when length(a.contrct_goal) = 27  then fun_xodxcommst_cd_nm(a.contrct_goal, 0)||","||fun_xodxcommst_cd_nm(trim(substr(a.contrct_goal, 7, 7)), 0)||","||fun_xodxcommst_cd_nm(trim(substr(a.contrct_goal, 14, 7)), 0)||","||fun_xodxcommst_cd_nm(trim(substr(a.contrct_goal, 21, 7)), 0) end as contrct_goal_nm4
+        ,length(a.contrct_goal) as goal_count
+        --,nvl(b.cmpy_nm_eng, ' ') as cmpy_nm_eng
+        ,fun_get_mou_agncy_list( a.mou_no, 'OVR', 'NM' ) as krchar_agncy_nm
+        ,fun_get_mou_agncy_list( a.mou_no, 'OVR', 'GU' )  as agncy_clsf_nm
+        ,a.rmk
+        ,a.contrct_syspayno
+        ,a.contrct_psn_nm
+    FROM lcpmouintrn a
+    WHERE   1=1
+    AND a.mou_contrct_ymd between #{mou_contrct_ymd1} AND #{mou_contrct_ymd2}
+    AND a.mou_subj  LIKE #{mou_subj}
+    AND a.mou_knd    LIKE DECODE(#{mou_knd},'','%',#{mou_knd})
+    and a.mou_natn LIKE DECODE(#{contry_cd},'','%',#{contry_cd})
+    and a.contrct_state LIKE DECODE(#{contract_state},'','%',#{contract_state})
+    )
+where 1=1
+AND mou_no in (SELECT distinct a.mou_no
+               FROM lcpmoudomagency a,
+                    (SELECT cust_no, cmpy_nm_krchar, agncy_clsf, cmpy_nm_eng
+                     FROM sptcustbaseinfo
+                    ) c
+               where a.agncy_cd = c.cust_no
+               AND(c.cmpy_nm_eng like #{cmpy_nm_eng} or c.cmpy_nm_krchar like #{cmpy_nm_krchar})
+               )
+ORDER BY mou_contrct_ymd desc, mou_subj
+  </select>
+  <select id="selectLcpMouIntrnDetail" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouIntrnVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouIntrnVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouIntrnMS01 국제협약체결정보 신청 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpMouIntrnDetail */ 
+     mou_no ,
+     mou_schdl_ymd ,
+     mou_natn ,
+     mou_goal ,
+     mou_fild ,
+     mou_knd ,
+     contrct_agncy ,
+     contrct_goal ,
+     mou_subj ,
+     mou_contnt ,
+     attach_file_no ,
+     rmk ,
+     contrct_psn_dept_cd ,
+     contrct_psn_dept_new_ymd ,
+     contrct_psn_dept_nm ,
+     contrct_psn_posi_nm ,
+     contrct_syspayno ,
+     contrct_psn_nm ,
+     charg_syspayno ,
+     charg_nm ,
+     contrct_state ,
+     mou_contrct_ymd ,
+     mou_cls_ymd 
+from lcpmouintrn
+where 1=1
+and mou_no = #{mou_no}
+  </select>
+  <select id="selectLcpMouDomAgency" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouDomAgencyVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouDomAgencyVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouDomAgencyMS01 국내협약긴관정보조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpMouDomAgency */ 
+		 a.mou_no, a.agncy_cd , c.cmpy_nm_krchar, a.contrct_psn_duty, c.agncy_clsf,
+       fun_xodxcommst_cd_nm(c.agncy_clsf, 0) as agncy_clsf_nm,
+       a.contrct_psn_nm, a.charg_nm, a.charg_dept_nm, a.charg_tel, a.mou_knd
+FROM   lcpmoudomagency a LEFT JOIN (SELECT cust_no, cmpy_nm_krchar, agncy_clsf
+      FROM sptcustbaseinfo)c
+     ON a.agncy_cd = c.cust_no
+WHERE  1=1
+AND    mou_no = #{mou_no}
+ORDER by c.cmpy_nm_krchar
+  </select>
+  <select id="selectLcpMouAfact" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouAfactVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouAfactVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouAfactMS01 국제협약사후관리조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpMouAfact */ 
+		       mou_no
+            ,odr
+            ,occr_ymd
+            ,contnt
+            ,regst_psn_syspayno
+            ,regst_daytm
+            ,updt_psn_syspayno
+            ,updt_daytm
+FROM        lcpmouintrnaftr
+WHERE       1=1
+AND         mou_no = #{mou_no}
+  </select>
+  <insert id="insertLcpMouIntrn" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouIntrnVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouIntrnSI01 국제협약체결정보 신청 등록 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lcp.insertLcpMouIntrn */ 
+		 INTO lcpmouintrn
+(
+     mou_no
+    ,mou_schdl_ymd
+    ,mou_natn
+    ,mou_fild
+    ,mou_knd
+    ,contrct_agncy
+    ,contrct_goal
+    ,mou_subj
+    ,mou_goal
+    ,mou_contnt
+    ,charg_syspayno
+    ,contrct_psn_dept_cd
+    ,contrct_psn_dept_new_ymd
+    ,contrct_psn_dept_nm
+    ,contrct_psn_posi_nm
+    ,contrct_syspayno
+    ,contrct_psn_nm
+    ,rmk
+    ,attach_file_no
+    ,contrct_state
+    ,mou_contrct_ymd
+    ,mou_cls_ymd
+    ,regst_psn_syspayno
+    ,regst_daytm 
+) 
+VALUES ( #{mou_no}, #{mou_schdl_ymd}, #{mou_natn}, #{mou_fild}, #{mou_knd}, #{contrct_agncy}, #{contrct_goal}, #{mou_subj}, #{mou_goal}, #{mou_contnt}, #{charg_syspayno}, #{contrct_psn_dept_cd}, #{contrct_psn_dept_new_ymd}, #{contrct_psn_dept_nm}, #{contrct_psn_posi_nm}, #{contrct_syspayno}, #{contrct_psn_nm}, #{rmk}, #{attach_file_no}, #{contrct_state}, #{mou_contrct_ymd}, #{mou_cls_ymd}, #{regst_psn_syspayno},sysdate)
+  </insert>
+  <update id="updateLcpMouIntrn" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouIntrnVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouIntrnSU01 국제협약관리수정*/
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lcp.updateLcpMouIntrn */ 
+		 lcpmouintrn 
+set
+     mou_schdl_ymd= #{mou_schdl_ymd},
+     mou_goal= #{mou_goal},
+     mou_fild= #{mou_fild},
+     mou_knd= #{mou_knd},
+     contrct_agncy= #{contrct_agncy},
+     contrct_goal= #{contrct_goal},
+     mou_subj= #{mou_subj},
+     mou_contnt= #{mou_contnt},
+     attach_file_no= #{attach_file_no},
+     rmk= #{rmk},
+     contrct_psn_dept_cd= #{contrct_psn_dept_cd},
+     contrct_psn_dept_new_ymd= #{contrct_psn_dept_new_ymd},
+     contrct_psn_dept_nm= #{contrct_psn_dept_nm},
+     contrct_psn_posi_nm= #{contrct_psn_posi_nm},
+     contrct_syspayno= #{contrct_syspayno},
+     contrct_psn_nm= #{contrct_psn_nm},
+     charg_syspayno= #{charg_syspayno},
+     charg_nm= #{charg_nm},
+     contrct_state= #{contrct_state},
+     mou_contrct_ymd= #{mou_contrct_ymd},
+     mou_cls_ymd= #{mou_cls_ymd},
+     updt_psn_syspayno= #{updt_psn_syspayno},
+     updt_daytm=sysdate
+WHERE 1=1
+AND  mou_no = #{mou_no}
+  </update>
+  <delete id="deleteLcpMouIntrn" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouIntrnVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouIntrnSD01 국제협약관리삭제 단건*/
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lcp.deleteLcpMouIntrn */ 
+		     lcpmouintrn
+WHERE 1=1
+AND mou_no = #{mou_no}
+  </delete>
+  <delete id="deleteLcpMouAfcIntrn" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouIntrnVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouAfactSD01 국제협약사후관리업데이트 단건*/
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lcp.deleteLcpMouAfcIntrn */ 
+		    lcpmouintrnaftr
+WHERE      1=1
+AND        mou_no = #{mou_no}
+<if test="afc_del_odr != null and afc_del_odr != ''">
+AND        odr = #{afc_del_odr}
+</if>
+  </delete>
+  <insert id="insertLcpMouAfact" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouAfactVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouAfactSI01 국제협약사후관리등록 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lcp.insertLcpMouAfact */ 
+		 INTO    lcpmouintrnaftr
+(            mou_no
+            ,odr
+            ,occr_ymd
+            ,contnt
+            ,regst_psn_syspayno
+            ,regst_daytm
+)
+VALUES(#{mou_no}, (select nvl(max(odr),0)+1 from lcpmouintrnaftr where mou_no = #{mou_no}), #{occr_ymd}, #{contnt}, #{regst_psn_syspayno}, sysdate)
+  </insert>
+  <update id="updateLcpMouAfact" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouAfactVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouAfactSU01 국제협약사후관리업데이트 단건*/
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lcp.updateLcpMouAfact */ 
+		      lcpmouintrnaftr
+SET         occr_ymd = #{occr_ymd}
+           ,contnt = #{contnt}
+           ,updt_psn_syspayno = #{updt_psn_syspayno}
+           ,updt_daytm = sysdate
+WHERE      1=1
+AND        mou_no = #{mou_no}
+AND        odr = #{odr}
+  </update>
+  <delete id="deleteLcpMouAgyIntrn" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouIntrnVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouDomAgencySD01 국내협약긴관정보삭제 단건*/
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lcp.deleteLcpMouAgyIntrn */ 
+		 lcpmoudomagency
+WHERE 1=1
+AND   mou_no = #{mou_no}
+<if test="agy_del_odr != null and agy_del_odr != ''">
+AND   agncy_cd = #{agy_del_odr}
+</if>                    
+  </delete>
+  <insert id="insertLcpMouDomAgency" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouDomAgencyVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouDomAgencySI01 국내협약긴관정보등록 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lcp.insertLcpMouDomAgency */ 
+		 INTO  lcpmoudomagency
+(   
+    mou_no,
+    agncy_cd, 
+    contrct_psn_duty,
+    contrct_psn_nm,
+    charg_nm,
+    charg_dept_nm,
+    charg_tel,
+    mou_knd,      
+    regst_psn_syspayno, 
+    regst_daytm)
+VALUES(#{mou_no}, #{agncy_cd}, #{contrct_psn_duty}, #{contrct_psn_nm}, #{charg_nm}, #{charg_dept_nm}, #{charg_tel}, #{mou_knd}, #{regst_psn_syspayno},sysdate)
+  </insert>
+  <update id="updateLcpMouDomAgency" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouDomAgencyVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouDomAgencySU01 국내협약기관정보 수정 단건*/
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lcp.updateLcpMouDomAgency */ 
+		 lcpmoudomagency
+SET  
+       contrct_psn_duty = #{contrct_psn_duty},  
+       charg_nm = #{charg_nm},
+       contrct_psn_nm = #{contrct_psn_nm},
+       charg_dept_nm = #{charg_dept_nm},
+       charg_tel = #{charg_tel},
+       mou_knd = #{mou_knd},      
+       updt_psn_syspayno = #{updt_psn_syspayno},
+       updt_daytm = sysdate
+WHERE 1=1
+AND    mou_no = #{mou_no}
+AND   agncy_cd = #{agncy_cd}
+  </update>    
+</mapper>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.edu">
+  <select id="selectSptTechSmnrAttnceList" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducAttnceVo" resultType="kr.re.kitech.biz.sup.edu.vo.SptTechEducAttnceVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.edu.selectSptTechSmnrAttnceList */ 
+		  t1.biz_clsf,
+        fun_xodxcommst_cd_nm(t1.biz_clsf, 0) AS biz_clsf_nm,
+        t1.mngmt_no,
+        t1.cust_no,
+        t2.bsns_psn_regst_no,
+        t2.cmpy_nm_krchar,
+        t2.reprs_psn,
+        t2.cmpy_addr,
+        t2.cmpy_reprs_tel,
+        t1.seq,
+        t1.attnce_nm,
+        t1.attnce_mobile,
+        t1.attnce_email,
+        t2.supt_clsf
+FROM    spttecheducattnce t1,
+        sptcustbaseinfo   t2
+WHERE   t1.cust_no  = t2.cust_no
+AND     t1.biz_clsf = #{biz_clsf}   
+AND     t1.mngmt_no = #{mngmt_no}
+ORDER BY seq
+  </select>
+  
+  <select id="selectSptTechEducAttnceList" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducAttnceVo" resultType="kr.re.kitech.biz.sup.edu.vo.SptTechEducAttnceVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.edu.selectSptTechEducAttnceList */ 
+		  t1.biz_clsf,
+        fun_xodxcommst_cd_nm(t1.biz_clsf, 0) AS biz_clsf_nm,
+        t1.mngmt_no,
+        t1.cust_no,
+        t1.syspayno,
+        t1.seq,
+        NVL(t1.attnce_nm,h1.nm)  AS attnce_nm,
+       NVL(t1.attnce_mobile,h1.mobile) AS attnce_mobile,
+        NVL(t1.attnce_email,h1.email) AS attnce_email,
+        t1.user_clsf,
+        NVL(t1.dept_nm, t2.cmpy_nm_krchar) AS  dept_nm,
+        NVL(t1.posi_nm,'없음') AS posi_nm        
+FROM    spttecheducattnce t1
+LEFT OUTER JOIN humbasicinfo h1
+ON t1.syspayno = h1.syspayno
+LEFT OUTER JOIN sptcustbaseinfo t2
+ON t1.cust_no = t2.cust_no
+WHERE   t1.biz_clsf = #{biz_clsf}
+AND     t1.mngmt_no = #{mngmt_no}
+ORDER BY seq
+  </select>
+  
+	<update id="mergeSptTechEducAttnce" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducAttnceVo">
+		MERGE /* kr.re.kitech.biz.sup.edu.mergeSptTechEducAttnce */
+		 INTO spttecheducattnce AS t1
+		USING dual AS t2 ON t1.biz_clsf = #{biz_clsf} AND t1.mngmt_no = #{mngmt_no} AND t1.cust_no = #{cust_no} AND t1.seq = #{seq}
+		 WHEN MATCHED  THEN
+		 UPDATE
+		    SET user_clsf = #{user_clsf},
+		    	syspayno = #{syspayno},
+		    	dept_nm = #{dept_nm},
+		    	posi_nm = #{posi_nm},
+		    	attnce_nm = #{attnce_nm},
+		    	attnce_mobile = #{attnce_mobile},
+		    	attnce_email = #{attnce_email},
+		        updt_syspayno = #{updt_syspayno},
+		        updt_daytm    = SYSDATE
+		 WHEN NOT MATCHED THEN
+		 INSERT (
+            req_no,
+            biz_clsf,
+            mngmt_no,
+            cust_no,
+            seq,
+            user_clsf,
+            syspayno,
+            dept_nm,
+            posi_nm,
+            attnce_nm,
+            attnce_mobile,
+            attnce_email,
+            regst_syspayno,
+            regst_daytm
+		 ) VALUES(
+            #{req_no},			/* req_no */
+            #{biz_clsf},		/* biz_clsf */
+            #{mngmt_no},		/* mngmt_no */
+            #{cust_no},			/* cust_no */
+            #{seq},				/* seq */
+            #{user_clsf},		/* user_clsf */
+            #{syspayno},		/* syspayno */
+            #{dept_nm},			/* dept_nm */
+            #{posi_nm},			/* posi_nm */
+            #{attnce_nm},		/* attnce_nm */
+            #{attnce_mobile},	/* attnce_mobile */
+            #{attnce_email},	/* attnce_email */
+            #{regst_syspayno}, 	/* regst_syspayno */
+            SYSDATE 			/* regst_daytm|now */
+		 )
+	</update>
+	
+	<delete id="deletePartSptTechEducAttnce" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducAttnceVo">
+		DELETE /* QueryID : kr.re.kitech.biz.sup.edu.deletePartSptTechEducAttnce */ 
+		  FROM spttecheducattnce
+		 WHERE biz_clsf = #{biz_clsf}
+		   AND mngmt_no = #{mngmt_no}
+	</delete>
+</mapper>

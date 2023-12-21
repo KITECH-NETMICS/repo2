@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.xom.core">
+
+	<resultMap type="map" id="sessionMap">
+		<id property="empno" column="empno" />
+		<result property="workClsf" column="workClsf" />
+		<result property="deptCode" column="deptCode" />
+		<result property="deptName" column="deptName" />
+		<result property="deptNewYmd" column="deptNewYmd" />
+		<result property="dvsnCode" column="dvsnCode" />
+		<result property="dvsnName" column="dvsnName" />
+		<result property="dvsnNewYmd" column="dvsnNewYmd" />
+		<result property="posiCode" column="posiCode" />
+		<result property="posiName" column="posiName" />
+		<result property="cmmtCode" column="cmmtCode" />
+		<result property="cmmtName" column="cmmtName" />
+		<result property="dutyCode" column="dutyCode" />
+		<result property="dutyName" column="dutyName" />
+		<result property="areaCode" column="areaCode" />
+		<result property="areaName" column="areaName" />
+		<result property="betaService" column="betaService" />
+	</resultMap>
+	
+    <select id="getSessionEtcDataByKey" parameterType="java.lang.String" resultMap="sessionMap">
+		SELECT /* QueryID : kr.re.kitech.biz.xom.core.getSessionEtcDataByKey */
+		      x0.empno
+		    , x0.work_clsf AS workClsf
+		    , x1.dept_cd AS deptCode, x1.dept_nm AS deptName, x1.dept_new_ymd AS deptNewYmd
+		    , x2.dept_cd AS dvsnCode, x2.dept_nm AS dvsnName, x2.dept_new_ymd AS dvsnNewYmd
+		    , x3.posi_cd AS posiCode, x3.posi_nm AS posiName
+		    , x4.cd AS cmmtCode, x4.cd_nm AS cmmtName
+		    , x5.cd AS dutyCode, x5.cd_nm AS dutyName
+		    , x6.cd AS areaCode, x6.cd_nm AS areaName
+		    , GROUP_CONCAT(TRIM(CASE WHEN TODAY BETWEEN x7.start_date AND x7.close_date THEN x7.serviceid ELSE '' END)) AS betaService
+		FROM imis.humbasicinfo AS x0
+		JOIN imis.xodhdeptinfo AS x1 ON x1.dept_cd = x0.dept_cd AND x1.dept_new_ymd = x0.dept_new_ymd
+		JOIN imis.xodhdeptinfo AS x2 ON x2.dept_cd = x1.divsn_dept AND x2.dept_new_ymd = x1.divsn_dept_new_ymd
+		JOIN imis.xodhposiinfo AS x3 ON x3.posi_cd = x0.posi_cd AND trim(nvl(x3.abol_ymd,''))  = ''
+		LEFT JOIN imis.xodxcommst AS x4 ON x4.cd = x0.commute_cd AND x4.cd_clsf = 'HWT'
+		LEFT JOIN imis.xodxcommst AS x5 ON x5.cd = x0.duty_cd AND x5.cd_clsf = 'HAB'
+		LEFT JOIN imis.xodxcommst AS x6 ON x6.cd = x0.work_land AND x6.cd_clsf = 'HBX'
+		LEFT JOIN imis.nbiztester AS x7 ON x7.syspayno = x0.syspayno
+		WHERE x0.syspayno = #{syspayno}
+		GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+    </select>
+
+    <select id="getSessionBotBetaServieByKey" parameterType="java.lang.String" resultMap="sessionMap">
+		SELECT /* QueryID : kr.re.kitech.biz.xom.core.getSessionBotBetaServieByKey */
+		      opr_psn_posi AS posiName
+		    , vend_cd AS deptCode
+		    , GROUP_CONCAT(TRIM(CASE WHEN TODAY BETWEEN x7.start_date AND x7.close_date THEN x7.serviceid ELSE '' END)) AS betaService
+		FROM bassysoprpsn AS x0
+		LEFT JOIN imis.nbiztester AS x7 ON x7.syspayno = x0.syspayno
+		WHERE x0.syspayno = #{syspayno}
+		GROUP BY 1,2 
+    </select>
+
+    <select id="getSyspaynoByExpireSyspaynoInDB" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT FIRST 1 h1.syspayno 
+		FROM humbasicinfo AS h1
+		JOIN humbasicinfo AS h2 ON h1.resid_no = h2.resid_no
+		WHERE h1.retire_ymd = ''
+		AND h2.syspayno = #{syspayno}
+		ORDER BY h1.syspayno DESC
+    </select>
+
+    <select id="findDirectSupervisorBySyspaynoInDB" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT /* QueryID : kr.re.kitech.biz.xom.core.findDirectSupervisorBySyspaynoInDB */
+		      x1.depthed
+		FROM imis.humbasicinfo AS x0
+		JOIN imis.xodhdeptinfo AS x1 ON x1.dept_cd = x0.dept_cd AND x1.dept_new_ymd = x0.dept_new_ymd
+		WHERE x0.syspayno = #{syspayno}
+    </select>
+</mapper>

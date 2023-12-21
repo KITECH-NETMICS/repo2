@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="미확인계산서 반송메일" meta_programDesc="매입계산서(관) 매뉴에서 [미확인계산서반송]버튼 클릭시 오픈" meta_author="이영희" meta_date="2023.10.10.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="issu_id" name="국세청전송일련번호" dataType="text"></w2:column>
+            			<w2:column id="regs_date" name="작성일자" dataType="text"></w2:column>
+            			<w2:column id="chrg_amt" name="공급가액" dataType="text"></w2:column>
+            			<w2:column id="tax_amt" name="부가세액" dataType="text"></w2:column>
+            			<w2:column id="totl_amt" name="합계금액" dataType="text"></w2:column>
+            			<w2:column id="selr_corp_no" name="사업자번호" dataType="text"></w2:column>
+            			<w2:column id="selr_corp_nm" name="거래처명" dataType="text"></w2:column>
+            			<w2:column id="selr_chrg_nm" name="공급자담당자명" dataType="text"></w2:column>
+            			<w2:column id="selr_chrg_email" name="공급자담당자이메일" dataType="text"></w2:column>
+            			<w2:column id="buyr_corp_no" name="공급받는자사업자번호" dataType="text"></w2:column>
+            			<w2:column id="buyr_corp_nm" name="공급받는자상호" dataType="text"></w2:column>
+            			<w2:column id="buyr_chrg_post1" name="공급받는자 담당자 부서" dataType="text"></w2:column>
+            			<w2:column id="buyr_chrg_nm1" name="공급받는자 담당자명" dataType="text"></w2:column>
+            			<w2:column id="buyr_chrg_email1" name="공급받는자 담당자 이메일" dataType="text"></w2:column>
+            			<w2:column id="rmk" name="비고" dataType="text"></w2:column>
+            			<w2:column id="chk" name="선택" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="from_ymd" name="시작일자"></w2:key>
+            			<w2:key dataType="text" id="to_ymd" name="종료일자"></w2:key>
+            			<w2:key dataType="text" id="inqr_clsf" name="인사정보무시"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+            <!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' action="SvcFINPURTAXR03.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 미확인계산서 반송미메일
+ 	 * 변경 이력 : 2023-10-10	이영희	최초 작성
+ 	 ****************************************************/  
+    /**
+	* 페이지 로드
+	*/  
+	scwin.onpageload = function() {
+		var today = com.getServerDateTime();
+		dma_search.set("from_ymd", today.substring(0, 4) + "0101");
+		dma_search.set("to_ymd", today);
+		
+		cbx_inqr_clsf.setValue("Y");
+		
+		scwin.search();
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};	
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(){
+		if(dma_search.get("from_ymd") == "" || dma_search.get("to_ymd") == ""){
+			com.alert(com.getMsg("message.xom.ui.fin.026", "발행일자"));
+			return;
+		}
+		
+		com.execute(sbm_selectData,{
+			successCallback : function(e) {
+				dlt_grd.setJSON(e.responseJSON.ktxIssuMstrVoList);
+				tbx_cnt.setValue(dlt_grd.getRowCount());
+			}
+		});
+	}
+	
+	/**
+	 * 메일발송
+	 */
+	scwin.sendMail = function(rows){
+		var templateVars = [];
+		for(var i=0; i<rows.length; i++){			
+			templateVars.push({
+				toAddr : dlt_grd.getCellData(rows[i],"selr_chrg_email"),				
+				//toAddr : (i==0)? "eipleeyh@kitech.re.kr" : "eipparkji@kitech.re.kr",
+				contentVar: {
+					"@issu_id@": dlt_grd.getCellData(rows[i], "issu_id"),
+					"@regs_date@": com.formatDate(dlt_grd.getCellData(rows[i], "regs_date"),"dash"),
+					"@selr_corp_nm@": dlt_grd.getCellData(rows[i], "selr_corp_nm"),
+					"@selr_corp_no@": grd_list.getCellDisplayData(rows[i], "selr_corp_no"),
+					"@selr_chrg_nm@": dlt_grd.getCellData(rows[i], "selr_chrg_nm"),
+					"@selr_chrg_email@": dlt_grd.getCellData(rows[i], "selr_chrg_email"),
+					"@buyr_corp_no@": grd_list.getCellDisplayData(rows[i], "buyr_corp_no"),
+					"@buyr_corp_nm@": dlt_grd.getCellData(rows[i], "buyr_corp_nm"),
+					"@buyr_chrg_post1@": dlt_grd.getCellData(rows[i], "buyr_chrg_post1"),
+					"@buyr_chrg_nm1@": dlt_grd.getCellData(rows[i], "buyr_chrg_nm1"),
+					"@buyr_chrg_email1@": dlt_grd.getCellData(rows[i], "buyr_chrg_email1"),
+					"@chrg_amt@": com.formatNumber(dlt_grd.getCellData(rows[i], "chrg_amt")),
+					"@tax_amt@": com.formatNumber(dlt_grd.getCellData(rows[i], "tax_amt")),
+					"@totl_amt@": com.formatNumber(dlt_grd.getCellData(rows[i], "totl_amt")),
+					"@rmk@": dlt_grd.getCellData(rows[i], "rmk"),
+				},
+			});	
+		}				
+		 
+		com.mail.sendMessage({
+			subject: "미확인계산서 반송이메일",
+			content: '내용',
+			fromAddr: com.getLoginInfo("cn") + "<"+ com.getLoginInfo("uid") + "@kitech.re.kr>",
+			savesent: true,	// 보낸편지함 저장 여부 (default: true)
+			onesend: false,	// 일괄발송 | 개별발송 (default: true)
+			logging: true,	// 로그 저장 여부 (default: true)
+			business: 'FIN',
+			templatePath: 'fin/FinUnconfirmTaxReturnMail',
+			templateVars: templateVars,
+		}, function(){			
+			alert("미확인계산서 반송이메일을 발송하였습니다.");
+		});
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};	
+	
+	/**
+	 * 조회버튼 클릭 이벤트
+	 */
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	/**
+	 * 엑셀다운로드 버튼 클릭 event
+	 */
+	scwin.btn_excel_onclick = function(e) {
+		var option = {
+			    fileName : "미확인계산서 반송이메일 목록_" + com.getServerDateTime() + ".xls"
+			  , useDataFormat : true
+//			  , hiddenVisible : true
+		};
+		com.downloadGridExcel(grd_list, option);
+	};
+	
+	/**
+	 * 반송이메일 버튼 클릭 event
+	 */
+	scwin.btn_email_onclick = function(e) {
+		var rows = grd_list.getCheckedIndex("chk");
+		
+		if(rows.length == 0){
+			alert("선택된 내역이 없습니다.");
+			return;
+		}
+		
+		com.confirm("선택 된 " + rows.length +"건에 대하여 \n미확인계산서 반송 이메일을 발송하시겠습니까 ?", function(ret){
+			if(ret){
+				scwin.sendMail(rows);
+			}
+		});
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection " id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:230px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="발행일자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="ica_from" placeholder="시작일" ref="data:dma_search.from_ymd" renderDiv="true" rightAlign="false" style="">
+    							</w2:inputCalendar>
+    							<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="ica_to" placeholder="종료일" ref="data:dma_search.to_ymd" renderDiv="true" rightAlign="false" style="">
+    							</w2:inputCalendar>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    								<w2:colspan>2</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:select appearance="full" class="chkGroup  " cols="" ev:onviewchange="scwin.cbx_recp_cd_onviewchange" falseValue="N" id="cbx_inqr_clsf" ref="data:dma_search.inqr_clsf"
+    								renderType="checkboxgroup" rows="" selectedindex="-1" style="" title="인사정보무시">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[인사정보무시]]></xf:label>
+    										<xf:value><![CDATA[Y]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="margin-top:5px;">
+    			<xf:group class="le" id="">
+    				<xf:group class="result" id="" style="">
+    					<w2:span id="" label="*총건수" style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_cnt" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class="btn" ev:onclick="scwin.btn_email_onclick" id="btn_email" style="" type="button">
+    					<xf:label><![CDATA[반송이메일]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn icon down" ev:onclick="scwin.btn_excel_onclick" id="btn_excel" style="" type="button">
+    					<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			visibleRowNum="12" summaryAuto="true" ev:oncelldblclick="scwin.grd_accntCd_oncelldblclick" sortable="true" filterFocusMode="outfocus"
+    			readOnly="true" fixedColumn="5">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column width="40" inputType="checkbox" style="height:28px" id="column13" value="chk" displayMode="label"
+    						checkboxLabel="전체선택">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="국세청전송일련번호" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="발행일자" width="90"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column10" value="공급자상호" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column12" value="공급자사업자번호" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column15" value="공급자담당자명" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="column17" value="공급자담당자이메일" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="column19" value="공급가액" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column21" value="세액" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="column23" value="합계금액" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="column25" value="공급받는자상호" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column27" value="공급받는자사업자번호" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column37" value="공급받는자담당자부서" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column29" value="공급받는자담당자명" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="column35" value="공급받는자담당자이메일" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="column33" value="비고" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column width="40" inputType="checkbox" style="height:28px" id="chk" value="" displayMode="label" readOnly="false"></w2:column>
+    					<w2:column displayMode="label" id="issu_id" inputType="text" readOnly="true" style="height:28px;" width="120"
+    						value="">
+    					</w2:column>
+    					<w2:column class="" displayMode="label" id="regs_date" inputType="text" readOnly="true" style="height:28px;"
+    						width="90" dataType="date" displayFormat="yyyy-MM-dd">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="selr_corp_nm" value="" displayMode="label"
+    						textAlign="left">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="selr_corp_no" value="" displayMode="label" displayFormat="###-##-#####"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="selr_chrg_nm" value="" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="selr_chrg_email" value="" displayMode="label"
+    						textAlign="left">
+    					</w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="chrg_amt" value="" displayMode="label"
+    						textAlign="right" dataType="number" displayFormat="#,###">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="tax_amt" value="" displayMode="label"
+    						textAlign="right" dataType="number" displayFormat="#,###">
+    					</w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="totl_amt" value="" displayMode="label"
+    						textAlign="right" dataType="number" displayFormat="#,###">
+    					</w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="buyr_corp_nm" value="" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="buyr_corp_no" value="" displayMode="label" displayFormat="###-##-#####"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="buyr_chrg_post1" value="" displayMode="label" textAlign="left"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="buyr_chrg_nm1" value="" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="buyr_chrg_email1" value="" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="rmk" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

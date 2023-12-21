@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="전자증빙" meta_programId="COM_F001_00P" meta_date="2022.04.11.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_attach" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="evid_mngmt_no" name="증빙관리번호" dataType="text"></w2:column>
+        				<w2:column id="doc_id" name="문서ID" dataType="text"></w2:column>
+        				<w2:column id="evid_item_cd" name="증빙항목코드" dataType="text"></w2:column>
+        				<w2:column id="item_seq" name="증빙항목순번" dataType="text"></w2:column>
+        				<w2:column id="evid_item_nm" name="중빙항목명" dataType="text"></w2:column>
+        				<w2:column id="evid_mngmt_seq" name="증빙항목순번" dataType="text"></w2:column>
+        				<w2:column id="evid_type" name="증빙타입" dataType="text"></w2:column>
+        				<w2:column id="attach_file_no" name="첨부파일번호" dataType="text"></w2:column>
+        				<w2:column id="req_no" name="신청번호" dataType="text"></w2:column>
+        				<w2:column id="unslip_no" name="결의번호" dataType="text"></w2:column>
+        				<w2:column id="unslip_odr" name="결의순번" dataType="text"></w2:column>
+        				<w2:column id="essen_ex" name="필수여부" dataType="text"></w2:column>
+        				<w2:column id="unique_yn" name="유일여부" dataType="text"></w2:column>
+        				<w2:column id="auto_yn" name="자동여부" dataType="text"></w2:column>
+        				<w2:column id="mngmt_item_cd" name="관리항목코드" dataType="text"></w2:column>
+        				<w2:column id="service_id" name="서비스ID" dataType="text"></w2:column>
+        				<w2:column id="key_col" name="키컬럼" dataType="text"></w2:column>
+        				<w2:column id="key_val" name="키값" dataType="text"></w2:column>
+        				<w2:column id="evid_accnt_no" name="회의록 계정번호" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="doc_id" name="문서ID" dataType="text"></w2:key>
+        				<w2:key id="req_no" name="신청번호" dataType="text"></w2:key>
+        				<w2:key id="expns_cd" name="비용코드" dataType="text"></w2:key>
+        				<w2:key id="unslip_odr" name="결의순번" dataType="text"></w2:key>
+        				<w2:key id="auto_yn" name="자동여부" dataType="text"></w2:key>
+        				<w2:key id="evid_item_cd" name="증빙항목코드" dataType="text"></w2:key>
+        				<w2:key id="evid_mngmt_no" name="증빙관리번호" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectExpnsEvid" ref="data:json,dma_search" target='data:json,{"id":"dlt_attach","key":"gridList"}'
+        		action="SvcFINCOMEVDR01.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler=""
+        		mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>        	
+        	<xf:submission id="sbm_saveExpnsEvid" ref='data:json,[{"action":"modified", "id":"dlt_attach","key":"gridList"}, {"id":"dma_search","key":"expnsEvidVo"}]' target=''
+        		action="SvcFINCOMEVDU01.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler=""
+        		mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 전자증빙
+ 	 * 변경 이력 : 2022-04-12	이영희	최초 작성
+ 	 ****************************************************/
+	/**
+	 * 페이지 로딩 이벤트
+	 */  
+	scwin.onpageload = function() {
+		dma_search.set("auto_yn", "N");		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 부모창에서 조회 호출
+	 */
+	scwin.evid_select = function(param){
+		dma_search.setEmptyValue();
+		dma_search.set("auto_yn", "N");
+		dma_search.setJSON(param);		
+		
+		scwin.search();
+	}
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(){
+		// 문서번호가 없거나 일반결의 또는 경비결의이고 비용코드가 없을 때 조회하지 않도록 함
+		if(dma_search.get("doc_id") == "") return;
+		if(/110|113|117/.test(dma_search.get("doc_id")) && dma_search.get("expns_cd") == "") return;		
+			
+		com.execute(sbm_selectExpnsEvid, {
+			successCallback : function(e){
+				for(var i=0; i<dlt_attach.getRowCount(); i++){
+					if(dma_search.get("doc_id") == "117" && $p.parent().scwin.data.meetFlag){
+						if(dlt_attach.getCellData(i, "evid_item_cd") == "F014"){
+							// 회의록 신청번호 입력 후 저장해야 전자증빙 미리보기에서 보여짐
+							dlt_attach.setCellData(i, "key_val", $p.parent().scwin.meet.req_no);
+							//scwin.saveEvid();
+						}
+					}
+					
+					if(dlt_attach.getCellData(i, "evid_type") == "attach" && dlt_attach.getCellData(i, "attach_file_no") == ""){
+						dlt_attach.setCellData(i, "attach_file_no", "첨부");
+						dlt_attach.modifyRowStatus(i, "R");
+					}
+				}
+			}
+		});
+	};
+	
+	/**
+	 * 행추가
+	 */
+	scwin.btn_add_onclick = function(e) {
+		var row = grd_attach.getFocusedRowIndex();
+		if(row <0){
+			com.alert(com.getMsg("message.xom.co.com.0003", "그리드의 행"));
+			return;	
+		}
+		
+		if(dlt_attach.getCellData(row, "evid_type") != "report"){
+			com.alert("message.xom.co.com.0004");
+			return;	
+		}
+		
+		var inRow = com.addRow(grd_attach);
+		for(var i=0; i<19; i++){
+			if(!/evid_mngmt_seq|attach_file_no|key_val/.test(dlt_attach.getColumnID(i))){
+				dlt_attach.setCellData(inRow, i, dlt_attach.getCellData(row, i));
+			}
+		}
+	};
+	
+	/**
+	 * 행삭제
+	 */
+	scwin.btn_minus_onclick = function(e) {
+		var row = grd_attach.getFocusedRowIndex();
+		if(row <0){
+			com.alert(com.getMsg("message.xom.co.com.0003", "그리드의 행"));
+			return;	
+		}
+		
+		if(dlt_attach.getMatchedIndex("evid_item_cd", dlt_attach.getCellData(row, "evid_item_cd")).length == 1){
+			com.alert("message.xom.co.com.0005"); // 추가한 증빙항목만 삭제할 수 있습니다.
+			return;	
+		}
+		
+		com.deleteRow(grd_attach);
+	};
+	
+	scwin.triggerSrc_onclick = function(e) {
+		scwin.search();
+	};	
+	
+	/**
+	 * 그리드 이미지 클릭 이벤트
+	 */
+	scwin.grd_attach_ontextimageclick = function(row,col) {
+		
+		var evidMngmtNo = "";
+		for(var i=0; i<dlt_attach.getRowCount(); i++){
+			if(dlt_attach.getCellData(i, "evid_mngmt_no").trim() != ""){
+				dma_search.set("evid_mngmt_no", dlt_attach.getCellData(i, "evid_mngmt_no"));
+				break;	
+			}	
+		}
+		
+		if(grd_attach.getColumnID(col) == "key_val"){
+			
+			var evidItemCd = dlt_attach.getCellData(row, "evid_item_cd");
+			var keyVal = dlt_attach.getCellData(row, "key_val");
+			var data ={};
+			
+			switch(evidItemCd){				
+				case "C030": // 국내출장
+				case "F018": // 국내출장
+				case "F019": // 해외출장
+				case "F035": // 근거리출장
+					data.req_no = dlt_attach.getCellData(row, "key_val");
+					data.ref_yn = "Y";
+					if(evidItemCd == "F035"){
+						data.flag = "LocalAdjst";
+					}else if(/C030|F018/.test(evidItemCd)){
+						data.flag = "DomRep";
+					}else if(evidItemCd == "F019"){
+						data.flag = "OverRep";
+					}
+					
+					com.pop.open(com.pop.TYPE.TRIP, data, function(retObj) {
+						if(retObj){
+							dlt_attach.setCellData(row, "key_val", retObj.req_no);
+							dlt_attach.setCellData(row, "evid_mngmt_no", dma_search.get("evid_mngmt_no"));
+							
+							if(dlt_attach.getCellData(row, "mngmt_item_cd") != ""){
+								$p.parent().scwin.setMngmtDetls(dlt_attach.getCellData(row, "mngmt_item_cd"), retObj.req_no);
+							}
+							//scwin.saveEvid();
+						}
+					});
+					
+					break;
+				case "F014":
+					var data = {ref_yn:"Y",
+								type : "evid"
+					};
+					
+					if(keyVal.trim() != ""){
+						data.req_no = keyVal;
+					}
+					
+					com.pop.open(com.pop.TYPE.MEET, data, function(retObj) {
+						if(retObj){
+							dlt_attach.setCellData(row, "key_val", retObj.meet_req_no);	
+							dlt_attach.setCellData(row, "evid_mngmt_no", dma_search.get("evid_mngmt_no"));
+												
+							$p.parent().scwin.data.meet_accnt_no = retObj.accnt_no;
+							
+							if(dlt_attach.getCellData(row, "mngmt_item_cd") != ""){
+								$p.parent().scwin.setMngmtDetls(dlt_attach.getCellData(row, "mngmt_item_cd"), retObj.req_no);
+							}
+							//scwin.saveEvid();
+						}
+					});
+					break;
+				case "F046":
+				case "F047": 
+					if($p.parent().scwin.evidParam.doc_id == "F27"){
+						data.accnt_no = $p.parent().dma_mast.get("accnt_no");					
+						data.expns_cd = $p.parent().dma_mast.get("expns_cd");
+						data.rmk = $p.parent().dma_mast.get("unslip_no");
+						data.accnt_rspns = $p.parent().dma_mast.get("accnt_rspns");
+						data.req_amt = $p.parent().dma_mast.get("check_amt");
+					}else{
+						data.accnt_no = $p.parent().dma_slipD.get("accnt_no");					
+						data.expns_cd = $p.parent().dma_slipD.get("expns_cd");
+						data.rmk = $p.parent().dma_slipD.get("unslip_no");
+						data.accnt_rspns = $p.parent().dma_slipD.get("accnt_rspns");
+						data.req_amt = $p.parent().dma_slipD.get("unslip_amt");
+					}
+					
+					data.req_no = dlt_attach.getCellData(row, "key_val")
+					biz.fin.pop.open(biz.fin.pop.TYPE.RES_EQUIP_CHK, data, function(retObj){
+						dlt_attach.setCellData(row, "key_val", retObj.req_no);
+						dlt_attach.setCellData(row, "evid_mngmt_no", dma_search.get("evid_mngmt_no"));
+							
+						//scwin.saveEvid();
+					});
+					break;
+				case "F045" : // 국내출장정산
+					com.pop.open(com.pop.TYPE.DOMTRIP_AD, {ref_yn :"Y"}, function(retObj) {
+						dlt_attach.setCellData(row, "key_val", retObj.req_no);
+						dlt_attach.setCellData(row, "evid_mngmt_no", dma_search.get("evid_mngmt_no"));
+						
+						//scwin.saveEvid();
+					});
+					
+					break;
+			}
+		}
+	};
+	
+	/**
+	 * 저장(사용하지 않음)
+	 */
+	scwin.saveEvid = function(){
+		console.log("--------------------- scwin.saveEvid ------------------");
+		com.execute(sbm_saveExpnsEvid, {
+			successCallback : function(e){
+				for(var i=0; i<dlt_attach.getRowCount(); i++){
+					if(dlt_attach.getCellData(i, "evid_mngmt_no") != ""){
+						dma_search.set("evid_mngmt_no", dlt_attach.getCellData(i, "evid_mngmt_no"));
+						$p.parent().scwin.evidParam.evid_mngmt_no = dlt_attach.getCellData(i, "evid_mngmt_no");
+					}	
+				}
+			}
+		});
+	};
+	
+	/**
+	 * 결의생성 후 fspevidattach에 결의번호 update
+	 */
+	scwin.updateEvid = function(param){		
+		dma_search.setJSON(param);
+		console.log("--------------------- scwin.updateEvid ------------------");
+		
+
+		for(var i=0; i<dlt_attach.getRowCount(); i++){
+			var attachFileNo = dlt_attach.getCellData(i, "attach_file_no");
+			if(attachFileNo == "첨부") attachFileNo = "";
+			
+			if(dlt_attach.getCellData(i, "key_val").trim() != "" || attachFileNo != ""){
+				dlt_attach.setCellData(i, "req_no", param.req_no);
+				if(param.unslip_odr != undefined){
+					dlt_attach.setCellData(i, "unslip_no", param.req_no);
+					dlt_attach.setCellData(i, "unslip_odr", param.unslip_odr);
+				}
+				
+				saveFg = true;
+			}
+		}
+
+		if(dlt_attach.getModifiedIndex().length == 0) return;
+		
+		// 저장
+		com.execute(sbm_saveExpnsEvid, {
+			successCallback : function(e){
+				$p.parent().scwin.evidParam.evid_mngmt_no = e.responseJSON.elData.evid_mngmt_no;
+			}
+		});	
+	}
+	
+	/**
+	 * 부모창 저장전 필수항목 체크(부모창에서 호출)
+	 */
+	scwin.evid_preSave = function(clsf){
+		var evidType = "";
+		
+		for(var i=0; i<dlt_attach.getRowCount(); i++){
+			evidType = dlt_attach.getCellData(i,"evid_type");
+			
+			if(dlt_attach.getCellData(i, "essen_ex") == "Y"){
+				if((evidType == "report" && dlt_attach.getCellData(i, "key_val") == "") || (evidType == "attach" && (dlt_attach.getCellData(i, "attach_file_no") == "" || dlt_attach.getCellData(i, "attach_file_no") == "첨부"))) {
+					com.alert(com.getMsg("message.xom.fw.valid.required", (i+1)+"번째행의 증빙"));
+					return false;
+				}
+			}else{
+				if(clsf == "ezbr"){
+					if(evidType == "report" && /C030|F018/.test(dlt_attach.getCellData(i, "evid_item_cd")) && dlt_attach.getCellData(i, "key_val") == ""){
+						com.alert("message.xom.ui.fin.012"); /* 이지바로 계정의 경우 데이터 전송을 위해 출장신청번호를 필수로 입력해야 합니다.*/
+						return false;
+					}
+				}else if(clsf == "cmb_ezbr"){ // 통합이지바로 회의록 필수 체크
+					if(/회의록/.test(dlt_attach.getCellData(i, "evid_item_nm")) && evidType == "report" && dlt_attach.getCellData(i, "key_val") == ""){
+						com.alert("message.xom.ui.fin.013"); /* 통합이지바로 과제는 전자회의록 필수 첨부입니다.*/
+						return false;
+					}
+				}	
+			}
+		}
+		
+		return true;
+	};
+	
+	/**
+	 * 카드결의에서 호출
+	 */
+	scwin.getJsonData = function(){
+		return dlt_attach.getMatchedJSON("evid_item_cd", "F014", true);	
+	};
+	
+	/**
+	 * 그리드 클릭 이벤트
+	 */
+	scwin.grd_attach_oncellclick = function(row,col,colId) {
+		if(colId == "attach_file_no"){
+			var data = {
+				attach_file_no : (dlt_attach.getCellData(row, "attach_file_no") == "첨부")?$p.parent().scwin.data.typeCode : dlt_attach.getCellData(row, "attach_file_no"),
+				ref_yn : "Y",
+				mode : "edit"
+			};
+
+			if (com.isEmpty(data.attach_file_no)) {
+				return;
+			}
+
+			com.pop.open(com.pop.TYPE.ATTACH, data, function(retObj) {
+				
+				if(retObj){
+					if(retObj.attach_file_no == undefined){
+						dlt_attach.setCellData(row, "attach_file_no", "첨부");
+					}else{
+						dlt_attach.setCellData(row, "attach_file_no", retObj.attach_file_no);
+						
+						// 변경사항 체크
+						$p.parent().scwin.checkList = [dlt_attach];
+					}
+				}
+			});
+		}
+	};
+	
+	/**
+	 * 첨부파일 닫기버튼 클릭 이벤트
+	 */
+	scwin.btn_close_onclick = function(e) {
+		grp_attach.hide();
+	};
+
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group class="titleSection" id="" style="">
+    		<xf:group class="le" id="">
+    			<w2:textbox class="tit_tbl" id="" label="전자증빙목록" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    		<xf:group class="ri" id="">
+    			<xf:group class="btnarea" id="" style="">
+    				<xf:trigger class="btn" id="triggerSrc" style="display:none;" type="button" ev:onclick="scwin.triggerSrc_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="bt_plus" id="btn_add" style="" type="button" ev:onclick="scwin.btn_add_onclick">
+    					<xf:label><![CDATA[추가]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="bt_minus" id="btn_minus" style="" type="button" ev:onclick="scwin.btn_minus_onclick">
+    					<xf:label><![CDATA[삭제]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_attach" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    		id="grd_attach" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb"
+    		rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태"
+    		rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    		selectedRowColor="#fbf2cd" style="height:85px;" summaryAuto="true" visibleRowNum="5"
+    		ev:ontextimageclick="scwin.grd_attach_ontextimageclick" ev:oncellclick="scwin.grd_attach_oncellclick">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="증빙항목명" width="135"></w2:column>
+    				<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="증빙타입" width="70"></w2:column>
+    				<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="첨부파일번호" width="93"></w2:column>
+    				<w2:column displayMode="label" id="column29" inputType="text" style="height:28px;" value="신청서번호" width="115" colSpan=""
+    					rowSpan="">
+    				</w2:column>
+    				<w2:column displayMode="label" id="column30" inputType="text" style="height:28px" value="필수여부" width="71"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column displayMode="label" escape="false" id="evid_item_nm" inputType="text" readOnly="true" style="height:28px;"
+    					width="135">
+    				</w2:column>
+    				<w2:column displayMode="label" escape="false" id="evid_type" inputType="text" readOnly="true" style="height:28px;"
+    					width="70">
+    				</w2:column>
+    				<w2:column displayMode="label" id="attach_file_no" inputType="link" readOnly="true" style="height:28px;" width="93" value=""></w2:column>
+    				<w2:column displayMode="label" id="key_val" inputType="textImage" readOnly="true" style="height:28px;" width="115"
+    					imageSrc="/cm/images/sample/btn_tbsearch02.png">
+    				</w2:column>
+    				<w2:column displayMode="label" id="essen_ex" inputType="text" readOnly="true" style="height:28px" width="71"></w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    </body>
+</html>

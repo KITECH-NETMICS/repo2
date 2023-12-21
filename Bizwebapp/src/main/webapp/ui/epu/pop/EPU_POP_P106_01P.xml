@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="긴급구매사유서/시방서/사업계획서, 내부결재 품의/과업지시서" meta_programId="P106" meta_author="이영희" meta_date="2022.12.07.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="pur_req_no" name="구매요구번호" dataType="text"></w2:key>
+            			<w2:key id="clsf_cd" name="첨부서류구분" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_dely">
+            		<w2:keyInfo>
+            			<w2:key id="pur_req_no" name="구매요구번호" dataType="text"></w2:key>
+            			<w2:key id="clsf_cd" name="첨부서류구분" dataType="text"></w2:key>
+            			<w2:key id="contnt" name="요약내용" dataType="text"></w2:key>
+            			<w2:key id="attach_file_no" name="첨부파일번호" dataType="text"></w2:key>
+            			<w2:key id="validAttachNo" name="첨부파일" dataType="text"></w2:key>
+            			<w2:key id="apr_state" name="결재상태" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+            <!-- 조회 -->
+            <xf:submission id="sbm_selectDely" ref="data:json,dma_search" target='data:json,dma_dely' 
+            	action="SvcEPUREQPOPR06.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 저장 -->
+            <xf:submission id="sbm_saveDely" ref="data:json,dma_dely" target='' 
+            	action="SvcEPUREQPOPM04.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 긴급구매사유서/시방서/사업계획서, 내부결재품의/과업지시서
+ 	 * 변경 이력 : 2022-12-07	이영희	최초 작성
+ 	 * 서비스 아이디 : P106
+ 	 ****************************************************/
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */     
+	scwin.saveFlag = false;  
+	scwin.onpageload = function() {
+		// 첨부파일 컴포넌트 초기화
+		com.file.init();		
+		var param = com.getParameter();
+		dma_search.setJSON(param);
+		
+		if(param.clsf_cd == "G"){
+			txt_title.setValue("시방서");
+		}else if(param.clsf_cd == "J"){
+			txt_title.setValue("사업계획서");
+		}else if(param.clsf_cd == "I"){
+			txt_title.setValue("과업지시서");
+		}
+		if(param.req_clsf == "H"){
+			btn_save.hide();
+		}
+		
+		// 조회
+		scwin.search();			
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */ 
+	scwin.search = function(){
+		com.execute(sbm_selectDely, {
+			successCallback : function(e){
+				var vMode = "view";
+				if(e.responseJSON.elData != undefined){
+					btn_print.setDisabled(false);
+					
+					if(dma_dely.get("apr_state") < "XAD020"){
+						vMode = "edit";
+					}else if(dma_dely.get("apr_state") >= "XAD020"){
+						btn_save.hide();
+					}
+					
+				}else{
+					vMode = "edit";
+					dma_dely.setJSON(dma_search.getJSON());
+				}
+				
+				if(dma_dely.get("attach_file_no") != ""){
+					com.file.create(upload_A.getID(), {fileKey: dma_dely.get("attach_file_no"), mode: vMode});
+				}else{
+					com.file.create(upload_A.getID(), {fileKey: "P106", mode: vMode});
+				}
+			}
+		});
+	};
+	
+	/**
+	 * 닫기 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_close_onclick = function(e) {
+		if(scwin.saveFlag){
+			com.closePopup({saveFlag : true});
+		}else{
+			com.closePopup();
+		}
+	};
+	
+	/**
+	 * 저장 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_save_onclick = function(e) {
+		com.confirm("message.xom.wq.017"/*저장 하시겠습니까?*/, function(ret){
+			if(ret){
+				com.file.transport( function(attachObj){
+					dma_dely.set("attach_file_no", attachObj.upload_A);
+					dma_dely.set("validAttachNo", attachObj.upload_A);					
+					
+					com.execute(sbm_saveDely, {
+						successCallback : function(e) { // 성공 콜백
+							com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function(){
+								// 조회
+								scwin.search();
+								
+								scwin.saveFlag = true;
+							});
+						}
+					});
+				});	
+			}
+		});
+	};
+	
+	/**
+	 * 인쇄 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_print_onclick = function(e) {
+		var node = "purReqNo="+ dma_dely.get("pur_req_no");
+		var itemCode = "";
+		switch(dma_dely.get("clsf_cd")){
+			case "G" : itemCode = "P006"; break; // 시방서
+			case "H" : itemCode = "P007"; break; // 긴급구매사유서
+			case "J" : itemCode = "P008"; break; // 사업계획서
+			case "I" : itemCode = "P009"; break; // 과업지시서
+		}
+		
+		com.oz.openPopup({
+			ozrCode : itemCode,      
+			param: node
+        });
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group class="titleSection pt0" id="" style="">
+    		<xf:group class="le" id="">
+    			<w2:textbox class="tit_tbl" id="txt_title" label="긴급구매사유서" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    		<xf:group class="ri" id="" style="">
+    			<xf:trigger class="btn icon print" id="btn_print" style="" type="button" ev:onclick="scwin.btn_print_onclick" disabled="true">
+    				<xf:label><![CDATA[인쇄]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    		<w2:attributes>
+    			<w2:summary></w2:summary>
+    		</w2:attributes>
+    		<xf:group tagname="caption" text="긴급구매사유서 요약내용, 첨부자료"></xf:group>
+    		<xf:group tagname="colgroup">
+    			<xf:group style="width:140px;" tagname="col"></xf:group>
+    			<xf:group style="" tagname="col"></xf:group>
+    			<xf:group style="width:140px;" tagname="col"></xf:group>
+    			<xf:group style="" tagname="col"></xf:group>
+    		</xf:group>
+    		<xf:group tagname="tr" style="">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="요약 내용" style="" tagname="span"></w2:textbox>
+    				<w2:textbox class="txt_limit" id="" label="(한글 1300자 가능)" style="" tagname="p"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes>
+    					<w2:colspan>3</w2:colspan>
+    					<w2:rowspan>1</w2:rowspan>
+    				</w2:attributes>
+    				<xf:textarea id="" style="height: 140px;" title="사용 예" class="" ref="data:dma_dely.contnt"></xf:textarea>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group tagname="tr" style="">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="첨부자료" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes>
+    					<w2:colspan>3</w2:colspan>
+    					<w2:rowspan>1</w2:rowspan>
+    				</w2:attributes>
+    				<xf:group style="height:125px;">
+    					<xf:group class="full" id="upload_A" style="height:100%;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger style="" id="btn_save" type="button" class=" btn pro conf" ev:onclick="scwin.btn_save_onclick">
+    				<xf:label><![CDATA[저장]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

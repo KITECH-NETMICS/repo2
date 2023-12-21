@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="연구시설장비집행요청조회">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="req_yr" name="신청연도" dataType="text"></w2:key>
+				       <w2:key id="accnt_rspns" name="계정책임자" dataType="text"></w2:key>
+				       <w2:key id="accnt_no" name="계정번호" dataType="text"></w2:key>
+				       <w2:key id="intgr_mngmt_unit" name="통합관리단위" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="req_no" name="req_no" dataType="text"></w2:column>
+				       <w2:column id="intgr_mngmt_unit" name="intgr_mngmt_unit" dataType="text"></w2:column>
+				       <w2:column id="accnt_no" name="accnt_no" dataType="text"></w2:column>
+				       <w2:column id="accnt_rspns" name="accnt_rspns" dataType="text"></w2:column>
+				       <w2:column id="accnt_rspns_nm" name="accnt_rspns_nm" dataType="text"></w2:column>
+				       <w2:column id="accnt_rspns_empno" name="accnt_rspns_empno" dataType="text"></w2:column>
+				       <w2:column id="sci_tech_regst_no" name="sci_tech_regst_no" dataType="text"></w2:column>
+				       <w2:column id="accnt_no_nm" name="accnt_no_nm" dataType="text"></w2:column>
+				       <w2:column id="expns_cd" name="expns_cd" dataType="text"></w2:column>
+				       <w2:column id="req_amt" name="req_amt" dataType="text"></w2:column>
+				       <w2:column id="req_region" name="req_region" dataType="text"></w2:column>
+				       <w2:column id="req_psn" name="req_psn" dataType="text"></w2:column>
+				       <w2:column id="req_ymd" name="req_ymd" dataType="text"></w2:column>
+				       <w2:column id="aset_no" name="aset_no" dataType="text"></w2:column>
+				       <w2:column id="empno" name="empno" dataType="text"></w2:column>
+				       <w2:column id="nm" name="nm" dataType="text"></w2:column>
+				       <w2:column id="rvew_sbj" name="rvew_sbj" dataType="text"></w2:column>
+				       <w2:column id="rvew_rst_cd" name="rvew_rst_cd" dataType="text"></w2:column>
+				       <w2:column id="appr_amt" name="appr_amt" dataType="text"></w2:column>
+				       <w2:column id="rvew_ymd" name="rvew_ymd" dataType="text"></w2:column>
+				       <w2:column id="aset_nm" name="aset_nm" dataType="text"></w2:column>
+				       <w2:column id="ntis_reg_no" name="ntis_reg_no" dataType="text"></w2:column>
+				       <w2:column id="apr_state" name="apr_state" dataType="text"></w2:column>
+				       <w2:column id="user_nm" name="user_nm" dataType="text"></w2:column>
+				       <w2:column id="depthed_nm" name="depthed_nm" dataType="text"></w2:column>
+				       <w2:column id="intro_ymd" name="intro_ymd" dataType="text"></w2:column>
+				       <w2:column id="intro_amt" name="intro_amt" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <xf:submission id="sbm_selectList" ref='data:json,dma_search' target='' action="SvcASSEQPR05.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+    		</xf:submission> 
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		var today = com.getServerDateTime();
+		var yr = today.substring(0, 4);
+		inp_yr.setValue(yr);
+		
+		var session = com.getLoginInfo();
+		var syspayno = session.sn;
+		
+		com.setEnterKeyEvent(grp_psn, scwin.btn_empno_onclick);//참여자조회
+		
+		// 공통코드
+		var codeOptions = [ { code : "RDK", compID :"radio_intgrUnit"},
+							{ code : "HCF", compID :"grd_list:req_region"},
+							{ code : "XAD", compID :"grd_list:apr_state"},
+							{ code : "RDK", compID :"grd_list:intgr_mngmt_unit"},
+							{ code : "RBH", compID :"grd_list:rvew_rst_cd"}
+		                ];
+		com.setCmnCd(codeOptions, function() {							
+			dlt_cmnCd_RDK.setRowJSON(0, {comCd : "all", comNm: "전체", useEx : "Y"}, false);		
+			radio_intgrUnit.setValue("all");
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/*
+	* 목록 조회
+	*/
+	scwin.search = function() {		
+		
+		
+		if (inp_yr.getValue() == "") {
+			alert("신청년도는 필수 입력사항 입니다.");
+			return;	
+		}
+				
+		com.execute(sbm_selectList, {
+			successCallback : function(e) {
+				dlt_list.setJSON(e.responseJSON.resEquipFeeReqVoList);				
+				tbx_result.setValue(dlt_list.getTotalRow());
+			},
+			
+			isImplExcel: true,
+			excelCallback : function(e) {
+				// DB 다운로드
+				var option = {
+					fileName : "연구장비비집행요청조회.xlsx"
+					, providerInfo : {
+						  service : "assResEquipService"
+						, method : "selectAssResEquipFeeReqList"
+						, vo : "ass.eqip.vo.ResEquipFeeReqVo"
+						, paramMap : dma_search
+					}
+				};
+				com.downloadGridExcel(grd_list, option);
+			}
+		});
+	};
+	
+	//계정책임자검색
+	scwin.btn_empno_onclick = function(e) {
+		var data = { empno : ibx_empno.getValue()
+					, work_clsf : "HAG010"
+					, ref_yn : (ibx_empno.getValue() == "")?"Y" : "N"
+					};
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			ibx_empno.setValue(ret.empno);
+			ibx_nm.setValue(ret.nm);
+			dma_search.set("accnt_rspns", ret.syspayno);
+		});
+	};
+	//사용자 초기화
+	scwin.ibx_empno_onchange = function(info) {
+		if(info.newValue == "") {
+			ibx_nm.setValue("");
+			dma_search.set("accnt_rspns", "");
+		}
+	};
+	
+	
+	//신규작성
+	scwin.btn_new_onclick = function(e) {
+		scwin.menuMove();
+	};
+	
+	scwin.btn_excel_onclick = function(e) {
+		var now = com.getServerDateTime("yyyyMMdd");
+		var name = '연구시설장비집행요청내역' + now + '.xlsx';
+		
+		var option = {
+			    fileName : name
+			    , useDataFormat : true
+		};
+		com.downloadGridExcel(grd_list, option);
+	};
+	
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	scwin.grd_list_oncellclick = function(row,col,colId) {
+		scwin.menuMove(row);
+	};
+	
+	/**
+	* 화면 이동
+	*/
+	scwin.menuMove = function(row){
+		var data = {};
+		if(row != "undefined"){ 
+			data.req_no = dlt_list.getCellData(row, "req_no");
+		}
+		//메뉴에 화면 붙으면 테스트
+		com.openTabMenu("G310", data, function(retObj) {
+			// 콜백
+			if(retObj){
+				scwin.search();	
+			}
+		});
+		
+	}	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group class="pageWrap" id="" style="">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="조회조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:150px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:240px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:150px;" tagname="col"></xf:group>
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="신청년도" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" dataType="number" id="inp_yr"
+    								ref="data:dma_search.req_yr" style="width: 80px;" maxlength="4">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="계정책임자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpSch" id="grp_psn" style="width: 100px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="ibx_empno" style="" title="사용자명" ev:onchange="scwin.ibx_empno_onchange"></xf:input>
+    								<xf:trigger class="btn" id="btn_empno" style="" title="사용자 조회" type="button" ev:onclick="scwin.btn_empno_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_nm" style="width: 100px;" title="사용자 정보"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="계정번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="" style="width: 100px;" title="" ref="data:dma_search.accnt_no"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="통합관리단위" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 appearance="full" class="radioGroup" cols="" id="radio_intgrUnit"
+    								ref="data:dma_search.intgr_mngmt_unit" renderType="radiogroup" rows="" selectedIndex="-1" style="">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="">
+    				<xf:group id="" class="result">
+    					<w2:span style="" id="" label="*조회결과 "></w2:span>
+    					<w2:span style="" id="" label="123" class="numtotal"></w2:span>
+    					<w2:span style="" id="" label="건"></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:group class="btnarea" id="" style="">
+    					<xf:trigger class="btn" id="btn_new" style="" type="button" ev:onclick="scwin.btn_new_onclick">
+    						<xf:label><![CDATA[신규]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger class="btn icon down" id="btn_excel" style="" type="button" ev:onclick="scwin.btn_excel_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView class="grid" dataList="data:dlt_list" defaultCellHeight="28" evenRowBackgroundColor="#f7faff" id="grd_list"
+    			noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height:123px;"
+    			summaryAuto="true" visibleRowNum="20" sortable="true" fixedColumn="3" ev:oncellclick="scwin.grd_list_oncellclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column1" inputType="text" style="height:28px;" value="신청번호" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="통합관리계정단위" width="111"></w2:column>
+    					<w2:column displayMode="label" id="column14" inputType="text" style="height:28px;" value="계정번호" width="72"></w2:column>
+    					<w2:column displayMode="label" id="column4" inputType="text" style="height:28px;" value="계정책임자" width="77"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="개인번호" width="66"></w2:column>
+    					<w2:column displayMode="label" id="column6" inputType="text" style="height:28px;" value="국가연구자번호" width="92"></w2:column>
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="ZEUS등록번호" width="139"></w2:column>
+    					<w2:column displayMode="label" id="column9" inputType="text" style="height:28px" value="자산번호" width="100"></w2:column>
+    					<w2:column width="200" inputType="text" style="height:28px" id="column33" value="자산명" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column37" value="사용용도" displayMode="label"></w2:column>
+    					<w2:column width="85" inputType="text" style="height:28px" id="column35" value="결재상태" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column17" value="심의결과" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column29" value="신청자" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column27" value="신청일" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column25" value="장비책임자" displayMode="label"></w2:column>
+    					<w2:column width="96" inputType="text" style="height:28px" id="column15" value="실무책임자" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="column23" value="장비취득일" displayMode="label"></w2:column>
+    					<w2:column width="105" inputType="text" style="height:28px" id="column21" value="신청지역" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="column19" value="취득금액" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column31" value="집행요청금액" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column class="" displayMode="label" id="req_no" inputType="link" readOnly="true" style="height:28px;"
+    						width="100">
+    					</w2:column>
+    					<w2:column displayMode="label" id="intgr_mngmt_unit" inputType="select" readOnly="true" style="height:28px;"
+    						width="111">
+    					</w2:column>
+    					<w2:column displayMode="label" id="accnt_no" inputType="text" readOnly="true" style="height:28px;" width="72"></w2:column>
+    					<w2:column displayMode="label" id="accnt_rspns_nm" inputType="text" readOnly="true" style="height:28px;"
+    						width="77">
+    					</w2:column>
+    					<w2:column displayMode="label" id="accnt_rspns_empno" inputType="text" readOnly="true" style="height:28px;"
+    						width="66">
+    					</w2:column>
+    					<w2:column displayMode="label" id="sci_tech_regst_no" inputType="text" readOnly="true" style="height:28px;"
+    						width="92">
+    					</w2:column>
+    					<w2:column displayMode="label" id="ntis_reg_no" inputType="text" readOnly="true" style="height:28px;" width="139"></w2:column>
+    					<w2:column displayMode="label" id="aset_no" inputType="text" readOnly="true" style="height:28px" width="100"
+    						textAlign="left">
+    					</w2:column>
+    					<w2:column width="200" inputType="text" style="height:28px" id="aset_nm" value="" displayMode="label"
+    						readOnly="true" textAlign="left">
+    					</w2:column>
+    					<w2:column width="100" inputType="select" style="height:28px" id="expns_cd" value="" displayMode="label"
+    						readOnly="true" allOption="" chooseOption="" ref="">
+    						<w2:choices>
+    							<w2:item>
+    								<w2:label><![CDATA[유지·보수]]></w2:label>
+    								<w2:value><![CDATA[322]]></w2:value>
+    							</w2:item>
+    							<w2:item>
+    								<w2:label><![CDATA[임차·사용]]></w2:label>
+    								<w2:value><![CDATA[262]]></w2:value>
+    							</w2:item>
+    							<w2:item>
+    								<w2:label><![CDATA[이전·설치]]></w2:label>
+    								<w2:value><![CDATA[431]]></w2:value>
+    							</w2:item>
+    						</w2:choices>
+    					</w2:column>
+    					<w2:column width="85" inputType="select" style="height:28px" id="apr_state" value="" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="select" style="height:28px" id="rvew_rst_cd" value="" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="nm" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="req_ymd" value="" displayMode="label" readOnly="true"
+    						dataType="date" displayFormat="yyyy-MM-dd">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="user_nm" value="" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="96" inputType="text" style="height:28px" id="depthed_nm" value="" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="intro_ymd" value="" displayMode="label"
+    						readOnly="true" dataType="date" displayFormat="yyyy-MM-dd">
+    					</w2:column>
+    					<w2:column width="105" inputType="select" style="height:28px" id="req_region" value="" displayMode="label"
+    						readOnly="true" textAlign="left">
+    					</w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="intro_amt" value="" displayMode="label"
+    						displayFormat="#,###" dataType="number" excelFormat="#,###" excelCellType="number" readOnly="true" textAlign="right">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="appr_amt" value="" displayMode="label"
+    						dataType="number" displayFormat="#,###" textAlign="right" excelFormat="#,###" excelCellType="number" readOnly="true">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    			<w2:footer style="" id="footer1">
+    				<w2:row style="" id="row3">
+    					<w2:column width="100" inputType="text" style="height:20px" id="column57" value="" displayMode="label"></w2:column>
+    					<w2:column width="111" inputType="text" style="height:20px" id="column56" value="" displayMode="label"></w2:column>
+    					<w2:column width="72" inputType="text" style="height:20px" id="column55" value="" displayMode="label"></w2:column>
+    					<w2:column width="77" inputType="text" style="height:20px" id="column54" value="" displayMode="label"></w2:column>
+    					<w2:column width="66" inputType="text" style="height:20px" id="column53" value="" displayMode="label"></w2:column>
+    					<w2:column width="92" inputType="text" style="height:20px" id="column52" value="" displayMode="label"></w2:column>
+    					<w2:column width="139" inputType="text" style="height:20px" id="column51" value="" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:20px" id="column50" value="" displayMode="label"></w2:column>
+    					<w2:column width="200" inputType="text" style="height:20px" id="column49" value="" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:20px" id="column48" value="" displayMode="label"></w2:column>
+    					<w2:column width="85" inputType="text" style="height:20px" id="column47" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column46" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column45" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column44" value="" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:20px" id="column43" value="" displayMode="label"></w2:column>
+    					<w2:column width="96" inputType="text" style="height:20px" id="column42" value="" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:20px" id="column41" value="" displayMode="label"></w2:column>
+    					<w2:column width="105" inputType="text" style="height:20px" id="column40" value="" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="expression" style="height:20px" id="column39" value="" displayMode="label" textAlign="right" expression="SUM('intro_amt')" excelFormat="#,###" excelCellType="number" displayFormat="#,###" dataType="number"></w2:column>
+    					<w2:column width="100" inputType="expression" style="height:20px" id="column38" value="" displayMode="label" excelCellType="number" excelFormat="#,###" expression="SUM('appr_amt')" textAlign="right" displayFormat="#,###" dataType="number"></w2:column>
+    				</w2:row>
+    			</w2:footer>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.par">
+  <select id="selectSupParCustMentrChnghList" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo" resultType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+		SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSupParCustMentrChnghList */ 
+		        req_no
+		        ,MAX(req_ymd) as req_ymd
+		        ,MAX(cust_no) as cust_no
+		        ,MAX(par_mgmt_no) as par_mgmt_no
+		        ,MAX(cmpy_nm_krchar) as cmpy_nm_krchar
+		        ,MAX(reprs_psn) as reprs_psn
+		        ,MAX(bsns_psn_regst_no) as bsns_psn_regst_no
+		        ,MAX(before_mento) as before_mento
+		        ,MAX(after_mento) as after_mento
+		        ,MAX(apr_state) as apr_state
+		        ,MAX(cd_nm) as apr_state_nm
+		        ,MAX(cmpy_reprs_tel) as cmpy_reprs_tel
+		        ,max(rmk) rmk
+		        ,'' as aaa
+		FROM(
+		select 
+		        a.req_no,
+		        a.req_ymd,
+		        a.cust_no,
+		        a.par_mgmt_no,
+		        d.cmpy_nm_krchar,
+		          d.cmpy_reprs_tel,
+		        d.reprs_psn,
+		        d.bsns_psn_regst_no,
+		        trim(e.nm)||' ('||e.empno||')'  as before_mento
+		        ,'' as after_mento
+		        ,c.apr_state
+		        ,f.cd_nm
+		        ,a.rmk
+		 from sptcustmentrchngh a
+		inner join  sptcustmentrchngd  b on a.req_no=b.req_no
+		inner join  xomxintfatab c on a.req_no=c.req_no
+		inner join  sptcustbaseinfo d on a.cust_no=d.cust_no
+		inner join  humbasicinfo e on b.chgn_syspayno=e.syspayno
+		inner join xodxcommst  f on c.apr_state=f.cd
+		where b.chng_clsf='1'
+		union all
+		select 
+		        a.req_no,
+		        a.req_ymd,
+		        a.cust_no,
+		        a.par_mgmt_no,
+		        d.cmpy_nm_krchar,
+		          d.cmpy_reprs_tel,
+		        d.reprs_psn,
+		        d.bsns_psn_regst_no,
+		        ''  as before_mento,
+		        trim(e.nm)||' ('||e.empno||')' as after_mento,
+		        c.apr_state,
+		        f.cd_nm
+		        ,a.rmk
+		 from sptcustmentrchngh a
+		inner join  sptcustmentrchngd  b on a.req_no=b.req_no
+		inner join  xomxintfatab c on a.req_no=c.req_no
+		inner join  sptcustbaseinfo d on a.cust_no=d.cust_no
+		inner join  humbasicinfo e on b.chgn_syspayno=e.syspayno
+		inner join xodxcommst  f on c.apr_state=f.cd
+		where b.chng_clsf='2'
+		)
+		where req_ymd  between #{req_ymd_st} and #{req_ymd_ed}
+		<if test="cmpy_nm_krchar != null and cmpy_nm_krchar != ''">
+			and cmpy_nm_krchar like #{cmpy_nm_krchar} ||'%' 
+		</if>
+		<if test="bsns_psn_regst_no != null and bsns_psn_regst_no != ''">
+			and bsns_psn_regst_no = #{bsns_psn_regst_no}
+		</if>
+		<if test="req_no != null and req_no != ''">
+			and req_no = #{req_no}
+		</if>
+		<if test="apr_state != null and apr_state != ''">
+			and apr_state =#{apr_state}
+		</if>
+		<if test="reprs_psn != null and reprs_psn != ''">
+			and reprs_psn=#{reprs_psn}
+		</if>
+		group by req_no
+  </select>
+  
+  <update id="updateSupParCustMentrChngh01" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+  	UPDATE /* QueryID : kr.re.kitech.biz.sup.par.updateSupParCustMentrChngh01 */ 
+		 sptcustmentrchngh
+	SET  chgn_resn=#{chgn_resn} 
+	     , rmk = #{rmk}
+	     , attach_file_no=#{attach_file_no} 
+		 , updt_syspayno = #{updt_syspayno}
+		 , updt_daytm = sysdate 
+	WHERE req_no = #{req_no}
+  </update>
+  
+  <select id="selectSupParCustBaseinfo" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo" resultType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+	SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSupParCustBaseinfo */ 
+	        b.cmpy_nm_krchar
+	        ,b.cust_no
+	        ,b.bsns_psn_regst_no
+	        ,b.reprs_psn
+	        ,b.cmpy_reprs_tel
+	        ,c.appont_no
+	FROM sptcustbaseinfo b
+	inner join sptparbaseinfo  c on b.cust_no=c.cust_no
+	 WHERE b.cust_no=#{cust_no}
+	</select>
+	
+	<select id="selectSupParCustMentoInfo" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo" resultType="kr.re.kitech.biz.sup.par.vo.SupParCustMentoInfoVo">
+		SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSupParCustMentoInfo */ 
+				 t1.cust_no
+		        ,t1.syspayno
+		        ,t2.empno
+		        ,t2.nm
+		        ,t2.dept_cd
+		        ,t3.dept_nm    
+		        ,t2.posi_cd
+		        ,t4.posi_nm
+		        ,t5.region_centr
+		        ,t1.mngmt_region
+		        ,t6.cd_nm as mngmt_regionm
+		        ,t2.retire_ymd
+		FROM            sptcustmentrinfo    t1
+		inner join      humbasicInfo        t2 on t1.syspayno=t2.syspayno 
+		inner join      xodhdeptinfo        t3 on t2.dept_cd=t3.dept_cd and t2.dept_new_ymd=t3.dept_new_ymd
+		inner join      xodhposiinfo        t4 on t2.posi_cd=t4.posi_cd
+		inner join      sptparbaseinfo      t5 on t1.cust_no=t5.cust_no
+		inner join      xodxcommst          t6 on t5.region_centr=t6.cd    
+		WHERE  t1.bizwrk_clsf                          = 'SCH010'
+		AND     t1.mentr_yn                             ='Y'
+		AND     t1.cust_no                              = #{cust_no}
+		 ORDER BY t1.syspayno    DESC
+	  </select>
+	  
+	  <select id="selectSupParCustCharg" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo" resultType="kr.re.kitech.biz.sup.par.vo.SupParCustChngInfoVo">
+		SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSupParCustCharg */ 
+				  t1.cust_no,
+		        t1.seq,                                                                                 /* 순번 */
+		        t1.appont_no,
+		        t1.affair_respn_psn as nm,                                                     /* 실무책임자 */
+		        t1.affair_respn_psn_posi as posi_nm,                                      /* 실무책임자직위 */
+		        t1.affair_respn_psn_mobile_no as mobile_no,                          /* 실무책임자휴대폰번호 */
+		        t1.affair_respn_psn_email as email,                                         /* 실무책임자이메일 */
+		        t1.affair_respn_psn_tel  as tel_no
+		FROM    sptcustcharg            t1
+		WHERE 1=1  
+		AND     t1.bizwrk           = 'SCH010'
+		and t1.cust_no              = #{cust_no}
+		AND t1.appont_no            = #{appont_no}  
+		ORDER BY t1.seq
+	 </select>
+  
+  <select id="selectSupParCustMentrChngd" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo" resultType="kr.re.kitech.biz.sup.par.vo.SupParCustMentoInfoVo">
+	SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSupParCustMentrChngd */ 
+			 chgn_syspayno as syspayno,
+	        b.empno,
+	        b.nm,
+	        b.dept_cd,
+	        c.dept_typ,
+	        h.cd_nm as mngmt_regionm,
+	        c.dept_nm,
+	        b.posi_cd,
+	        d.posi_nm,
+	        g.cd_nm, 
+	        f.region_centr
+	FROM sptcustmentrchngd a
+	inner join humbasicinfo b on a.chgn_syspayno=b.syspayno
+	inner join xodhdeptinfo c on b.dept_cd=c.dept_cd and b.dept_new_ymd=c.dept_new_ymd
+	inner join xodhposiinfo d   on b.posi_cd=d.posi_cd
+	inner join sptcustmentrchngh e on a.req_no=e.req_no
+	inner join sptparbaseinfo  f on e.cust_no=f.cust_no
+	inner join xodxcommst   g on f.region_centr=g.cd  
+	inner join xodxcommst   h on c.dept_typ=h.cd  
+	WHERE chng_clsf=#{chng_clsf}
+	AND a.req_no=#{req_no}
+	  </select>
+	  
+	<select id="selectSupParCustChargChngd" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo" resultType="kr.re.kitech.biz.sup.par.vo.SupParCustChngInfoVo">
+		SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSupParCustChargChngd */ 
+				 chgn_nm                as nm
+		        ,chgn_posi_nm        as posi_nm
+		        ,chgn_mobile_no      as mobile_no  
+		        ,chgn_email          as email 
+		        ,chgn_tel_no          as tel_no
+		FROM sptcustChargengd a
+		WHERE chng_clsf=#{chng_clsf}
+		AND req_no=#{req_no}
+	</select>
+	  
+	<select id="selectSupParCustMentrChngh" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo" resultType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+		SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSupParCustMentrChngh */ 
+		        b.cmpy_nm_krchar
+		        ,b.cust_no
+		        ,b.bsns_psn_regst_no
+		        ,b.reprs_psn
+		        ,b.cmpy_reprs_tel
+		        ,c.appont_no
+		        ,a.chgn_resn
+		        ,a.attach_file_no 
+		        ,a.req_ymd
+		        ,d.apr_state
+		        ,a.rmk
+		FROM sptcustmentrchngh a
+		inner join sptcustbaseinfo b on a.cust_no=b.cust_no
+		inner join sptparbaseinfo  c on a.cust_no=c.cust_no
+		inner join xomxintfatab   d  on a.req_no=d.req_no
+		WHERE a.req_no=#{req_no}
+	</select>
+  
+    <delete id="deleteSupParCustMentrChngh" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+  		DELETE /* QueryID : kr.re.kitech.biz.sup.par.deleteSupParCustMentrChngh */ 
+		 FROM sptcustmentrchngh WHERE req_no=#{req_no};
+		DELETE FROM sptCustMentrchngd WHERE req_no=#{req_no};
+		DELETE FROM sptcustChargengd  WHERE req_no=#{req_no};
+    </delete>
+    
+	<insert id="insertSupParCustMentrChngh" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+		INSERT /* QueryID : kr.re.kitech.biz.sup.par.insertSupParCustMentrChngh */ 
+				 INTO sptcustmentrchngh(
+		            req_no,
+		            cust_no,
+		            req_ymd, 
+		            par_mgmt_no, 
+		            chgn_resn, 
+		            rmk,
+		            attach_file_no, 
+		            regst_syspayno, 
+		            regst_daytm) 
+		 VALUES(#{req_no},
+		        #{cust_no},
+		        to_char(current,'%Y%m%d'),
+		        #{par_mgmt_no}, 
+		        #{chgn_resn}, 
+		        #{rmk}, 
+		        #{attach_file_no}, 
+		        #{regst_syspayno},
+		        current)
+		  </insert>
+		  
+		  <update id="updateSupParCustMentrChngh" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+			UPDATE /* QueryID : kr.re.kitech.biz.sup.par.updateSupParCustMentrChngh */ 
+					 sptcustmentrchngh 
+			SET rmk = #{rmk}
+			    ,updt_syspayno=#{updt_syspayno} 
+			    ,updt_daytm= current 
+			WHERE req_no=#{req_no}
+			  </update>
+			  
+			  <delete id="deleteSupParCustMentrChngd" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+				DELETE /* QueryID : kr.re.kitech.biz.sup.par.deleteSupParCustMentrChngd */ 
+						 FROM sptcustmentrchngd
+				WHERE req_no =#{req_no}
+				  </delete>
+				  
+		<delete id="deleteSupParCustChargEngd" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+			DELETE /* QueryID : kr.re.kitech.biz.sup.par.deleteSupParCustChargEngd */ 
+					 FROM sptcustChargengd  
+			WHERE req_no   =#{req_no}
+		</delete>
+		
+		<update id="updateSupParCustMentrChngd" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentoInfoVo">
+			MERGE /* QueryID : kr.re.kitech.biz.sup.par.updateSupParCustMentrChngd */ 
+					 INTO sptcustmentrchngd A
+			USING DUAL 
+			ON ( 
+			    A.req_no = #{req_no}
+			    AND A.chng_clsf = #{chng_clsf}
+			    AND A.chgn_syspayno = #{syspayno}
+			)
+			WHEN NOT MATCHED THEN
+			INSERT (    A.req_no,A.chng_clsf,A.seq,
+			            A.chgn_syspayno,A.regst_syspayno,A.regst_daytm 
+			    )VALUES (
+			            #{req_no}, #{chng_clsf}, #{seq},
+			            #{syspayno}, #{regst_syspayno}, current
+			    )
+		 </update>
+		 
+		<insert id="insertSupParCustChargEngd" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustChngInfoVo">
+			Insert /* QueryID : kr.re.kitech.biz.sup.par.insertSupParCustChargEngd */ 
+				 into sptcustChargengd  (
+		         req_no          
+		         ,chng_clsf       
+		         ,seq             
+		         ,chgn_nm         
+		          ,chgn_posi_nm
+		           ,chgn_tel_no     
+		          ,chgn_mobile_no  
+		          ,chgn_email      
+		          ,regst_syspayno  
+		         ,regst_daytm    
+			)values(#{req_no},#{chng_clsf},#{seq},#{nm},#{posi_nm},#{tel_no},#{mobile_no},#{email},#{regst_syspayno},current)
+		  </insert>
+  		
+  		<select id="selectXodhDeptinfo" parameterType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo" resultType="kr.re.kitech.biz.sup.par.vo.SupParCustMentrChnghVo">
+			SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectXodhDeptinfo */ 
+					FIRST 1  c.depthed as depthed
+		    FROM xodhdeptinfo c  JOIN (
+			    SELECT a.divsn_dept, a.divsn_dept_new_ymd
+			    FROM xodhdeptinfo a JOIN humbasicinfo b
+			    ON a.dept_cd = b.dept_cd
+			    AND a.dept_new_ymd  = b.dept_new_ymd
+			    AND b.syspayno = #{syspayno}
+			    WHERE a.abol_ymd IS NULL ) e
+			    ON c.divsn_dept = e.divsn_dept
+		    AND c.divsn_dept_new_ymd = e.divsn_dept_new_ymd
+		    WHERE c.abol_ymd IS NULL
+		    AND c.prj_dept_yn = 'N'
+		    AND (c.dept_nm LIKE '%경영지원단' OR c.dept_nm LIKE '%경영지원실' OR c.dept_nm LIKE '사업운영%')
+		  </select>	
+</mapper>

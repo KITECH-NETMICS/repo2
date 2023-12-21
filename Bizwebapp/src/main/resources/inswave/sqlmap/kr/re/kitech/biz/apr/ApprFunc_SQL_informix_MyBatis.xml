@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.apr">
+	
+	<select id="searchAliasList" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.searchAliasList */
+			 group_concat(amap.procdefalias) as alias
+		FROM appv_applicationmap amap
+		LEFT JOIN bpm:bpm_procdef def ON (CASE WHEN amap.procdefalias is null or amap.procdefalias='' then amap.reqnum else amap.procdefalias end)= def.alias
+		JOIN appv_managerrolemapping x2 ON amap.aid = x2.aid
+		LEFT JOIN bpm:roleusertable x3 ON x3.rolecode = x2.managerrole
+		LEFT JOIN bpm:emptable x4 ON x4.empcode = x3.empcode
+		WHERE amap.isvisible = 1
+		 and x3.empcode = #{userId}
+    </select>
+    
+    <select id="searchWorkTotCnt" parameterType="kr.re.kitech.biz.apr.vo.AprScVo" resultType="int">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.searchWorkTotCnt */
+			 count(*) AS cnt
+		FROM xomxintfatab
+		WHERE apr_state IN <foreach collection="aprStatusVo" item="item" open="(" separator="," close=")"> #{item.apr_state} </foreach>
+		<if test="searchClsf == 'all' and searchData != '' and searchData != null">AND (req_no LIKE '%' || #{reqNo} || '%' OR info_cd LIKE '%' || #{infoCd} || '%')</if>
+		<if test="reqNo != null and reqNo != '' and searchClsf != 'all'"> AND req_no LIKE '%' || #{reqNo} || '%' </if>
+		<if test="infoCd != null and infoCd != '' and searchClsf != 'all'">AND info_cd LIKE '%' || #{infoCd} || '%'</if>
+		<if test="instStartYmd != null and instStartYmd != ''">AND last_execute_tim between TO_DATE(#{instStartYmd}, '%Y%m%d') and TO_DATE(#{instEndYmd}, '%Y%m%d')</if>
+		and endpoints = #{endpoint}
+    </select>
+    
+    <select id="searchWorkList" parameterType="kr.re.kitech.biz.apr.vo.AprScVo" resultType="kr.re.kitech.biz.apr.vo.IntfatabVo">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.searchWorkList */
+			   req_no AS reqNo
+			,  send_contnt
+			,  ui_id AS uiId
+			,  info_cd AS infoCd
+			,  apr_state AS aprState
+			,  endpoints
+			,  state_inform_flag
+			,  execute_flag
+			,  last_execute_tim AS lastExecuteTim
+			,  mngmt_item_1
+			,  mngmt_item_2
+			,  mngmt_item_3
+			,  mngmt_item_4
+			,  mngmt_item_5
+			,  mngmt_item_6
+			,  mngmt_item_7
+			,  mngmt_item_8
+			,  mngmt_item_9
+			,  mngmt_item_10
+			,  appname
+			,  syspayno
+			,  empname
+		FROM (
+ 			   SELECT skip #{startRowIndex} first #{pageUnit} S.*  	
+	  			 FROM (
+					SELECT b.appname, c.empsn AS syspayno, c.empname, a.*  		                  
+					  FROM xomxintfatab a
+					  LEFT JOIN appv_applicationmap b on b.req_mapping LIKE '%' || a.req_no[1,3] || '%'
+					  LEFT JOIN bpm:emptable c on a.endpoints = c.empcode
+					 WHERE a.apr_state IN <foreach collection="aprStatusVo" item="item" open="(" separator="," close=")"> #{item.apr_state} </foreach>
+						<if test="searchClsf == 'all' and searchData != '' and searchData != null">AND (a.req_no LIKE '%' || #{reqNo} || '%' OR a.info_cd LIKE '%' || #{infoCd} || '%')</if>
+						<if test="reqNo != null and reqNo != '' and searchClsf != 'all'">AND  a.req_no LIKE '%' || #{reqNo} || '%' </if>
+						<if test="infoCd != null and infoCd != '' and searchClsf != 'all'">AND a.info_cd LIKE '%' || #{infoCd} || '%'</if>
+						<if test="instStartYmd != null and instStartYmd != ''">AND a.last_execute_tim between TO_DATE(#{instStartYmd}, '%Y%m%d') and TO_DATE(#{instEndYmd}, '%Y%m%d')</if>
+					   AND a.endpoints = #{endpoint} 						
+					ORDER BY a.last_execute_tim DESC
+				) S
+	 		) A
+    </select>
+    
+	<!-- 전자결재 결재 저장 -->
+	<insert id="insertElecappinfo" parameterType="kr.re.kitech.biz.apr.vo.ElecappinfoVo">
+		INSERT INTO elecappinfo ( /* kr.re.kitech.biz.apr.insertElecappinfo */
+			  req_no
+			, apprvl_clsf
+			, odr
+			, roll_nm
+			, apprvl_shape
+			, complt_daytm
+			, sign_info
+			, regst_syspayno
+			, regst_daytm
+			, updt_syspayno
+			, updt_daytm
+		) VALUES (
+			  #{req_no}
+			, #{apprvl_clsf} 
+			, #{odr}
+			, #{roll_nm}
+			, #{apprvl_shape}
+			<if test="complt_daytm         		!= ''"> , #{complt_daytm} </if>
+			<if test="complt_daytm         		== ''"> , CURRENT </if>
+			, #{sign_info}
+			, #{regst_syspayno} 
+			, CURRENT
+			, #{updt_syspayno}
+			, CURRENT
+		)
+		   
+	</insert>
+	
+	<delete id="deleteElecappinfo" parameterType="java.lang.String">
+	        DELETE FROM ELECAPPINFO   /* kr.re.kitech.biz.apr.deleteElecappinfo */  
+	        WHERE   req_no = #{reqNo}
+	</delete>
+	
+<select id="searchMbiWorkTotCnt" parameterType="kr.re.kitech.biz.apr.vo.AprScVo" resultType="int">
+SELECT /* QueryID : kr.re.kitech.biz.apr.searchMbiWorkTotCnt */
+       count(*) AS cnt
+FROM (/* 재택근무 */
+      SELECT a.*
+      FROM xomxintfatab a
+      JOIN CWSOUTWORK b
+      ON a.req_no = b.req_no
+      UNION ALL
+      /* 휴가원 */
+      SELECT a.*
+      FROM xomxintfatab a
+      JOIN CGSLAPP b
+      ON a.req_no = b.req_no
+      UNION ALL
+      /* 시간외
+      SELECT a.*
+      FROM xomxintfatab a
+      JOIN HUMSLMMOVRWKMST b
+      ON a.req_no = b.req_no
+      UNION ALL */
+      /* 비상근 */
+      SELECT a.*
+      FROM xomxintfatab a
+      JOIN CWSPARTTIMERJOR b
+      ON a.req_no = b.req_no
+      UNION all
+      /* 국내출장서 */
+      SELECT a.*
+      FROM xomxintfatab a
+      JOIN CTRDOM b
+      ON a.req_no = b.req_no
+      where b.req_no like 'C86%'
+)
+WHERE apr_state IN <foreach collection="aprStatusVo" item="item" open="(" separator="," close=")"> #{item.apr_state} </foreach>
+AND   endpoints = #{endpoint}
+</select>
+<select id="searchMbiWorkList" parameterType="kr.re.kitech.biz.apr.vo.AprScVo" resultType="kr.re.kitech.biz.apr.vo.IntfatabVo">
+SELECT /* QueryID : kr.re.kitech.biz.apr.searchMbiWorkList */
+	   req_no AS reqNo
+	,  appname
+	,  ui_id AS uiId
+	,  info_cd AS infoCd
+	,  apr_state AS aprState
+	,  endpoints
+	,  state_inform_flag
+	,  execute_flag
+	,  last_execute_tim AS lastExecuteTim
+	,  syspayno
+	,  empname
+FROM (SELECT skip #{startRowIndex} first #{pageUnit} S.*
+      FROM (SELECT b.appname, c.empsn AS syspayno, c.empname, a.*
+            FROM (/* 재택근무 */
+                  SELECT a.*
+                  FROM xomxintfatab a
+                  JOIN CWSOUTWORK b
+                  ON a.req_no = b.req_no
+                  UNION ALL
+                  /* 휴가원 */
+                  SELECT a.*
+                  FROM xomxintfatab a
+                  JOIN CGSLAPP b
+                  ON a.req_no = b.req_no
+                  UNION ALL
+                  /* 시간외
+                  SELECT a.*
+                  FROM xomxintfatab a
+                  JOIN HUMSLMMOVRWKMST b
+                  ON a.req_no = b.req_no
+                  UNION ALL */
+                  /* 비상근 */
+                  SELECT a.*
+                  FROM xomxintfatab a
+                  JOIN CWSPARTTIMERJOR b
+                  ON a.req_no = b.req_no
+                  UNION all
+                  /* 국내출장서 */
+                  SELECT a.*
+                  FROM xomxintfatab a
+                  JOIN CTRDOM b
+                  ON a.req_no = b.req_no
+                  where b.req_no like 'C86%'
+            ) a
+            LEFT JOIN appv_applicationmap b 
+            ON b.req_mapping LIKE '%' || a.req_no[1,3] || '%'
+            LEFT JOIN bpm:emptable c
+            ON a.endpoints = c.empcode
+            WHERE a.apr_state IN <foreach collection="aprStatusVo" item="item" open="(" separator="," close=")"> #{item.apr_state} </foreach>
+            AND   a.endpoints = #{endpoint}
+            ORDER BY a.last_execute_tim desc
+      ) S
+)
+</select>
+	<select id="searcBudgetRakCnt" parameterType="kr.re.kitech.biz.apr.vo.AprScVo" resultType="int">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.searcBudgetRakCnt */
+		COUNT(a.accnt_no) AS cnt
+		FROM resbgacctm a
+	    JOIN humbasicinfo c ON a.bugt_ctrl_psn = c.syspayno
+		WHERE a.accnt_state = #{accnt_state}
+		AND c.syspayno = #{syspayno}
+		AND a.cls_ymd >= TO_CHAR(CURRENT- 1 UNITS MONTH, '%Y%m%d')
+    </select>
+    
+    
+	<select id="getBpmInstComplateCount" parameterType="kr.re.kitech.biz.apr.vo.AprScVo" resultType="int">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.getBpmInstComplateCount */
+			COUNT(*) AS cnt
+		FROM bpm:bpm_procinst
+		WHERE name = #{reqNo}
+		AND alias = #{procDefAlias}
+		AND status = 'Completed'
+    </select>
+    
+</mapper>

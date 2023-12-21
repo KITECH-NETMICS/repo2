@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare"
+	xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="시스템문의등록">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_csr">
+					<w2:keyInfo>
+						<w2:key id="changeTitle" name="요청서 제목" dataType="text"></w2:key>
+						<w2:key id="changeReason" name="요청 상세 내용" dataType="text"></w2:key>						
+						<w2:key id="expectedDt" name="희망완료일" dataType="text"></w2:key>
+						<w2:key id="midCategory" name="시스템구분" dataType="text"></w2:key>
+						<w2:key id="instId" name="인스턴스ID" dataType="text"></w2:key>
+						<w2:key id="successYn" name="성공여부" dataType="text"></w2:key>
+						<w2:key id="csrType" name="요청구분" dataType="text"></w2:key>
+						<w2:key id="attachFileNo" name="첨부파일번호" dataType="text"></w2:key>
+						<w2:key id="validAttachNo" name="유효첨부파일번호" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+			</w2:dataCollection>
+			<w2:workflowCollection>
+			</w2:workflowCollection>
+        	<xf:submission id="sbm_sendCsr" ref="data:json,dma_csr" action="SvcSendCsr.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"/>		
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+		
+			/**
+			 * 컴포넌트 초기화를 위한 내부 함수
+			 */
+			scwin.initComponent = function() {
+				ibx_emp_no.setValue(gcm.data.getLoginInfo('empno'));	// 요청자 사번
+				ibx_emp_nm.setValue(gcm.data.getLoginInfo('cn'));		// 요청자 명
+				ipt_dept.setValue(gcm.data.getLoginInfo('deptName'));	// 부서 설정
+				idx_service_id.setValue("X953");
+				idx_service_name.setValue("시스템문의 등록 화면");
+				
+				
+				ica_complate.setValue(WebSquare.date.dateAdd(WebSquare.date.getCurrentServerDate(), 7));	// 완료요구일자
+				
+				// TODO: placeholder 설정 추 후 properties 에서 가져오는 방식으로 변경 필요.
+				var placeholder = "◈ 시스템문의 작성 전에 공지사항, Q&A 게시판에 게재된 관련 공지 및 정보를 우선 확인해 주십시오.\n"
+								+ "◈ 문의 내용을 잘 식별할 수 있는 적절한 제목을 작성하여 주십시오.\n"
+								+ "◈ 상황 설명이 상세할 수록 분석과 조치가 신속히 이루어질 수 있습니다.\n"
+								+ "◈ 문의와 관련된 양식명, 메뉴명, 신청번호, 결의번호, 계정번호 등 각종 관련정보를 반드시 기입하여 주십시오.\n"
+								+ "◈ 업무시스템 공식 지원 브라우저는 크롬 및 Internet Explorer 11 입니다.";
+				txa_content.setPlaceholder(placeholder);
+			};
+	        
+	        /**
+	         * pageload 이벤트 핸들러
+	         */
+			scwin.onpageload = function() {
+				// 첨부파일 컴포넌트 초기화
+				com.file.init();
+				var codeOptions = [ { code : "XRM", compID :"sbx_req" }, { code : "XAA", compID : "sbx_sysreq"} ]; 
+				com.setCmnCd(codeOptions, function() {
+					// 신규 등록에 사용하는 dataMap 빈값으로 초기화
+					com.initDataMap(dma_csr);	
+					
+					// 컴포넌트 초기값 설정
+					scwin.initComponent();
+
+					// 첨부파일 컴포넌트 생성
+					com.file.create(upload_A.getID(), {fileKey: 'X953', mode: 'edit'});
+				});
+			};
+
+			/**
+			 * pageunload 이벤트 핸들러
+			 */
+			scwin.onpageunload = function() {
+				
+			};
+			
+			/**
+			 * 저장 버튼 이벤트 핸들러
+			 */
+			scwin.btn_save_onclick = function() {
+
+				if (com.validateData(dma_csr,[
+					 { id : "changeTitle", mandatory : true, minLength : 4, maxByteLength : 100}
+					,{ id : "changeReason", mandatory : true, maxLength : 2000 }
+					,{ id : "midCategory", mandatory : true }
+					,{ id : "expectedDt", mandatory : true } 
+					,{ id : "csrType", mandatory : true } 
+				])) {
+					com.confirm("message.xom.wq.017"/*저장 하시겠습니까?*/, function( ret) {
+						if (ret) {
+							com.file.transport( function( attachObj){
+								
+								console.log(attachObj.upload_A);
+								dma_csr.set("attachFileNo", attachObj.upload_A);
+								
+								// 유효 첨부파일 번호를 딜리미터[,]로 연결하여 전달한다.
+								dma_csr.set("validAttachNo", [attachObj.upload_A].join(','));
+								
+								com.execute(sbm_sendCsr, {
+									successCallback : function(e) { // 성공 콜백
+										com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+											scwin.closeActionFlag = true; // 저장 후 닫을때는 변경분 체크 안하도록
+											com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+										});
+									}
+								});
+							});
+						}
+					});
+				}
+			};
+			
+			/**
+			 * 닫기버튼 이벤트 핸들러
+			 */
+			scwin.btn_cancel_onclick = function() {
+				com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+			};			
+		
+			scwin.sbx_req_onchange = function(info) {
+				if (info && info.newValue) {
+					if ("all" === info.newValue) {
+						dma_csr.set("csrType", "");
+					} else {
+						var code = gcm.cmnCdCache.dlt_cmnCd_XRM.filter( function(cd) {
+						    return cd.comCd === info.newValue;
+						});
+						dma_csr.set("csrType", code[0].mngmtItem1);
+					}
+				}
+			};
+				
+			scwin.btn_sch_id_onclick = function(e) {
+				scwin.selectScrID("img");
+			};
+			
+			scwin.idx_service_id_onkeypress = function(e) {
+				if(event.keyCode == 13){
+					scwin.selectScrID();
+				}
+			};
+			
+			scwin.selectScrID = function(data) {
+				// 버튼(img)으로 팝업함수 바로 호출 처음 변수에 아무것도 넣지 않으면 최초 서브미션도 실행 안함.
+				data == "img" ? data = { scrn_nm : ""} : data = { scrn_nm : idx_service_id.getValue() };
+				
+				com.pop.open( com.pop.TYPE.DOCID, data, function(ret){
+					idx_service_id.setValue(ret.scrn_id);
+					idx_service_name.setValue(ret.scrn_nm);
+				});
+			};
+	]]></script>
+	<style>
+		.outbd {
+			border : 1px solid #c2c7d5;
+		}
+	</style>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group class="pop_contents">
+			<xf:group class="w2tb tbl" tagname="table">
+				<w2:attributes>
+					<w2:summary></w2:summary>
+				</w2:attributes>
+				<xf:group tagname="caption" text="시스템문의 등록 정보 입력"></xf:group>
+				<xf:group tagname="colgroup">
+					<xf:group tagname="col" style="width:110px;"></xf:group>
+					<xf:group tagname="col" style="width:90%;"></xf:group>
+					<xf:group tagname="col" style="width:110px;"></xf:group>
+					<xf:group tagname="col" style="width:150px;"></xf:group>
+					<xf:group tagname="col" style="width:110px;"></xf:group>
+					<xf:group tagname="col" style="width:150px;"></xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:span class="bul_req" label="[필수입력항목]"></w2:span>
+						<w2:textbox label="요청구분" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td" id="td_req">
+						<w2:attributes></w2:attributes>
+						<xf:select1 allOption="true" appearance="minimal" chooseOption="" class="sel req" direction="auto" disabled="false"
+							disabledClass="w2selectbox_disabled" id="sbx_req" style="width:150px;" submenuSize="auto" title="요청구분" visibleRowNum="10"
+							ev:onchange="scwin.sbx_req_onchange" />
+					</xf:group>
+					<xf:group tagname="th" class="w2tb_th" style="" id="th_sysreq">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:span label="[필수입력항목]" class="bul_req"></w2:span>
+						<w2:textbox tagname="span" label="시스템구분"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="td" class="w2tb_td" style="" id="td_sysreq">
+						<w2:attributes>
+							<w2:colspan>3</w2:colspan>
+						</w2:attributes>
+						<xf:select1 submenuSize="auto" ev:onchange="" chooseOption="true" allOption="" title="시스템구분" appearance="minimal"
+							disabledClass="w2selectbox_disabled" disabled="false" style="width:150px;" id="sbx_sysreq" visibleRowNum="10" class="sel req"
+							direction="auto" ref="data:dma_csr.midCategory" chooseOptionLabel="-선택-">
+							<xf:choices></xf:choices>
+						</xf:select1>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="요청자" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<xf:group class="flex">
+							<xf:input id="ibx_emp_no" readOnly="true" adjustMaxLength="false" style="width: 60px;" class="inp"
+								title="요청자">
+							</xf:input>
+							<xf:input id="ibx_emp_nm" readOnly="true" adjustMaxLength="false" style="" class="inp full"
+								title="요청자 상세">
+							</xf:input>
+						</xf:group>
+					</xf:group>
+					<xf:group tagname="th" class="w2tb_th">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="요청부서" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="td" class="w2tb_td">
+						<w2:attributes>
+							<w2:colspan>3</w2:colspan>
+						</w2:attributes>
+						<xf:group class="flex">
+							<xf:input id="ipt_dept" readOnly="true" adjustMaxLength="false" class="inp full" title="요청부서 상세"></xf:input>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="관련화면ID" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>3</w2:colspan>
+						</w2:attributes>
+						<xf:group class="flex">
+							<xf:group class="inpSch" style="width: 120px;">
+								<xf:input id="idx_service_id" adjustMaxLength="false" class="inp" title="관련화면ID"
+									ev:onkeypress="scwin.idx_service_id_onkeypress">
+								</xf:input>
+								<xf:trigger class="btn" type="button" title="관련화면ID 조회" id="btn_sch_id"
+									ev:onclick="scwin.btn_sch_id_onclick">
+									<xf:label><![CDATA[검색]]></xf:label>
+								</xf:trigger>
+							</xf:group>
+							<xf:input id="idx_service_name" readOnly="true" adjustMaxLength="false" class="inp full" title="관련화면ID 상세"></xf:input>
+						</xf:group>
+					</xf:group>
+					<xf:group tagname="th" class="w2tb_th">
+						<w2:attributes>
+						</w2:attributes>
+						<w2:span class="bul_req" label="[필수입력항목]"></w2:span>
+						<w2:textbox label="완료요구일자" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="td" class="w2tb_td">
+						<w2:attributes>
+						</w2:attributes>
+						<w2:inputCalendar id="ica_complate" calendarValueType="yearMonthDate" class="inpcal req" focusOnDateSelect="false"
+							footerDiv="false" placeholder="시작일" renderDiv="true" rightAlign="false" title="완료요구일자" ref="data:dma_csr.expectedDt">
+						</w2:inputCalendar>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:span class="bul_req" label="[필수입력항목]"></w2:span>
+						<w2:textbox label="요청제목" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>5</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<xf:input adjustMaxLength="false" class="inp full req" title="요청제목" ref="data:dma_csr.changeTitle"></xf:input>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:span class="bul_req" label="[필수입력항목]"></w2:span>
+						<w2:textbox label="요청내용" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>5</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<xf:textarea id="txa_content" style="height: 120px;" title="요청내용" ref="data:dma_csr.changeReason" class="req"
+							placeholder="api 를 이용하여 설정">
+						</xf:textarea>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="첨부파일" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>5</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+
+						<xf:group style="width:737px;height:150px;">
+							<xf:group id="upload_A" style="width:100%;height:100%;" />
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="btnGroup">
+				<xf:group class="le"></xf:group>
+				<xf:group class="ri">
+					<xf:trigger type="button" class="btn pro" ev:onclick="scwin.btn_cancel_onclick">
+						<xf:label><![CDATA[닫기]]></xf:label>
+					</xf:trigger>
+					<xf:trigger type="button" class=" btn pro conf" ev:onclick="scwin.btn_save_onclick">
+						<xf:label><![CDATA[저장]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

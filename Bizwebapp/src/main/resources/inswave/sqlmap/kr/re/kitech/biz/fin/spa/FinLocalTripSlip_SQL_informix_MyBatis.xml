@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.spa">
+<!-- 근거리 출장 결의생성 목록 조회 -->
+<select id="selectCtrLocalSlip" parameterType="kr.re.kitech.biz.fin.spa.vo.FinSpaSrcVo" resultType="kr.re.kitech.biz.fin.spa.vo.CtrLocalSlipVo">
+SELECT /* kr.re.kitech.biz.fin.spa.selectCtrLocalSlip */
+       a.req_no
+     , a.req_ymd
+     , a.biztrip_ymd
+     , a.biztrip_psn_syspayno
+     , b.nm AS biztrip_psn_nm
+     , a.biztrip_land
+     , a.biztrip_goal
+     , a.car_use_yn
+     , a.tot_expns
+     , a.accnt_no
+     , a.accnt_respn_psn_syspayno AS accnt_rspns
+     , TRIM(a.unslip_no) AS unslip_no
+     , b.nm AS req_psn_nm
+     , a.rmk
+     , h.decsn_ex
+     , h.slip_ymd
+     , h.slip_no
+     , i.apr_state
+     , l.trip_cnt
+     , k.cls_ymd  
+     , a.bugt_ctrl_no
+  FROM ctrlocal a
+  LEFT JOIN humbasicinfo b ON a.req_psn_syspayno = b.syspayno
+  LEFT JOIN fspsliph h ON a.unslip_no = h.unslip_no
+  LEFT JOIN xomxintfatab i ON a.req_no = i.req_no
+  LEFT JOIN resbgacctm k ON a.accnt_no = k.accnt_no
+  JOIN (
+        SELECT req_no, COUNT(req_no) AS trip_cnt
+        FROM ctrlocalcompn
+        WHERE req_no IN (SELECT req_no FROM ctrlocal WHERE biztrip_ymd BETWEEN #{from_ymd} AND #{to_ymd}) 
+        GROUP BY req_no
+      ) l ON a.req_no = l.req_no 
+  LEFT JOIN xomxintfatab z ON a.req_no = z.req_no
+ WHERE a.biztrip_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+  <if test='unslip_no != null and unslip_no != ""'> AND TRIM(NVL(a.unslip_no,'')) LIKE '%'||#{unslip_no} ||'%' </if>
+  <if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+  <if test='biztrip_psn_syspayno != null and biztrip_psn_syspayno != ""'> AND a.req_no IN (SELECT req_no FROM ctrlocalcompn WHERE biztrip_psn_syspayno = #{biztrip_psn_syspayno}) </if>
+  <if test='req_no != null and req_no != ""'> AND a.accnt_no = #{accnt_no} </if>
+  <if test='slip_chk != null and slip_chk != ""'> 
+   AND a.tot_expns > 0
+    <choose>
+      <when test='slip_chk == "N"'> AND TRIM(NVL(a.unslip_no,'')) = '' AND i.apr_state = 'XAD100' </when>
+      <when test='slip_chk == "Y"'> AND TRIM(NVL(a.unslip_no,'')) != '' </when>
+      <when test='slip_chk == "R"'> AND TRIM(NVL(a.unslip_no,'')) = '' AND i.apr_state <![CDATA[< ]]> 'XAD100' </when>
+    </choose>
+  </if>       
+  <if test='ctrl_gb != null and ctrl_gb == "Y"'> AND TRIM(NVL(a.bugt_ctrl_no,'')) != '' </if> 
+  <if test='ctrl_gb != null and ctrl_gb == "N"'> AND TRIM(NVL(a.bugt_ctrl_no,'')) = '' </if>
+  <if test='apr_state != null and apr_state != ""'> AND z.apr_state = #{apr_state} </if>
+  <if test='slip_ymd != null and slip_ymd != ""'> AND k.cls_ymd >= #{slip_ymd} </if>
+ ORDER BY a.unslip_no, a.req_no, a.biztrip_ymd, a.biztrip_psn_syspayno, a.start_time, a.arriv_time
+</select>
+
+<!-- 근거리출장결의 차변생성을 위한 조회 -->
+<select id="selectCtrLocalSlipDr" parameterType="kr.re.kitech.biz.fin.spa.vo.FinAutoSlipCrtVo" resultType="kr.re.kitech.biz.fin.spa.vo.CtrLocalSlipDVo">
+SELECT /* kr.re.kitech.biz.fin.spa.selectCtrLocalSlipDr */
+      'FCC011' AS fomat_unit
+    , 'Fn9910' AS journ_cd
+    , '1' AS base_debit_cr
+    , a.accnt_no 
+    , a.accnt_respn_psn_syspayno AS accnt_rspns
+    , a.accnt_cd 
+    , a.expns_cd 
+    , DECODE(b.pay_amt, 0, a.tot_expns, b.pay_amt) AS total_amt
+    , DECODE(b.pay_amt, 0, a.tot_expns, b.pay_amt) AS unslip_amt
+    , a.bugt_item AS bugt_item_cd
+    , a.bugt_ctrl_way
+    , a.bugt_ctrl_no AS ctrl_no
+    , 'FAH999' AS evid_cd
+    , SUBSTR(a.accnt_respn_psn_syspayno, 3, 6) AS ramt_mngmt_1
+    , TRIM(a.biztrip_land)||'/'||SUBSTR(a.biztrip_ymd,1,4)||'-'||SUBSTR(a.biztrip_ymd,5,2)||'-'||SUBSTR(a.biztrip_ymd,7,2) AS rmk_1 
+    , CASE WHEN (SELECT COUNT(*) FROM ctrlocalcompn WHERE req_no = a.req_no) == 1 THEN c.nm
+           ELSE c.nm || ' 외 '||(SELECT COUNT(*) FROM ctrlocalcompn WHERE req_no = a.req_no) -1||'명' END AS rmk_2
+    , a.req_no
+    , 'FAX010' AS pay_clsf
+    , a.car_use_yn
+FROM ctrlocal a
+JOIN (SELECT req_no, SUM(NVL(pay_amt, 0)) AS pay_amt
+        FROM ctrlocalcompn  
+       WHERE req_no IN
+        <foreach collection ='reqNoList' index ='index' item='item' open='(' close=')' separator=','>
+         #{item.req_no}
+        </foreach>
+        GROUP BY req_no
+     ) b ON a.req_no = b.req_no
+JOIN humbasicinfo c ON a.biztrip_psn_syspayno = c.syspayno
+WHERE a.req_no IN
+  <foreach collection ='reqNoList' index ='index' item='item' open='(' close=')' separator=','>
+     #{item.req_no}
+  </foreach>
+AND (b.pay_amt > 0 OR (a.car_use_yn <![CDATA[<>]]> 'FDO001' AND a.tot_expns > 0))                
+ORDER BY a.req_no
+</select>
+
+<!-- 근거리출장 송금내역 생성을 위한 조회 -->
+<select id="selectCtrLocalSendReq" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.com.vo.FspSendReqVo">
+SELECT /* kr.re.kitech.biz.fin.spa.selectCtrLocalSendReq */
+      'FAX010' AS pay_clsf,
+      nvl(a.pay_amt, 0) AS send_req_amt,
+      nvl(a.pay_amt, 0) AS send_amt,
+      '' AS vend_cd,
+      '' AS vend_nm,
+      '' AS empno,
+      a.biztrip_psn_syspayno AS syspayno,
+      DECODE(b.bankaccnt_no, NULL, c.bankaccnt_no, b.bankaccnt_no) AS bankaccnt_no,
+      DECODE(b.bank, NULL, c.salry_bank, b.bank) AS bank,
+      DECODE(b.depstr_nm, NULL, c.depstr, b.depstr_nm) AS depstr_nm,
+      '' AS giro_cash_clsf,
+      '' AS occr_slip_no,
+      '근거리출장/'||a.req_no AS rmk,
+      '' AS card_no,
+      '' AS use_ymd,
+      '' AS apprvl_no,
+      '' AS bsns_psn_regst_no,
+      '' AS joinsto_nm
+FROM ctrlocalcompn a
+LEFT JOIN fbaapartaccnt b ON a.biztrip_psn_syspayno = b.syspayno
+LEFT JOIN humslbasinfo c ON a.biztrip_psn_syspayno = c.syspayno 
+WHERE a.req_no = #{req_no}
+AND NVL(a.pay_amt, 0) > 0
+</select>
+
+<!-- 근거리출장 결의번호 업데이트 -->
+<update id="updateCtrLocalUnslipNo" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateCtrLocalUnslipNo */
+        ctrlocal
+   SET unslip_no = #{unslip_no},
+       unslip_amt = #{unslip_amt},
+       updt_psn_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+
+<!-- 근거리출장결의 대변생성을 위한 조회 -->
+<select id="selectCtrLocalSlipCr" parameterType="kr.re.kitech.biz.fin.spa.vo.FinAutoSlipCrtVo" resultType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+SELECT /* kr.re.kitech.biz.fin.spa.selectCtrLocalSlipCr */
+       'FCC011' AS fomat_unit
+     , 'Fn9920' AS journ_cd
+     , a.accnt_no
+     , b.accnt_rspns
+     , a.accnt_cd
+     , '999' AS expns_cd
+     , 'FAH999' AS evid_cd
+     , a.rmk_1
+     , a.rmk_2
+     , 'FAX010' AS pay_clsf
+     , SUM(DECODE(NVL(c.pay_amt, 0), 0, a.tot_expns, NVL(c.pay_amt, 0))) AS total_amt
+     , SUM(DECODE(NVL(c.pay_amt, 0), 0, a.tot_expns, NVL(c.pay_amt, 0))) AS unslip_amt
+FROM ( SELECT req_no,
+              tot_expns,
+              CASE WHEN a.car_use_yn = 'FDO001' THEN 'FF030001'
+                   ELSE CASE WHEN a.biztrip_ymd > '20221231' THEN c.mngmt_item_3 ELSE c.mngmt_item_1 END 
+                   END AS accnt_no,
+              CASE WHEN a.car_use_yn = 'FDO001' THEN '21009010' ELSE c.mngmt_item_2 END AS accnt_cd,
+              CASE WHEN a.car_use_yn = 'FDO001' THEN '근거리출장' ELSE '근거리출장결의/차량관리비' END AS rmk_1,
+              CASE WHEN a.car_use_yn = 'FDO001' THEN '근거리출장결의' ELSE '계정대체/차량관리비 '||TRIM(c.cd_nm) END AS rmk_2
+         FROM ctrlocal a
+         JOIN xodxcommst c ON a.car_use_yn = c.cd
+        WHERE a.req_no IN 
+             <foreach collection ='reqNoList' index ='index' item='item' open='(' close=')' separator=','>
+              #{item.req_no}
+             </foreach>
+          AND DECODE(accnt_no,'계정', '', accnt_no) != ''
+      ) a
+JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+LEFT JOIN (SELECT req_no, SUM(NVL(pay_amt, 0)) AS pay_amt
+             FROM ctrlocalcompn
+            WHERE NVL(pay_amt, 0) > 0
+              AND req_no IN
+                 <foreach collection ='reqNoList' index ='index' item='item' open='(' close=')' separator=','>
+                  #{item.req_no}
+                 </foreach>
+            GROUP BY req_no
+    ) c ON a.req_no = c.req_no
+GROUP BY a.accnt_no, b.accnt_rspns, a.accnt_cd, a.rmk_1, a.rmk_2
+ORDER BY a.accnt_cd, a.accnt_no
+</select>
+
+<!-- 결의취소시 결의번호 초기화 -->
+<update id="updateCtrLocalSlipDel" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateCtrLocalSlipDel */
+       ctrlocal
+   SET unslip_no = null,
+       unslip_amt = 0
+ WHERE unslip_no = #{unslip_no}
+</update>
+</mapper>

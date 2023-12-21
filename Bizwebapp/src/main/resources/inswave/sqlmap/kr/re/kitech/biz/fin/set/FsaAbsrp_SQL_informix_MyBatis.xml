@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.set">
+	<select id="selectResStuCostAbsrpSlipSS01" parameterType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo"
+		resultType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo">
+		SELECT a.absrp_yrmon /* QueryID : kr.re.kitech.biz.fin.set.selectResStuCostAbsrpSlipSS01 */
+				, a.accnt_no
+				, a.accnt_cd
+				, CASE WHEN a.plan_amt > 0 THEN a.odr ELSE a.bf_odr END AS odr
+				, a.rmk
+				, b.accnt_rspns
+				, h.nm AS accnt_rspns_nm
+				, h.empno as accnt_empno
+				, h.dept_cd AS dept
+				, b.accnt_no_nm
+				, b.bugt_ctrl_psn
+				, SUBSTR(b.start_ymd, 1, 4)||'-'||SUBSTR(b.start_ymd, 5, 2)||'-'||SUBSTR(b.start_ymd, 7, 2) ||'~'
+				|| SUBSTR(b.cls_ymd, 1, 4)||'-'||SUBSTR(b.cls_ymd, 5, 2)||'-'||SUBSTR(b.cls_ymd, 7, 2) AS accnt_prd
+				, b.card_use_ex
+				, b.fomat_unit
+				, a.ori_plan_amt
+				, j.bugt_yr
+				, j.cryfwd_bugt
+				, j.bugt_amt
+				, j.enfrc_amt
+				, CASE WHEN a.plan_amt > 0 THEN a.plan_amt ELSE -a.plan_amt END AS plan_amt			
+				, a.plan_amt AS unslip_amt
+				, CASE WHEN a.plan_amt > 0 AND a.accnt_no <![CDATA[ <> ]]>'FF130005' THEN 'A'
+                  WHEN b.accnt_no = 'FF130005' THEN 'T' ELSE 'C' END AS slip_typ
+				, d.attach_file_no
+				, g.apr_state	
+				, a.bf_absrp_yrmon
+				, a.bf_odr
+				, k.accnt_cd_abbr AS accnt_cd_nm
+				, b.bugt_ctrl_psn AS res_manager
+				, b.bugt_ctrl_psn AS ctrl_manager
+		FROM fsaabsrp a
+		JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+		JOIN humbasicinfo h
+		ON a.accnt_rspns = h.syspayno
+		JOIN xomxintfatab g ON a.unslip_no = g.req_no
+		JOIN xodfaccnt k ON k.accnt_cd = a.accnt_cd
+		LEFT JOIN bblbugtactrsltetc j ON j.accnt_no = a.accnt_no 
+		AND j.accnt_cd = a.accnt_cd
+		AND j.relat_no = h.empno
+		AND j.bugt_yr = substr(a.absrp_yrmon, 0, 4)
+		JOIN (SELECT NVL(MIN(attach_file_no), '')  as attach_file_no, 
+		             MAX(unslip_no) as unslip_no 
+		       FROM fspslipd t1 where  t1.unslip_no = #{unslip_no} AND t1.base_debit_cr = 2) d ON a.unslip_no = d.unslip_no
+		WHERE a.unslip_no = #{unslip_no}
+		<if test="accnt_no != null and accnt_no != ''">
+		AND a.accnt_no = #{accnt_no}
+		</if>
+	</select>
+	<select id="selectResStuCostAbsrpSlipSS02" parameterType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo"
+		resultType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo">
+		SELECT /* QueryID : kr.re.kitech.biz.fin.set.selectResStuCostAbsrpSlipSS02 */
+				 a.absrp_yrmon
+		     , a.accnt_no
+		     , a.accnt_cd
+		     , a.odr
+		     , b.accnt_rspns
+		     , h.empno AS accnt_empno
+		     , h.nm AS accnt_rspns_nm
+		     , h.dept_cd AS dept
+		     , b.accnt_no_nm
+		     , b.bugt_ctrl_psn
+		     , SUBSTR(b.start_ymd, 1, 4)||'-'||SUBSTR(b.start_ymd, 5, 2)||'-'||SUBSTR(b.start_ymd, 7, 2) ||'~'
+		            || SUBSTR(b.cls_ymd, 1, 4)||'-'||SUBSTR(b.cls_ymd, 5, 2)||'-'||SUBSTR(b.cls_ymd, 7, 2) AS accnt_prd
+		     , b.start_ymd
+		     , b.cls_ymd       
+		     , b.card_use_ex
+		     , b.itm_solve_base
+		     , b.fomat_unit
+		     , a.plan_amt - a.cancel_amt AS ori_plan_amt
+		     , MAX(c.belng_yrmon) AS belng_yrmon
+		FROM fsaabsrp a
+		JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+		JOIN humbasicinfo h ON b.accnt_rspns = h.syspayno
+		LEFT JOIN resbgstuoutcost c ON a.accnt_no = c.accnt_no AND a.absrp_yrmon = c.absrp_yrmon
+		WHERE a.accnt_no = #{accnt_no}
+		AND   a.absrp_yrmon = #{absrp_yrmon}
+		AND   a.absrp_clsf = 'FBK035'
+		AND   a.plan_amt - a.cancel_amt <![CDATA[ > ]]> 0
+		GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+		ORDER BY a.odr DESC
+	</select>
+	<select id="selectFsaAbsrpMaxOdrSS01" parameterType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo"
+		resultType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo">
+		/* QueryID : kr.re.kitech.biz.fin.set.selectFsaAbsrpMaxOdrSS01 */
+		SELECT NVL(MAX(TO_NUMBER(odr)), 0) + 1 AS odr
+		FROM fsaabsrp
+		WHERE absrp_clsf = #{absrp_clsf}
+		AND absrp_yrmon = #{absrp_yrmon}
+		AND accnt_no = #{accnt_no}
+	</select>
+	<delete id="deleteFsaAbsrpByUnslipNo" parameterType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo">
+		DELETE /* QueryID : kr.re.kitech.biz.fin.set.deleteFsaAbsrp */
+		FROM fsaabsrp
+		WHERE absrp_clsf = #{absrp_clsf}
+		AND unslip_no = #{unslip_no}
+	</delete>
+
+	<update id="updateFsaAbsrpByUnslipNo" parameterType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo">
+		
+		UPDATE /* kr.re.kitech.biz.fin.set.updateFsaAbsrpByUnslipNo */
+		fsaabsrp
+		SET cancel_amt = cancel_amt + #{plan_amt}
+		, updt_syspayno = #{updt_syspayno}
+		, updt_daytm = current
+		WHERE absrp_clsf = #{absrp_clsf}
+		AND accnt_no = #{accnt_no}
+		AND absrp_yrmon = #{absrp_yrmon}
+		AND odr = #{odr}
+	</update>
+	<insert id="insertFsaAbsrp" parameterType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo">
+		INSERT 	/* QueryID : kr.re.kitech.biz.fin.set.insertFsaAbsrp */
+		INTO fsaabsrp(
+			accnt_no
+			, absrp_yrmon
+			, absrp_clsf
+			, accnt_cd
+			, expns_cd
+			, odr
+			, dept
+			, plan_amt
+			, unslip_no
+			, accnt_rspns
+			, rmk
+			, ori_plan_amt
+			, bf_absrp_yrmon
+			, bf_odr
+			, regst_syspayno
+			, regst_daytm)
+		VALUES(
+			#{accnt_no}, 
+			#{absrp_yrmon}, 
+			#{absrp_clsf}, 
+			#{accnt_cd}, 
+			#{expns_cd}, 
+			#{odr}, 
+			#{dept}, 
+			#{plan_amt}, 
+			#{unslip_no}, 
+			#{accnt_rspns}, 
+			#{rmk},
+			#{ori_plan_amt}, 
+			#{bf_absrp_yrmon}, 
+			#{bf_odr}, 
+			#{regst_syspayno}, 
+		SYSDATE)
+	</insert>
+
+</mapper>

@@ -1,0 +1,701 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.com">
+
+<!-- 계정번호 체크 -->
+<select id="selectResBgAcctmChk" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.com.vo.ResBgAcctmVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectResBgAcctmChk */
+       a.accnt_no
+     , a.accnt_rspns
+     , a.start_ymd 
+     , a.cls_ymd 
+     , a.accnt_state
+     , a.itm_solve_base
+     , a.fomat_unit
+     , a.card_use_ex
+     , a.tax_cd
+     , b.bsns_cd_inout
+     , b.bsns_cd_ofic
+     , b.prj_kind
+  FROM resbgacctm a
+  LEFT JOIN resinpmast b ON a.prj_no = b.prj_no
+ WHERE accnt_no = #{accnt_no}
+</select>
+
+<!-- 일반예실구분 및 예실유무 체크 -->
+<select id="selectBblEnfrcChk1" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo" resultType="kr.re.kitech.biz.fin.com.vo.BblenfrcOldVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectBblEnfrcChk1 */
+       DECODE(a.accnt_no, 'FF210001', d.syspayno, a.bugt_ctrl_psn) AS ctrl_psn
+     , x.mngmt_item_2
+     , a.fomat_unit
+     , c.ctrl_no
+     , c.accnt_no
+     , c.accnt_cd
+     , NVL(c.req_amt, 0) AS req_amt
+  FROM resbgacctm a
+  JOIN xodxcommst x ON a.accnt_grp = x.cd AND x.cd_clsf = 'FAK'
+  LEFT JOIN bblenfrc c ON c.req_no = #{req_no} AND c.req_seq = #{req_seq}
+  LEFT JOIN humbasicinfo h ON 'FF210001' = #{accnt_no} AND h.empno = #{relat_no}
+  LEFT JOIN xodrresman d ON h.dept_cd = d.dept_cd AND h.dept_new_ymd = d.dept_new_ymd   
+ WHERE a.accnt_no = #{accnt_no}
+</select>
+
+<!-- 기타예실 또는 예실 구분 -->
+<select id="selectXodxCommstEtcYn" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.com.selectXodxCommstEtcYn */
+          CASE WHEN b.mngmt_item_2 IN ('D','L') THEN b.mngmt_item_2 ELSE 'N' END AS etc_yn
+  FROM resbgacctm a
+  JOIN xodxcommst b ON a.accnt_grp = b.cd AND b.cd_clsf = 'FAK'
+ WHERE a.accnt_no = #{accnt_no}
+</select>
+
+<!-- 272결의 기타예실 예산금액조회 -->
+<select id="selectBblBugtActRsltEtcSS22" resultType="kr.re.kitech.biz.fin.com.vo.BugtRamtVo" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectBblBugtActRsltEtcSS22 */
+        ROUND((a.cryfwd_bugt + a.bugt_amt) * NVL(b.ctrl_lmt_rt, 1) * (CASE WHEN SUBSTR(a.accnt_no,1,2) IN('PA', 'PD') THEN NVL(b.psn_pay_rt, 0) / 100 ELSE 1 END)) AS bugt_amt /* 예실금에 인건비 배분 */       
+      , 0 AS cause_amt
+      , NVL(c.enfrc_amt,0) AS enfrc_amt /* 급여계산의 인건비 집행내역 */
+      , 0 AS req_amt
+   FROM bblbugtactrsltetc a 
+   JOIN resbgacctm b ON a.accnt_no = b.accnt_no 
+   LEFT JOIN ( 
+               SELECT NVL(SUM(unslip_amt),0) AS enfrc_amt
+                 FROM bblenfrc
+                WHERE req_no LIKE '272%'
+				  AND accnt_no = #{accnt_no}
+                  AND unslip_no != #{unslip_no}
+            )c ON 1=1
+ WHERE a.accnt_no = #{accnt_no}
+   AND a.bugt_yr = #{bugt_yr}
+   AND (a.accnt_no NOT IN ('FF130005','FF210001') OR a.relat_no = #{relat_no})
+</select>
+
+<!-- 272결의외 기타예실 예산금액조회 -->
+<select id="selectBblBugtActRsltEtcSS21" resultType="kr.re.kitech.biz.fin.com.vo.BugtRamtVo" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+-- 2023.09.13. 학생인건비 이관으로 where절에 accnt_cd 추가
+SELECT /* kr.re.kitech.biz.fin.com.selectBblBugtActRsltEtcSS21 */
+       ROUND((NVL(cryfwd_bugt, 0) + NVL(bugt_amt, 0)) * NVL(b.ctrl_lmt_rt, 1)* (CASE WHEN SUBSTR(a.accnt_no,1,2) IN('PA', 'PD') THEN (1 - (NVL(b.psn_pay_rt, 0) / 100)) ELSE 1 END)) AS bugt_amt       
+     , NVL(a.req_amt, 0) AS cause_amt 
+     , CASE WHEN SUBSTR(a.accnt_no,1,2) IN('PA', 'PD') THEN NVL(a.enfrc_amt, 0) - NVL(c.distr_amt,0)
+            ELSE NVL(a.enfrc_amt, 0) END AS enfrc_amt
+  FROM bblbugtactrsltetc a 
+  JOIN resbgacctm b ON a.accnt_no = b.accnt_no 
+  LEFT JOIN ( 
+        SELECT SUM(DECODE(base_debit_cr, 1, unslip_amt, unslip_amt*-1)) AS distr_amt
+          FROM fspslipdecsnd a
+          JOIN resbgacctm b ON b.accnt_no = a.accnt_no
+          JOIN fbaitmaccnt c ON c.itm_solve_base = b.itm_solve_base AND c.accnt_cd = a.accnt_cd AND c.itm_clsf IN('FAE011','FAE015') AND c.use_ex = 'Y' 
+         WHERE a.accnt_no = #{accnt_no}
+         GROUP BY a.accnt_no
+      ) c ON 1=1   
+ WHERE a.accnt_no = #{accnt_no}
+   AND a.bugt_yr = #{bugt_yr}
+  <if test='accnt_no == "FF130005"'> AND a.accnt_cd = #{accnt_cd} </if>
+   AND (a.accnt_no NOT IN ('FF130005','FF210001') OR a.relat_no = #{relat_no})
+</select>
+
+<!-- 일반예실 통제방법 조회 -->
+<select id="selectBblBugtActRsltSS01" resultType="java.util.HashMap" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+SELECT /*  kr.re.kitech.biz.fin.com.selectBblBugtActRsltSS01 */
+       c.accnt_no
+     , b.itm_solve_base
+     , b.itm_clsf
+     , b.bugt_ctrl_way
+     , TO_CHAR(CURRENT, '%Y%m%d') bugt_ctrl_ymd
+FROM fbaitmaccnt b
+JOIN resbgacctm c ON b.itm_solve_base = c.itm_solve_base
+WHERE c.accnt_no = #{accnt_no}
+AND   b.accnt_cd = #{accnt_cd}
+</select>
+
+<!-- 잔액통제 예실검증 -->
+<select id="selectBblBugtActRsltSS22" resultType="kr.re.kitech.biz.fin.com.vo.BugtRamtVo" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectBblBugtActRsltSS22 */
+       bugt_amt
+     , cause_amt
+     , (preyr_enfrc_amt + enfrc_amt) AS enfrc_amt
+  FROM bblbugtactrslt 
+ WHERE accnt_no = #{accnt_no}
+   AND accnt_cd = #{accnt_cd}
+</select>
+
+<!-- 일반예실정보 조회 - 비목통제 (예통모듈 잔액조회시 사용) -->
+<select id="selectBblBugtActRsltSS23" resultType="kr.re.kitech.biz.fin.com.vo.BugtRamtVo" parameterType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.fin.com.selectBblBugtActRsltSS23 */ 
+        SUM(a.bugt_amt) AS bugt_amt
+      , SUM(a.cause_amt) AS cause_amt
+      , SUM(a.preyr_enfrc_amt + a.enfrc_amt) AS enfrc_amt
+ FROM bblbugtactrslt a
+ JOIN fbaitmaccnt b ON a.accnt_cd = b.accnt_cd
+ WHERE a.accnt_no = #{accnt_no}
+ AND b.itm_solve_base = #{itm_solve_base}
+ AND b.itm_clsf = #{itm_clsf}
+</select>
+
+<!-- 예산통제모듈(예산 전체잔액 체크) -->
+<select id="selectBblBugtActRsltSS24" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo" resultType="kr.re.kitech.biz.fin.com.vo.BugtRamtVo">
+/* 2018.07.17. budEnfrcMnt01 에서 총액체크시 내부과제인경우 내부인건비1, 연구수당, 간접비는 제외 
+    2018.07.19. PX계정등으로 인하여 RESINPMAST LEFT JOIN 및 NVL */
+SELECT /* kr.re.kitech.biz.fin.com.selectBblBugtActRsltSS24 */ 
+       SUM(a.bugt_amt) AS bugt_amt
+     , SUM(a.cause_amt) AS cause_amt
+     , SUM(a.enfrc_amt) AS enfrc_amt
+FROM bblbugtactrslt a
+JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+JOIN xodfaccnt d ON a.accnt_cd = d.accnt_cd
+LEFT JOIN resinpmast c ON b.prj_no = c.prj_no
+WHERE a.accnt_no = #{accnt_no}
+AND ((c.bsns_cd_inout = 'RHA002' AND d.resch_accnt_clsf NOT IN ('FBL010', 'FBL190', 'FBL150','FBL170','FBL200','FBL205','FBL207','FBL210','FBL220','FBL223','FBL225'))
+      OR NVL(c.bsns_cd_inout,'') != 'RHA002')
+</select>
+
+<!-- 집행내역 저장 -->
+<update id="mergeBblenfrc" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+MERGE INTO bblenfrc a /* kr.re.kitech.biz.fin.com.mergeBblenfrc */
+ USING dual b ON a.req_no = #{req_no} AND req_seq = #{req_seq}
+ WHEN MATCHED THEN
+  UPDATE
+     SET enfrc_amt_cause = #{enfrc_amt_cause}
+      <if test='req_ymd != null'> , req_ymd = #{req_ymd} </if>
+      <if test='req_amt != null and req_amt != 0'> , req_amt = #{req_amt} </if>
+      <if test='ctrl_no != null'>, ctrl_no = #{ctrl_no} </if>
+      <if test='ctrl_psn != null'>, ctrl_psn = #{ctrl_psn} </if>
+      <if test='bugt_ctrl_way != null'>, bugt_ctrl_way = #{bugt_ctrl_way} </if>
+      <if test='ctrl_ymd != null'>, ctrl_ymd = #{ctrl_ymd} </if>
+       , ctrl_state = #{ctrl_state}
+      <if test='part_all_clsf != null'>, part_all_clsf = #{part_all_clsf} </if>
+      <if test='rmk != null'> , rmk = #{rmk} </if>
+      <if test='rmk_2 != null'> , rmk_2 = #{rmk_2} </if>
+      <if test='rmk_3 != null'>, rmk_3 = #{rmk_3} </if>
+      <if test='attach_file_no != null'>, attach_file_no = #{attach_file_no} </if>
+      <if test='unslip_no != null'>
+       , unslip_no = #{unslip_no} 
+       , unslip_odr = #{unslip_odr} 
+       , unslip_amt = #{unslip_amt} 
+     </if>
+       , updt_syspayno = #{updt_syspayno}
+       , updt_daytm = CURRENT
+ WHEN NOT MATCHED THEN
+   INSERT (
+         req_no 
+       , req_seq 
+       , req_clsf 
+       , req_ymd 
+       , req_psn 
+       , req_dept 
+       , req_dept_new_ymd 
+       <if test='ctrl_no != null'>, ctrl_no </if>
+       <if test='ctrl_psn != null'>, ctrl_psn </if> 
+       <if test='bugt_ctrl_way != null'>, bugt_ctrl_way  </if>
+       <if test='ctrl_ymd != null'>, ctrl_ymd </if>
+       , fomat_unit 
+       , accnt_no 
+       , accnt_cd 
+       , expns_cd 
+       <if test='vend_cd != null'>, vend_cd  </if>
+       <if test='vend_nm != null'>, vend_nm  </if>
+       , req_amt 
+       , enfrc_amt_cause 
+       , unslip_amt 
+       , ctrl_state 
+       <if test='part_all_clsf != null'>, part_all_clsf </if>
+       <if test='trans_amt != null'>, trans_amt </if>
+       , rmk 
+       , rmk_2 
+       <if test='rmk_3 != null'>, rmk_3 </if>
+       , unslip_no 
+       <if test='unslip_odr != null'>, unslip_odr </if>
+       <if test='relat_no != null'>, relat_no </if>
+       <if test='trans_unslip_no != null'>, trans_unslip_no </if>
+       <if test='trans_unslip_odr != null'>, trans_unslip_odr </if>
+       <if test='attach_file_no != null'>, attach_file_no </if>
+       , regst_syspayno 
+       , regst_daytm 
+  ) VALUES (    
+         #{req_no}
+       , #{req_seq}
+       , #{req_clsf} 
+       , #{req_ymd} 
+       , #{req_psn} 
+       , #{req_dept} 
+       , #{req_dept_new_ymd} 
+       <if test='ctrl_no != null'> , #{ctrl_no} </if>
+       <if test='ctrl_psn != null'> , #{ctrl_psn} </if>
+       <if test='bugt_ctrl_way != null'> , #{bugt_ctrl_way} </if>
+       <if test='ctrl_ymd != null'> , #{ctrl_ymd} </if>
+       , #{fomat_unit} 
+       , #{accnt_no} 
+       , #{accnt_cd} 
+       , #{expns_cd} 
+       <if test='vend_cd != null'> , #{vend_cd} </if>
+       <if test='vend_nm != null'> , #{vend_nm} </if>
+       , #{req_amt} 
+       , #{enfrc_amt_cause} 
+       , #{unslip_amt} 
+       , #{ctrl_state} 
+       <if test='part_all_clsf != null'>, #{part_all_clsf} </if>
+       <if test='trans_amt != null'>, #{trans_amt} </if>
+       , #{rmk} 
+       , #{rmk_2} 
+       <if test='rmk_3 != null'>, #{rmk_3} </if>
+       , #{unslip_no}
+       <if test='unslip_odr != null'>, #{unslip_odr} </if>
+       <if test='relat_no != null'>, #{relat_no} </if>
+       <if test='trans_unslip_no != null'>, #{trans_unslip_no} </if>
+       <if test='trans_unslip_odr != null'>, #{trans_unslip_odr} </if>
+       <if test='attach_file_no != null'>, #{attach_file_no} </if>
+       , #{regst_syspayno} 
+       , CURRENT
+  )
+</update>
+
+<!-- 집행내역 입력에 따른 기타 예실 신청금액 수정 -->
+<update id="updateBblBugtActRsltEtc" parameterType="kr.re.kitech.biz.fin.com.vo.FinComAmtChkVo">
+UPDATE bblbugtActrsltEtc /* kr.re.kitech.biz.fin.com.updateBblBugtActRsltEtc */
+SET req_amt = req_amt  - #{old_req_amt} + #{req_amt}
+WHERE bugt_yr = #{bugt_yr}
+AND   accnt_no = #{accnt_no}
+AND  (accnt_no NOT IN ('FF130005','FF210001') OR relat_no = #{relat_no})  /* 2021.10.01. FF210001 추가 */
+</update>
+
+<!-- 집행내역 입력에 따른 예실수정(budEnfrcMnt01) -->
+<update id="updateBblBugtActRslt" parameterType="kr.re.kitech.biz.fin.com.vo.FinComAmtChkVo">
+UPDATE bblbugtActrslt /* kr.re.kitech.biz.fin.com.updateBblBugtActRslt */
+   SET req_amt = req_amt - #{old_req_amt} + #{req_amt}
+     , cause_amt = cause_amt - #{old_cause_amt} + #{cause_amt} 
+	 , updt_syspayno = #{updt_syspayno}
+	 , updt_daytm = CURRENT
+ WHERE accnt_no = #{accnt_no}
+   AND accnt_cd = #{accnt_cd}
+</update>
+
+<!-- 집행내역 삭제를 위한 조회(deleteBudEnfrcMnt) -->
+<select id="selectBblenfrcSS04" parameterType="kr.re.kitech.biz.fin.com.vo.DelBblEnfrcVo" resultType="kr.re.kitech.biz.fin.com.vo.BblEnfrcDelVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectBblenfrcSS04 */
+       a.req_no
+     , a.req_seq 
+	 , a.accnt_no
+	 , a.accnt_cd
+     , a.req_amt
+     , TRIM(SUBSTR(a.req_ymd,1, 4)) AS bugt_yr 
+     , a.ctrl_no 
+     , a.relat_no
+	 , x.mngmt_item_2
+  FROM bblenfrc a
+  JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+  JOIN xodxcommst x ON b.accnt_grp = x.cd AND x.cd_clsf = 'FAK'
+ WHERE a.req_no = #{req_no}
+ <if test='req_seq != null and req_seq != 0'> AND a.req_seq = #{req_seq} </if>
+</select>
+
+<!-- 집행내역 삭제 -->
+<delete id="deleteBblEnfrc" parameterType="kr.re.kitech.biz.fin.com.vo.BblEnfrcDelVo">
+DELETE bblenfrc /* kr.re.kitech.biz.fin.com.deleteBblEnfrc */
+ WHERE req_no = #{req_no}
+<if test='req_seq != null'> AND req_seq = #{req_seq} </if>
+</delete>
+
+<!-- 예산통제모듈 log저장 -->
+<insert id="insertLogBugCtrlMdl" parameterType="kr.re.kitech.biz.fin.com.vo.LogBugCtrlMdlVo">
+INSERT INTO logbugctrlmdl /* kr.re.kitech.biz.fin.com.insertLogBugCtrlMdl */
+    ( job_clsf
+	, job_nm
+	, fun_nm
+	, bugt_clsf
+	, req_no
+	, req_seq
+	, creat_daytm
+	<if test='req_clsf != null'> , req_clsf </if>
+	<if test='req_ymd != null'> , req_ymd  </if>
+	<if test='req_psn != null'> , req_psn  </if>
+	<if test='req_dept != null'> , req_dept </if>
+	<if test='ctrl_no != null'> , ctrl_no        </if>
+	<if test='ctrl_psn != null'> , ctrl_psn       </if>
+	<if test='bugt_ctrl_way != null'> , bugt_ctrl_way  </if>
+	<if test='ctrl_ymd != null'> , ctrl_ymd       </if>
+	<if test='accnt_no != null'> , accnt_no       </if>
+	<if test='accnt_cd != null'> , accnt_cd       </if>
+	<if test='expns_cd != null'> , expns_cd       </if>
+	<if test='vend_cd != null'> , vend_cd        </if>
+	<if test='vend_nm != null'> , vend_nm        </if>
+	<if test='req_amt != null'> , req_amt        </if>
+	<if test='cause_amt != null'> , cause_amt      </if>
+	<if test='unslip_amt != null'> , unslip_amt     </if>
+	<if test='ctrl_state != null'> , ctrl_state     </if>
+	<if test='part_all_clsf != null'> , part_all_clsf  </if>
+	<if test='rmk != null'> , rmk            </if>
+	<if test='rmk_2 != null'> , rmk_2          </if>
+	<if test='rmk_3 != null'> , rmk_3          </if>
+	<if test='regst_syspayno != null'> , regst_syspayno </if>
+	<if test='unslip_no != null'> , unslip_no      </if>
+	<if test='unslip_odr != null'> , unslip_odr     </if>
+	<if test='relat_no != null'> , relat_no       </if>
+	<if test='befr_req_amt != null'> , befr_req_amt       </if>
+	<if test='befr_cause_amt != null'> , befr_cause_amt     </if>
+	<if test='befr_slip_amt != null'> , befr_slip_amt      </if>
+	<if test='befr_trans_amt != null'> , befr_trans_amt     </if>
+	<if test='curr_bugt_tot_amt != null'> , curr_bugt_tot_amt  </if>
+	<if test='curr_req_tot_amt != null'> , curr_req_tot_amt   </if>
+	<if test='curr_cause_tot_amt != null'> , curr_cause_tot_amt </if>
+	<if test='curr_enfrc_tot_amt != null'> , curr_enfrc_tot_amt </if>
+	) 
+VALUES (#{job_clsf}
+	  , #{job_nm}
+	  , #{fun_nm}
+	  , #{bugt_clsf}
+	  , #{req_no}
+	  , #{req_seq}
+	  , current
+	  <if test='req_clsf != null'> , #{req_clsf} </if>
+	  <if test='req_ymd != null'> , #{req_ymd}  </if>
+	  <if test='req_psn != null'> , #{req_psn}  </if>
+	  <if test='req_dept != null'> , #{req_dept} </if>
+	  <if test='ctrl_no != null'> , #{ctrl_no}        </if>
+	  <if test='ctrl_psn != null'> , #{ctrl_psn}       </if>
+	  <if test='bugt_ctrl_way != null'> , #{bugt_ctrl_way}  </if>
+	  <if test='ctrl_ymd != null'> , #{ctrl_ymd}       </if>
+	  <if test='accnt_no != null'> , #{accnt_no}      </if>
+	  <if test='accnt_cd != null'> , #{accnt_cd}       </if>
+	  <if test='expns_cd != null'> , #{expns_cd}       </if>
+	  <if test='vend_cd != null'> , #{vend_cd}        </if>
+	  <if test='vend_nm != null'> , #{vend_nm}        </if>
+	  <if test='req_amt != null'> , #{req_amt}        </if>
+	  <if test='cause_amt != null'> , #{cause_amt}      </if>
+	  <if test='unslip_amt != null'> , #{unslip_amt}     </if>
+	  <if test='ctrl_state != null'> , #{ctrl_state}     </if>
+	  <if test='part_all_clsf != null'> , #{part_all_clsf}  </if>
+	  <if test='rmk != null'> , #{rmk}            </if>
+	  <if test='rmk_2 != null'> , #{rmk_2}          </if>
+	  <if test='rmk_3 != null'> , #{rmk_3}          </if>
+	  <if test='regst_syspayno != null'> , #{regst_syspayno} </if>
+	  <if test='unslip_no != null'> , #{unslip_no}      </if>
+	  <if test='unslip_odr != null'> , #{unslip_odr}     </if>
+	  <if test='relat_no != null'> , #{relat_no}       </if>
+	  <if test='befr_req_amt != null'> , #{befr_req_amt}       </if>
+	  <if test='befr_cause_amt != null'> , #{befr_cause_amt}     </if>
+	  <if test='befr_slip_amt != null'> , #{befr_slip_amt}      </if>
+	  <if test='befr_trans_amt != null'> , #{befr_trans_amt}     </if>
+	  <if test='curr_bugt_tot_amt != null'> , #{curr_bugt_tot_amt}  </if>
+	  <if test='curr_req_tot_amt != null'> , #{curr_req_tot_amt}   </if>
+	  <if test='curr_cause_tot_amt != null'> , #{curr_cause_tot_amt} </if>
+	  <if test='curr_enfrc_tot_amt != null'> , #{curr_enfrc_tot_amt} </if>
+	)
+</insert>
+
+<!-- 회계코드별 관리항목 조회 -->
+<select id="selectFbaAccntMngmtList" parameterType="kr.re.kitech.biz.fin.std.vo.FbaAccntMngmtVo" resultType="kr.re.kitech.biz.fin.std.vo.FbaAccntMngmtVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectFbaAccntMngmtList */
+       a.accnt_cd
+     , a.mngmt_item_cd
+     , c.mngmt_item_nm
+     , a.debit_cr_clsf
+     , a.essen_ex
+     , a.worksite_use_ex
+     , a.slip_prt_seq
+     , c.data_form
+  FROM fbaaccntmngmt a
+  JOIN fbamngmtitem c ON a.mngmt_item_cd = c.mngmt_item_cd
+ WHERE  a.accnt_cd = #{accnt_cd}
+<if test='debit_cr_clsf != null'> AND a.debit_cr_clsf IN ('9', #{debit_cr_clsf}) </if>
+</select>
+
+<!-- selectbox 코드조회 -->
+<select id="selectCodeList" parameterType="kr.re.kitech.biz.fin.com.vo.FinCodeNmVo" resultType="kr.re.kitech.biz.fin.com.vo.FinCodeNmVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectCodeList */
+      slip_typ_cd AS code
+    , slip_typ_nm AS code_nm
+ FROM fbasliptyph
+WHERE 'slip_typ_cd' = #{code_clsf}
+<if test='serviceId != null and serviceId == "F233"'> AND slip_typ_cd NOT IN ('113', '115', '117', '150') </if> <!--일반결의 -->
+<if test='serviceId != null and serviceId == "F209"'> AND slip_typ_cd NOT IN ('113', '115', '117', '110') </if> <!--재무결의 -->
+UNION ALL
+SELECT c.card_no AS code
+     , '****-****'||SUBSTR(c.card_no, 10,10) ||'(' ||b.nm ||')' AS code_nm
+  FROM humbasicinfo b
+  JOIN fbacard c on b.syspayno = c.keep_charg 
+  LEFT JOIN xodrresman a on a.dept_cd = b.dept_cd and a.dept_new_ymd= b.dept_new_ymd 
+ WHERE 'card_info' = #{code_clsf}
+   AND b.retire_ymd = ''
+   AND c.card_state ='FCK010' /*사용중 */
+   AND (a.syspayno = #{syspayno} OR c.keep_charg = #{syspayno})
+UNION ALL
+SELECT  /* On-Line가수반제 회계코드조회 */
+       accnt_cd AS code
+     , accnt_cd_abbr AS code_nm
+  FROM  xodfaccnt 
+ WHERE 'accnt_cd' = #{code_clsf}
+   AND bond_debt_clsf =  #{bond_debt_clsf}
+   AND  caseby_adjst_ex = 'Y'
+   AND  level = '5'
+  <if test ='mngmt_clsf != null and mngmt_clsf == "R"'> AND (fin_bsns_clsf IN ('FBS041', 'FBS051') OR accnt_cd IN ( '21053010', '21017920')) </if>
+  UNION ALL
+SELECT a.journ_cd AS code
+     , b.journ_cd_nm AS code_nm
+  FROM fbasliptypd a
+  JOIN fbaslipprcs b ON a.journ_cd = b.journ_cd
+ WHERE 'journ_cd' = #{code_clsf}  
+   AND a.accnt_use_ex = 'Y'
+   AND a.base_debit_cr = #{base_debit_cr}
+   AND a.slip_typ_cd = #{slip_typ_cd}
+UNION ALL
+SELECT syspayno AS code
+     , nm AS code_nm
+  FROM humbasicinfo
+ WHERE 'emp_info' = #{code_clsf}  
+   AND work_clsf ='HAG010'
+UNION ALL
+SELECT  DISTINCT divsn_dept AS code
+        , fun_dept_nm(divsn_dept , divsn_dept_new_ymd) AS code_nm
+FROM xodhdeptinfo 
+WHERE  'divsn_dept' = #{code_clsf}
+AND NVL(abol_ymd,'')=''
+<choose>
+  <when test='code_clsf == "emp_info"'> ORDER BY 2 </when>
+  <when test='code_clsf == "journ_cd"'>  </when>
+  <otherwise> ORDER BY 1 </otherwise>
+</choose>
+
+</select>
+
+<!-- 카드구분 조회 -->
+<select id="selectFbaCard" resultType="kr.re.kitech.biz.fin.com.vo.FbaCardVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.com.selectFbaCard */
+           card_no
+         , cardno
+         , card_knd
+         , card_clsf 
+  FROM fbacard
+ WHERE card_no LIKE '%'||#{card_no}
+</select>
+
+<!-- 자동통제여부 조회 -->
+<select id="selectAutoBugtPsn" parameterType="kr.re.kitech.biz.fin.com.vo.AutoBugtVo" resultType="kr.re.kitech.biz.fin.com.vo.AutoBugtVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectAutoBugtPsn */
+       DISTINCT c.accnt_rspns
+     , CASE WHEN SUBSTR(c.unslip_no, 1, 3) = '110' THEN 
+                CASE WHEN c.journ_cd IN ('Fn0011', 'Fn0065') THEN a.syspayno ELSE '' END
+            ELSE a.syspayno END AS bugt_ctrl_psn 
+     , CASE WHEN SUBSTR(c.unslip_no, 1, 3) = '110' AND c.journ_cd NOT IN ('Fn0011', 'Fn0065') THEN ''
+            ELSE NVL(DECODE(TRIM(NVL(c.ctrl_no, 'N')), '', 'N', d.auto_ctrl_yn), 'N') END AS bugt_auto_yn
+  FROM fspslipd c  
+  JOIN humbasicinfo b ON b.syspayno = c.accnt_rspns AND b.retire_ymd = ''
+  JOIN xodrresman a ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd  
+  LEFT JOIN xombbugtautoctrl d ON d.docu_id = #{docu_id} AND c.expns_cd = d.expns_cd 
+ WHERE #{docu_id} IN ('110','113','117','119')
+   AND c.unslip_no = #{req_no}
+   AND c.accnt_no = 'FF210001' /* 연구장비 통합관리게정일 경우 */
+ UNION 
+ /* 경비결의,일반결의, 소액물품결의, 근거리출장결의 */
+SELECT c.accnt_rspns
+     , CASE WHEN SUBSTR(b.unslip_no, 1, 3) = '110' THEN 
+                CASE WHEN b.journ_cd IN ('Fn0011', 'Fn0065') THEN c.bugt_ctrl_psn ELSE '' END
+            ELSE c.bugt_ctrl_psn END AS bugt_ctrl_psn
+     , MIN(CASE WHEN SUBSTR(b.unslip_no, 1, 3) = '110' AND b.journ_cd NOT IN ('Fn0011', 'Fn0065') THEN ''
+                ELSE DECODE(TRIM(NVL(b.ctrl_no, '')), '', 'N', DECODE(NVL(d.bugt_ctrl_way, ''), 'FAF021', 'N', '', 'N', NVL(a.auto_ctrl_yn,'N'))) END
+           )AS bugt_auto_yn
+       /*내역통제일 경우 자동통제 N값, 통제방법 없어도 N값 20170727 이민기요청 */
+  FROM fspslipd b 
+  JOIN resbgacctm c ON c.accnt_no = b.accnt_no
+  LEFT JOIN fbaitmaccnt d ON d.itm_solve_base = c.itm_solve_base AND d.accnt_cd = b.accnt_cd
+  LEFT JOIN xombbugtautoctrl a ON a.docu_id = #{docu_id} AND a.expns_cd = b.expns_cd
+ WHERE #{docu_id} IN ('110','113','117','119','125')
+   AND b.unslip_no = #{req_no} 
+   AND b.base_debit_cr = '1'
+   AND b.accnt_no NOT IN ('FF210001',  'FF030001')
+   AND b.accnt_cd NOT IN ('11149015','21025100')
+ GROUP BY 1,2
+ UNION
+  /* 국내출장,기업현장출장*/
+SELECT DISTINCT a.accnt_rspns
+     , a.bugt_ctrl_psn
+     , DECODE(TRIM(NVL(c.bugt_ctrl_no,'')), '', 'N', b.auto_ctrl_yn) AS bugt_auto_yn  
+  FROM ctrdomaccnt c 
+  JOIN resbgacctm a ON a.accnt_no = c.accnt_no  
+  LEFT JOIN xombbugtautoctrl b ON b.docu_id = SUBSTR(c.req_no, 1, 3) AND b.expns_cd = c.expns_cd
+ WHERE c.req_no = #{req_no} 
+   AND #{docu_id} IN ('C86','S14')
+   AND c.tot_expns > 0
+ UNION 
+  /* 근거리출장 */
+SELECT DISTINCT a.accnt_rspns
+     , a.bugt_ctrl_psn  
+     , DECODE(TRIM(NVL(d.bugt_ctrl_no,'')), '', 'N', b.auto_ctrl_yn) AS bugt_auto_yn 
+  FROM ctrlocal d
+  JOIN resbgacctm a ON a.accnt_no = d.accnt_no 
+  LEFT JOIN xombbugtautoctrl b ON b.docu_id = SUBSTR(d.req_no, 1, 3) AND b.expns_cd = d.expns_cd
+ WHERE d.req_no = #{req_no}
+   AND d.trafc_fee > 0
+   AND #{docu_id} = 'C76' 
+ UNION 
+SELECT DISTINCT a.accnt_rspns
+     , a.bugt_ctrl_psn
+     , 'N' AS bugt_auto_yn
+  FROM fspslipd b 
+  JOIN resbgacctm a ON b.accnt_no = a.accnt_no
+ WHERE #{docu_id} NOT IN ('110','113', '117','119','125','C86','S14', 'C76')
+   AND b.unslip_no = #{req_no} 
+   AND b.base_debit_cr = '1'
+   AND b.accnt_no <![CDATA[<> ]]> 'FF030001'
+   AND b.accnt_cd NOT IN ('11149015','21025100')
+</select>
+
+<!-- 통제유무조회 -->
+<select id="selectXodfAccntCtrlYn" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.com.selectXodfAccntCtrlYn */
+     bugt_ctrl_ex    
+FROM xodfaccnt
+WHERE accnt_cd = #{accnt_cd}
+</select>
+
+<!-- 차액[원인금액 - 대체금액 = 차감액] 조회 -->
+<select id="selectBblEnfrcAmt" parameterType="kr.re.kitech.biz.fin.com.vo.BBlBugtActRsltVo" resultType="kr.re.kitech.biz.fin.com.vo.FinComAmtChkVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectBblEnfrcAmt */
+      (enfrc_amt_cause - trans_amt) AS ramt_amt,
+       part_all_clsf,
+       ctrl_no,
+       accnt_no,
+       accnt_cd,
+       relat_no
+  FROM bblenfrc
+ WHERE 1=1 
+<choose>
+ <when test='req_no != null and req_no != ""'> 
+   AND req_no = #{req_no} 
+   AND req_seq = #{req_seq} 
+ </when>
+ <otherwise>
+   AND ctrl_no = #{ctrl_no}
+ </otherwise>
+</choose>
+</select>
+
+<!-- 통제내역결의,구매결의,계정변경신청시 part_all_clsf = F일 경우 집행내역원인행위금액 정리 -->
+<update id="updateBblEnfrcCauseAmt" parameterType="kr.re.kitech.biz.fin.com.vo.FinComAmtChkVo">
+UPDATE bblenfrc /* kr.re.kitech.biz.fin.com.updateBblEnfrcCauseAmt */
+   SET enfrc_amt_cause = enfrc_amt_cause - #{ramt_amt}
+       , part_all_clsf = #{part_all_clsf}
+       , updt_syspayno = #{updt_syspayno}
+       , updt_daytm = SYSDATE
+ WHERE ctrl_no = #{ctrl_no}
+</update>
+
+<!-- 구매지급결의서 Logic 상에서 결의서 Datail 입력 후 통제내역 금액 추가 Update -->
+<update id="updateBblenFrcAddAmt" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.com.updateBblenFrcAddAmt */ 
+		 bblenfrc
+SET unslip_amt = NVL(unslip_amt,0) + #{unslip_amt}  
+  , trans_amt = NVL(trans_amt,0) + #{trans_amt}    
+  , unslip_no  = #{unslip_no}
+  , unslip_odr = #{unslip_odr}
+  , part_all_clsf = #{part_all_clsf}
+  , trans_unslip_no = #{trans_unslip_no}
+  , trans_unslip_odr = #{trans_unslip_odr}
+WHERE req_no = #{req_no}
+<if test="req_seq != null and req_seq != ''">
+	  AND req_seq = #{req_seq}
+</if>
+</update>
+
+<!-- 결의확정시 예실 수정 -->
+<update id="updateBblBugtActRsltDecsn" parameterType="kr.re.kitech.biz.fin.com.vo.BBlBugtActRsltVo">
+UPDATE /* kr.re.kitech.biz.fin.com.updateBblBugtActRsltDecsn */
+      bblbugtactrslt
+SET <if test='ctrl_no != null and ctrl_no != ""'> cause_amt  = cause_amt - #{cause_amt}, </if>
+    enfrc_amt  = enfrc_amt + #{enfrc_amt},
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = SYSDATE
+WHERE accnt_no = #{accnt_no}
+AND   accnt_cd = #{accnt_cd}
+</update>
+
+<!-- 결의확정시 기타예실 수정 -->
+<update id="updateBblBugtActRsltEtcDecsn" parameterType="kr.re.kitech.biz.fin.com.vo.BBlBugtActRsltVo">
+UPDATE  /* kr.re.kitech.biz.fin.com.updateBblBugtActRsltEtcDecsn */
+       bblbugtactrsltetc
+SET  <if test='ctrl_no != null and ctrl_no != ""'> req_amt  = req_amt - #{cause_amt}, </if>
+     enfrc_amt  = enfrc_amt + #{enfrc_amt},
+     updt_syspayno = #{updt_syspayno},
+     updt_daytm = SYSDATE
+WHERE bugt_yr = #{bugt_yr}
+AND accnt_no = #{accnt_no}
+AND relat_no = #{relat_no}
+AND accnt_cd = #{accnt_cd}
+</update>
+
+<!-- 결의확정시 기타예실 수정 -->
+<update id="updateBblBugtActRsltEtcEnfrcAmt" parameterType="kr.re.kitech.biz.fin.com.vo.BBlBugtActRsltVo">
+UPDATE 
+         bblbugtactrsltetc
+SET  <if test='ctrl_no != null and ctrl_no != ""'> req_amt  = req_amt - #{cause_amt}, </if>
+     enfrc_amt  = enfrc_amt + #{enfrc_amt},
+     updt_syspayno = #{updt_syspayno},
+     updt_daytm = SYSDATE
+WHERE bugt_yr = #{bugt_yr}
+AND  accnt_no = #{accnt_no}
+AND (accnt_no NOT IN ('FF130005','FF210001') OR relat_no = #{relat_no}) -- 2021.10.01. FF210001 추가
+</update>
+
+<!-- 예실반영 체크 -->
+<select id="selectBugtEtcChk" parameterType="kr.re.kitech.biz.fin.com.vo.BugtChkVo" resultType="kr.re.kitech.biz.fin.com.vo.BugtRamtVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectBugtEtcChk */
+          bugt_amt 
+  FROM bblbugtactrslt a
+  JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+ WHERE a.fomat_unit = NVL(DECODE(trim(b.fomat_unit), '', 'FCC011',b.fomat_unit), 'FCC011')
+   AND a.accnt_no = #{accnt_no}
+   AND a.accnt_cd = #{accnt_cd}
+UNION ALL
+SELECT cryfwd_bugt + bugt_amt AS bugt_amt 
+  FROM bblbugtactrsltetc a
+  JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+ WHERE a.fomat_unit = NVL(DECODE(trim(b.fomat_unit), '', 'FCC011',b.fomat_unit), 'FCC011')
+   AND a.bugt_yr = #{bugt_yr}
+   AND a.accnt_no = #{accnt_no}
+   AND (a.accnt_no NOT IN ('FF130005','FF210001') OR a.relat_no = #{relat_no}) -- 2021.10.01. FF210001 추가
+</select>
+<select id="selectComBugtCtrlPsn" parameterType="kr.re.kitech.biz.fin.com.vo.AutoBugtVo" resultType="kr.re.kitech.biz.fin.com.vo.AutoBugtVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectComBugtCtrlPsn */
+      accnt_rspns
+     , bugt_ctrl_psn
+  FROM resbgacctm
+ WHERE accnt_no IN 
+    <foreach collection ='accntList' index ='index' item='item' open='(' close=')' separator=','>
+        #{item.accnt_no}
+    </foreach>
+</select>
+<!-- 계정년마감 체크 -->
+<select id="selectBblBugtActRslt" parameterType="kr.re.kitech.biz.fin.com.vo.BugtChkVo" resultType="kr.re.kitech.biz.fin.com.vo.BugtChkVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.set.selectBblBugtActRslt */
+	a.cnt_1 AS bugt_cnt
+	, b.cnt AS yr_cls_cnt
+FROM ( SELECT COUNT(*) AS cnt_1
+       FROM  bblbugtactrslt
+       WHERE accnt_no = #{accnt_no} ) a,
+( SELECT COUNT(*) AS cnt
+  FROM bblbugtactrslt
+  WHERE accnt_no = #{accnt_no}
+  <if test="bugt_yr != null and bugt_yr != ''"> and bugt_yr = #{bugt_yr} </if>
+  <if test="close_yr != null and close_yr != ''"> and close_yr = #{close_yr} </if> 
+) b
+</select>
+
+<!-- 자동결의 생성 후 차대변 금액 체크 -->
+<select id="selectUnslipAmtCheck" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.com.selectUnslipAmtCheck */
+       SUM(DECODE(base_debit_cr, '1', unslip_amt, -unslip_amt)) AS amt
+  FROM fspslipd
+ WHERE unslip_no = #{unslip_no}
+</select>
+
+<!-- 계좌번호 조회 -->
+<select id="selectXodfVendAccnt" resultType="kr.re.kitech.biz.fin.std.vo.XodfVendAccntVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.com.selectXodfVendAccnt */
+       bankaccnt_no 
+     , tran_bank
+     , depstr
+     , fun_xodxcommst_cd_nm(tran_bank,0) AS bank_nm
+  FROM xodfvendaccnt
+ WHERE main_bankaccnt_yn = 'Y'
+   AND vend_cd = #{vend_cd}
+</select>
+</mapper>

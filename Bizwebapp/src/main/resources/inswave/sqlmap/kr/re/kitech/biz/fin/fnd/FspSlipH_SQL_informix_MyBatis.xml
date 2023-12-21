@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.fnd">
+  <select id="selectFspSlipH" parameterType="kr.re.kitech.biz.fin.fnd.vo.FspSlipHVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FspSlipHVo">
+		SELECT /* QueryID : kr.re.kitech.biz.fin.fnd.selectFspSlipH */ 
+				 a.unslip_no,
+		    a.rmk,
+		    a.amt,
+		    a.wrte_psn_nm,
+		    CASE WHEN MIN(h2.slip_no) != MAX(h2.slip_no) THEN TRIM(MIN(h2.slip_no))||' 외' ELSE MIN(h2.slip_no) END  slip_no2,
+		    a.slip_no,
+		    a.accnt_ymd,
+		    a.wrte_psn,
+		    h4.req_no
+		FROM
+		(
+		    SELECT h.unslip_no AS unslip_no,
+		        h.rmk AS rmk,
+		        SUM(DECODE(d.base_debit_cr,'1',d.unslip_amt,0)) AS amt,
+		        fun_emp_nm(h.wrte_psn) AS wrte_psn_nm,
+		        h.slip_no AS slip_no,
+		        h.accnt_ymd AS accnt_ymd,
+		        h.wrte_psn AS wrte_psn
+		    FROM fspsliph h
+		    LEFT JOIN fspslipd d ON h.unslip_no = d.unslip_no
+		    WHERE h.slip_ymd BETWEEN #{slip_ymdFrom} AND #{slip_ymdTo}
+		    AND h.slip_typ_cd = '430'
+		    AND accnt_cd = '21009010'
+		    AND d.unslip_amt <![CDATA[ > ]]> 0 
+		    <if test="unslip_no != null and unslip_no != ''">
+			 AND h.unslip_no like concat(#{unslip_no}, '%')
+		</if>
+		    <if test="wrte_psn != null and wrte_psn != ''">
+			 AND h.wrte_psn = #{wrte_psn}
+		</if>
+		    GROUP BY 1,2,4,5,6,7
+		) a
+		LEFT JOIN fspsendreq r ON r.pay_unslip_no = a.unslip_no
+		LEFT JOIN fspsliph h2 ON r.unslip_no = h2.unslip_no
+		LEFT JOIN fsppayout h4 ON h4.unslip_no = a.unslip_no AND h4.pslip_no = a.slip_no AND h4.slip_ymd = a.accnt_ymd --지불장
+		WHERE 1=1
+		    <if test="slip_no != null and slip_no != ''">
+			 AND h2.slip_no like concat(#{slip_no}, '%')
+		</if>
+		    <if test="pay_slip_no != null and pay_slip_no != ''">
+			 AND a.slip_no like concat(#{pay_slip_no}, '%')
+		</if>
+		    <if test="req_no != null and req_no != ''">
+			 AND h4.req_no = #{req_no}
+		</if>
+		GROUP BY 1,2,3,4,6,7,8,9
+		ORDER BY a.unslip_no ASC
+  </select>
+  
+  <select id="selectFspSlipExel" parameterType="kr.re.kitech.biz.fin.fnd.vo.FspSendReqVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FspSendReqVo">  
+		select /* QueryID : kr.re.kitech.biz.fin.fnd.selectFspSlipExel */ 
+		pay_clsf,
+		unslip_no,
+		trim(slip_no) as slip_no,
+		bank_nm,
+		bankaccnt_no,
+		depstr_nm,
+		send_amt, 
+		pay_unslip_no, 
+		slip_ymd,
+		accnt_ymd,
+		regst_daytmh,
+		regst_daytm,
+		pay_slip_no,
+		pay_slip_ymd
+		from 
+		(
+		    select  trim(decode(s.pay_clsf, 'FAX100','지로현금','송금' )) as pay_clsf, --구분
+		          s.unslip_no||'-'||round(s.unslip_odr,0) as unslip_no, --신청결의서 
+		          (select slip_no from fspsliph where unslip_no = s.unslip_no) as slip_no, --가결의서확정번호 
+		          trim(decode (s.pay_clsf, 'FAX100', "", x.cd_nm)) as bank_nm, --은행명
+		          s.bankaccnt_no as bankaccnt_no, --계좌번호
+		          case when s.pay_clsf = "FAX100"  then decode(s.depstr_nm, "", s.joinsto_nm, s.depstr_nm) else  trim(s.depstr_nm) end as depstr_nm, --수취인
+		          s.send_amt as send_amt, --금액
+		          s.pay_unslip_no as pay_unslip_no, --처리번호
+		          h.slip_ymd, --지급일자
+		          h.accnt_ymd,--지급일자
+		          to_char(s.regst_daytm, '%Y%m%d%H%M') as regst_daytmh,   -- 등록일시
+		          to_char(s.regst_daytm, '%Y%m%d') as regst_daytm,   -- 등록일자
+		          z.slip_no as pay_slip_no,
+		          z.slip_ymd as pay_slip_ymd
+		    from fspsendreq s, fspsliph h, outer xodxcommst x, outer fspsliph z
+		    where h.unslip_no[1,3]='430'
+		    and s.pay_unslip_no = h.unslip_no
+		    and h.slip_ymd between #{slip_ymdFrom} and #{slip_ymdTo}
+		    and s.bank = x.cd
+		    and s.pay_unslip_no = z.unslip_no
+		    order by pay_unslip_no, pay_clsf, unslip_no, bank_nm
+		)
+		where 1=1
+  </select>
+
+  <select id="selectFspSlipBankExel" parameterType="kr.re.kitech.biz.fin.fnd.vo.FspSendReqVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FspSendReqVo">  
+		select /* QueryID : kr.re.kitech.biz.fin.fnd.selectFspSlipBankExel */ 
+				 decode(a.pay_clsf, 'FAX100', '지로', 'FAX110', '현금', '송금') as pay_clsf
+		    , a.unslip_no || '-' || round(a.unslip_odr, 0) as unslip_no
+		    , b.mngmt_item_1 as bank_cd
+		    , nvl(b.cd_nm, '') as bank_nm
+		    , a.bankaccnt_no as bankaccnt_no
+		    , case
+		        when a.pay_clsf = 'FAX100'
+		            then trim(decode(a.depstr_nm, '', a.joinsto_nm, a.depstr_nm))
+		        else trim(a.depstr_nm)
+		        end as depstr_nm
+		    , CASE WHEN e.card_use_ex = 'FAJ005' AND e.tax_cd = 'FTX001' AND a.send_req_amt <![CDATA[ > ]]> a.send_amt THEN a.send_req_amt - a.send_amt ELSE a.send_amt END  as send_amt
+		    , a.pay_unslip_no as pay_unslip_no
+		    , c.slip_ymd as slip_ymd
+		    , c.accnt_ymd as accnt_ymd
+		    , to_char(a.regst_daytm, '%Y%m%d%H%M') as regst_daytmh
+		    , to_char(a.regst_daytm, '%Y%m%d') as regst_daytm
+		from fspsendreq a
+		left join xodxcommst b on a.bank = b.cd
+		join fspsliph c on a.pay_unslip_no = c.unslip_no
+		join fspslipd d on a.unslip_no = d.unslip_no and a.unslip_odr = d.unslip_odr 
+		join resbgacctm e on e.accnt_no = d.accnt_no
+		where a.pay_unslip_no = #{pay_unslip_no}
+		order by pay_clsf, unslip_no, bank_nm
+  </select>
+  
+  <select id="selectFspSlipDetail" parameterType="kr.re.kitech.biz.fin.fnd.vo.FspSlipHVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FspSlipHVo">
+		SELECT /* QueryID : kr.re.kitech.biz.fin.fnd.selectFspSlipDetail */ 
+		    SUM(CASE WHEN r.send_req_amt <![CDATA[<>]]> r.send_amt THEN r.send_req_amt - r.send_amt ELSE r.send_amt END) AS amt, -- 지불금액
+		    CASE WHEN MIN(h2.slip_no) <![CDATA[<>]]> MAX(h2.slip_no) THEN TRIM(MIN(h2.slip_no)) || ' 외' ELSE MIN(h2.slip_no) END AS slip_no2,
+		    a.rmk,
+		    a.vend_nm,
+		    a.slip_ymd,
+		    a.pslip_no,
+		    a.unslip_no,
+		    a.wrte_psn,
+		    a.wrte_psn_nm,
+		    h4.req_no,
+		    h4.req_seq,
+		    MAX(h5.apr_state) AS apr_state,
+		    MAX(fun_dept_nm(h4.req_psn_dept_cd,h4.req_psn_dept_new_ymd)) AS req_dept_nm
+		FROM
+		(
+		    SELECT 
+		        MAX(h1.rmk) AS rmk, -- 적요
+		        REPLACE(MAX(h2.rmk_2), '외 0건', '') AS vend_nm, -- 지불처
+		        MAX(h1.slip_ymd) AS slip_ymd,
+		        h1.slip_no AS pslip_no,
+		        h1.unslip_no AS unslip_no,
+		        h1.wrte_psn AS wrte_psn,
+		        fun_emp_nm(h1.wrte_psn) AS wrte_psn_nm
+		    FROM fspsliph h1
+		    JOIN fspslipd h2 ON h1.unslip_no = h2.unslip_no AND h1.slip_typ_cd = '430' -- 출금결의 타입 하드코딩
+		    WHERE h1.decsn_ex='Y'
+		    AND ('' = #{slip_ymd} OR h1.slip_ymd = #{slip_ymd} ) --조회조건 첫번째 날짜 파라미터
+		    AND ('' = #{wrte_psn} OR h1.wrte_psn = #{wrte_psn}) --시스템개인번호  파라미터
+		    AND h1.slip_typ_cd = '430' -- 출금결의 타입 하드코딩
+		    AND h2.base_debit_cr = '1'
+		    AND h2.unslip_amt <![CDATA[ > ]]> 0 
+		    AND h2.accnt_cd = '21009010' -- 미지급당좌 하드코딩
+		    GROUP BY h1.unslip_no, h1.unslip_no, h1.slip_no, h1.unslip_no, h1.wrte_psn, h1.wrte_psn
+		    ORDER BY h1.unslip_no
+		) a
+		LEFT JOIN fspsendreq r ON r.pay_unslip_no = a.unslip_no
+		LEFT JOIN fspsliph h2 ON r.unslip_no = h2.unslip_no
+		LEFT JOIN fsppayout h4 ON h4.unslip_no = a.unslip_no AND h4.pslip_no = a.pslip_no AND h4.slip_ymd = a.slip_ymd --지불장
+		LEFT JOIN xomxintfatab h5 ON h5.req_no = h4.req_no
+		WHERE ('' = #{req_no} OR NVL(h4.req_no, '') = #{req_no})
+		GROUP BY a.rmk, a.vend_nm, a.slip_ymd, a.pslip_no, a.unslip_no, a.wrte_psn, a.wrte_psn_nm, h4.req_no, h4.req_seq
+		ORDER BY a.unslip_no, h4.req_seq
+  </select>
+  <update id="updateFspSlipHMer" parameterType="kr.re.kitech.biz.fin.fnd.vo.FspSlipHMerListVo">
+		MERGE /* QueryID : kr.re.kitech.biz.fin.fnd.updateFspSlipHMer */ 
+				 INTO fsppayout AS a
+		USING dual AS b ON 1=1 AND a.req_no = #{req_no} AND a.req_seq = #{req_seq}  AND A.unslip_no = #{unslip_no} AND a.pslip_no = #{pslip_no} AND a.slip_ymd = #{slip_ymd}
+		WHEN MATCHED THEN
+		   UPDATE 
+		   SET 
+		     a.updt_syspayno = #{updt_syspayno}
+		WHEN NOT MATCHED THEN
+		   INSERT (
+		     a.req_no,
+		     a.req_seq,
+		     a.req_ymd,
+		     a.req_psn_syspayno,
+		     a.req_psn_dept_cd,
+		     a.req_psn_dept_new_ymd,
+		     a.unslip_no,
+		     a.rmk,
+		     a.vend_nm,
+		     a.amt,
+		     a.slip_no2,
+		     a.pslip_no,
+		     a.slip_ymd,
+		     a.regst_syspayno
+		    ) VALUES (#{req_no},#{req_seq},#{req_ymd},#{req_psn_syspayno},#{req_psn_dept_cd},#{req_psn_dept_new_ymd},#{unslip_no},#{rmk},#{vend_nm},#{amt},#{slip_no2},#{pslip_no},#{slip_ymd},#{regst_syspayno})
+  </update>
+
+  <delete id="deleteFspSlipH" parameterType="kr.re.kitech.biz.fin.fnd.vo.FspSlipHVo">
+		DELETE /* QueryID : kr.re.kitech.biz.fin.fnd.deleteFspSlipH */ 
+				 FROM fsppayout WHERE req_no = #{req_no}
+  </delete>
+
+</mapper>

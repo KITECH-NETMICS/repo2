@@ -1,0 +1,693 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+<!-- 휴가원신청 목록 조회 -->  
+<select id="selectListCgslapp" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCgslapp */
+       a.req_no
+     , a.req_psn_syspayno
+     , b.empno AS req_psn_empno
+     , TRIM(b.nm) AS req_psn_nm
+     , CASE WHEN ('1' = h.mngmt_item_4 OR ('HBI031' = a.holiday_clsf AND "공단" = a.holiday_sub_clsf )) THEN 'Y' ELSE 'N' END AS to_evid
+     , a.holiday_start_ymd
+     , a.holiday_cls_ymd
+     , a.holiday_clsf
+     , a.holiday_sub_clsf
+     , fun_xodxcommst_cd_nm(a.holiday_clsf,0) AS holiday_clsf_nm
+     , a.req_psn_dept_cd
+     , fun_dept_nm(a.req_psn_dept_cd,a.req_psn_dept_ymd) AS req_psn_dept_nm
+     , a.req_psn_posi_cd
+     , c.posi_nm
+     , b.work_clsf
+     , d.cd_nm AS work_clsf_nm
+     , a.holiday_daycnt
+     , a.holiday_cause
+     , a.agent_psn_syspayno
+     , a.agent_psn_nm
+     , a.destin
+     , a.contac_loc
+     , a.req_ymd
+     , a.req_state
+     , a.rmk
+     , TRIM(a.attach_file_no) AS attach_file_no
+     , a.updt_resn
+     , DECODE( a.holiday_clsf, 'HBI090', g.apr_state, e.apr_state) AS apr_state
+     , i.cd_nm AS vaccine
+     , j.cd_nm AS vac_cause
+     , k.cd_nm AS vac_gb
+     , l.cd_nm AS vac_date
+  FROM cgslapp a 
+  LEFT JOIN humbasicinfo AS b ON a.req_psn_syspayno = b.syspayno 
+  LEFT JOIN xodhposiinfo AS c ON a.req_psn_posi_cd = c.posi_cd 
+  LEFT JOIN xodxcommst AS d ON d.cd = b.work_clsf AND d.cd_clsf = 'HAG'
+  LEFT JOIN xomxintfatab AS e ON a.req_no = e.req_no 
+  LEFT JOIN xodhdeptinfo AS f ON a.req_psn_dept_cd = f.dept_cd AND a.req_psn_dept_ymd = f.dept_new_ymd
+  LEFT JOIN xomxintfatab AS g ON g.req_no = a.ctr_req_no
+  LEFT JOIN xodxcommst AS h ON h.cd = a.holiday_clsf AND h.cd_clsf = 'HBI'
+  LEFT JOIN xodxcommst AS i ON i.cd = a.vaccine
+  LEFT JOIN xodxcommst AS j ON j.cd = a.vac_cause
+  LEFT JOIN xodxcommst AS k ON k.cd = a.vac_gb
+  LEFT JOIN xodxcommst AS l ON l.cd = a.vac_date
+ WHERE a.holiday_start_ymd BETWEEN #{start_ymd} AND #{cls_ymd}
+ <if test='holiday_clsf != null and holiday_clsf != ""'> AND a.holiday_clsf = #{holiday_clsf}</if>
+ <if test='apr_state != null and apr_state != ""'> AND e.apr_state = #{apr_state}</if>
+ <choose>
+   <when test='src_gubn != null and src_gubn == "1"'> AND a.req_psn_syspayno = #{syspayno} /* 휴가자*/ </when>
+   <when test='src_gubn != null and src_gubn == "2"'> AND a.regst_psn_syspayno = #{syspayno} /* 신청자*/</when>
+   <when test='syspayno != null and syspayno !=""'> AND (a.req_psn_syspayno = #{syspayno} OR a.regst_psn_syspayno = #{syspayno})</when>
+ </choose>
+</select>
+
+<!-- 휴가원 상세 조회 -->
+<select id="selectCgslapp" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgslapp */
+     x0.req_no ,
+     x0.req_psn_syspayno,
+     h.empno AS req_psn_empno,
+     h.nm AS req_psn_nm ,
+     h.entr_ymd,
+     h.commute_cd,
+     x0.holiday_clsf,
+     x0.holiday_sub_clsf,
+     fun_xodxcommst_cd_nm(x0.holiday_clsf,0) as holiday_clsf_nm ,
+     x0.holiday_start_ymd ,
+     x0.holiday_cls_ymd ,
+     x0.holiday_start_hour ,
+     x0.holiday_cls_hour ,
+     x0.req_psn_dept_cd,
+     x0.req_psn_dept_ymd,
+     fun_dept_nm(x0.req_psn_dept_cd,x0.req_psn_dept_ymd) as req_psn_dept_nm ,
+     x0.req_psn_posi_cd ,
+     x3.posi_nm,
+     TO_CHAR(x0.holiday_daycnt) AS holiday_daycnt,
+     x0.holiday_cause ,
+     DECODE(x0.ctr_req_no, 'none', '', x0.ctr_req_no) as ctr_req_no ,
+     x0.agent_psn_syspayno ,
+     fun_humbasicinfo_cd_nm(x0.agent_psn_syspayno,1) as agent_psn_empno ,
+     x0.agent_psn_nm ,
+     x0.destin ,
+     x0.contac_loc ,
+     x0.req_ymd ,
+     x0.req_state ,
+     x0.care_name ,
+     x0.care_relation ,
+     x0.care_birth_ymd ,
+     TRIM(x0.attach_file_no) AS attach_file_no,
+     fun_humbasicinfo_cd_nm(x0.regst_psn_syspayno,0) ||'('|| fun_humbasicinfo_cd_nm(x0.regst_psn_syspayno,1) || ')' AS regst_psn_nm,
+     DECODE( x0.holiday_clsf, 'HBI090', x2.apr_state, x1.apr_state) AS apr_state,
+     x0.vaccine,
+     TRIM(x0.vac_cause) AS vac_cause,
+     TRIM(x0.vac_gb) AS vac_gb,
+     TRIM(x0.vac_date) AS vac_date,
+     nvl(x0.save_anal_yr00,0) as save_anal_yr00,
+     nvl(x0.save_anal_yr01,0) as save_anal_yr01,
+     nvl(x0.save_anal_yr02,0) as save_anal_yr02,
+     nvl(x0.save_anal_yr03,0) as save_anal_yr03,
+     nvl(x0.save_anal_yr04,0) as save_anal_yr04,
+     nvl(x0.save_anal_yr05,0) as save_anal_yr05,
+     nvl(x0.save_anal_yr06,0) as save_anal_yr06,
+     nvl(x0.save_anal_yr07,0) as save_anal_yr07,
+     nvl(x0.save_anal_yr08,0) as save_anal_yr08,
+     nvl(x0.save_anal_yr09,0) as save_anal_yr09,
+     nvl(x0.save_anal_yr10,0) as save_anal_yr10,
+     'U' AS cud_type
+FROM cgslapp AS x0
+JOIN humbasicinfo h ON x0.req_psn_syspayno = h.syspayno
+LEFT JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+LEFT JOIN xomxintfatab AS x2 ON x2.req_no = x0.ctr_req_no
+LEFT JOIN xodhposiinfo AS x3 ON x3.posi_cd = x0.req_psn_posi_cd
+WHERE x0.req_no = #{req_no}
+</select>
+
+<!-- 휴가원 신청 등록 -->
+<insert id="insertCgslapp" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappVo">
+INSERT  /* QueryID : kr.re.kitech.biz.ccs.cgs.insertCgslapp */
+  INTO cgslapp
+  ( 
+        req_no
+      , req_psn_syspayno
+      , holiday_start_ymd 
+      , holiday_clsf 
+      <if test='holiday_sub_clsf  != null'> , holiday_sub_clsf   </if>
+      <if test='holiday_cls_ymd  != null'> , holiday_cls_ymd </if>
+      , holiday_start_hour
+      , holiday_cls_hour 
+      <if test='req_psn_dept_cd   != null'> , req_psn_dept_cd    </if>
+      <if test='req_psn_dept_ymd  != null'> , req_psn_dept_ymd   </if>
+      <if test='req_psn_posi_cd   != null'> , req_psn_posi_cd    </if>
+      <if test='holiday_daycnt    != null'> , holiday_daycnt     </if>
+      <if test='holiday_cause     != null'> , holiday_cause      </if>
+      <if test='agent_psn_syspayno!= null'> , agent_psn_syspayno </if>
+      <if test='agent_psn_nm      != null'> , agent_psn_nm       </if>
+      <if test='destin            != null'> , destin             </if>
+      <if test='contac_loc        != null'> , contac_loc         </if>
+      , req_ymd 
+      , req_state
+      <if test='care_name         != null'> , care_name          </if>
+      <if test='care_relation     != null'> , care_relation      </if>
+      <if test='care_birth_ymd    != null'> , care_birth_ymd     </if>
+      <if test='attach_file_no    != null'> , attach_file_no     </if>
+      , regst_psn_syspayno 
+      , regst_daytm 
+      <if test='vaccine           != null'> , vaccine            </if>
+      <if test='vac_cause         != null'> , vac_cause          </if>
+      <if test='vac_gb            != null'> , vac_gb             </if>
+      <if test='vac_date          != null'> , vac_date           </if>
+      <if test='save_anal_yr00    != null'> , save_anal_yr00     </if>
+      <if test='save_anal_yr01    != null'> , save_anal_yr01     </if>
+      <if test='save_anal_yr02    != null'> , save_anal_yr02     </if>
+      <if test='save_anal_yr03    != null'> , save_anal_yr03     </if>
+      <if test='save_anal_yr04    != null'> , save_anal_yr04     </if>
+      <if test='save_anal_yr05    != null'> , save_anal_yr05     </if>
+      <if test='save_anal_yr06    != null'> , save_anal_yr06     </if>
+      <if test='save_anal_yr07    != null'> , save_anal_yr07     </if>
+      <if test='save_anal_yr08    != null'> , save_anal_yr08     </if>
+      <if test='save_anal_yr09    != null'> , save_anal_yr09     </if>
+      <if test='save_anal_yr10    != null'> , save_anal_yr10     </if>
+  )
+  VALUES  
+  ( 
+        #{req_no}
+      , #{req_psn_syspayno} 
+      , #{holiday_start_ymd} 
+      , #{holiday_clsf} 
+      <if test='holiday_sub_clsf  != null'> , #{holiday_sub_clsf}   </if>
+      <if test='holiday_cls_ymd  != null'> , #{holiday_cls_ymd} </if>
+      , #{holiday_start_hour} 
+      , #{holiday_cls_hour} 
+      <if test='req_psn_dept_cd   != null'> , #{req_psn_dept_cd}    </if>
+      <if test='req_psn_dept_ymd  != null'> , #{req_psn_dept_ymd}   </if>
+      <if test='req_psn_posi_cd   != null'> , #{req_psn_posi_cd}    </if>
+      <if test='holiday_daycnt    != null'> , #{holiday_daycnt}     </if>
+      <if test='holiday_cause     != null'> , #{holiday_cause}      </if>
+      <if test='agent_psn_syspayno!= null'> , #{agent_psn_syspayno} </if>
+      <if test='agent_psn_nm      != null'> , #{agent_psn_nm}       </if>
+      <if test='destin            != null'> , #{destin}             </if>
+      <if test='contac_loc        != null'> , #{contac_loc}         </if>
+      , TO_CHAR(SYSDATE, '%Y%m%d')
+      , 'XRR020'
+      <if test='care_name         != null'> , #{care_name}          </if>
+      <if test='care_relation     != null'> , #{care_relation}      </if>
+      <if test='care_birth_ymd    != null'> , #{care_birth_ymd}     </if>
+      <if test='attach_file_no    != null'> , #{attach_file_no}     </if>
+      , #{regst_syspayno} 
+      , SYSDATE
+      <if test='vaccine           != null'> , #{vaccine}            </if>
+      <if test='vac_cause         != null'> , #{vac_cause}          </if>
+      <if test='vac_gb            != null'> , #{vac_gb}             </if>
+      <if test='vac_date          != null'> , #{vac_date}           </if>
+      <if test='save_anal_yr00    != null'> , #{save_anal_yr00}     </if>
+      <if test='save_anal_yr01    != null'> , #{save_anal_yr01}     </if>
+      <if test='save_anal_yr02    != null'> , #{save_anal_yr02}     </if>
+      <if test='save_anal_yr03    != null'> , #{save_anal_yr03}     </if>
+      <if test='save_anal_yr04    != null'> , #{save_anal_yr04}     </if>
+      <if test='save_anal_yr05    != null'> , #{save_anal_yr05}     </if>
+      <if test='save_anal_yr06    != null'> , #{save_anal_yr06}     </if>
+      <if test='save_anal_yr07    != null'> , #{save_anal_yr07}     </if>
+      <if test='save_anal_yr08    != null'> , #{save_anal_yr08}     </if>
+      <if test='save_anal_yr09    != null'> , #{save_anal_yr09}     </if>
+      <if test='save_anal_yr10    != null'> , #{save_anal_yr10}     </if> 
+  )
+</insert>	
+	
+<update id="updateCgslapp" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappVo">
+UPDATE cgslapp    /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCgslapp */      
+   SET req_psn_syspayno   = #{req_psn_syspayno} 
+     , holiday_start_ymd  = #{holiday_start_ymd}
+     , holiday_clsf       = #{holiday_clsf}
+     <if test="holiday_sub_clsf  != null"> , holiday_sub_clsf   = #{holiday_sub_clsf}   </if>
+     <if test="holiday_cls_ymd  != null"> , holiday_cls_ymd    = #{holiday_cls_ymd}  </if>
+     , holiday_start_hour = #{holiday_start_hour} 
+     , holiday_cls_hour   = #{holiday_cls_hour} 
+     <if test="req_psn_dept_cd   != null"> , req_psn_dept_cd    = #{req_psn_dept_cd}    </if>
+     <if test="req_psn_dept_ymd  != null"> , req_psn_dept_ymd   = #{req_psn_dept_ymd}   </if>
+     <if test="req_psn_posi_cd   != null"> , req_psn_posi_cd    = #{req_psn_posi_cd}    </if>
+     <if test="holiday_daycnt    != null"> , holiday_daycnt     = #{holiday_daycnt}     </if>
+     <if test="holiday_cause     != null"> , holiday_cause      = #{holiday_cause}      </if>
+     <if test="agent_psn_syspayno!= null"> , agent_psn_syspayno = #{agent_psn_syspayno} </if>
+     <if test="agent_psn_nm      != null"> , agent_psn_nm       = #{agent_psn_nm}       </if>
+     <if test="destin            != null"> , destin             = #{destin}             </if>
+     <if test="contac_loc        != null"> , contac_loc         = #{contac_loc}         </if>
+     <if test="care_name         != null"> , care_name          = #{care_name}          </if>
+     <if test="care_relation     != null"> , care_relation      = #{care_relation}      </if>
+     <if test="care_birth_ymd    != null"> , care_birth_ymd     = #{care_birth_ymd}     </if>
+     <if test="attach_file_no    != null"> , attach_file_no     = #{attach_file_no}     </if>
+     <if test="vaccine           != null"> , vaccine            = #{vaccine}            </if>
+     <if test="vac_cause         != null"> , vac_cause          = #{vac_cause}          </if>
+     <if test="vac_gb            != null"> , vac_gb             = #{vac_gb}             </if>
+     <if test="vac_date          != null"> , vac_date           = #{vac_date}           </if>
+     , updt_psn_syspayno  = #{updt_syspayno} 
+     , updt_daytm         =  sysdate
+     <if test="save_anal_yr00    != null"> , save_anal_yr00     = #{save_anal_yr00}     </if>
+     <if test="save_anal_yr01    != null"> , save_anal_yr01     = #{save_anal_yr01}     </if>
+     <if test="save_anal_yr02    != null"> , save_anal_yr02     = #{save_anal_yr02}     </if>
+     <if test="save_anal_yr03    != null"> , save_anal_yr03     = #{save_anal_yr03}     </if>
+     <if test="save_anal_yr04    != null"> , save_anal_yr04     = #{save_anal_yr04}     </if>
+     <if test="save_anal_yr05    != null"> , save_anal_yr05     = #{save_anal_yr05}     </if>
+     <if test="save_anal_yr06    != null"> , save_anal_yr06     = #{save_anal_yr06}     </if>
+     <if test="save_anal_yr07    != null"> , save_anal_yr07     = #{save_anal_yr07}     </if>
+     <if test="save_anal_yr08    != null"> , save_anal_yr08     = #{save_anal_yr08}     </if>
+     <if test="save_anal_yr09    != null"> , save_anal_yr09     = #{save_anal_yr09}     </if>
+     <if test="save_anal_yr10    != null"> , save_anal_yr10     = #{save_anal_yr10}     </if>                 
+ WHERE req_no = #{req_no}
+</update>
+    
+<!-- 휴가원 삭제 -->
+<delete id="deleteCgslapp" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo">
+	DELETE FROM CGSLAPP   /* QueryID : kr.re.kitech.biz.ccs.cgs.deleteCgslapp */ 
+    WHERE REQ_NO = #{req_no}     
+</delete>
+    
+<!-- 휴가원신청-미승인연차일수 -->
+<select id="selectCgsLappNoAprCnt" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="java.lang.String">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgsLappNoAprCnt */
+      REPLACE(TO_CHAR(NVL(SUM(a.holiday_daycnt), '0')), ' ', '') AS no_apr_qty
+  FROM cgslapp a
+  JOIN xomxintfatab b ON a.req_no = b.req_no
+ WHERE a.holiday_clsf IN ('HBI006','HBI019','HBI020','HBI025')
+   AND b.apr_state NOT IN ('XAD100', 'XAD013', 'XAD015', 'XAD005', 'XAD010')
+   AND SUBSTR(a.holiday_start_ymd, 1 ,4) = #{year}
+   AND req_psn_syspayno = #{syspayno}
+</select>
+    
+<!-- 개인 잔여연차일수 조회  -->
+<select id="selectRemidrAnalQty" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappAnalVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectRemidrAnalQty */
+      anal_yr
+    , syspayno
+    , remidr_anal_qty - dedct_anal_time AS remidr_anal_qty  
+    , remidr_save_qty00 
+    , remidr_save_qty01
+    , remidr_save_qty02
+    , remidr_save_qty03
+    , remidr_save_qty04
+    , remidr_save_qty05
+    , remidr_save_qty06
+    , remidr_save_qty07
+    , remidr_save_qty08
+    , remidr_save_qty09
+    , remidr_save_qty10
+    , creat_com_qty + cryfwd_com_qty AS tot_com_qty /* 보상연차일수*/
+    , use_com_qty + dedct_reward_time AS use_com_qty
+    , creat_com_qty + cryfwd_com_qty - use_com_qty - dedct_reward_time AS remain_com_qty
+FROM (
+    SELECT
+          x1.anal_yr
+        , x1.syspayno
+        , NVL(x2.dedct_anal_time, 0) AS dedct_anal_time /* 공제적용_연차*/
+        , NVL(x1.remidr_anal_qty, 0) AS remidr_anal_qty /* 연차잔여 */
+        , x1.creat_com_qty  /* 보상생성 */
+        , x1.use_com_qty /* 보상사용 */
+        , x1.cryfwd_com_qty /* 보상이월 */
+        , NVL(x2.dedct_reward_time, 0) AS dedct_reward_time /* 보상공제 */
+        , x1.creat_anal_qty - x1.use_save_qty00 as remidr_save_qty00
+        , x1.remidr_save_qty01
+        , x1.remidr_save_qty02
+        , x1.remidr_save_qty03 
+        , x1.remidr_save_qty04 
+        , x1.remidr_save_qty05
+        , x1.remidr_save_qty06
+        , x1.remidr_save_qty07
+        , x1.remidr_save_qty08
+        , x1.remidr_save_qty09 
+        , x1.remidr_save_qty10
+    FROM humbasicinfo AS x0
+    LEFT JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno AND x1.anal_yr = #{anal_yr}
+    LEFT JOIN (
+             SELECT SUBSTR(yyyymm,1,4) AS anal_yr
+                  , syspayno
+                  , SUM(dedct_anal_time) AS dedct_anal_time
+                  , SUM(dedct_reward_time) AS dedct_reward_time
+               FROM cwsworktimeadlog /* 근무시간정산이력*/
+              GROUP by 1,2
+            ) AS x2 ON x2.syspayno = x1.syspayno AND x2.anal_yr = x1.anal_yr
+    WHERE (x0.retire_ymd IS NULL OR TRIM(x0.retire_ymd) = '' OR SUBSTR(x0.retire_ymd, 1,4) <![CDATA[ >= ]]>#{anal_yr} - 1)      
+      AND x0.syspayno = #{syspayno}
+)
+ORDER BY anal_yr DESC
+</select>
+
+<!-- 근무일수 -->    
+<select id="selectWorkDays" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="int">
+SELECT  /* QueryID : kr.re.kitech.biz.ccs.cgs.selectWorkDays */
+       COUNT(*) AS work_days
+ FROM xomdtmst AS x0
+WHERE off_yn = 'N' 
+  AND x0.ymd BETWEEN #{start_ymd} AND #{cls_ymd}
+</select>
+
+<!-- [단건] 당해년도의 가족돌봄휴가, 병가 상신이후 상태의 카운트 조회 -->    
+<select id="selectCgsUsedQty" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgsUsedQty */
+       x0.req_psn_syspayno
+     , TRUNC(SUM(DECODE(x0.holiday_clsf, 'HBI013', holiday_daycnt, 0))) AS use_chd_days  -- 가족돌봄휴가
+     , TRUNC(SUM(DECODE(x0.holiday_clsf, 'HBI008', holiday_daycnt, 0))) AS use_sck_days  -- 병가
+  FROM cgslapp AS x0 
+  JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+ WHERE x0.holiday_start_ymd[1,4] = TO_CHAR(TODAY, '%Y') -- 당해
+   AND x1.apr_state >= 'XAD020' 
+   AND x0.req_psn_syspayno = #{syspayno}
+ GROUP BY 1
+</select>
+
+<!-- 연차현황조회(팝업) -->
+<select id="selectPsnLappInfo" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectPsnLappInfo */
+	      syspayno
+	    , anal_yr
+	    , entr_ymd   
+	    , expire_ymd   
+	    , expire_daycnt || ' (' || TRUNC(expire_daycnt) || '일' || TRUNC(MOD(expire_daycnt * 1000, 1000) / 125) || '시간)' AS expire_daycnt
+	    , creat_anal_qty || ' (' || TRUNC(creat_anal_qty) || '일)' AS creat_anal_qty
+	    , cryfwd_anal_qty || ' (' || TRUNC(cryfwd_anal_qty) || '일' || TRUNC(MOD(cryfwd_anal_qty * 1000, 1000) / 125) || '시간)' AS cryfwd_anal_qty
+	    , use_anal_qty || ' (' || TRUNC(use_anal_qty) || '일' || TRUNC(MOD(use_anal_qty * 1000, 1000) / 125) || '시간)' AS use_anal_qty
+	    , remidr_anal_qty || ' (' || TRUNC(remidr_anal_qty) || '일' || TRUNC(MOD(remidr_anal_qty * 1000, 1000) / 125) || '시간)' AS remidr_anal_qty
+	    , duty_use_anal_qty || ' (' || TRUNC(duty_use_anal_qty) || '일)' AS duty_use_anal_qty
+	    , tot_com_cnt || ' (' || TRUNC(tot_com_cnt) || '일' || TRUNC(MOD(tot_com_cnt * 1000, 1000) / 125) || '시간)' AS tot_com_cnt
+	    , use_com_cnt || ' (' || TRUNC(use_com_cnt) || '일' || TRUNC(MOD(use_com_cnt * 1000, 1000) / 125) || '시간)' AS use_com_cnt
+	    , remain_com_cnt || ' (' || TRUNC(remain_com_cnt) || '일' || TRUNC(MOD(remain_com_cnt * 1000, 1000) / 125) || '시간)' AS remain_com_cnt
+	    , use_alt_days
+	    , use_chd_days
+	    , use_sck_days
+	    , dedct_reward_time || ' (' || TRUNC(dedct_reward_time) || '일' || TRUNC(MOD(dedct_reward_time * 1000, 1000) / 125) || '시간)' AS dedct_reward_time
+	    , dedct_anal_time || ' (' || TRUNC(dedct_anal_time) || '일' || TRUNC(MOD(dedct_anal_time * 1000, 1000) / 125) || '시간)' AS dedct_anal_time
+	    , cryfwd_com_cnt || ' (' || TRUNC(cryfwd_com_cnt) || '일' || TRUNC(MOD(cryfwd_com_cnt * 1000, 1000) / 125) || '시간)' AS cryfwd_com_cnt
+FROM (
+    SELECT 
+          x0.syspayno
+        , x0.entr_ymd
+        , x1.anal_yr
+        , NVL(TRUNC(x1.anal_yr+1)||'0101', 0) AS expire_ymd
+        , DECODE( x1.is_expire, 't', 0, x1.expired_cnt) AS expire_daycnt
+        , x1.creat_anal_qty
+        , x1.cryfwd_anal_qty
+        , x1.use_anal_qty
+        , ROUND(x1.remidr_anal_qty - NVL(x9.dedct_anal_time,0), 5) AS remidr_anal_qty
+        , x1.duty_use_anal_qty
+        , ROUND( NVL(x1.creat_com_qty,0), 5) AS tot_com_cnt
+        , ROUND( NVL(x1.use_com_qty,0), 5) AS use_com_cnt
+        , ROUND( NVL(x1.creat_com_qty,0) + NVL(x1.cryfwd_com_qty,0) - NVL(x1.use_com_qty,0) - NVL(x9.dedct_reward_time ,0), 5) AS remain_com_cnt
+        , NVL((SELECT SUM(y0.holiday_daycnt)
+                FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.ctr_req_no AND y1.apr_state >= 'XAD020'
+                WHERE y0.holiday_clsf = 'HBI090' AND y0.req_psn_syspayno = x1.syspayno AND y0.holiday_start_ymd[1,4] = x1.anal_yr), 0
+        ) AS use_alt_days
+        , NVL((SELECT SUM(y0.holiday_daycnt)
+                FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state >= 'XAD020'
+                WHERE y0.holiday_clsf = 'HBI012' AND y0.req_psn_syspayno = x1.syspayno AND y0.holiday_start_ymd[1,4] = x1.anal_yr), 0
+        ) AS use_chd_days
+        , NVL((SELECT SUM(y0.holiday_daycnt)
+                FROM cgslapp AS y0 JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state >= 'XAD020'
+                WHERE y0.holiday_clsf = 'HBI008' AND y0.req_psn_syspayno = x1.syspayno AND y0.holiday_start_ymd[1,4] = x1.anal_yr), 0
+        ) AS use_sck_days
+        , NVL(x9.dedct_reward_time, 0) AS dedct_reward_time
+        , NVL(x9.dedct_anal_time, 0) AS dedct_anal_time
+        , ROUND(NVL(x1.cryfwd_com_qty,0),5) AS cryfwd_com_cnt
+    FROM humbasicinfo AS x0
+    JOIN cgsanulmhold AS x1 ON x1.syspayno = x0.syspayno
+    LEFT JOIN (
+        SELECT substr(yyyymm,1,4) AS anal_yr, syspayno, sum(dedct_reward_time) AS dedct_reward_time, sum(dedct_anal_time) AS dedct_anal_time
+            FROM cwsworktimeadlog
+          GROUP BY 1,2
+    ) AS x9 ON x9.syspayno = x1.syspayno AND x9.anal_yr = x1.anal_yr
+    WHERE x0.syspayno = #{syspayno}
+    AND x1.anal_yr = #{year}
+)
+</select>
+    
+<!-- 개인정보조회(휴가사용내역 팝업) -->
+<select id="selectHumInfo" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappHumVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectHumInfo */
+      a.syspayno /* 시스템개인번호 */
+    , a.empno /* 개인번호 */
+    , a.nm /* 성명 */
+    , b.dept_nm /* 부서명 */
+    , d.dept_nm /* 소속본부 */
+    , a.posi_cd
+    , a.occugrp_cd
+    , a.occutyp_cd
+    , c.posi_nm /* 직급 */
+    , a.email /* 이메일 */
+FROM humbasicinfo a
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+JOIN xodhposiinfo c ON a.posi_cd = c.posi_cd 
+JOIN xodhdeptinfo d ON d.dept_cd = b.divsn_dept AND d.dept_new_ymd = b.divsn_dept_new_ymd
+WHERE a.syspayno = #{syspayno}
+</select>
+
+<!-- 휴가사용내역(팝업) -->    
+<select id="selectLappInfo" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappHoliVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectLappInfo */
+      req_no /* 신청번호 */
+    , req_psn_syspayno /* 신청자시스템개인번호 */
+    , fun_xodxcommst_cd_nm(holiday_clsf, 0) as holiday_clsf /* 구분 */
+    , holiday_start_ymd /* 시작일자 */
+    , holiday_cls_ymd /* 종료일자 */
+    , holiday_daycnt /* 휴가일수 */
+    , destin /* 행선지 */
+    , holiday_cause /* 사유 */
+FROM cgslapp
+WHERE req_psn_syspayno = #{syspayno}
+AND SUBSTR(holiday_start_ymd, 1, 4) = #{anal_yr}
+</select>
+    
+    <select id="selectDedctList" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappDedctVo">	
+        SELECT     /* QueryID : kr.re.kitech.biz.ccs.cgs.selectDedctList */
+		       anal_yr
+             , yyyymm
+             , syspayno
+             , dedct_reward_time
+             , dedct_anal_time
+             , dedct_reward_time + dedct_anal_time AS tot_time
+		FROM (
+		        SELECT substr(yyyymm,1,4) AS anal_yr
+		                    , yyyymm
+		                    , syspayno
+		                    , sum(NVL(dedct_reward_time,0)) AS dedct_reward_time
+		                    , sum(NVL(dedct_anal_time,0)) AS dedct_anal_time
+		                    , sum(NVL(dedct_reward_time,0)) + sum(NVL(dedct_anal_time,0)) AS tot_time
+		        FROM cwsworktimeadlog
+		        GROUP BY 1,2,3
+		) 
+		WHERE tot_time != 0
+		AND anal_yr = #{anal_yr}
+		AND syspayno = #{syspayno}
+    </select>
+    
+    <select id="selectCreComList" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappCreComVo">	
+        SELECT     /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCreComList */
+		    DISTINCT y0.syspayno
+		    , y0.anal_yr AS anal_yr
+		    , work_yrmon AS yyyymm
+		    , SUM( NVL(y1.rwd_ovr_wk_mm, 0) / 60 * 0.125) AS reward_tot
+		FROM cgsanulmhold AS y0 
+		LEFT JOIN humslmmovrwkmst AS y1 ON y1.syspayno = y0.syspayno AND y1.work_yrmon[1,4] = y0.anal_yr
+		LEFT JOIN xomxintfatab AS y2 ON y2.req_no = y1.req_no
+		WHERE y2.apr_state = 'XAD100'
+		AND y0.anal_yr = #{anal_yr}
+		AND y0.syspayno = #{syspayno}
+		GROUP BY 1,2,3
+    </select>
+
+<!-- 병가 휴가원신청중 증빙 미등록건 조회 -->
+<select id="selectLappNoFileCnt" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="int">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectLappNoFileCnt */
+      COUNT(*) AS no_file_cnt
+  FROM cgslapp AS x0
+  JOIN xomxintfatab AS x2 ON x2.req_no = x0.req_no
+ WHERE TODAY > TO_DATE( x0.holiday_cls_ymd, '%Y%m%d') + 14 UNITS DAY /* 14일 적용 */
+   AND x2.apr_state >= 'XAD020'    /* 상신이전 단계 건은 제외 */
+   AND x0.holiday_clsf = 'HBI008'  /* 해당 휴가원(병가) */ 
+   AND NVL(x0.attach_file_no,'') = ''  /* 증빙파일 누락 건 */
+   AND x0.req_psn_syspayno = #{syspayno} 
+   AND x0.holiday_start_ymd >= #{start_day} /* 정책 시작일 */
+</select>
+
+<!-- 기작성중 문서 존재여부 체크 -->
+<select id="selectCgsLappExistChk" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="java.util.HashMap">
+SELECT first 1    /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgsLappExistChk */
+       x0.req_no
+     , DECODE( x0.holiday_clsf, 'HBI090', x2.apr_state, x1.apr_state) AS apr_state
+FROM cgslapp AS x0
+LEFT JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+LEFT JOIN xomxintfatab AS x2 ON x2.req_no = x0.ctr_req_no
+WHERE x0.req_psn_syspayno = #{req_psn_syspayno}
+<if test='holiday_clsf != null and holiday_clsf == "HBI042"'> 
+   AND x0.holiday_clsf = #{holiday_clsf} 
+   AND x0.holiday_start_ymd = #{holiday_start_ymd}
+</if>
+<if test='holiday_clsf != null and holiday_clsf != "HBI042"'> 
+   AND ( x0.holiday_start_ymd BETWEEN #{holiday_start_ymd} AND #{holiday_cls_ymd} OR holiday_cls_ymd BETWEEN #{holiday_start_ymd} AND #{holiday_cls_ymd}) 
+</if>
+</select>    
+
+<!-- 휴가원 삭제 -->
+<delete id="deleteCgsLapp" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.ccs.cgs.deleteCgsLapp */
+FROM cgslapp
+WHERE ctr_req_no = #{ctr_req_no}
+AND LENGTH(TRIM(ctr_req_no)) > 0
+</delete>
+
+<!-- 휴가원 중복 체크 -->
+<select id="selectLappDuplChk" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSubHoliVo" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.ccs.cgs.selectLappDuplChk */
+       '근무대상일이 아닙니다. - 일자: ' || ymd AS msg
+  FROM xomdtmst
+ WHERE off_yn = 'Y' 
+   AND ymd = #{subs_date}
+ UNION
+SELECT '기존 저장된 휴가원 기간과 중복됩니다. - 개인번호: ' || SUBSTR(x1.req_psn_syspayno, 3) || ', 신청번호: ' || x1.req_no AS msg
+  FROM cgslapp AS x1
+  JOIN XomxIntfaTab AS x2 ON x2.req_no = x1.req_no AND x2.apr_state >= 'XAD020'
+  JOIN (
+       SELECT CAST(#{subs_date} AS CHAR(8)) AS subs_date FROM sysmaster:sysdual
+     ) AS t ON t.subs_date BETWEEN x1.holiday_start_ymd AND x1.holiday_cls_ymd
+ WHERE x1.req_psn_syspayno = #{syspayno}
+ UNION
+SELECT '기존 저장된 대체휴일 기간과 중복됩니다. - 개인번호: ' || SUBSTR(x1.req_psn_syspayno, 3) || ', 신청번호: ' || x1.req_no AS msg
+  FROM cgslapp AS x1
+  JOIN XomxIntfaTab AS x2 ON x2.req_no = x1.ctr_req_no 
+  JOIN (
+        SELECT CAST(#{subs_date} AS CHAR(8)) AS subs_date FROM sysmaster:sysdual
+       ) AS t ON t.subs_date BETWEEN x1.holiday_start_ymd AND x1.holiday_cls_ymd
+ WHERE x1.req_psn_syspayno = #{syspayno}
+ UNION
+SELECT
+    '기존 저장된 국내출장신청서 기간과 중복됩니다. - 개인번호: ' || SUBSTR(x0.biztrip_psn_syspayno, 3) || ', 신청번호: ' || x1.req_no AS msg
+  FROM CtrDomCompn AS x0
+  JOIN CtrDom AS x1 ON x1.req_no = x0.req_no
+  JOIN XomxIntfaTab AS x2 ON x2.req_no = x0.req_no AND x2.apr_state >= 'XAD020'
+  JOIN (
+       SELECT CAST(#{subs_date} AS CHAR(8)) AS subs_date FROM sysmaster:sysdual
+       ) AS t ON t.subs_date BETWEEN x1.biztrip_start_ymd AND x1.biztrip_cls_ymd
+  LEFT JOIN CtrDomAd AS x5 ON x5.biztrip_req_no = x1.req_no
+  LEFT JOIN ctrbiztriprst AS y0 ON y0.req_no = x1.req_no AND y0.biztrip_day = t.subs_date
+  LEFT JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state >= 'XAD020'
+ WHERE (x5.adjst_resn IS NULL OR x5.adjst_resn != 'FBQ020') -- 정산한건이 아니거나 정산으로 출장취소한 경우 제외
+   AND (y0.rest_cd IS NULL OR y0.rest_cd = 'CTD010')
+   AND x0.biztrip_psn_syspayno = #{syspayno}
+ UNION
+SELECT
+    '기존 저장된 해외출장신청서 기간과 중복됩니다. - 개인번호: ' || SUBSTR(x0.biztrip_psn_syspayno, 3) || ', 신청번호: ' || x1.req_no AS msg
+  FROM CtrOverCompn AS x0
+  JOIN CtrOver AS x1 ON x1.req_no = x0.req_no
+  JOIN XomxIntfaTab AS x2 ON x2.req_no = x0.req_no AND x2.apr_state >= 'XAD020'
+  JOIN (
+        SELECT CAST(#{subs_date} AS CHAR(8)) AS subs_date FROM sysmaster:sysdual
+       ) AS t ON t.subs_date BETWEEN x1.biztrip_start_ymd AND x1.biztrip_cls_ymd
+  LEFT JOIN CtrOverAd AS x5 ON x5.biztrip_req_no = x1.req_no
+  LEFT JOIN ctrbiztriprst AS y0 ON y0.req_no = x1.req_no AND y0.biztrip_day = t.subs_date
+  LEFT JOIN xomxintfatab AS y1 ON y1.req_no = y0.req_no AND y1.apr_state >= 'XAD020'
+ WHERE (x5.adjst_resn IS NULL OR x5.adjst_resn != 'FBQ020') -- 정산한건이 아니거나 정산으로 출장취소한 경우 제외
+   AND (y0.rest_cd IS NULL OR y0.rest_cd = 'CTD010')
+   AND x0.biztrip_psn_syspayno = #{syspayno}
+ UNION
+SELECT
+    '기존 저장된 근거리출장신청서 기간과 중복됩니다. - 개인번호: ' || SUBSTR(x0.biztrip_psn_syspayno, 3) || ', 신청번호: ' || x1.req_no AS msg
+  FROM ctrlocalcompn AS x0
+  JOIN ctrlocal AS x1 ON x1.req_no = x0.req_no 
+  JOIN xomxintfatab AS x2 ON x2.req_no = x0.req_no AND x2.apr_state >= 'XAD020'
+  JOIN (
+        SELECT CAST(#{subs_date} AS CHAR(8)) AS subs_date FROM sysmaster:sysdual
+       ) AS t ON t.subs_date = x1.biztrip_ymd
+WHERE x0.biztrip_psn_syspayno = #{syspayno}
+</select>
+
+<!-- 대체휴일 저장 -->
+<insert id="insertCgsLappSub" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSubHoliVo">
+INSERT /* kr.re.kitech.biz.ccs.cgs.insertCgsLappSub */
+   INTO cgslapp (
+    req_no,
+    req_psn_syspayno,
+    holiday_clsf,
+    holiday_start_ymd,
+    holiday_cls_ymd,
+    req_psn_dept_cd,
+    req_psn_dept_ymd,
+    req_psn_posi_cd,
+    holiday_daycnt,
+    holiday_cause,
+    req_ymd,
+    req_state,
+    ctr_req_no,
+    regst_psn_syspayno,
+    regst_daytm
+)
+SELECT 
+    CAST(#{req_no} AS CHAR(12)) AS req_no,
+    h.syspayno AS req_psn_syspayno,
+    'HBI090' AS holiday_clsf, -- 휴가구분(대체휴가)
+    CAST(#{subs_date} AS CHAR(8)) AS holiday_start_ymd, -- 대체휴가일
+    CAST(#{subs_date} AS CHAR(8)) AS holiday_cls_ymd, -- 대체휴가일
+    h.dept_cd AS req_psn_dept_cd,
+    h.dept_new_ymd AS req_psn_dept_ymd,
+    h.posi_cd AS req_psn_posi_cd,
+    1 AS holiday_daycnt,
+    '휴일근무 대체휴일' AS holiday_cause,
+    TO_CHAR(TODAY, '%Y%m%d') AS req_ymd, -- 출장신청서 신청일
+    'XRR020' AS req_state, -- 결재상태(진행)
+    CAST(#{ctr_req_no} AS CHAR(12)) AS ctr_req_no, -- 관련 출장신청번호
+    h.syspayno AS regst_psn_syspayno,
+    CURRENT AS regst_daytm
+FROM humbasicinfo AS h
+WHERE h.syspayno = #{syspayno}
+</insert>
+
+<!-- 휴가원 증빙자료 팝업 조회 -->
+<select id="selectCgsLappEvid" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappVo">
+SELECT /* kr.re.kitech.biz.ccs.cgs.selectCgsLappEvid */
+      a.req_no,
+      a.req_psn_syspayno,
+      TRIM(b.nm) AS req_psn_nm,
+      CASE WHEN ('1' = h.mngmt_item_4 OR ('HBI031' = a.holiday_clsf AND "공단" = a.holiday_sub_clsf )) THEN 'Y' ELSE 'N' END AS to_evid,
+      SUBSTR(a.holiday_start_ymd,0,4)||'-'||SUBSTR(a.holiday_start_ymd,5,2)||'-'||SUBSTR(a.holiday_start_ymd,7,2)||' ~ '||SUBSTR(a.holiday_cls_ymd,0,4)||'-'||SUBSTR(a.holiday_cls_ymd,5,2)||'-'||SUBSTR(a.holiday_cls_ymd,7,2) AS holiday_prd,
+      a.holiday_clsf,
+      fun_xodxcommst_cd_nm(a.holiday_clsf,0) AS holiday_clsf_nm,
+      a.attach_file_no,
+      a.regst_psn_syspayno AS regst_psn,
+      a.vaccine,
+      a.vac_cause,
+      a.vac_gb,
+      a.vac_date,
+      c.endpoints,
+      a.req_ymd
+FROM cgslapp a  
+JOIN humbasicinfo b ON a.req_psn_syspayno = b.syspayno
+JOIN xodxcommst AS h ON h.cd = a.holiday_clsf AND h.cd_clsf = 'HBI'
+JOIN xomxintfatab c ON a.req_no = c.req_no
+WHERE a.req_no = #{req_no} 
+</select>
+
+<!-- 휴가원 증빙자료 저장 -->
+<update id="updateCgsLappEvid" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappVo">
+UPDATE /* kr.re.kitech.biz.ccs.cgs.updateCgsLappEvid */
+     cgslapp
+   SET attach_file_no = #{attach_file_no}
+      <if test='vac_cause != null'> , vac_cause = #{vac_cause} </if>
+      <if test='vac_gb != null'> , vac_gb = #{vac_gb} </if>
+      <if test='vac_date != null'> , vac_date = #{vac_date} </if>
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+
+<!-- 개인연차조회 팝업에서 저장연차 저장 -->
+<update id="updateCgslappSaveAnal" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappVo">
+UPDATE cgslapp  /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCgslappSaveAnal */      
+   SET <if test="save_anal_yr00 != null"> save_anal_yr00 = #{save_anal_yr00},     </if>
+       <if test="save_anal_yr01 != null"> save_anal_yr01 = #{save_anal_yr01},     </if>
+       <if test="save_anal_yr02 != null"> save_anal_yr02 = #{save_anal_yr02},     </if>
+       <if test="save_anal_yr03 != null"> save_anal_yr03 = #{save_anal_yr03},     </if>
+       <if test="save_anal_yr04 != null"> save_anal_yr04 = #{save_anal_yr04},     </if>
+       <if test="save_anal_yr05 != null"> save_anal_yr05 = #{save_anal_yr05},     </if>
+       <if test="save_anal_yr06 != null"> save_anal_yr06 = #{save_anal_yr06},     </if>
+       <if test="save_anal_yr07 != null"> save_anal_yr07 = #{save_anal_yr07},     </if>
+       <if test="save_anal_yr08 != null"> save_anal_yr08 = #{save_anal_yr08},     </if>
+       <if test="save_anal_yr09 != null"> save_anal_yr09 = #{save_anal_yr09},     </if>
+       <if test="save_anal_yr10 != null"> save_anal_yr10 = #{save_anal_yr10},     </if>   
+      updt_psn_syspayno  = #{updt_syspayno},
+      updt_daytm =  sysdate
+ WHERE req_no = #{req_no}
+</update>
+</mapper>

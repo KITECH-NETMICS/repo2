@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.sup.tec">
+<!-- 기술지원결의생성(영수)-->
+<select id="selectFcpDepstReqSlip" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipMntVo">
+SELECT DISTINCT /* kr.re.kitech.biz.sup.tec.selectFcpDepstReqSlip */
+       b.req_no
+     , TRIM(i.unslip_no) AS unslip_no
+     , i.unslip_odr
+     , i.supt_work_clsf
+     , a.accnt_no
+     , TRIM(a.tax_bill_no) AS bill_no
+     , a.sude_psn AS vend_cd -- 거래처번호
+     , c.vend_abbr AS vend_nm
+     , (a.suply_value + a.taxamt) AS totl_amt
+     , a.suply_value
+     , a.taxamt
+     , TRIM(a.decsn_no) AS decsn_no
+     , 'FBD021' AS depst_clsf
+     , DECODE(NVL(r.tax_cd,''), '', 'FTX002', r.tax_cd) AS tax_cd -- 과세구분코드
+     , a.demnd_recv_clsf
+     , a.issu_ymd
+     , b.depst_liq
+     , b.depst_ymd
+     , NVL(b.bankaccnt_no, i.depst_bankaccnt_no) AS bankaccnt_no
+     , r.accnt_rspns
+     , r.accnt_state
+     , r.fomat_unit
+     , n.srpt_cd
+     , n.divsn_clsf
+     , a.wrte_psn
+     , d.nm AS wrte_psn_nm
+     , TRIM(a1.item_nm) AS rmk_1
+     , j.stat_code
+     , j.err_cd
+     , fun_fin_tax_bill_state(a.tax_bill_no, 1) AS state_nm
+     , x.apr_state
+     , g.decsn_ex
+     , h.slip_no
+     , h.slip_odr
+     , b1.depst_mngmt_no
+  FROM ftxbillh a
+  JOIN ftxbilld a1 ON a.tax_bill_no = a1.tax_bill_no AND a1.odr = (SELECT MIN(odr) FROM ftxbilld WHERE tax_bill_no = a1.tax_bill_no)
+  JOIN spttecrcptinfo i ON a.tax_bill_no = i.bill_no
+  JOIN xodfvend c ON a.sude_psn = c.vend_cd
+  JOIN humbasicinfo d ON a.wrte_psn = d.syspayno
+  JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+  LEFT JOIN spttecrcptdepst b1 ON i.req_no = b1.depst_mngmt_no
+  LEFT JOIN fcpdepstreq b ON b1.req_no = b.req_no  
+  LEFT JOIN fspslipdecsnd h ON b.depst_unslip_no = h.unslip_no AND b.depst_unslip_odr = h.unslip_odr  
+  LEFT JOIN itis_issu_mstr j ON a.tax_bill_no = j.issu_seqno  
+  LEFT JOIN resadxreqm n ON r.accnt_no = n.creat_accnt_no
+  LEFT JOIN fspsliph g ON a.unslip_no = g.unslip_no
+  LEFT JOIN xomxintfatab x ON g.unslip_no = x.req_no
+ WHERE SUBSTR(a.accnt_no, 1, 2) IN ('PA', 'PD', 'PX', 'PG')
+   AND i.supt_work_clsf NOT IN ('STG050','STG060')
+   AND NVL(a.prcs_clsf, 'Y') != 'D'    
+   AND a.issu_ymd BETWEEN #{from_ymd} AND #{to_ymd}  
+ <if test='demnd_recv_clsf != null and demnd_recv_clsf == "1"'> AND a.demnd_recv_clsf = '1' </if>
+ <if test='demnd_recv_clsf != null and demnd_recv_clsf == "2"'> 
+   AND a.demnd_recv_clsf = '2' 
+ </if>
+ <if test='accnt_no != null and accnt_no !=""'> AND a.accnt_no = #{accnt_no} </if>
+ <if test='unslip_no != null and unslip_no != ""'> AND i.unslip_no = #{unslip_no} </if>
+ <if test='slip_yn != null and slip_yn == "N"'> AND ( i.unslip_no IS NULL OR i.unslip_no = '') </if>
+ <if test='slip_yn != null and slip_yn == "Y"'> AND i.unslip_no !=''  </if>
+ <if test='kolas_no != null and kolas_no != ""'> AND i.kolas_no = #{kolas_no} </if>
+ <if test='vend_abbr != null and vend_abbr != ""'> AND c.vend_abbr LIKE '%'||#{vend_abbr} ||'%' </if>
+ <if test='supt_work_clsf != null and supt_work_clsf != ""'> AND i.supt_work_clsf = #{supt_work_clsf} </if>
+ORDER BY TRIM(i.unslip_no), i.unslip_odr,a.issu_ymd
+</select>
+
+<!-- 결의생성 헤더 적요조회 -->
+<select id="selectFtxBilldRmk" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.sup.tec.selectFtxBilldRmk */
+         TRIM(DECODE(cnt, 1, item_nm, item_nm::varchar(100) || '외 ' || TRUNC(cnt - 1) || '건 ')) AS rmk
+  FROM (SELECT COUNT(tax_bill_no) AS cnt
+             , (SELECT item_nm FROM ftxbilld WHERE tax_bill_no = a.tax_bill_no AND odr = 1) AS item_nm
+          FROM ftxbilld a
+         WHERE tax_bill_no = #{tax_bill_no}
+         GROUP BY 2
+      )
+</select>
+
+<!-- 경상비지원 계정조회 -->
+<select id="selectResAdxReqm" parameterType="kr.re.kitech.biz.sup.tec.vo.ResAdxReqmVo" resultType="kr.re.kitech.biz.sup.tec.vo.ResAdxReqmVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectResAdxReqm */
+       a.accnt_no
+     , a.mngmt_item_1
+     , c.accnt_rspns
+     , c.fomat_unit
+  FROM ( SELECT MAX(a.creat_accnt_no) AS accnt_no     
+              , CASE WHEN TO_CHAR(SYSDATE,'%Y%m%d') <![CDATA[< ]]>  '20200501' THEN x.mngmt_item_1 ELSE x.mngmt_item_3 END mngmt_item_1
+           FROM resadxreqm a 
+           JOIN xodxcommst x ON a.srpt_cd = x.cd AND x.cd_clsf = 'SRP'
+          WHERE a.fin_bsns_clsf = 'FBS071' -- 장비기술지원사업(PA)
+            AND a.acd_clsf ='ACD010'
+            AND a.yr > '2019'
+            AND a.yr = LEFT(#{slip_ymd},4)
+            AND a.tax_cd = #{tax_cd}
+            AND a.divsn_clsf = #{divsn_clsf}
+          GROUP BY x.mngmt_item_1, x.mngmt_item_3
+  ) a
+  JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+</select>
+
+<!-- 성적서재발행 결의번호 업데이트 -->
+<update id="updateSptRstBookUnslipNo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipMntVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptRstBookUnslipNo */
+      sptrstbook 
+  SET unslip_no = #{unslip_no}
+    , unslip_odr = #{unslip_odr}
+    , unslip_wrte_ymd = #{issu_ymd}
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = CURRENT
+WHERE bill_no = #{bill_no}
+</update>
+
+<!-- 바우처 결의번호 업데이트 -->
+<update id="updateSptTecRcptInfoUnslipNoVcr" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipMntVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTecRcptInfoUnslipNoVcr */
+      spttecrcptinfo 
+  SET prcs_state = #{prcs_state}
+    , unslip_no = #{unslip_no}
+    , unslip_odr = #{unslip_odr}
+    , unslip_wrte_ymd = #{issu_ymd}
+    , unslip_cancel_yn = ''
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = SYSDATE
+WHERE tech_supt_req_no = #{tech_supt_req_no}
+</update>
+
+<!-- 가상계좌 결의번호 연결 -->
+<update id="updateSptTranTableUnslipNo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipMntVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTranTableUnslipNo */
+      spt_tran_table
+   SET unslip_no = #{unslip_no}
+     , unslip_odr = #{unslip_odr}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE dmembdealno IN 
+    (SELECT kolas_no FROM spttecrcptinfo  WHERE bill_no = #{bill_no})
+;
+UPDATE spt_prov_table
+   SET adjst_unslip_no = #{unslip_no}
+     , adjst_unslip_odr = #{unslip_odr}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE dmembtrno IN 
+    ( SELECT kolas_no FROM spttecrcptinfo WHERE bill_no = #{bill_no})
+;
+</update>
+
+<!-- 기술지원 결의번호 업데이트 -->
+<update id="updateSptTecRcptInfoUnslipNo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipMntVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTecRcptInfoUnslipNo */
+      spttecrcptinfo 
+  SET prcs_state = #{prcs_state}
+    , unslip_no = #{unslip_no}
+    , unslip_odr = #{unslip_odr}
+    , unslip_wrte_ymd = #{issu_ymd}
+    , unslip_cancel_yn = ''
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = SYSDATE
+WHERE bill_no = #{bill_no}
+</update>
+
+<!-- 통합프로세스 처리를 위한 의뢰번호 조회 -->
+<select id="selectTechSuptReqNoByBill" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.sup.tec.selectTechSuptReqNoByBill */
+       tech_supt_req_no
+  FROM spttecrcptinfo
+ WHERE unslip_no = #{unslip_no}
+</select>
+
+<!-- 기술지원결의 대변생성을 위한 조회 -->
+<select id="selectFcpDepstReqForSlipCr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipMntVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectFcpDepstReqForSlipCr */
+       d.depst_mngmt_no
+     , a.accnt_no 
+     , a.bankaccnt_no
+     , a.depst_clsf
+     , CASE WHEN a.vend_abbr = '' THEN b.vend_abbr ELSE a.vend_abbr END AS vend_nm
+     , a.recv_bill_no AS bill_no
+     , (f.suply_value + f.taxamt) AS totl_amt
+     , f.suply_value
+     , f.taxamt
+     , r.accnt_rspns
+     , r.fomat_unit
+     , r.tax_cd
+     , n.srpt_cd
+     , n.divsn_clsf
+     , TRIM(g.item_nm) AS rmk_1
+     , 'FBD021' AS depst_clsf
+     , SUM(a.depst_liq) AS depst_liq  -- 입금금액 
+     , MAX(a.acct_txday) AS acct_txday
+FROM fcpdepstreq a 
+JOIN spttecrcptdepst d ON a.req_no = d.req_no
+JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+LEFT JOIN resadxreqm n ON r.accnt_no = n.creat_accnt_no
+JOIN xodfvend b ON a.vend_cd = b.vend_cd
+JOIN ftxbillh f ON d.bill_no = f.tax_bill_no AND f.prcs_clsf != 'D'
+JOIN ftxbilld g ON f.tax_bill_no = g.tax_bill_no AND g.odr = 1
+WHERE a.unslip_no = #{unslip_no}
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+</select>
+
+<!-- 기술지원결의생성(바우처) 목록조회 -->
+<select id="selectSptTecRcptInfoVcr" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipMntVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecRcptInfoVcr */
+       a.tech_supt_req_no AS req_no
+     , TRIM(a.unslip_no) AS unslip_no
+     , a.unslip_odr
+     , a.supt_work_clsf
+     , a.accnt_no
+     , a.cust_no AS vend_cd
+     , d.cmpy_nm_krchar AS vend_nm
+     , a.decsn_amt AS totl_amt
+     , NVL(a.decsn_suply_value,0) AS suply_value
+     , NVL(a.decsn_tax_amt,0) AS tax_amt
+     , 'FBD021' AS depst_clsf
+     , r.tax_cd -- 과세구분코드
+     , '2' AS demnd_recv_clsf
+     , a.rcpt_ymd AS issu_ymd
+     , r.accnt_rspns
+     , r.accnt_state
+     , r.fomat_unit
+     , g.divsn_clsf
+     , g.srpt_cd
+     , a.rcpt_psn_syspayno AS wrte_psn
+     , h.nm AS wrte_psn_nm
+     , e.decsn_ex
+     , x.apr_state
+     , a.tech_supt_req_no
+  FROM spttecrcptinfo a
+  JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+  JOIN sptcustbaseinfo d ON d.cust_no = a.cust_no
+  JOIN humbasicinfo h ON a.rcpt_psn_syspayno = h.syspayno
+  LEFT JOIN fspsliph e ON e.unslip_no = a.unslip_no
+  LEFT JOIN xomxintfatab x ON e.unslip_no = x.req_no
+  LEFT JOIN resadxreqm g ON a.accnt_no = g.creat_accnt_no
+ WHERE a.decide_yn = 'Y'
+   AND a.supt_work_clsf IN ('STG050','STG060')
+   AND a.rcpt_ymd BETWEEN #{from_ymd} AND #{to_ymd}  
+ <if test='accnt_no != null and accnt_no !=""'> AND a.accnt_no = #{accnt_no} </if>
+ <if test='unslip_no != null and unslip_no != ""'> AND a.unslip_no = #{unslip_no} </if>
+ <if test='slip_yn != null and slip_yn == "N"'> AND ( a.unslip_no IS NULL OR a.unslip_no = '') </if>
+ <if test='slip_yn != null and slip_yn == "Y"'> AND a.unslip_no !=''  </if>
+ <if test='kolas_no != null and kolas_no != ""'> AND a.kolas_no = #{kolas_no} </if>
+ <if test='vend_abbr != null and vend_abbr != ""'> AND d.cmpy_nm_krchar LIKE '%'||#{vend_abbr}}}'%' </if>
+ <if test='supt_work_clsf != null and supt_work_clsf != ""'> AND a.supt_work_clsf = #{supt_work_clsf} </if>
+ORDER BY TRIM(a.unslip_no), a.unslip_odr, a.rcpt_ymd
+</select>
+<select id="selectFcpDepstReqRst" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipMntVo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo">
+SELECT DISTINCT /* kr.re.kitech.biz.sup.tec.selectFcpDepstReqRst */
+       b.req_no
+     , TRIM(i.unslip_no) AS unslip_no
+     , i.unslip_odr
+     , e.supt_work_clsf
+     , a.accnt_no
+     , TRIM(a.tax_bill_no) AS bill_no
+     , a.sude_psn AS vend_cd -- 거래처번호
+     , c.vend_abbr AS vend_nm
+     , (a.suply_value + a.taxamt) AS totl_amt
+     , a.suply_value
+     , a.taxamt
+     , TRIM(a.decsn_no) AS decsn_no
+     , 'FBD021' AS depst_clsf
+     , DECODE(NVL(r.tax_cd,''), '', 'FTX002', r.tax_cd) AS tax_cd -- 과세구분코드
+     , a.demnd_recv_clsf
+     , a.issu_ymd
+     , b.depst_liq
+     , b.depst_ymd
+     , b.bankaccnt_no
+     , r.accnt_rspns
+     , r.accnt_state
+     , r.fomat_unit
+     , n.srpt_cd
+     , n.divsn_clsf
+     , a.wrte_psn
+     , d.nm AS wrte_psn_nm
+     , TRIM(a1.item_nm) AS rmk_1
+     , j.stat_code
+     , j.err_cd
+     , fun_fin_tax_bill_state(a.tax_bill_no, 1) AS state_nm
+     , x.apr_state
+     , g.decsn_ex
+     , h.slip_no
+     , h.slip_odr
+  FROM ftxbillh a 
+  JOIN ftxbilld a1 ON a.tax_bill_no = a1.tax_bill_no AND a1.odr = 1
+  LEFT JOIN itis_issu_mstr j ON a.tax_bill_no = j.issu_seqno
+  JOIN sptrstbook i ON a.tax_bill_no = i.bill_no
+  JOIN spttecrcptinfo e ON i.tech_supt_req_no = e.tech_supt_req_no
+  JOIN xodfvend c ON a.sude_psn = c.vend_cd
+  JOIN humbasicinfo d ON a.wrte_psn = d.syspayno
+  JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+  LEFT JOIN fcpdepstreq b ON a.tax_bill_no = b.recv_bill_no
+  LEFT JOIN fspslipdecsnd h ON b.depst_unslip_no = h.unslip_no AND b.depst_unslip_odr = h.unslip_odr  
+  LEFT JOIN resadxreqm n ON r.accnt_no = n.creat_accnt_no
+  LEFT JOIN fspsliph g ON i.unslip_no = g.unslip_no
+  LEFT JOIN xomxintfatab x ON g.unslip_no = x.req_no
+ WHERE SUBSTR(a.accnt_no, 1, 2) IN ('PA', 'PD', 'PX', 'PG')
+   AND NVL(a.prcs_clsf, 'Y') != 'D'    
+   AND a.issu_ymd BETWEEN #{from_ymd} AND #{to_ymd}  
+ <if test='demnd_recv_clsf != null and demnd_recv_clsf == "1"'> AND a.demnd_recv_clsf = '1' </if>
+ <if test='demnd_recv_clsf != null and demnd_recv_clsf == "2"'> 
+   AND a.demnd_recv_clsf = '2' 
+   AND b.req_no IS NOT NULL
+ </if>
+ <if test='accnt_no != null and accnt_no !=""'> AND a.accnt_no = #{accnt_no} </if>
+ <if test='unslip_no != null and unslip_no != ""'> AND i.unslip_no = #{unslip_no} </if>
+ <if test='slip_yn != null and slip_yn == "N"'> AND ( i.unslip_no IS NULL OR i.unslip_no = '') </if>
+ <if test='slip_yn != null and slip_yn == "Y"'> AND i.unslip_no !=''  </if>
+ <if test='kolas_no != null and kolas_no != ""'> AND e.kolas_no = #{kolas_no} </if>
+ <if test='vend_abbr != null and vend_abbr != ""'> AND c.vend_abbr LIKE '%'||#{vend_abbr}}}'%' </if>
+ <if test='supt_work_clsf != null and supt_work_clsf != ""'> AND e.supt_work_clsf = #{supt_work_clsf} </if>
+ORDER BY TRIM(i.unslip_no), i.unslip_odr, a.issu_ymd
+</select>
+
+<!-- 결의취소로 인한 기술지원접수 결의번호 초기화 -->
+<update id="updateSptTecRcptInfoSlipDel" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTecRcptInfoSlipDel */
+      spttecrcptinfo 
+  SET prcs_state = #{prcs_state}
+    , unslip_no = ''
+    , unslip_odr = null
+    , unslip_wrte_ymd = ''
+    , unslip_cancel_yn = 'Y'
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = SYSDATE
+WHERE unslip_no = #{unslip_no}
+</update>
+
+<!-- 결의취소로 인한 성적서 결의번호 초기화 -->
+<update id="updateSptRstBookSlipDel" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptRstBookSlipDel */
+      sptrstbook 
+  SET unslip_no = ''
+    , unslip_odr = null
+    , unslip_wrte_ymd = ''
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = CURRENT
+WHERE unslip_no = #{unslip_no}
+</update>
+
+<!-- 청구결의 후 미수정산내역 입력 -->
+<insert id="insertFinUnPaidAdjst" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipMntVo">
+INSERT /* kr.re.kitech.biz.sup.tec.insertFinUnPaidAdjst */
+  INTO finunpaidadjst(
+       chrg_unslip_no
+     , chrg_unslip_odr
+     , depst_req_no
+     , bill_no
+     , chrg_decsn_amt
+     , chrg_decsn_suply_amt
+     , chrg_tax_amt
+     , regst_psn_syspayno
+     , regst_daytm
+  ) VALUES(
+       #{unslip_no}
+     , #{unslip_odr}
+     , ''
+     , #{bill_no}
+     , #{totl_amt}
+     , #{suply_value}
+     , #{taxamt}
+     , #{regst_syspayno}
+     , SYSDATE)
+</insert>
+
+<!-- 미수정산 내역 삭제 -->
+<delete id="deleteFinUnpaidAdjst" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.sup.tec.deleteFinUnpaidAdjst */
+  FROM finunpaidadjst
+ WHERE chrg_unslip_no = #{unslip_no}
+</delete>
+
+<!-- 미수수탁정산결의 목록 조회 -->
+<select id="selectFinUnPaidAdjst" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecAdjstSlipVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectFinUnPaidAdjst */
+       j.unslip_no AS chrg_unslip_no
+     , j.unslip_odr AS chrg_unslip_odr
+     , j.bill_no
+     , j.kolas_no
+     , f.accnt_no
+     , f.issu_ymd
+     , g.vend_cd
+     , g.vend_abbr AS vend_nm     
+     , a.adjst_unslip_no
+     , b.slip_no
+     , b.slip_odr
+     , b.accnt_ymd
+     , NVL(e.decsn_ex, 'N') AS decsn_ex
+     , NVL(a.chrg_decsn_amt, f.suply_value + f.taxamt) AS decsn_amt  --청구총금액(발생금액)
+     , NVL(a.chrg_decsn_suply_amt, f.suply_value) AS decsn_suply_value --청구공급가액(공급가액)
+     , NVL(a.chrg_tax_amt, f.taxamt) AS decsn_tax_amt --청구세금(세액)
+     , (i.unslip_repay_amt + i.won_adjst_amt) AS depst_amt -- 기정산금액
+     , i.won_occr_amt - (i.unslip_repay_amt + i.won_adjst_amt) AS unadjst_amt -- 미정산금액
+     , a.wrte_ymd
+     , TRIM(f1.item_nm) AS rmk_1
+     , x.apr_state
+     , MAX(d.depst_mngmt_no) AS depst_req_no
+     , MAX(d.depst_ymd) AS depst_ymd
+     , MAX(d.bankaccnt_no) AS bankaccnt_no
+     , SUM(d.depst_liq) AS depst_liq     
+     , group_concat(h.nm) AS rcpt_psn_nm  -- 지원담당자
+     , fun_dept_nm(h.dept_cd) as rcpt_psn_dept_nm
+     , fun_divsn_dept_nm(h.dept_cd, h.dept_new_ymd, 'C') as rcpt_psn_divsn_nm
+     , group_concat(h1.nm) AS supt_respn_nm  -- 지원책임자
+     , fun_dept_nm(h1.dept_cd) as supt_respn_dept_nm
+     , fun_divsn_dept_nm(h1.dept_cd, h.dept_new_ymd, 'C') as supt_respn_divsn_nm
+  FROM (
+         SELECT unslip_no
+             , unslip_odr
+             , bill_no
+             , MAX(rcpt_psn_syspayno) AS rcpt_psn_syspayno
+             , MAX(supt_respn_syspayno) AS supt_respn_syspayno
+             , group_concat(kolas_no) AS kolas_no
+          FROM spttecrcptinfo 
+         WHERE bill_issu_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+          <if test='chrg_unslip_no != null and chrg_unslip_no != ""'> AND unslip_no = #{chrg_unslip_no} </if>
+         GROUP BY 1, 2, 3
+       ) j 
+  JOIN fspslipdecsnd b ON j.unslip_no = b.unslip_no AND j.unslip_odr = b.unslip_odr
+  JOIN fspramtcreat i ON b.slip_no = i.slip_no AND b.slip_odr = i.slip_odr
+  JOIN ftxbillh f ON j.bill_no = f.tax_bill_no
+  JOIN ftxbilld f1 ON f.tax_bill_no = f1.tax_bill_no AND f1.odr = 1
+  JOIN xodfvend g ON f.sude_psn = g.vend_cd
+  LEFT JOIN finunpaidadjst a ON a.bill_no = j.bill_no    
+  LEFT JOIN spttecrcptdepst d ON a.depst_req_no = d.depst_mngmt_no       
+  LEFT JOIN fspsliph e ON a.adjst_unslip_no = e.unslip_no  
+  JOIN humbasicinfo h ON j.rcpt_psn_syspayno = h.syspayno
+  JOIN humbasicinfo h1 ON j.supt_respn_syspayno = h1.syspayno
+  LEFT JOIN xomxintfatab x ON a.adjst_unslip_no = x.req_no
+ WHERE f.demnd_recv_clsf ='1'   
+  <if test='src_kind != null and src_kind == "NM" and inqr_val != ""'> AND g.vend_abbr LIKE '%'||#{inqr_val} ||'%' </if>
+  <if test='src_kind != null and src_kind == "NO" and inqr_val != ""'> AND REPLACE(g.bsns_psn_regst_no,'-','') = #{inqr_val} </if>
+  <if test='src_kind != null and src_kind == "CD" and inqr_val != ""'> AND g.vend_cd = #{inqr_val} </if>
+  <if test='unslip_no != null and unslip_no != ""'> AND a.adjst_unslip_no = #{unslip_no} </if>
+  <if test='accnt_no != null and accnt_no != ""'> AND f.accnt_no = #{accnt_no} </if>
+  <if test='slip_yn != null and slip_yn =="Y"'> AND i.won_occr_amt = (i.won_adjst_amt + i.unslip_repay_amt) </if>
+  <if test='slip_yn != null and slip_yn =="N"'> AND i.won_occr_amt != (i.won_adjst_amt + i.unslip_repay_amt) </if> 
+ GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,27,28,30,31
+ ORDER BY j.unslip_no, j.unslip_odr
+</select>
+
+<!-- 미수수탁정산 차변저장을 위한 조회 -->
+<select id="selectSptTecRcptDepstForDr" resultType="kr.re.kitech.biz.fin.com.vo.FinDepstSlipVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecRcptDepstForDr */
+       b.depst_liq
+     , c.slip_no
+     , c.slip_odr
+     , b.accnt_no
+     , b.req_psn
+     , b.req_no
+     , b.acct_txday
+     , b.bankaccnt_no
+     , d.vend_abbr
+  FROM spttecrcptdepst a
+  JOIN fcpdepstreq b ON a.req_no = b.req_no
+  JOIN fspslipdecsnd c ON b.depst_unslip_no = c.unslip_no AND b.depst_unslip_odr = c.unslip_odr
+  JOIN xodfvend d ON b.vend_cd = d.vend_cd
+ WHERE a.bill_no IN (SELECT bill_no FROM spttecrcptdepst WHERE depst_mngmt_no = #{depst_mngmt_no})
+</select>
+
+<!-- 미수수탁 정산결의 생성 후 결의번호 업데이트 -->
+<update id="updateFinUnpaidAdjstSlipNo" parameterType="kr.re.kitech.biz.fin.spa.vo.FinSpaSlipUpdVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateFinUnpaidAdjstSlipNo */
+       finunpaidadjst
+   SET adjst_unslip_no = #{unslip_no}
+     , adjst_unslip_odr = #{unslip_odr}
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE chrg_unslip_no = #{chrg_unslip_no}
+   AND chrg_unslip_odr = #{chrg_unslip_odr}
+</update>
+
+<!--  결의삭제시 미수정산 결의번호 초기화 -->
+<update id="updateFinUnpaidAdjstSlipDel" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateFinUnpaidAdjstSlipDel */
+       finunpaidadjst
+   SET adjst_unslip_no = ''
+     , adjst_unslip_odr = null
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE adjst_unslip_no = #{unslip_no}
+</update>
+
+<!-- 기업지원 완전오픈전 임시 실행 -->
+<insert id="insertSptTecRcpddepstTemp" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo">
+insert /* kr.re.kitech.biz.sup.tec.insertSptTecRcpddepstTemp */
+into spttecrcptdepst (req_no,	depst_mngmt_no,	req_psn,	req_ymd,	accnt_no,	bankaccnt_no,	bank_cd,	depst_liq,	depst_ymd,	bill_no,	regst_syspayno,	regst_daytm	)
+select distinct b.req_no, b.req_no, b.req_psn, b.req_ymd, b.accnt_no, b.bankaccnt_no, b.bank_cd, b.depst_liq, b.depst_ymd, b.demnd_bill_no, 'system', sysdate
+from finunpaidadjst a
+join fcpdepstreq b on a.depst_req_no = b.req_no
+where b.depst_ymd >= '20230101'
+and a.depst_req_no <![CDATA[<> ]]> ''
+and not exists (select 1 from spttecrcptdepst where req_no = a.depst_req_no)
+;
+INSERT INTO finunpaidadjst(
+       chrg_unslip_no
+     , chrg_unslip_odr
+     , depst_req_no
+     , bill_no
+     , chrg_decsn_amt
+     , chrg_decsn_suply_amt
+     , chrg_tax_amt
+     , regst_psn_syspayno
+     , regst_daytm
+  )
+select distinct a.unslip_no, a.unslip_odr, '', a.bill_no, b.suply_value + b.taxamt, b.suply_value, b.taxamt, 'system', sysdate
+  from spttecrcptinfo a
+  join ftxbillh b on a.bill_no = b.tax_bill_no
+where b.demnd_recv_clsf ='1'
+ and b.issu_ymd >='20230101'
+and a.unslip_no like '42623%'
+and not exists (select 1 from finunpaidadjst where chrg_unslip_no = a.unslip_no and chrg_unslip_odr = a.unslip_odr)
+;
+</insert>
+<insert id="insertSptTecRcpddepstTemp2" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo">
+insert /* kr.re.kitech.biz.sup.tec.insertSptTecRcpddepstTemp2 */
+into spttecrcptdepst (req_no,	depst_mngmt_no,	req_psn,	req_ymd,	accnt_no,	bankaccnt_no,	bank_cd,	depst_liq,	depst_ymd,	bill_no,	regst_syspayno,	regst_daytm	)
+select distinct b.req_no, b.req_no, b.req_psn, b.req_ymd, b.accnt_no, b.bankaccnt_no, b.bank_cd, b.depst_liq, b.depst_ymd, b.recv_bill_no, 'system', sysdate
+from spttecrcptinfo a
+join fcpdepstreq b on a.req_no = b.req_no
+where b.depst_ymd >= '20230101'
+and a.req_no <![CDATA[ <> ]]> ''
+and not exists (select 1 from spttecrcptdepst where req_no = a.req_no)
+</insert>
+</mapper>

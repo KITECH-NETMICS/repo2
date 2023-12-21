@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+  <select id="selectListCgsCertfUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCertfUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCertfUseVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCgsCertfUse */ 
+	     a.req_no ,
+	     --c.dept_typ,
+	     a.gdnm ,
+	     fun_xodxcommst_cd_nm(a.gdnm, 0) as gdnm_nm,
+	     a.qty ,
+	     a.usg ,
+	     a.submit_loc ,
+	     a.premnth_way ,
+	     a.addr_clsf ,
+	     a.addr ,
+	     a.fax_no ,
+	     a.req_ymd ,
+	     a.req_dept_cd ,
+	     a.req_dept_nm ,
+	     a.req_psn_syspayno ,
+	     a.req_psn_nm ,
+	     b.apr_state,
+	     a.recv_psn_syspayno ,
+	     a.recv_psn_nm ,
+	     a.recv_ymd ,
+	     a.issu_chk_no,
+	     a.regst_psn_syspayno ,
+	     a.regst_daytm ,
+	     a.updt_psn_syspayno ,
+	     a.updt_daytm,
+	     a.attach_file_no,
+	     case when a.recv_psn_syspayno <![CDATA[<>]]> '' then '수령' else fun_xodxcommst_cd_nm(b.apr_state, 0) end as req_state_nm
+	FROM cgscertfuse a 
+	INNER JOIN xomxintfatab b ON a.req_no = b.req_no
+	     --left outer JOIN xodhdeptinfo c ON a.req_dept_cd = c.dept_cd
+	where 1=1
+	AND  a.req_ymd between #{req_ymd1} AND #{req_ymd2}
+	AND  a.gdnm LIKE DECODE(#{gdnm},'','%',#{gdnm})
+	AND  b.apr_state LIKE DECODE(#{apr_state},'','%',#{apr_state})
+	AND  a.req_dept_cd LIKE DECODE(#{req_dept_cd},'','%',#{req_dept_cd})
+	AND  a.req_psn_syspayno LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno})
+	--AND  c.abol_ymd is null
+  </select>
+  
+  <select id="selectCgsCertfUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCertfUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCertfUseVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgsCertfUse */ 
+			   a.req_no
+	          ,a.gdnm
+	          ,a.qty
+	          ,a.usg
+	          ,a.submit_loc
+	          ,a.premnth_way
+	          ,a.addr_clsf
+	          ,a.addr
+	          ,a.fax_no
+	          ,a.tel_no
+	          ,a.issu_chk_no
+	          ,a.req_ymd
+	          ,a.req_dept_cd
+	          ,a.req_dept_nm
+	          ,a.req_psn_syspayno
+	          ,a.req_psn_nm
+	          ,a.regst_psn_syspayno
+	          ,a.regst_daytm
+	          ,a.updt_psn_syspayno
+	          ,a.updt_daytm
+	          ,a.attach_file_no
+	          ,b.apr_state
+	FROM cgscertfuse a
+	INNER JOIN xomxintfatab b ON a.req_no = b.req_no
+	 WHERE     1=1
+	 AND       a.req_no = #{req_no}
+  </select>
+  
+  <insert id="insertCgsCertfUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCertfUseVo">
+	INSERT /* QueryID : kr.re.kitech.biz.ccs.cgs.insertCgsCertfUse */ 
+			 INTO    cgscertfuse
+	(        req_no
+	        ,gdnm
+	        ,qty
+	        ,usg
+	        ,submit_loc
+	        ,premnth_way
+	        ,addr_clsf
+	        ,addr
+	        ,fax_no
+	        ,tel_no
+	        ,req_ymd
+	        ,req_dept_cd
+	        ,req_dept_nm
+	        ,req_psn_syspayno
+	        ,req_psn_nm
+	        ,req_state
+	        ,recv_psn_syspayno
+	        ,recv_psn_nm
+	        ,recv_ymd
+	        ,issu_chk_no
+	        ,attach_file_no
+	        ,regst_psn_syspayno
+	        ,regst_daytm
+	)
+	VALUES(#{req_no}
+		  ,#{gdnm}
+		  ,#{qty}
+		  ,#{usg}
+		  ,#{submit_loc}
+		  ,#{premnth_way}
+		  ,#{addr_clsf}
+		  ,#{addr}
+		  ,#{fax_no}
+		  ,#{tel_no}
+		  ,#{req_ymd}
+		  ,#{req_dept_cd}
+		  ,#{req_dept_nm}
+		  ,#{regst_syspayno}
+		  ,#{req_psn_nm}
+		  ,#{req_state}
+		  ,#{recv_psn_syspayno}
+		  ,#{recv_psn_nm}
+		  ,#{recv_ymd}
+		  ,#{issu_chk_no}
+		  ,#{attach_file_no}
+		  ,#{regst_syspayno}
+		  ,sysdate)
+  </insert>
+  
+  <update id="updateCgsCertfUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCertfUseVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCgsCertfUse */ 
+			  cgscertfuse
+	SET    
+	        gdnm= #{gdnm},
+	        qty = #{qty},
+	        usg = #{usg},
+	        submit_loc = #{submit_loc},
+	        premnth_way = #{premnth_way},
+	        addr_clsf = #{addr_clsf},
+	        addr = #{addr},
+	        fax_no = #{fax_no},
+	        tel_no = #{tel_no},
+	        attach_file_no = #{attach_file_no},
+	        updt_psn_syspayno = #{updt_syspayno},
+	        updt_daytm = sysdate
+	WHERE 1=1
+	AND req_no = #{req_no}
+  </update>
+  
+  <delete id="deleteCgsCertfUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCertfUseVo">
+	DELETE /* QueryID : kr.re.kitech.biz.ccs.cgs.deleteCgsCertfUse */ 
+			 cgscertfuse
+	WHERE     1=1
+	AND       req_no = #{req_no}
+  </delete>
+  
+  <select id="selectCgsCertfUseAddr" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCertfUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCertfUseVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgsCertfUseAddr */ 
+			 cd
+	      ,mngmt_item_1 AS addr
+	FROM  xodxcommst
+	WHERE 1=1
+	<if test="addr_clsf != null and addr_clsf != ''">
+		 and cd = #{addr_clsf}
+	</if>
+  </select>
+  
+</mapper>

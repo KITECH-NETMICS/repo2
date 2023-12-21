@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.ctr">
+<!-- 출장현황조회 -->
+<select id="selectTripList" parameterType="java.util.LinkedHashMap" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripListVO">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.ctr.selectTripList */
+       req_no
+     , trip_psn
+     , trip_knd
+     , biztrip_term
+     , biztrip_region_nm
+     , biztrip_goal
+     , biztrip_goal_rmk
+     , agncy_nm
+     , unslip_no
+     , accnt_no
+     , card_meal
+     , card_meal_ad
+     , tot_expns
+     , adjst_tot_expns
+     , rep_ymd
+     , rep_no
+     , adjst_req_no
+     , rep_apr_state
+     , rmk
+     , apr_state
+     , req_psn_syspayno
+FROM(<if test='trip_knd == null or trip_knd == "" or trip_knd == "Local"'>
+         SELECT '근거리출장' AS trip_knd
+              , x0.req_no
+              , SUBSTR(TO_DATE(x0.biztrip_ymd, '%Y%m%d'), 0, 10) || ' ' || CONCAT(TRIM(x0.start_time), CONCAT(' ~ ', TRIM(x0.arriv_time))) AS biztrip_term
+              , TRIM(x0.biztrip_land) AS biztrip_region_nm
+              , fun_xodxcommst_cd_nm(x0.biztrip_goal_clsf, 0) AS biztrip_goal
+              , TRIM(x0.biztrip_goal) AS biztrip_goal_rmk
+              , TRIM(x0.rmk_1) AS agncy_nm
+              , x0.unslip_no
+              , DECODE(accnt_no, '계정', '', accnt_no) AS accnt_no
+              , '' AS rep_ymd
+              , '' AS rep_no
+              , '' AS adjst_req_no
+              , x0.rmk
+              , '' AS rep_reg_psn
+              , x3.apr_state
+              , x0.req_psn_syspayno
+              , x0.biztrip_ymd AS biztrip_start_ymd
+              , x0.biztrip_ymd AS biztrip_cls_ymd
+              , x0.biztrip_goal_clsf
+              , x0.arriv_region AS biztrip_region
+              , x0.tot_expns
+              , x0.tot_expns AS adjst_tot_expns
+              , x1.nm AS biztrip_psn_nm
+              , '0식' AS card_meal
+              , '' AS card_meal_ad
+              , GROUP_CONCAT(x2.biztrip_psn_nm) AS trip_psn
+              , '' AS rep_apr_state
+         FROM ctrlocal AS x0 
+         JOIN HumBasicInfo AS x1 ON x0.req_psn_syspayno = x1.syspayno
+         JOIN CtrLocalCompn AS x2 ON x0.req_no = x2.req_no
+         LEFT JOIN XomxIntfaTab AS x3 ON x0.req_no = x3.req_no
+         JOIN HumBasicInfo AS x4 ON x2.biztrip_psn_syspayno = x4.syspayno
+         WHERE x0.biztrip_ymd BETWEEN #{biztrip_start_ymd} AND #{biztrip_cls_ymd}
+         <if test='psn_syspayno != null and psn_syspayno != ""'>
+           AND (x2.biztrip_psn_syspayno = #{psn_syspayno}
+             OR x0.req_psn_syspayno = #{psn_syspayno}
+             OR x0.regst_psn_syspayno = #{psn_syspayno})
+         </if>
+         <if test='apr_state != null and apr_state != ""'> AND x3.apr_state = #{apr_state} </if>
+         <if test='accnt_no != null and accnt_no != ""'> AND x0.accnt_no = #{accnt_no} </if>
+         <if test='req_no != null and req_no != ""'> AND x0.req_no = #{req_no} </if>
+         <if test='dept_cd != null and dept_cd != ""'> AND x4.dept_cd = #{dept_cd} </if>
+         GROUP BY 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
+     </if>
+     <if test='trip_knd == ""'>
+         UNION ALL
+     </if>
+     <if test='trip_knd == "" or trip_knd == "Dom"'>
+         SELECT '국내출장' AS trip_knd
+              , x0.req_no
+              , concat(substr(to_date(x0.biztrip_start_ymd, '%Y%m%d'), 0, 10), concat(' ~ ', substr(to_date(x0.biztrip_cls_ymd, '%Y%m%d'), 0, 10))) AS biztrip_term
+              , fun_xodxcommst_cd_nm(x0.arriv_region, 0) AS biztrip_region_nm
+              , fun_xodxcommst_cd_nm(x0.biztrip_goal_clsf, 0) AS biztrip_goal
+              , x0.biztrip_goal AS biztrip_goal_rmk
+              , x0.biztrip_region AS agncy_nm
+              , x0.unslip_no
+              , fun_get_trip_accnt(x0.req_no, 'T') AS accnt_no
+              , x4.req_ymd AS rep_ymd
+              , x4.rep_req_no AS rep_no
+              , a.req_no AS adjst_req_no
+              , x0.rmk_1 AS rmk
+              , x4.wrte_psn_syspayno AS rep_reg_psn              
+              , x3.apr_state
+              , x0.req_psn_syspayno
+              , x0.biztrip_start_ymd
+              , x0.biztrip_cls_ymd 
+              , x0.biztrip_goal_clsf
+              , x0.biztrip_region
+              , x0.tot_expns              
+              , a.adjst_tot_expns AS adjst_tot_expns
+              , x1.nm AS biztrip_psn_nm
+              , x0.card_meal || '식' AS card_meal
+              , nvl(x8.card_meal || '식', '') AS card_meal_ad
+              , GROUP_CONCAT(x2.biztrip_psn_nm) AS trip_psn
+              , MIN(x5.apr_state) AS rep_apr_state
+         FROM CtrDom AS x0
+         JOIN HumBasicInfo AS x1 ON x0.req_psn_syspayno = x1.syspayno
+         JOIN CtrDomCompn AS x2 ON  x0.req_no = x2.req_no
+         LEFT JOIN XomxIntfaTab AS x3 ON x0.req_no = x3.req_no
+         JOIN HumBasicInfo AS x7 ON x2.biztrip_psn_syspayno = x7.syspayno
+         LEFT JOIN CtrDomAccnt AS x6 ON x0.req_no = x6.req_no
+         LEFT JOIN CtrDomRep AS x4 ON x0.req_no = x4.biztrip_req_no
+         LEFT JOIN ctrdomad a ON x0.req_no = a.biztrip_req_no
+         LEFT JOIN XomxIntfaTab AS x5 ON x4.rep_req_no = x5.req_no
+         LEFT JOIN ctrdomexpns AS x8 ON x8.req_no = x4.rep_req_no 
+         AND x8.syspayno = x2.biztrip_psn_syspayno
+         WHERE x0.biztrip_start_ymd <![CDATA[>=]]> #{biztrip_start_ymd}
+         AND   x0.biztrip_cls_ymd <![CDATA[<=]]> #{biztrip_cls_ymd}
+         <if test='psn_syspayno != "" and psn_syspayno != null'>
+           AND (x2.biztrip_psn_syspayno = #{psn_syspayno}
+             OR x0.req_psn_syspayno = #{psn_syspayno}
+             OR x0.regst_psn_syspayno = #{psn_syspayno})
+         </if>
+         <if test='apr_state != "" and apr_state != null'> AND x3.apr_state = #{apr_state} </if>
+         <if test='trip_cancel != "" and trip_cancel != null'> AND x4.chng_resn = #{tripCancel} </if>
+         <if test='accnt_no != "" and accnt_no != null'> AND x6.accnt_no = #{accnt_no} </if>
+         <if test='req_no != null and req_no != ""'> AND x0.req_no = #{req_no} </if>
+         <if test='req_no_list != null and req_no_list != ""'> AND x0.req_no IN 
+	         <foreach item="item" index="index" collection="req_no_list.split(',')" open="(" separator="," close=")">
+	            '${item}'
+	         </foreach>
+       	 </if>
+         <if test='dept_cd != "" and dept_cd != null'> AND x7.dept_cd = #{dept_cd} </if>
+         GROUP BY 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
+     </if>
+     <if test='trip_knd == ""'>
+         UNION ALL
+     </if>
+     <if test='trip_knd == "" or trip_knd == "Over" or trip_knd == "Stay"'>
+         SELECT CASE WHEN substr(x0.req_no, 0, 3) = 'C96' 
+                   THEN '주재국출장' 
+                   ELSE '해외출장' 
+              END AS trip_knd
+            , x0.req_no
+            , CONCAT(SUBSTR(TO_DATE(x0.biztrip_start_ymd, '%Y%m%d'), 0, 10), CONCAT(' ~ ', SUBSTR(TO_DATE(x0.biztrip_cls_ymd, '%Y%m%d'), 0, 10))) AS biztrip_term
+            , fun_xodxcommst_cd_nm(x0.biztrip_region, 0) AS biztrip_region_nm
+            , fun_xodxcommst_cd_nm(x0.biztrip_goal_clsf, 0) AS biztrip_goal
+            , x0.biztrip_goal AS biztrip_goal_rmk
+            , x0.agncy_cd_nm_1 || ' ' || x0.agncy_cd_nm_2 || ' ' || x0.agncy_cd_nm_3 AS agncy_nm
+            , x0.unslip_no
+            , fun_get_trip_accnt(x0.req_no, 'F') AS accnt_no
+            , x4.req_ymd AS rep_ymd
+            , x4.rep_req_no AS rep_no
+            , a.req_no AS adjst_req_no
+            , x0.rmk_1 AS rmk
+            , x4.wrte_psn_syspayno AS rep_reg_psn
+            , x3.apr_state
+            , x0.req_psn_syspayno
+            , x0.biztrip_start_ymd
+            , x0.biztrip_cls_ymd 
+            , x0.biztrip_goal_clsf
+            , x0.biztrip_region
+            , x0.tot_expns
+            , a.adjst_tot_expns AS adjst_tot_expns
+            , x1.nm AS biztrip_psn_nm
+            , x0.cabin_meal || '식' AS card_meal
+            , '' AS card_meal_ad
+            , GROUP_CONCAT(x2.biztrip_psn_nm) AS trip_psn
+            , MIN(x5.apr_state) AS rep_apr_state
+       FROM ctrover AS x0 
+       JOIN humbasicinfo AS x1 ON x0.req_psn_syspayno = x1.syspayno
+       JOIN ctrovercompn AS x2 ON x0.req_no = x2.req_no
+       JOIN xomxintfatab AS x3 ON x0.req_no = x3.req_no
+       JOIN HumBasicInfo AS x7 ON x2.biztrip_psn_syspayno = x7.syspayno
+       LEFT JOIN ctroveraccnt AS x6 ON x0.req_no = x6.req_no
+       LEFT JOIN ctroverrep AS x4 ON x0.req_no = x4.biztrip_req_no
+       LEFT JOIN ctroverad a ON x0.req_no = a.biztrip_req_no
+       LEFT JOIN xomxintfatab AS x5 ON x4.rep_req_no = x5.req_no
+       WHERE x0.biztrip_start_ymd <![CDATA[>=]]> #{biztrip_start_ymd}
+       AND   x0.biztrip_cls_ymd <![CDATA[<=]]> #{biztrip_cls_ymd}
+       <if test='psn_syspayno != "" and psn_syspayno != null'>
+           AND (x2.biztrip_psn_syspayno = #{psn_syspayno}
+             OR x0.req_psn_syspayno = #{psn_syspayno}
+             OR x0.regst_psn_syspayno = #{psn_syspayno})
+       </if>
+       <if test='apr_state != "" and apr_state != null'> AND x3.apr_state = #{apr_state} </if>
+       <if test='trip_cancel != "" and trip_cancel != null'> AND x4.chng_resn = #{tripCancel} </if>
+       <if test='accnt_no != "" and accnt_no != null'> AND x6.accnt_no = #{accnt_no} </if>
+       <choose>
+           <when test='trip_knd == "Stay"'> AND x0.req_no LIKE "C96%" </when>
+           <when test='trip_knd == "Over"'> AND x0.req_no NOT LIKE "C96%" </when>
+       </choose>
+       <if test='req_no != null and req_no != ""'> AND x0.req_no = #{req_no} </if>
+       <if test='req_no_list != null and req_no_list != ""'> AND x0.req_no IN 
+         <foreach item="item" index="index" collection="req_no_list.split(',')" open="(" separator="," close=")">
+            '${item}'
+          </foreach>
+       </if>
+       <if test='dept_cd != "" and dept_cd != null'> AND x7.dept_cd = #{dept_cd} </if>
+       GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
+   </if>
+)
+ORDER BY biztrip_start_ymd DESC, req_no
+</select>
+
+<!-- 출장정산현황(국내출장정산) 조회 -->
+<select id="selectCtrDomAdList" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripAdSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripListVO">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrDomAdList */
+       a.req_no
+     , a.biztrip_req_no
+     , a.adjst_resn
+     , a.adjst_contnt
+     , a.adjst_tot_expns
+     , TRIM(CASE WHEN d.truth_orign_ymd IS NULL 
+                 THEN SUBSTR(e.biztrip_start_ymd, 1,4)||'/'||SUBSTR(e.biztrip_start_ymd, 5,2)||'/'||SUBSTR(e.biztrip_start_ymd, 7,2)
+                             ||' ~ '|| SUBSTR(e.biztrip_cls_ymd, 1,4)||'/'||SUBSTR(e.biztrip_cls_ymd, 5,2)||'/'||SUBSTR(e.biztrip_cls_ymd, 7,2)
+                 ELSE SUBSTR(d.truth_orign_ymd, 1,4)||'/'||SUBSTR(d.truth_orign_ymd, 5,2)||'/'||SUBSTR(d.truth_orign_ymd, 7,2)
+                             ||' ~ '|| SUBSTR(d.truth_cls_ymd, 1,4)||'/'||SUBSTR(d.truth_cls_ymd, 5,2)||'/'||SUBSTR(d.truth_cls_ymd, 7,2) END
+            ) AS biztrip_term
+     , fun_xodxcommst_cd_nm(DECODE(d.truth_region, NULL, e.biztrip_region, d.truth_region), 0) ||'('|| DECODE(d.truth_biztrip_form, NULL, e.biztrip_region, d.truth_biztrip_form) ||')' AS biztrip_region_nm 
+     , DECODE(NVL(d.truth_biztrip_goal,''), '', e.biztrip_goal, d.truth_biztrip_goal) AS biztrip_goal
+     , g.apr_state
+     , '국내출장' AS trip_knd
+     , a.req_psn_syspayno
+     , fun_get_trip_compn_list(a.biztrip_req_no, 'TQ') AS trip_psn
+     , GROUP_CONCAT(DISTINCT c.accnt_no) AS accnt_no
+FROM ctrdomad a
+JOIN ctrdomcompn b ON a.biztrip_req_no = b.req_no
+LEFT JOIN ctrdomadaccnt c ON a.req_no = c.req_no
+JOIN ctrdom e ON a.biztrip_req_no = e.req_no
+LEFT JOIN xomxintfatab g ON a.req_no = g.req_no
+LEFT JOIN ctrdomrep d ON a.biztrip_req_no = d.biztrip_req_no
+WHERE e.biztrip_start_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+<if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+<if test='biztrip_req_no != null and biztrip_req_no != ""'> AND a.biztrip_req_no = #{biztrip_req_no} </if>
+<if test='psn_syspayno != null and psn_syspayno != ""'> AND (a.req_psn_syspayno = #{psn_syspayno} OR b.biztrip_psn_syspayno = #{psn_syspayno}) </if>
+<if test='dept_cd != null and dept_cd != ""'> AND a.req_psn_dept_cd = #{dept_cd} </if>
+<if test='apr_state != null and apr_state != ""'> AND g.apr_state = #{apr_state} </if>
+<if test='accnt_no != null and accnt_no != ""'> 
+ <choose>
+  <when test='sub_yn != null and sub_yn == "Y"'> AND c.accnt_no LIKE SUBSTR(#{accnt_no} , 1, 7)||'%' </when>
+  <otherwise> AND c.accnt_no = #{accnt_no} </otherwise>
+ </choose>
+</if>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
+ORDER BY a.req_no DESC
+</select>
+
+<!-- 출장정산현황(해외출장정산) 조회 -->
+<select id="selectCtrOverAdList" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripAdSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripListVO">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrOverAdList */
+       a.req_no
+     , a.biztrip_req_no
+     , a.adjst_resn
+     , a.adjst_contnt
+     , a.adjst_tot_expns
+     , TRIM(CASE WHEN d.truth_orign_ymd IS NULL 
+                 THEN SUBSTR(e.biztrip_start_ymd, 1,4)||'/'||SUBSTR(e.biztrip_start_ymd, 5,2)||'/'||SUBSTR(e.biztrip_start_ymd, 7,2)
+                                  ||' ~ '|| SUBSTR(e.biztrip_cls_ymd, 1,4)||'/'||SUBSTR(e.biztrip_cls_ymd, 5,2)||'/'||SUBSTR(e.biztrip_cls_ymd, 7,2)
+                 ELSE SUBSTR(d.truth_orign_ymd, 1,4)||'/'||SUBSTR(d.truth_orign_ymd, 5,2)||'/'||SUBSTR(d.truth_orign_ymd, 7,2)
+                              ||' ~ '|| SUBSTR(d.truth_cls_ymd, 1,4)||'/'||SUBSTR(d.truth_cls_ymd, 5,2)||'/'||SUBSTR(d.truth_cls_ymd, 7,2) END
+           ) AS biztrip_term
+     , fun_xodxcommst_cd_nm(DECODE(d.truth_biztrip_region, NULL, e.biztrip_region, d.truth_biztrip_region), 0) AS biztrip_region_nm 
+     , DECODE(NVL(d.truth_biztrip_goal,''), '', e.biztrip_goal, d.truth_biztrip_goal) AS biztrip_goal
+     , g.apr_state
+     , '해외출장' AS trip_knd
+     , a.req_psn_syspayno     
+     , fun_get_trip_compn_list(a.biztrip_req_no, 'FQ') AS trip_psn
+     , GROUP_CONCAT(c.accnt_no) AS accnt_no
+  FROM ctroverad a
+  JOIN ctrovercompn b ON a.biztrip_req_no = b.req_no
+  LEFT JOIN ctroveradaccnt c ON a.req_no = c.req_no
+  JOIN ctrover e ON a.biztrip_req_no = e.req_no
+  LEFT JOIN ctroverrep d ON a.biztrip_req_no = d.biztrip_req_no
+  LEFT JOIN ctroverrepcompn f ON d.rep_req_no = f.req_no
+  LEFT JOIN xomxintfatab g ON a.req_no = g.req_no
+WHERE e.biztrip_start_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+<if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+<if test='biztrip_req_no != null and biztrip_req_no != ""'> AND a.biztrip_req_no = #{biztrip_req_no} </if>
+<if test='psn_syspayno != null and psn_syspayno != ""'> AND (a.req_psn_syspayno = #{psn_syspayno} OR b.biztrip_psn_syspayno = #{psn_syspayno} OR f.biztrip_psn_syspayno = #{psn_syspayno}) </if>
+<if test='dept_cd != null and dept_cd != ""'> AND a.req_psn_dept_cd = #{dept_cd} </if>
+<if test='apr_state != null and apr_state != ""'> AND g.apr_state = #{apr_state} </if>
+<if test='adjst_resn != null and adjst_resn != ""'> AND a.adjst_resn = #{adjst_resn} </if>
+<if test='accnt_no != null and accnt_no != ""'> 
+ <choose>
+  <when test='sub_yn != null and sub_yn == "Y"'> AND c.accnt_no LIKE SUBSTR(#{accnt_no} , 1, 7)||'%' </when>
+  <otherwise> AND c.accnt_no = #{accnt_no} </otherwise>
+ </choose>
+</if>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
+ORDER BY a.req_no DESC
+</select>
+
+<!-- 출장정산현황(국내,해외) -->
+<select id="selectCtrTripAdList" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripAdSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripListVO">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrTripAdList */
+       a.req_no
+     , a.biztrip_req_no
+     , a.adjst_resn
+     , a.adjst_contnt
+     , a.adjst_tot_expns
+     , TRIM(CASE WHEN d.truth_orign_ymd IS NULL 
+                 THEN SUBSTR(e.biztrip_start_ymd, 1,4)||'/'||SUBSTR(e.biztrip_start_ymd, 5,2)||'/'||SUBSTR(e.biztrip_start_ymd, 7,2)
+                             ||' ~ '|| SUBSTR(e.biztrip_cls_ymd, 1,4)||'/'||SUBSTR(e.biztrip_cls_ymd, 5,2)||'/'||SUBSTR(e.biztrip_cls_ymd, 7,2)
+                 ELSE SUBSTR(d.truth_orign_ymd, 1,4)||'/'||SUBSTR(d.truth_orign_ymd, 5,2)||'/'||SUBSTR(d.truth_orign_ymd, 7,2)
+                             ||' ~ '|| SUBSTR(d.truth_cls_ymd, 1,4)||'/'||SUBSTR(d.truth_cls_ymd, 5,2)||'/'||SUBSTR(d.truth_cls_ymd, 7,2) END
+            ) AS biztrip_term
+     , fun_xodxcommst_cd_nm(DECODE(d.truth_region, NULL, e.biztrip_region, d.truth_region), 0) ||'('|| DECODE(d.truth_biztrip_form, NULL, e.biztrip_region, d.truth_biztrip_form) ||')' AS biztrip_region_nm 
+     , DECODE(NVL(d.truth_biztrip_goal,''), '', e.biztrip_goal, d.truth_biztrip_goal) AS biztrip_goal
+     , g.apr_state
+     , '국내출장' AS trip_knd
+     , a.req_psn_syspayno
+     , fun_get_trip_compn_list(a.biztrip_req_no, 'TQ') AS trip_psn
+     , GROUP_CONCAT(c.accnt_no) AS accnt_no
+FROM ctrdomad a
+JOIN ctrdomcompn b ON a.biztrip_req_no = b.req_no
+LEFT JOIN ctrdomadaccnt c ON a.req_no = c.req_no
+JOIN ctrdom e ON a.biztrip_req_no = e.req_no
+LEFT JOIN xomxintfatab g ON a.req_no = g.req_no
+LEFT JOIN ctrdomrep d ON a.biztrip_req_no = d.biztrip_req_no
+WHERE e.biztrip_start_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+<if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+<if test='biztrip_req_no != null and biztrip_req_no != ""'> AND a.biztrip_req_no = #{biztrip_req_no} </if>
+<if test='psn_syspayno != null and psn_syspayno != ""'> AND (a.req_psn_syspayno = #{psn_syspayno} OR b.biztrip_psn_syspayno = #{psn_syspayno}) </if>
+<if test='dept_cd != null and dept_cd != ""'> AND a.req_psn_dept_cd = #{dept_cd} </if>
+<if test='apr_state != null and apr_state != ""'> AND g.apr_state = #{apr_state} </if>
+<if test='accnt_no != null and accnt_no != ""'> 
+ <choose>
+  <when test='sub_yn != null and sub_yn == "Y"'> AND c.accnt_no LIKE SUBSTR(#{accnt_no} , 1, 7)||'%' </when>
+  <otherwise> AND c.accnt_no = #{accnt_no} </otherwise>
+ </choose>
+</if>
+<if test='dept_cd != null and dept_cd != ""'> AND b.biztrip_psn_dept_cd = #{dept_cd} </if>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
+UNION
+SELECT a.req_no
+     , a.biztrip_req_no
+     , a.adjst_resn
+     , a.adjst_contnt
+     , a.adjst_tot_expns
+     , TRIM(CASE WHEN d.truth_orign_ymd IS NULL 
+                 THEN SUBSTR(e.biztrip_start_ymd, 1,4)||'/'||SUBSTR(e.biztrip_start_ymd, 5,2)||'/'||SUBSTR(e.biztrip_start_ymd, 7,2)
+                                  ||' ~ '|| SUBSTR(e.biztrip_cls_ymd, 1,4)||'/'||SUBSTR(e.biztrip_cls_ymd, 5,2)||'/'||SUBSTR(e.biztrip_cls_ymd, 7,2)
+                 ELSE SUBSTR(d.truth_orign_ymd, 1,4)||'/'||SUBSTR(d.truth_orign_ymd, 5,2)||'/'||SUBSTR(d.truth_orign_ymd, 7,2)
+                              ||' ~ '|| SUBSTR(d.truth_cls_ymd, 1,4)||'/'||SUBSTR(d.truth_cls_ymd, 5,2)||'/'||SUBSTR(d.truth_cls_ymd, 7,2) END
+           ) AS biztrip_term
+     , fun_xodxcommst_cd_nm(DECODE(d.truth_biztrip_region, NULL, e.biztrip_region, d.truth_biztrip_region), 0) AS biztrip_region_nm 
+     , DECODE(NVL(d.truth_biztrip_goal,''), '', e.biztrip_goal, d.truth_biztrip_goal) AS biztrip_goal
+     , g.apr_state
+     , '해외출장' AS trip_knd
+     , a.req_psn_syspayno     
+     , fun_get_trip_compn_list(a.biztrip_req_no, 'FQ') AS trip_psn
+     , GROUP_CONCAT(c.accnt_no) AS accnt_no
+  FROM ctroverad a
+  JOIN ctrovercompn b ON a.biztrip_req_no = b.req_no
+  LEFT JOIN ctroveradaccnt c ON a.req_no = c.req_no
+  JOIN ctrover e ON a.biztrip_req_no = e.req_no
+  LEFT JOIN ctroverrep d ON a.biztrip_req_no = d.biztrip_req_no
+  LEFT JOIN ctroverrepcompn f ON d.rep_req_no = f.req_no
+  LEFT JOIN xomxintfatab g ON a.req_no = g.req_no
+WHERE e.biztrip_start_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+<if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+<if test='biztrip_req_no != null and biztrip_req_no != ""'> AND a.biztrip_req_no = #{biztrip_req_no} </if>
+<if test='psn_syspayno != null and psn_syspayno != ""'> AND (a.req_psn_syspayno = #{psn_syspayno} OR b.biztrip_psn_syspayno = #{psn_syspayno} OR f.biztrip_psn_syspayno = #{psn_syspayno}) </if>
+<if test='dept_cd != null and dept_cd != ""'> AND a.req_psn_dept_cd = #{dept_cd} </if>
+<if test='apr_state != null and apr_state != ""'> AND g.apr_state = #{apr_state} </if>
+<if test='adjst_resn != null and adjst_resn != ""'> AND a.adjst_resn = #{adjst_resn} </if>
+<if test='accnt_no != null and accnt_no != ""'> 
+ <choose>
+  <when test='sub_yn != null and sub_yn == "Y"'> AND c.accnt_no LIKE SUBSTR(#{accnt_no} , 1, 7)||'%' </when>
+  <otherwise> AND c.accnt_no = #{accnt_no} </otherwise>
+ </choose>
+</if>
+<if test='dept_cd != null and dept_cd != ""'> AND b.biztrip_psn_dept_cd = #{dept_cd} </if>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
+ORDER BY a.req_no DESC
+</select>
+</mapper>

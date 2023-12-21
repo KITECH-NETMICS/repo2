@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.com.con">
+
+	<!-- 업무 리스트 조회 -->
+	<select id="selectBusinessServices" resultType="kr.re.kitech.biz.com.vo.BetaTesterVo" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo"><![CDATA[
+		SELECT /* kr.re.kitech.biz.com.con.selectBusinessServices */
+				  scapp_cd 	as serviceID
+				, appname	as cnServiceFullName
+				, reqnum	as alias
+				, xslurl
+				, xslurl_ready
+		  FROM 	appv_applicationmap 
+		 WHERE 	is_use
+		   AND	isvisible = 1
+	]]>
+		<if test="cn != null and cn != ''">
+		   AND appname LIKE '%' || #{cn} || '%'
+		</if>
+		<if test="serviceID != null and serviceID != ''">
+		   AND scapp_cd LIKE '%' || #{serviceID} || '%'
+		</if>
+		<if test="alias != null and alias != ''">
+		   AND reqnum LIKE '%' || #{alias} || '%'
+		</if>
+	</select>
+	
+	<!-- 업무 리스트 조회 -->
+	<select id="selectBetaTester" resultType="kr.re.kitech.biz.com.vo.BetaTesterVo" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo"><![CDATA[
+		SELECT /* kr.re.kitech.biz.com.con.selectBetaTester */
+			   x2.empno
+			 , x2.nm
+			 , x1.serviceid as serviceID
+			 , TO_CHAR(x1.start_date, '%Y%m%d') as start_date
+			 , TO_CHAR(x1.close_date, '%Y%m%d') as close_date
+			 , x1.rmk
+			 , x1.syspayno
+		  FROM nbiztester x1
+		  JOIN humbasicinfo x2 on x1.syspayno = x2.syspayno
+		 WHERE serviceid = #{serviceID}
+		 ORDER BY x1.REGST_DAYTM
+	]]>
+	</select>
+	
+	<!-- 업무 리스트 조회 -->
+	<insert id="insertBetaTesterLog" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo">
+		INSERT /* kr.re.kitech.biz.com.con.insertBetaTesterLog */
+		  	   INTO nbiztesterlog (syspayno, serviceid, start_date, <if test="close_date != null and close_date != ''">close_date,</if> cud_mode, rmk, regst_syspayno, regst_daytm)
+		SELECT x3.syspayno
+			  , x3.serviceid
+			  , x3.start_date
+			 <if test="close_date != null and close_date != ''">
+			  , x3.close_date
+			 </if>
+			  , DECODE(NVL(x4.syspayno, ''), '', 'C', 'U')
+			  , x3.rmk
+			  , x3.regst_syspayno
+			  , x3.regst_daytm
+		  FROM ( 
+			    SELECT 
+			    	   x1.syspayno, 
+			           CAST(#{serviceID} as CHAR(4)) as serviceID, 
+			           TO_DATE(#{start_date}, '%Y%m%d') as start_date, 
+				 <if test="close_date != null and close_date != ''">
+			           TO_DATE(#{close_date}, '%Y%m%d') as close_date,
+				 </if>
+			           CAST(#{rmk} as VARCHAR(255)) as rmk, 
+			           CAST(#{regst_syspayno} as CHAR(8)) as regst_syspayno, 
+			           CURRENT as regst_daytm 
+			      FROM humbasicinfo x1
+			      JOIN xodhdeptinfo x2 ON x1.dept_cd = x2.dept_cd AND x1.dept_new_ymd = x2.dept_new_ymd
+			     WHERE 1=1
+			     	<if test="syspayno != null and syspayno != ''">
+			     		AND x1.syspayno = #{syspayno}
+			     	</if>
+			     	<if test="dept_cd != null and dept_cd != ''">
+						AND (x2.dept_cd = #{dept_cd} OR x2.divsn_dept = #{dept_cd})
+						AND x1.work_clsf = 'HAG010'			     	
+			     	</if>
+			  ) x3
+	LEFT OUTER JOIN nbiztester x4 ON x3.syspayno = x4.syspayno AND x3.serviceid = x4.serviceid
+	</insert>
+	
+	<!-- 업무 리스트 조회 -->
+	<insert id="insertUpdateBetaYNLog" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo">
+		INSERT /* kr.re.kitech.biz.com.con.insertBetaTesterLog */
+		  	   INTO nbiztesterlog (syspayno, serviceid, cud_mode,  regst_syspayno, regst_daytm)
+		VALUES ('LOGGING', #{serviceID}, #{betaServiceYN}, #{regst_syspayno}, current )
+	</insert>
+	
+		<!-- 업무 리스트 조회 -->
+	<insert id="insertBetaTester" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo">
+		MERGE /* kr.re.kitech.biz.com.con.insertBetaTester */
+			  INTO nbiztester AS d
+			USING (
+				SELECT x3.syspayno
+					 , x3.serviceid
+			         , x3.start_date
+				 <if test="close_date != null and close_date != ''">
+				 	 , x3.close_date
+				 </if>
+					 , x3.rmk
+					 , x3.regst_syspayno
+					 , x3.regst_daytm
+				 FROM ( 
+					   SELECT 
+					    	  x1.syspayno, 
+					          CAST(#{serviceID} as CHAR(4)) as serviceid, 
+					          TO_DATE(#{start_date}, '%Y%m%d') as start_date,
+				          <if test="close_date != null and close_date != ''">
+					          TO_DATE(#{close_date}, '%Y%m%d') as close_date, 
+				 		  </if>
+					          CAST(#{rmk} as VARCHAR(255)) as rmk, 
+					          CAST(#{regst_syspayno} as CHAR(8)) as regst_syspayno, 
+					          CURRENT as regst_daytm 
+					     FROM humbasicinfo x1
+					     JOIN xodhdeptinfo x2 on x1.dept_cd = x2.dept_cd and x1.dept_new_ymd = x2.dept_new_ymd
+					    WHERE 1=1
+					    	<if test="syspayno != null and syspayno != ''">
+					     		AND x1.syspayno = #{syspayno}
+					     	</if>
+					     	<if test="dept_cd != null and dept_cd != ''">
+								AND (x2.dept_cd = #{dept_cd} OR x2.divsn_dept = #{dept_cd})	
+								AND x1.work_clsf = 'HAG010'			 		     	
+					    	</if>
+					  ) x3
+			) as f on d.syspayno = f.syspayno and d.serviceid = f.serviceid
+			WHEN MATCHED THEN
+			    UPDATE SET
+			      d.start_date = f.start_date
+	          <if test="close_date != null and close_date != ''">
+			      , d.close_date = f.close_date
+			  </if>
+                  , d.rmk = f.rmk
+			      , d.updt_syspayno = #{updt_syspayno}
+			      , d.updt_daytm = CURRENT
+			WHEN NOT MATCHED THEN
+		INSERT (syspayno, serviceid, start_date,<if test="close_date != null and close_date != ''"> close_date,</if> rmk, regst_syspayno, regst_daytm)
+		VALUES (
+				f.syspayno
+			  , f.serviceid
+	          , f.start_date
+          <if test="close_date != null and close_date != ''">
+	          , f.close_date
+		  </if>
+			  , f.rmk
+			  , f.regst_syspayno
+			  , f.regst_daytm)
+	</insert>
+	
+	<!-- 삭제 로그 삽입 -->
+	<insert id="insertBetaTesterDeleteLog" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo">
+		INSERT /* kr.re.kitech.biz.com.con.insertBetaTesterDeleteLog */
+		  	   INTO nbiztesterlog (syspayno, serviceid, start_date,<if test="close_date != null and close_date != ''"> close_date,</if> cud_mode, rmk, regst_syspayno, regst_daytm)
+		VALUES 
+			(
+				#{syspayno}
+			  , #{serviceID}
+	          , TO_DATE(#{start_date}, '%Y%m%d')
+          <if test="close_date != null and close_date != ''">
+	          , TO_DATE(#{close_date}, '%Y%m%d')
+ 		  </if>
+			  , 'D'
+			  , #{rmk}
+			  , #{regst_syspayno}
+			  , CURRENT
+			)
+	</insert>
+	
+	<!-- 베타테스터 삭제 -->
+	<delete id="deleteBetaTester" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo">
+		DELETE FROM nbiztester   /* QueryID : kr.re.kitech.biz.ccs.cws.deleteCwsOutWork */ 
+         WHERE syspayno         = #{syspayno}
+           AND serviceid		= #{serviceID}
+	</delete>
+
+</mapper>

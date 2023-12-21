@@ -1,0 +1,3326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/kitech/css/kitech.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head>
+		<title>기술이전신청</title>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="">
+					<request>
+						<saveProc serviceID="svrResTecTransInfoService01">
+							<hashtable>
+								<data hashkey="form" />
+								<data hashkey="gridSmit" />
+								<data hashkey="gridVend" />
+								<data hashkey="gridSpec" />
+								<data hashkey="gridPsn" />
+								<data hashkey="gridAgncy" />
+							</hashtable>
+						</saveProc><!-- 기술이전 신청서 작성 -->
+						<HumBasicInfo serviceID="svrHumComUserService02" /><!-- 사용자조회 -->
+						<selectData serviceID="svrResTecTransInfoService02" /><!-- 조회 -->
+						<deleteData serviceID="svrResTecTransInfoService03" /><!-- 삭제 -->
+						<commCode serviceID="svrFinCom01" /><!-- 공통코드조회 -->
+						<AccntNoInfo task="kitech.com.service.CommonService" action="execute" xda="kitech.fin.fin.com.xda.ResBgacCtmMS01" /><!-- 계정번호조회 -->
+						<selectComboBoxBig task="kitech.com.service.CommonService" action="execute" xda="kitech.res.com.xda.ResIndTeccMS01" /><!-- 산업기술분류표(대분류) -->
+					</request>
+					<base>
+						<INFO>
+							<title value="단독 수행 과제" />
+							<info value="100% 지급" />
+						</INFO>
+						<INFO>
+							<title value="기술이전 참여연구원 3인 이하" />
+							<info value="30% ~ 70% 이내" />
+						</INFO>
+						<INFO>
+							<title value="기술이전 참여연구원 4인 이상" />
+							<info value="20% ~ 60% 이내" />
+						</INFO>
+					</base>
+					<response />
+				</data>
+			</xf:instance>
+			<!-- 특허마스터 내역 조회 -->
+			<xf:submission id="getResult" ref="request/selectData" target="response/selectData" action="" method="post" mediatype="application/xml" encoding="UTF-8" instance=""
+				replace="none" errorHandler="" customHandler="" mode="asynchronous" processMsg="조회중입니다.">
+				<script type="javascript" ev:event="xforms-submit-done">
+				<![CDATA[
+					if (!gfnSubmitMessageBar(e)) {
+						return;
+					}
+					
+					var dataHash = WebSquare.collection.toHashtable(e.responseBody);
+					debugger;
+					// form Data Setting
+					var doc1 = dataHash.get("form");
+					var formDoc = WebSquare.xml.findNode(doc1, "msgResTrnsRcptInfoSS01");
+					inputReqEmpno.setValue(WebSquare.xml.getValue(formDoc, "req_empno", "value"));
+					inputReqNm.setValue(WebSquare.xml.getValue(formDoc, "req_nm", "value"));
+					inputReqPsn.setValue(WebSquare.xml.getValue(formDoc, "req_psn", "value"));
+					inputReqDeptNm.setValue(WebSquare.xml.getValue(formDoc, "req_dept_nm", "value"));
+					inputCalendarReqYmd.setValue(WebSquare.xml.getValue(formDoc, "req_ymd", "value"));
+					radioMouClsf.setValue(WebSquare.xml.getValue(formDoc, "mou_clsf", "value"));
+					inputTrnsKrnNm.setValue(WebSquare.xml.getValue(formDoc, "trns_krn_nm", "value"));
+					inputTransEngNm.setValue(WebSquare.xml.getValue(formDoc, "trns_eng_nm", "value"));
+					inputTrnsReschEmpno.setValue(WebSquare.xml.getValue(formDoc, "trns_rspns_empno", "value"));
+					inputTrnsReschNm.setValue(WebSquare.xml.getValue(formDoc, "trns_rspns_nm", "value"));
+					inputTrnsReschRspns.setValue(WebSquare.xml.getValue(formDoc, "trns_resch_rspns", "value"));
+					inputTrnsRspnsDeptCd.setValue(WebSquare.xml.getValue(formDoc, "trns_rspns_dept_cd", "value"));
+					inputTrnsRspnsDeptNm.setValue(WebSquare.xml.getValue(formDoc, "trns_rspns_dept_nm", "value"));
+					inputTrnsRspnsDeptNewYmd.setValue(WebSquare.xml.getValue(formDoc, "trns_rspns_dept_new_ymd", "value"));
+					inputAccntNo.setValue(WebSquare.xml.getValue(formDoc, "accnt_no", "value"));
+					inputAccntRspnsEmpno.setValue(WebSquare.xml.getValue(formDoc, "accnt_rspns_empno", "value"));
+					inputAccntRspnsNm.setValue(WebSquare.xml.getValue(formDoc, "accnt_rspns_nm", "value"));
+					inputAccntRspns.setValue(WebSquare.xml.getValue(formDoc, "accnt_rspns", "value"));
+					inputReschFund.setValue(WebSquare.xml.getValue(formDoc, "resch_fund", "value"));
+					inputAccntNoNm.setValue(WebSquare.xml.getValue(formDoc, "accnt_no_nm", "value"));
+					checkboxTransTyp.setValue(WebSquare.xml.getValue(formDoc, "trns_typ", "value"));// 계약형태
+					radioTrnsScop.setValue(WebSquare.xml.getValue(formDoc, "trns_scop", "value"));// 실시범위
+					inputCalendarContrctStartYmd.setValue(WebSquare.xml.getValue(formDoc, "contrct_start_ymd", "value"));// 계약기간
+					inputCalendarContrctClsYmd.setValue(WebSquare.xml.getValue(formDoc, "contrct_cls_ymd", "value"));// 계약기간
+					textareaEtcCnd.setValue(WebSquare.xml.getValue(formDoc, "etc_cnd", "value")); // 기타조건
+					
+					inputRunRyalty.setValue(WebSquare.xml.getValue(formDoc, "run_ryalty", "value")); // 경상로열티
+					radioUnitTyp.setValue(WebSquare.xml.getValue(formDoc, "unit_typ", "value")); // 결상로열티 단위
+					inputEstmtStndrd.setValue(WebSquare.xml.getValue(formDoc, "estmt_stndrd", "value")); // 산정기준
+					inputEstmtCollctAmt.setValue(WebSquare.xml.getValue(formDoc, "estmt_collct_amt", "value")); // 경상로영티 징수예상액
+					
+					inputFxdSuplyValue.setValue(WebSquare.xml.getValue(formDoc, "fxd_tech_suply_value", "value"));
+					inputFxdTechTaxFee.setValue(WebSquare.xml.getValue(formDoc, "fxd_tech_tax_fee", "value"));
+					inputFxdTechFee.setValue(WebSquare.xml.getValue(formDoc, "fxd_tech_fee", "value"));
+					textareaTechFeeContnt.setValue(WebSquare.xml.getValue(formDoc, "tech_fee_contnt", "value")); // 기술료제안_비고
+					radioDmndVendYn.setValue(WebSquare.xml.getValue(formDoc, "dmnd_vend_yn", "value"));
+					radioAgncyVendYn.setValue(WebSquare.xml.getValue(formDoc, "agncy_vend_yn", "value"));
+					selectboxTechPrjClsf.setValue(WebSquare.xml.getValue(formDoc, "tech_prj_clsf", "value"));
+					
+					startYmd = WebSquare.xml.getValue(formDoc, "start_ymd", "value");
+					clsYmd = WebSquare.xml.getValue(formDoc, "cls_ymd", "value");
+					accntRspnsPosiNm = WebSquare.xml.getValue(formDoc, "accnt_rspns_posi_nm", "value");
+					accntRspnsDeptNm = WebSquare.xml.getValue(formDoc, "accnt_rspns_dept_nm", "value");
+
+					attachFileNo_A = WebSquare.xml.getValue(formDoc, "attach_file_no", "value");
+					attachFileNo_B = WebSquare.xml.getValue(formDoc, "attach_file_no_2", "value");
+					attachFileNo_C = WebSquare.xml.getValue(formDoc, "attach_file_no_3", "value");
+					attachFileNo_D = WebSquare.xml.getValue(formDoc, "attach_file_no_4", "value");
+					
+					KitechAttach.create('upload_A', {fileKey: ("" !== attachFileNo_A.trim()) ? attachFileNo_A.trim() : typeCode, mode:  "edit"});
+					KitechAttach.create('upload_B', {fileKey: ("" !== attachFileNo_B.trim()) ? attachFileNo_B.trim() : typeCode, mode:  "edit"});
+					KitechAttach.create('upload_C', {fileKey: ("" !== attachFileNo_C.trim()) ? attachFileNo_C.trim() : typeCode, mode:  "edit"});
+					KitechAttach.create('upload_D', {fileKey: ("" !== attachFileNo_D.trim()) ? attachFileNo_D.trim() : typeCode, mode:  "edit"});
+					
+					inputAdmnWrkRspnsEmpno.setValue(WebSquare.xml.getValue(formDoc, "admn_wrk_rspns_empno", "value"));
+					inputAdmnWrkRspnsNm.setValue(WebSquare.xml.getValue(formDoc, "admn_wrk_rspns_nm", "value"));
+					inputAdmnWrkRspns.setValue(WebSquare.xml.getValue(formDoc, "admn_wrk_rspns", "value"));
+					
+					inputNegoRspnsEmpno.setValue(WebSquare.xml.getValue(formDoc, "nego_rspns_empno", "value"));
+					inputNegoRspnsNm.setValue(WebSquare.xml.getValue(formDoc, "nego_rspns_nm", "value"));
+					inputNegoRspns.setValue(WebSquare.xml.getValue(formDoc, "nego_rspns", "value"));
+					
+					// 2015.2.25 ssy. 신청자 부서정보중 지역코드(FCC)가져옴. 지역코드와 기술료구분에따라 결재선 변경함
+					inputRegionCd.setValue(WebSquare.xml.getValue(formDoc, "req_psn_region", "value"));
+					
+					techOutline.setValue(WebSquare.xml.getValue(formDoc, "tech_outline", "value"));		// 기술개요
+					selectboxSixTClsf.setValue(WebSquare.xml.getValue(formDoc, "six_t", "value"));		// 기술적용분야
+					selectboxBigClsf.setValue(WebSquare.xml.getValue(formDoc, "ind_tech_clsf", "value").trim());		// 산업기술분류코드
+					devLeadTimeSt.setValue(WebSquare.xml.getValue(formDoc, "dev_lead_st", "value"));		// 총기술개발소요기간 시작일
+					devLeadTimeEd.setValue(WebSquare.xml.getValue(formDoc, "dev_lead_ed", "value"));		// 총기술개발소요기간 종료일
+					expectEffect.setValue(WebSquare.xml.getValue(formDoc, "expect_effect", "value"));		// 기대효과
+					radioGrowLevel.setValue(WebSquare.xml.getValue(formDoc, "tech_grow_level", "value"));		// 기술성숙도
+					targetMarket.setValue(WebSquare.xml.getValue(formDoc, "target_market", "value"));		// 목표시장
+					inboundMkt.setValue(WebSquare.xml.getValue(formDoc, "inbound_mkt", "value"));		// 국내
+					outboundMkt.setValue(WebSquare.xml.getValue(formDoc, "outbound_mkt", "value"));		// 해외
+					
+					if (WebSquare.xml.getString(formDoc, "attach_img_no1", "value") != "") {	// 기술이미지1
+						image1.setSrc(WebSquare.xml.getString(formDoc, "attach_img_no1", "value"));		
+						attachImgFile1.setValue(WebSquare.xml.getValue(formDoc, "attach_img_no1", "value"));
+						triggerPhoto1.show();
+					}
+					
+					if (WebSquare.xml.getString(formDoc, "attach_img_no2", "value") != "") {	// 기술이미지2
+						image2.setSrc(WebSquare.xml.getString(formDoc, "attach_img_no2", "value"));
+						attachImgFile2.setValue(WebSquare.xml.getValue(formDoc, "attach_img_no2", "value"));
+						triggerPhoto2.show();
+					}
+					
+					if (WebSquare.xml.getString(formDoc, "attach_img_no3", "value") != "") {	// 기술이미지3
+						image3.setSrc(WebSquare.xml.getString(formDoc, "attach_img_no3", "value"));		
+						attachImgFile3.setValue(WebSquare.xml.getValue(formDoc, "attach_img_no3", "value"));
+						triggerPhoto3.show();
+					}					
+					
+					// 기술이전관련 특허 조회
+					var dataVector1 = dataHash.get("gridSmit").toDocument();
+					gridSmit.setXML(dataVector1);
+					
+					// 기술이전관련 업체조회
+					var dataVector2 = dataHash.get("gridVend").toDocument();
+					gridVend.setXML(dataVector2);
+					
+					// 기술자료 조회
+					var dataVector3 = dataHash.get("gridSpec").toDocument();
+					gridSpec.setXML(dataVector3);
+					
+					// 기술이전 참여자 조회
+					var dataVector4 = dataHash.get("gridPsn").toDocument();
+					gridPsn.setXML(dataVector4);
+					
+					// 기술이전 중개기관 조회
+					var dataVector5 = dataHash.get("gridAgncy").toDocument();
+					gridAgncy.setXML(dataVector5);
+					
+					aprState = setButtonState(inputReqNo, 1);
+					
+					postFind();
+					
+				]]></script>
+			</xf:submission>
+			<!-- 공통코드 -->
+			<xf:submission id="commCode" ref="request/commCode" target="response/commCode" action="" method="post" mediatype="application/xml" encoding="UTF-8" instance=""
+				replace="instance" errorHandler="" customHandler="" mode="synchronous">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					if (!gfnSubmitMessageBar(e)) {
+						return;
+					}
+				]]></script>
+			</xf:submission>
+
+			<!-- 기술이전신청서 등록 -->
+			<xf:submission id="setSaveData" ref="request/saveProc" target="response/saveProc" method="post" mediatype="application/xml" encoding="UTF-8" instance="" replace="instance"
+				errorHandler="" customHandler="" mode="synchronous" processMsg="저장중입니다">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					if(!gfnSubmitMessageBar(e)){
+						WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridSmit']/vector" );
+						WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridVend']/vector" );
+						WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridSpec']/vector" );
+						WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridPsn']/vector" );
+						WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridAgncy']/vector" );
+						
+						return;
+					}
+					
+					WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridSmit']/vector" );
+					WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridVend']/vector" );
+					WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridSpec']/vector" );
+					WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridPsn']/vector" );
+					WebSquare.ModelUtil.removeInstanceNode( "request/saveProc/hashtable/data[@hashkey='gridAgncy']/vector" );
+					
+					var reqNo = WebSquare.ModelUtil.getInstanceValue("response/saveProc/mdata/req_no/@value");
+					saveClsf = "update";
+					if(reqNo != ""){
+						inputReqNo.setValue(reqNo);
+						if(btnClsf != "temp"){
+							if(aprState == "XAD005" || aprState == "XAD013" || aprState == "XAD015"){
+								if(confirm("저장하였습니다. 결재신청을 하시겠습니까?")){
+									menuApproval();
+								}else{
+									alert("저장하였습니다");
+									menuFind();
+								}
+							}else{
+								alert("저장하였습니다");
+								menuFind();
+							}
+						}else{
+							alert("저장하였습니다.");
+							menuFind();
+						}
+						
+						
+					}else{
+						alert("저장에 실패하였습니다.");
+					}
+				]]></script>
+			</xf:submission>
+
+			<!-- 사용자 조회 -->
+			<xf:submission id="searchHumBasicInfoNm" ref="request/HumBasicInfo" target="response/HumBasicInfo" action="" method="post" mediatype="application/xml" encoding="UTF-8"
+				instance="" replace="instance" errorHandler="" customHandler="" mode="asynchronous" processMsg="저장중입니다">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					if (!gfnSubmitMessageBar(e)) {
+						return;
+					}
+					
+					var cnt = WebSquare.ModelUtil.getInstanceValue("response/HumBasicInfo/msgHumBasicInfo01/cnt/@value");
+					var dataXml = WebSquare.ModelUtil.findInstanceNode("response/HumBasicInfo/msgHumBasicInfo01");
+					
+					var nm = WebSquare.ModelUtil.getInstanceValue("response/HumBasicInfo/msgHumBasicInfo01/nm/@value");
+					var empno = WebSquare.ModelUtil.getInstanceValue("response/HumBasicInfo/msgHumBasicInfo01/empno/@value");
+					var syspayno = WebSquare.ModelUtil.getInstanceValue("response/HumBasicInfo/msgHumBasicInfo01/syspayno/@value");
+					var deptNm = WebSquare.ModelUtil.getInstanceValue("response/HumBasicInfo/msgHumBasicInfo01/dept_nm/@value");
+					var posiNm = WebSquare.ModelUtil.getInstanceValue("response/HumBasicInfo/msgHumBasicInfo01/posi_nm/@value");
+					var posiCd = WebSquare.ModelUtil.getInstanceValue("response/HumBasicInfo/msgHumBasicInfo01/posi_cd/@value");
+					var workClsf = WebSquare.ModelUtil.getInstanceValue("response/HumBasicInfo/msgHumBasicInfo01/work_clsf/@value");
+					//var initCd = WebSquare.ModelUtil.getInstanceValue("response/HumBasicInfo/msgHumBasicInfo01/init_cd/@value");
+					
+					if(cnt == "1"){
+						gridPsn.setCellData(getRow, "empno", empno);
+						gridPsn.setCellData(getRow, "nm", nm);
+						gridPsn.setCellData(getRow, "syspayno", syspayno);
+						gridPsn.setCellData(getRow, "dept_nm", deptNm);
+						gridPsn.setCellData(getRow, "posi_nm", posiNm);
+						//gridPsn.setCellData(getRow, "init_cd", initCd);
+						
+						if(workClsf == "HAG010"){
+							if(posiCd == "351010" || posiCd == "354000" || posiCd == "350010" || posiCd == "330020"){ //연구생, 연수생, 학생연구원
+								gridPsn.setCellData(getRow, "user_div", "5");
+							}else{
+								gridPsn.setCellData(getRow, "user_div", "1");
+							}
+						}else{
+							gridPsn.setCellData(getRow, "user_div", "3");
+						}
+					}else{
+						openUserInfo();
+					}
+				]]></script>
+			</xf:submission>
+
+			<!-- 신청서 삭제 -->
+			<xf:submission id="deleteData" ref="request/deleteData" target="response/deleteData" method="post" mediatype="application/xml" encoding="UTF-8" instance=""
+				replace="instance" errorHandler="" customHandler="" mode="asynchronous" processMsg="조회중입니다.">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					if(!gfnSubmitMessageBar(e)){
+						return;
+					}
+					var result = WebSquare.ModelUtil.getInstanceValue( "response/deleteData/mdata/del_cnt/@value" );
+					if(	result > '1'){
+						alert("신청서를 삭제하였습니다.");		
+						menuGotoList();	
+					}else{
+						alert("신청서삭제를 실패하였습니다. 다시 한번 시도바랍니다.");	
+					}
+					
+				]]></script>
+			</xf:submission>
+
+			<!-- 계정번호조회 -->
+			<xf:submission id="getFinAccntNoNm" ref="request/AccntNoInfo" target="response/AccntNoInfo" action="" method="post" mediatype="application/xml" encoding="UTF-8"
+				instance="" replace="instance" errorHandler="" customHandler="" mode="asynchronous" processMsg="">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					if (!gfnSubmitMessageBar(e)) {
+						return;
+					}
+					var result = WebSquare.xml.getValue(e.responseBody, "vector", "result"); //msgResBgacCtm01
+					if (result == "1") {
+						var accntNo = WebSquare.ModelUtil.getInstanceValue("response/AccntNoInfo/vector/data/msgResBgacCtm01/accnt_no/@value");
+						inputAccntNo.setValue(accntNo);
+						inputAccntRspns.setValue(WebSquare.ModelUtil.getInstanceValue("response/AccntNoInfo/vector/data/msgResBgacCtm01/accnt_rspns/@value"));
+						inputAccntRspnsNm.setValue(WebSquare.ModelUtil.getInstanceValue("response/AccntNoInfo/vector/data/msgResBgacCtm01/accnt_rspns_nm/@value"));
+						inputAccntRspnsEmpno.setValue(WebSquare.ModelUtil.getInstanceValue("response/AccntNoInfo/vector/data/msgResBgacCtm01/emp_no/@value"));
+						inputAccntNoNm.setValue(WebSquare.ModelUtil.getInstanceValue("response/AccntNoInfo/vector/data/msgResBgacCtm01/accnt_no_nm/@value"));
+						inputReschFund.setValue(WebSquare.ModelUtil.getInstanceValue("response/AccntNoInfo/vector/data/msgResBgacCtm01/resch_fund/@value"));
+						
+						var bsnsCdInout = WebSquare.ModelUtil.getInstanceValue("response/AccntNoInfo/vector/data/msgResBgacCtm01/bsns_cd_inout/@value");
+						var bsnsCdOfic = WebSquare.ModelUtil.getInstanceValue("response/AccntNoInfo/vector/data/msgResBgacCtm01/bsns_cd_ofic/@value");
+						
+						if(bsnsCdInout == "RHA001"){ //정부연구과제
+							if(bsnsCdOfic == "022000000"){ //산업통상부 과제
+								selectboxTechPrjClsf.setValue("RFL001"); //정부수탁(산업부)
+							}else if(bsnsCdOfic == "027000000"){ //미래부 과제
+								selectboxTechPrjClsf.setValue("RFL004"); //정부수탁(미래부)
+							}else{
+								selectboxTechPrjClsf.setValue("RFL002"); //정부수탁(기타)
+							}
+						}else{
+							selectboxTechPrjClsf.setValue("RFL003"); //일반과제
+						}
+						setCompo();
+						if(radioMouClsf.getValue() == "RFD001"){
+							WebSquare.ModelUtil.setInstanceValue("request/selectData/accnt_no/@value", accntNo);
+							WebSquare.ModelUtil.setInstanceValue("request/selectData/src_flag/@value", "patInfo");
+					
+							gfnExecuteSubmission("getPatInfo");
+						}
+					} else {
+						popupAccntInfo();
+					}
+				]]></script>
+			</xf:submission>
+
+			<!-- 출원정보조회 -->
+			<xf:submission id="getPatInfo" ref="request/selectData" target="response/selectData" action="" method="post" mediatype="application/xml" encoding="UTF-8" instance=""
+				replace="none" errorHandler="" customHandler="" mode="synchronous">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					if (!gfnSubmitMessageBar(e)) {
+						return;
+					}
+					
+					gridSmit.setXML(e.responseBody);
+					gridSmit.modifyAllStatus("C");
+				]]></script>
+			</xf:submission>
+
+			<!-- 산업기술분류 대분류 -->
+			<xf:submission id="searchXodxcommstBig" ref="request/selectComboBoxBig" target="response/selectComboBoxBig" action="" method="post" mediatype="application/xml"
+				encoding="UTF-8" instance="" replace="instance" errorHandler="" customHandler="" mode="asynchronous" processMsg="로딩중....">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+				]]></script>
+			</xf:submission>
+		</xf:model>
+		<script type="javascript" src="/kitech/js/kitech.js" />
+		<!-- <script type="javascript" src="/kitech/js/fin_kitech.js"></script> -->
+		<script type="javascript" src="/kitech/js/kitech_common.js?15" />
+		<script type="javascript" src="/kitech/com/js/snapCommon.js" />
+		<script src="/extlib/raonkupload/js/raonkupload.js" />
+		<script src="/kitech/js/kitech_attach.js" />
+		<script type="javascript"><![CDATA[
+			/*
+			* 시스템명     : 기술이전통합관리
+			* 프로그램명  : 기술이전신청서등록, 전자결재신청
+			* 기능정의     : 기술이전신청서등록(사용자)
+			* 특기사항     : 
+			* 변경이력     :
+			*/
+
+			var pwrR1 = permission.substr(1,1);
+			var pwrR2 = permission.substr(2,1);
+			var pwrR3 = permission.substr(3,1);
+			//==============================================================================
+			// 폼변수 선언
+			//==============================================================================
+			var selRow = -1;
+			var saveClsf = "insert";
+			var btnClsf = ""; //임시저장 또는 저장
+			var apyYn = "N";
+			var aprState = "";
+			var today = gfnGetToday();
+			var getRow = -1; //참여자현황테이블의 선택한 row number
+			var vendObj = "";
+			
+			// 첨부파일 관련 변수 선언
+			var typeCode = serviceId;	//첨부파일 유형코드 
+			
+			//결재신청위해 필요
+			var startYmd = "";
+			var clsYmd = "";
+			var accntRspnsPosiNm = "";
+			var accntRspnsDeptNm = "";
+			
+			var param1 = WebSquare.net.getParameter( "param1" );
+			var param2 = WebSquare.net.getParameter( "param2" ); //req_no
+			var param3 = WebSquare.net.getParameter( "param3" ); //apr_state
+			var param4 = WebSquare.net.getParameter( "param4" );			
+			
+			var attachFileNo_A = "";
+			var attachFileNo_B = "";
+			var attachFileNo_C = "";
+			var attachFileNo_D = "";
+			
+			if(param4 == "apr"){
+				triggerList.setDisabled("true");
+				if(param2 != ""){
+					inputReqNo.setValue(param2);
+					saveClsf = "update";
+				}
+			}else{
+				var args = WebSquare.net.getParameter( "args" );
+				var p_trns_resch_empno = WebSquare.net.getParameter( "trns_resch_empno" );
+				var p_trns_resch_nm = WebSquare.net.getParameter( "trns_resch_nm" );
+				var p_nego_rspns_empno = WebSquare.net.getParameter( "nego_rspns_empno" );
+				var p_nego_rspns_nm = WebSquare.net.getParameter( "nego_rspns_nm" );
+				var p_admn_wrk_rspns_empno = WebSquare.net.getParameter( "admn_wrk_rspns_empno" );
+				var p_admn_wrk_rspns_nm = WebSquare.net.getParameter( "admn_wrk_rspns_nm" );
+				var p_xml_id = WebSquare.net.getParameter( "xml_id" );
+				
+				var reqNo = WebSquare.net.getParameter( "g_req_no" );
+				if(reqNo.trim() != ""){
+					inputReqNo.setValue(reqNo);
+					saveClsf = "update";
+				}
+			}
+			
+			var attachFileImg1 = "";
+			var attachFileImg2 = "";
+			var attachFileImg3 = "";
+			
+			// 폼 로드 이벤트 함수
+			function Form_OnLoadCompleted() {
+				gridinfo.setXML(WebSquare.ModelUtil.findInstanceNode("base"));
+				if(roleCode.indexOf("1010001") > 0){
+					checkboxMgrYn.show();
+				}
+			
+				// RFD 기술구분, RFE 지적재산권분류, RFC 계약형태, RTR 실시범위, RTS 진행상태, RZB 업체규모,PFA 단위(기술사양), RAH 6T
+				WebSquare.ModelUtil.setInstanceValue("request/commCode/cd_clsf/@value", "RFD,RFE,RTR,RZB,PFA,RFC,RFL,RAH,RZC");
+				WebSquare.ModelUtil.setInstanceValue("request/commCode/scrn_id/@value", "COMCODE");
+				WebSquare.ModelUtil.setInstanceValue("request/commCode/xml_id/@value", serviceId);// R435
+				gfnExecuteSubmission("commCode");
+				
+				// 산업기술분류 대분류	
+				WebSquare.ModelUtil.setInstanceValue( "request/selectComboBoxBig/clsf/@value" , "RAQ001");
+				gfnExecuteSubmission("searchXodxcommstBig");
+			
+				if (inputReqNo.getValue().trim() != "") {
+					menuFind();
+				} else {
+					if (pwrR1 != '1') {
+						inputReqNm.setValue(cn);
+						inputReqEmpno.setValue(empno);
+						inputReqPsn.setValue(sn);
+					}
+					aprState = setButtonState(inputReqNo, 1);
+					inputCalendarReqYmd.setValue(today);
+					group21.setSize(989,486);
+					KitechAttach.create('upload_A', {fileKey: ("" !== attachFileNo_A.trim()) ? attachFileNo_A.trim() : typeCode, mode:  "edit"});
+					KitechAttach.create('upload_B', {fileKey: ("" !== attachFileNo_B.trim()) ? attachFileNo_B.trim() : typeCode, mode:  "edit"});
+					KitechAttach.create('upload_C', {fileKey: ("" !== attachFileNo_C.trim()) ? attachFileNo_C.trim() : typeCode, mode:  "edit"});
+					KitechAttach.create('upload_D', {fileKey: ("" !== attachFileNo_D.trim()) ? attachFileNo_D.trim() : typeCode, mode:  "edit"});
+				}
+			}
+			
+			// ==============================================================================
+			// <function name="menuFind">
+			// <summary >조회 실행</summary>
+			// <return type= "bool">true / false</return>
+			// </function>
+			// ==============================================================================
+			function menuFind() {
+				WebSquare.ModelUtil.setInstanceValue("request/selectData/req_no/@value", inputReqNo.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/selectData/seq/@value", "1"); // 예상수요업체&담당자정보 조회 시 협상이력이 다건인 경우 중복조회되는 현상을 막기위해 1로 강제설정
+				WebSquare.ModelUtil.setInstanceValue("request/selectData/src_flag/@value", "infoReg");
+			
+				gfnExecuteSubmission("getResult");
+			}
+			
+			// ==============================================================================
+			// <function name="postFind">
+			// <summary >조회 완료후 실행</summary>
+			// <return type= "">none</return>
+			// </function>
+			// ==============================================================================
+			function postFind() {
+			
+				if (pwrR1 == '1' || pwrR2 == '1') {
+					if (aprState == "XAD100") {
+						triggerSave.show(); // 담당자 입력을 위한 저장버튼
+						trigger2.hide();
+						btnDel.hide();
+						btnApproval.hide();
+			
+						groupNegoAlloc.show();
+					}
+					btnSave.setDisabled(false);
+				}
+				$l("aprState ----->> " + aprState);
+					
+					if(aprState >= 'XAD010'){
+						trigger52.show();
+					}else{
+						trigger52.hide();
+					}
+				setCompo(); // 기술구분에 따른 컴포넌트제어
+				for (var i = 0; i < gridSmit.getRowCount(); i++) {
+					gridSmit.setCellData(i, "indst_right_clsf_nm", gridSmit.getCellDisplayData(i, "indst_right_clsf"));
+					//gridSmit radio 버튼 표시
+					if(gridSmit.getCellData(i, "repr_yn") == 'Y'){
+						gridSmit.setCellChecked( i, "radio1", true);
+					}else{
+						gridSmit.setCellChecked( i, "radio1", false);
+					}
+				}
+			
+				for (var i = 0; i < gridVend.getRowCount(); i++) {
+					gridVend.setCellData(i, "cmpy_typ_desc", gridVend.getCellDisplayData(i, "cmpy_typ"));
+				}
+				for (var i = 0; i < gridSpec.getRowCount(); i++) {
+					gridSpec.setCellData(i, "req_no", gridSpec.getCellDisplayData(i, "req_no"));
+				}
+				if(radioAgncyVendYn.getValue() == "Y"){
+					group33.show();
+				}else{
+					group33.hide();
+				}
+				
+				
+			}
+
+			//==============================================================================
+			// 07. 저장 함수 선언
+			//==============================================================================
+			// <function name="preSave">
+			// <summary >저장전 실행</summary>
+			// <return type= "bool">true / false</return>
+			// </function>
+			//==============================================================================
+			function preSave(state){//괄호 안 스테이트 필요
+				var contrctStartYmd = inputCalendarContrctStartYmd.getValue();
+				var contrctClsYmd = inputCalendarContrctClsYmd.getValue();
+				var imgFileCnt = 0;
+
+				if(contrctStartYmd == "" || contrctStartYmd ==null){
+					alert("희망 계약 시작일자를 기입하세요");
+					inputCalendarContrctStartYmd.focus();
+					return false;
+				}
+
+				if(contrctClsYmd == "" || contrctClsYmd ==null){
+					alert("희망 계약 종료일자를 기입하세요");
+					inputCalendarContrctClsYmd.focus();
+					return false;
+				}
+
+				if(inputReqPsn.getValue() == ""){
+					alert("신청자는 필수입력사항입니다.");
+					return false;
+				}
+
+				var transKrnNm = inputTrnsKrnNm.getValue().trim();
+				if(transKrnNm == ""){
+					alert("이전기술명(국문)을 기입해 주십시오");
+					inputTrnsKrnNm.focus();
+					return false;
+				}
+				if(transKrnNm.length > 120){
+					alert("이전기술명(국문)을 400자를 초과 할 수 없습니다.");
+					return false;
+				}
+
+				var transEngNm = inputTransEngNm.getValue();
+				if(transEngNm.length > 400){
+					alert("이전기술명(영문)을 400자를 초과 할 수 없습니다.");
+					return false;
+				}
+
+				if(inputTrnsReschRspns.getValue() == ""){
+					alert("기술이전 연구 책임자는 필수입력사항입니다.");
+					inputTrnsReschEmpno.focus();
+					return false;
+				}
+				if(inputTrnsRspnsDeptCd.getValue() == ""){
+					alert("이전 연구 책임자의 부서명은 필수입력사항입니다.");
+					return false;
+				}
+
+				if(inputReschFund.getValue() == "" && inputAccntNo.getValue() != ""){
+					alert("실 투입 연구비는 필수입력사항입니다.");
+					inputReschFund.focus();
+					return false;
+				}
+
+				var mouClsf = radioMouClsf.getValue();	
+				if(mouClsf == ""){
+					alert("기술구분은 필수항목입니다.");
+					radioMouClsf.focus();
+					return false;
+				}
+
+				if(inputAccntNo.getValue() == "" && radioMouClsf.getValue() != "RFD010"){
+					alert("계정번호는 필수입력사항입니다.");
+					inputAccntNo.focus();
+					return false;
+				}
+			
+				var techPrjClsf = selectboxTechPrjClsf.getValue();
+				if(mouClsf == "RFD001"){ //지식재산권
+					if(gridSmit.getRowCount() == 0){
+						alert("관련특허를 입력하세요.");
+						return false;
+					}else{
+						var gridRadioYn = "N";
+						for(var i=0; i<gridSmit.getRowCount(); i++){
+							var indstRightClsf = gridSmit.getCellData(i, "indst_right_clsf");
+							if(gridSmit.getCellChecked( i , "radio1" )== true){
+								gridRadioYn = "Y";
+							}
+							
+							if(indstRightClsf == ""){
+								alert("지식재산권구분을 선택하세요.");
+								return false;
+							}
+						}
+						
+						if(gridRadioYn =="N"){
+							alert("관련 지식재산권에 대표를 선택하세요.");
+							return false;
+						}
+					}
+					
+
+				}else if(mouClsf == "RFD002" && techPrjClsf == "RFL003"){ // 노하우, 일반과제일경우, 참여자현황 필수기재사항(20150617 이지희) 
+					if(gridPsn.getRowCount() < 1){
+						alert("기술구분이 Know-How일 경우, 참여자현황은 필수입력입니다.");
+						return;
+					}
+				}
+				//2016.07.18.mouClsf - RFD007(정부연구과제(노하우등)), RFD008(정부연구과제(지재권))삭제
+				//연구관리시스템의 정부수탁(산업부), 정부수탁(기타)에 의한 분리
+				if(inputAccntRspns.getValue() == ""  && radioMouClsf.getValue() != "RFD010"){
+					alert("계정책임자가 누락되었습니다. 확인바랍니다.");
+					return false;
+				}
+				
+				if(techOutline.getValue() == ""){
+					alert("기술개요는 필수입력사항입니다.");
+					techOutline.focus();
+					return false;
+				}
+				
+				if(attachImgFile1.getValue() != "") {
+					imgFileCnt++;
+				}
+				
+				if(attachImgFile1.getValue() != "") {
+					imgFileCnt++;
+				}
+				
+				if(attachImgFile1.getValue() != "") {
+					imgFileCnt++;
+				}				
+				
+				if (imgFileCnt < 1) {
+					alert("최소 1개의 이미지파일은 첨부되어야 합니다.");
+					return false;				
+				}
+								
+				if(selectboxSixTClsf.getValue() == ""){
+					alert("기술적용분야는 필수입력사항입니다.");
+					selectboxSixTClsf.focus();
+					return false;
+				}
+								
+				if(selectboxBigClsf.getValue() == ""){
+					alert("산업기술분류코드는 필수입력사항입니다.");
+					selectboxBigClsf.focus();
+					return false;
+				}
+								
+				if(devLeadTimeSt.getValue() == ""){
+					alert("총 기술개발소요기간 시작일자는 필수입력사항입니다.");
+					devLeadTimeSt.focus();
+					return false;
+				}
+				
+				if(devLeadTimeEd.getValue() == ""){
+					alert("총 기술개발소요기간 종료일자는 필수입력사항입니다.");
+					devLeadTimeEd.focus();
+					return false;
+				}				
+								
+				if(expectEffect.getValue() == ""){
+					alert("기대효과는 필수입력사항입니다.");
+					expectEffect.focus();
+					return false;
+				}
+								
+				if(radioGrowLevel.getValue() == ""){
+					alert("기술성숙도는 필수입력사항입니다.");
+					radioGrowLevel.focus();
+					return false;
+				}				
+
+				if(state != "temp"){
+					if(techPrjClsf == "RFL001" || techPrjClsf == "RFL002" || techPrjClsf == "RFL004"){ //정부 연구관제 (미래부 추가)
+					
+						if (1 > KitechAttach.action.getTotalFileCount('upload_C')) {
+							alert("과제협약서를 첨부하세요");
+							return false;
+						}
+					}
+					if(radioMouClsf.getValue() != "RFD010"){
+						if (1 > KitechAttach.action.getTotalFileCount('upload_A')) {
+							alert("청렴유지서약서를 첨부하세요");
+							return false;
+						}
+					}
+						
+					
+					if (1 > KitechAttach.action.getTotalFileCount('upload_D')) {
+						alert("비밀유지협약서를 첨부하세요");
+						return false;
+					}					
+					if(checkboxTransTyp.getValue() == ""){
+						alert("계약형태를 기입해 주십시오.");
+						return false;
+					}
+
+					if(radioTrnsScop.getValue() == ""){
+						alert("실시범위를 기입해 주십시오.");
+						return false;
+					}
+
+					var etcCnd = textareaEtcCnd.getValue().trim();
+					if(etcCnd.length >500){
+						alert("기타 기술이전 조건은 500자를 초과 할 수 없습니다.");
+						return false;
+					}
+					
+									//2017.09-18 한진희 요청  기술이전 노하우 업로드 없음면 금지 
+					// 노하우 일때만.
+					$l("mouClsf :"+mouClsf);
+					if(mouClsf == "RFD002" ){
+						$l("gridSpec.getRowCount() :"+gridSpec.getRowCount());
+						if(gridSpec.getRowCount() == 0 ){
+							alert("기술이전 노하우 기술자료를 첨부 하셔야 합니다.");
+							gridSpec.focus();
+							return false;
+						}
+						
+						//참여자현황
+						var psnCnt = gridPsn.getRowCount();
+						var contrbtRt = 0;
+						
+						for(var i=0; i < psnCnt; i++){
+							contrbtRt += Number(gridPsn.getCellData(i, "contrbt_rt"));
+							
+						}
+						
+						if(contrbtRt != 100){
+							alert("기여율이 100% 가 아닙니다.");
+							return false;
+						}
+						
+					}
+
+//					var runRyalty = inputRunRyalty.getValue();
+//					if(runRyalty == ""){
+//						alert("경상기술료를 기입해 주십시오.");
+//						return false;
+//					}
+
+					var techFeeContnt = textareaTechFeeContnt.getValue().trim();
+					if(techFeeContnt.length > 120){
+						alert("협상조건은 120자를 초과 할 수 없습니다.");
+						return false;
+					}
+
+					// 수요기업존재여부 
+					var dmndVendYn = radioDmndVendYn.getValue();
+					if(dmndVendYn == ""){
+						alert("수요기업 존재 여부를 기입해 주십시오.");
+						return false;
+					}
+					//예상수요업체
+					var vendCnt = gridVend.getRowCount();
+					if (dmndVendYn == "Y") {
+						if (vendCnt == 0) {
+							alert("예상수요업체가 입력되지 않았습니다.");
+							return false;
+						}
+					}
+			
+					if (dmndVendYn == "Y") {
+						if (1 > KitechAttach.action.getTotalFileCount('upload_B')) {
+							alert("사업자등록증을 첨부하여주세요");
+							wframe2.focus();
+							return false;
+						}
+					}
+					if (dmndVendYn == "Y") {
+						for(var i=0; i<vendCnt; i++){
+							if(gridVend.getCellData(i, "vend_cd").trim() == ""){
+								alert("업체코드가 입력되지 않았습니다. 확인바랍니다.");
+								return false;
+							}
+							
+							/*
+							if(gridVend.getCellData(i, "bsns_psn_regst_no").trim() == ""){
+								alert("사업자등록번호가 입력되지 않았습니다. 확인바랍니다.");
+								return false;
+							}
+							*/
+	
+							if(gridVend.getCellData(i, "cmpy_typ") == ""){
+								alert("업체규모가 입력되지 않았습니다. 확인바랍니다.");
+								return false;
+							}
+	
+							if(gridVend.getCellData(i, "charg") == ""){
+								alert("담당자성명이 입력되지 않았습니다. 확인바랍니다.");
+								return false;
+							}
+	
+							if(gridVend.getCellData(i, "charg_tel") == ""){
+								alert("연락처가 입력되지 않았습니다. 확인바랍니다.");
+								return false;
+							}
+	
+							if(gridVend.getCellData(i, "charg_email").trim() == ""){
+								alert("이메일이 입력되지 않았습니다. 확인바랍니다.");
+								return false;
+							}
+							if(gridVend.getCellData(i,"charg_dept") == ""){
+								alert("수요업체 담당부서가 입력되지 않았습니다. 확인바랍니다.");
+								return false;
+							}
+						}
+					}
+					var agncyYn = radioAgncyVendYn.getValue();
+					if(agncyYn == ""){
+						alert(gfnGetMsg("r", "select1", "중개기관 존재여부"));
+						radioAgncyVendYn.focus();
+						return false;
+					}
+					var agncyCnt = gridAgncy.getRowCount();
+					if(agncyCnt > 0 && agncyYn == "N"){
+						radioAgncyVendYn.setValue("Y");
+						agncyYn = "Y";
+					}
+					if( agncyYn == "Y"){
+						if(agncyCnt == 0){
+							alert(gfnGetMsg("r", "insert2", "중개기관"));
+							return false;
+						}
+						
+						for(var i=0; i<agncyCnt; i++){
+							if(gridAgncy.getCellData(i, "bsns_psn_regst_no") == ""){
+								alert("중개기관의 사업자번호가 누락되었습니다.");
+								return false;
+							}
+							// 20161010 수수료율 및 금액 검증 제거요청(이지희)
+//							if(WebSquare.util.getNumber(gridAgncy.getCellData(i, "agncy_fee_rt")) == 0){
+//								alert("중개수수료율이 누락되었습니다.");
+//								return false;
+//							}
+//							if(WebSquare.util.getNumber(gridAgncy.getCellData(i, "suply_value")) == 0){
+//								alert("중개기관의 금액이 누락되었습니다.");
+//								return false;
+//							} 
+
+							if(gridAgncy.getCellData(i, "charg") == ""){
+								alert("중개기관의 담당자가 누락되었습니다.");
+								return false;
+							}
+							if(gridAgncy.getCellData(i, "charg_tel") == ""){
+								alert("중개기관의 담당자연락처가 누락되었습니다.");
+								return false;
+							}
+							if(gridAgncy.getCellData(i, "charg_email") == ""){
+								alert("중개기관의 담당자 이메일이 누락되었습니다.");
+								return false;
+							}
+						}// end for
+					}// end agncyYn == "Y"
+				}
+				
+				
+				
+				
+				return true;
+			}
+			
+			//==============================================================================
+			// <function name="menuSave">
+			// <summary >저장 실행</summary>
+			// <return type= "">none</return>
+			// </function>
+			//==============================================================================
+			function menuSave(attachObj){
+				console.log(attachObj.upload_A);
+				console.log(attachObj.upload_D);		
+				// ==============================================================================
+				// 기술이전신청서 등록
+				// ==============================================================================
+				// 신청서 기본정보내역
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/req_no/@value", inputReqNo.getValue()); // 신청서번호
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/mou_clsf/@value", radioMouClsf.getValue()); // 지재권,노하우..
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/tech_prj_clsf/@value", selectboxTechPrjClsf.getValue()) ;
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/req_psn/@value", inputReqPsn.getValue()); // 신청자
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/trns_krn_nm/@value", inputTrnsKrnNm.getValue()); // 이전기술 국문
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/trns_eng_nm/@value", inputTransEngNm.getValue()); // 이전기술 영문
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/trns_resch_rspns/@value", inputTrnsReschRspns.getValue()); // 이전기술 책임자 사원번호
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/trns_rspns_dept_cd/@value", inputTrnsRspnsDeptCd.getValue());// 이전기술 책임자 부서
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/trns_rspns_dept_new_ymd/@value", inputTrnsRspnsDeptNewYmd.getValue());// 이전기술 책임자 부서신설일자
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/accnt_no/@value", inputAccntNo.getValue());// 계벙번호
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/accnt_rspns/@value", inputAccntRspns.getValue());// 계정책임자
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/resch_fund/@value", inputReschFund.getValue());// 실투입연구비
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/req_ymd/@value", inputCalendarReqYmd.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/syspayno/@value", sn);
+				
+				// 기술이전희망조건
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/trns_typ/@value", checkboxTransTyp.getValue());// (희망)기술이전형태
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/trns_scop/@value", radioTrnsScop.getValue());// (희망)기술이전범위
+				
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/contrct_start_ymd/@value", inputCalendarContrctStartYmd.getValue());// 계약기간
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/contrct_cls_ymd/@value", inputCalendarContrctClsYmd.getValue());// 계약기간
+				
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/fxd_tech_fee/@value", inputFxdTechFee.getValue());// 정액기술료
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/fxd_tech_suply_value/@value", inputFxdSuplyValue.getValue());// 정액기술료 공급가액
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/fxd_tech_tax_fee/@value", inputFxdTechTaxFee.getValue());// 정액기술료 부가세
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/etc_cnd/@value", textareaEtcCnd.getValue());// 기타(희망)조건
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/run_ryalty/@value", inputRunRyalty.getValue());// 러닝로열티
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/unit_typ/@value", radioUnitTyp.getValue());// 경상로열티 단위
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/estmt_collct_amt/@value", inputEstmtCollctAmt.getValue()); // 경상로열티 징수예상금액
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/estmt_stndrd/@value", inputEstmtStndrd.getValue()); // 산정기준
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/tech_fee_contnt/@value", textareaTechFeeContnt.getValue());// 기술료제안_비교
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/dmnd_vend_yn/@value", radioDmndVendYn.getValue());// 수요기업존재여부
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/agncy_vend_yn/@value", radioAgncyVendYn.getValue());// 중개기관존재여부
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_file_no/@value", attachObj.upload_A );
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_file_no_2/@value", attachObj.upload_B);
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_file_no_3/@value", attachObj.upload_C);
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_file_no_4/@value", attachObj.upload_D);
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/save_clsf/@value", saveClsf);
+				
+				// 신규 추가건
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/tech_outline/@value", techOutline.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_img_no1/@value", attachImgFile1.getValue().trim());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_img_no2/@value", attachImgFile2.getValue().trim());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_img_no3/@value", attachImgFile3.getValue().trim());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/six_t/@value", selectboxSixTClsf.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/ind_tech_clsf/@value", selectboxBigClsf.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/dev_lead_st/@value", devLeadTimeSt.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/dev_lead_ed/@value", devLeadTimeEd.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/expect_effect/@value", expectEffect.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/tech_grow_level/@value", radioGrowLevel.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/target_market/@value", targetMarket.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/inbound_mkt/@value", inboundMkt.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/outbound_mkt/@value", outboundMkt.getValue());
+				
+				// (임시) 저장
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/ui_id/@value", serviceId);
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/endpoints/@value", uid);
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/apr_state/@value", "XAD005");
+				
+				// 2.관련 지식재산권
+				var data = gridSmit.getAllXML();
+				var tmpNode = WebSquare.xml.findNodes(data, "vector/data");
+				
+				var status = "";
+				for (var i = 0; i < tmpNode.length; i++) {
+					status = WebSquare.xml.getValue(tmpNode[i], "msgResTrnsRelatPatMS01", "statusValue");
+					$l("menuSave/gridSmit/status==" + status);
+					if (status != "R") {
+						if (status == "C") {
+							WebSquare.xml.setValue(tmpNode[i], "msgResTrnsRelatPatMS01/cud_type", "value", "C");
+						} else if (status == "U") {
+							if (saveClsf == "insert") {
+								WebSquare.xml.setValue(tmpNode[i], "msgResTrnsRelatPatMS01/cud_type", "value", "C");
+							} else {
+								WebSquare.xml.setValue(tmpNode[i], "msgResTrnsRelatPatMS01/cud_type", "value", "U");
+							}
+						}
+						WebSquare.ModelUtil.setInstanceNode(tmpNode[i], "request/saveProc/hashtable/data[@hashkey='gridSmit']/vector", null, "append");
+					}
+				}
+				
+				// 3.신청업체&담당자정보
+				var data1 = gridVend.getAllXML();
+				var tmpNode1 = WebSquare.xml.findNodes(data1, "vector/data");
+				
+				var status1 = "";
+				for (var i = 0; i < tmpNode1.length; i++) {
+					status1 = WebSquare.xml.getValue(tmpNode1[i], "msgResTrnsVendMS01", "statusValue");
+					$l(status1 + " === vendStatus1");
+					if (status1 != "R") {
+						if (status1 == "C") {
+							WebSquare.xml.setValue(tmpNode1[i], "msgResTrnsVendMS01/cud_type", "value", "C");
+						} else if (status1 == "U") {
+							if (saveClsf == "insert") {
+								WebSquare.xml.setValue(tmpNode1[i], "msgResTrnsVendMS01/cud_type", "value", "C");
+							} else {
+								WebSquare.xml.setValue(tmpNode1[i], "msgResTrnsVendMS01/cud_type", "value", "U");
+							}
+						}
+						WebSquare.ModelUtil.setInstanceNode(tmpNode1[i], "request/saveProc/hashtable/data[@hashkey='gridVend']/vector", null, "append");
+					}
+				}
+				
+				// 4.기술자료
+				var data2 = gridSpec.getAllXML();
+				var tmpNode2 = WebSquare.xml.findNodes(data2, "vector/data");
+				var status2 = "";
+				for (var i = 0; i < tmpNode2.length; i++) {
+					status2 = WebSquare.xml.getValue(tmpNode2[i], "msgResTrnsTechRefMS01", "statusValue");
+					$l("status2=" + status2);
+					if (status2 != "R") {
+						if (status2 == "C") {
+							WebSquare.xml.setValue(tmpNode2[i], "msgResTrnsTechRefMS01/cud_type", "value", "C");
+						} else if (status2 == "U") {
+							if (saveClsf == "insert") {
+								WebSquare.xml.setValue(tmpNode2[i], "msgResTrnsTechRefMS01/cud_type", "value", "C");
+							} else {
+								WebSquare.xml.setValue(tmpNode2[i], "msgResTrnsTechRefMS01/cud_type", "value", "U");
+							}
+						}
+						WebSquare.ModelUtil.setInstanceNode(tmpNode2[i], "request/saveProc/hashtable/data[@hashkey='gridSpec']/vector", null, "append");
+					}
+				}
+				
+				// 5.참여자현황
+				var data3 = gridPsn.getAllXML();
+				var tmpNode3 = WebSquare.xml.findNodes(data3, "vector/data");
+				var status3 = "";
+				for (var i = 0; i < tmpNode3.length; i++) {
+					status3 = WebSquare.xml.getValue(tmpNode3[i], "msgResTrnsTecPareMS01", "statusValue");
+					// alert( "status3="+status3);
+					if (status3 != "R") {
+						if (status3 == "C") {
+							WebSquare.xml.setValue(tmpNode3[i], "msgResTrnsTecPareMS01/cud_type", "value", "C");
+						} else {
+							WebSquare.xml.setValue(tmpNode3[i], "msgResTrnsTecPareMS01/cud_type", "value", "U");
+						}
+				
+						WebSquare.ModelUtil.setInstanceNode(tmpNode3[i], "request/saveProc/hashtable/data[@hashkey='gridPsn']/vector", null, "append");
+					}
+				}
+				
+				// 6.중개기관&담당자정보
+				var data4 = gridAgncy.getAllXML();
+				var tmpNode4 = WebSquare.xml.findNodes(data4, "vector/data");
+				var status4 = "";
+				for (var i = 0; i < tmpNode4.length; i++) {
+					status4 = WebSquare.xml.getValue(tmpNode4[i], "msgResTrnsAgncyVendMS01", "statusValue");
+					$l(status4 + " === vendStatus4");
+					if (status4 != "R") {
+						if (status4 == "C") {
+							WebSquare.xml.setValue(tmpNode4[i], "msgResTrnsAgncyVendMS01/cud_type", "value", "C");
+						} else if (status4 == "U") {
+							if (saveClsf == "insert") {
+								WebSquare.xml.setValue(tmpNode4[i], "msgResTrnsAgncyVendMS01/cud_type", "value", "C");
+							} else {
+								WebSquare.xml.setValue(tmpNode4[i], "msgResTrnsAgncyVendMS01/cud_type", "value", "U");
+							}
+						}
+						WebSquare.ModelUtil.setInstanceNode(tmpNode4[i], "request/saveProc/hashtable/data[@hashkey='gridAgncy']/vector", null, "append");
+					}
+				}
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/scrn_clsf/@value", "trnsInfo");
+				
+				gfnExecuteSubmission("setSaveData");
+			}
+			
+			function menuSaveAttach(attachObj){
+				
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_file_no/@value",	attachObj.upload_A);
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_file_no_2/@value",	attachObj.upload_B);
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_file_no_3/@value",	attachObj.upload_C);
+				WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/attach_file_no_4/@value",	attachObj.upload_D);		
+				gfnExecuteSubmission("setSaveData");
+			}				
+ 
+        	//==============================================================================
+			// <function name="menuDelete">
+			// <summary >삭제 실행</summary>
+			// <return type= "">none</return>
+			// </function>
+			//==============================================================================
+			function menuDelete(){
+				if(aprState >= "XAD020"){
+					alert("신청서가 접수완료되었으므로 삭제할 수 없습니다.");
+					return;
+				}
+				if(!confirm("신청서를 삭제하시겠습니까?")) return;
+				
+				WebSquare.ModelUtil.setInstanceValue( "request/deleteData/req_no/@value" , inputReqNo.getValue());
+				WebSquare.ModelUtil.setInstanceValue( "request/deleteData/prcs_clsf/@value" , "infoReg");
+				
+				//스냅샷삭제
+				reqNo = inputReqNo.getValue();
+              	deleteAprVec(uid, aprState, reqNo, sn, serviceId, "request/deleteData");
+				
+				KitechAttach.deleteAll(menuDelectAttach);
+				//gfnExecuteSubmission("deleteData");
+			}
+			
+			function menuDelectAttach(){
+				WebSquare.ModelUtil.setInstanceValue( "request/deleteData/req_no/@value" , inputReqNo.getValue());
+				WebSquare.ModelUtil.setInstanceValue( "request/deleteData/prcs_clsf/@value" , "infoReg");
+				gfnExecuteSubmission("deleteData"); 
+			
+			}
+			
+			//==============================================================================
+			// <function name="menuApproval">
+			// <summary >결재신청 실행</summary>
+			// <return type= "">none</return>
+			// </function>
+			//==============================================================================
+			function menuApproval(){
+			
+				// 벡터작성
+				var apyVec = new WebSquare.collection.Vector();  
+				var reschRspns = inputTrnsReschRspns.getValue();
+				var infoCd = radioMouClsf.getText() + "/" + inputTrnsKrnNm.getValue() + "/" + inputTrnsReschNm.getValue() + "/";
+				//alert("reschRspns=="+ reschRspns);
+
+				// 벡터내, 노드 설정
+				var apyNode = "<vector result='1'>";
+        		apyNode += "<data type='Document' vectorkey='0'>";
+        		apyNode += "<msgApyVec>";
+				apyNode += "<login_user_id value='"+uid+"'/>";
+				apyNode += "<req_no value='"+inputReqNo.getValue()+"'/>";
+				apyNode += "<reporter_id value='"+sn+"'/>";
+				apyNode += "<ui_id value='"+serviceId+"'/>";
+				apyNode += "<apr_state value='"+aprState+"'/>";  
+				apyNode += "<research_manager_id value='"+reschRspns+"'/>";  //연구책임자	
+				apyNode += "<info_cd value='"+infoCd+"'/>";
+				apyNode += "<ext1_cd value='" +inputAccntNo.getValue() + "'/>";
+				apyNode += "<ext2_cd value=''/>";
+				apyNode += "<ext3_cd value=''/>";  
+				apyNode += "<result value=''/>";
+				apyNode += "<tech_prj_clsf_cd value='"+selectboxTechPrjClsf.getValue()+"'/>";
+				apyNode += "<region_cd value='"+inputRegionCd.getValue()+"'/>";
+				apyNode += "</msgApyVec>";
+				apyNode += "</data>";
+				apyNode	+= "</vector>" ;
+
+				// 기술이전신청정보
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/req_no/@value",  	inputReqNo.getValue() ) ; //기술이전신청번호
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/req_psn_nm/@value",  	inputReqNm.getValue()+"("+inputReqEmpno.getValue()+")") ; //신청자
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/req_dept_nm/@value",  	inputReqDeptNm.getValue()) ; //신청부서
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/mou_clsf/@value", 		radioMouClsf.getText()) ; //기술구분
+				var techPrjClsfNm = "";
+				if(selectboxTechPrjClsf.getValue() != ""){
+					techPrjClsfNm = "/ " + selectboxTechPrjClsf.getText();
+				}
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/tech_prj_clsf/@value", 	techPrjClsfNm) ; //기술료 과제구분
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/trns_krn_nm/@value", 	inputTrnsKrnNm.getValue()) ; //기술이전명
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/trns_rspns_nm/@value",  	inputTrnsReschNm.getValue() +"("+inputTrnsReschEmpno.getValue()+")") ;//이전책임자
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/trns_rspns_dept_nm/@value",  inputTrnsRspnsDeptNm.getValue()) ;//이전책임자부서
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/contrct_ymd/@value",  inputCalendarContrctStartYmd.getValue() + " ~ " + inputCalendarContrctClsYmd.getValue()) ;//희망계약기간	
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/trns_typ/@value",  		checkboxTransTyp.getText()) ; //기술이전형태	
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/trns_scop/@value",  		radioTrnsScop.getText()) ;//기술이전범위	
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/fxd_tech_suply_value/@value",  	inputFxdSuplyValue.getValue()) ; //정액기술료 공급가액	
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/fxd_tech_tax_fee/@value",  	inputFxdTechTaxFee.getValue()) ; //정액기술료 부가세
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/fxd_tech_fee/@value",  	inputFxdTechFee.getValue()) ; //정액기술료 총액
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/run_ryalty/@value",  	inputRunRyalty.getValue()) ;
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/unit_typ/@value",  		radioUnitTyp.getText()) ;
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/estmt_collct_amt/@value",  	inputEstmtCollctAmt.getValue()) ; //구매구분
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/estmt_stndrd/@value",  		inputEstmtStndrd.getValue()); 
+				
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/dmnd_vend_yn/@value",  	radioDmndVendYn.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/agncy_vend_yn/@value",  	radioAgncyVendYn.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/etc_cnd/@value",  	textareaEtcCnd.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/grid1_cnt/@value",  gridSmit.getRowCount());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/grid2_cnt/@value",  gridVend.getRowCount());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/grid3_cnt/@value",  gridSpec.getRowCount());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/grid4_cnt/@value",  gridPsn.getRowCount());
+				//alert("grid3_cnt=" + WebSquare.ModelUtil.getInstanceValue("request/APPROVAL/grid3_cnt/@value"));
+				
+				// 계정정보
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/accnt_no/@value",  	inputAccntNo.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/start_ymd/@value",  	startYmd);
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/resch_fund/@value",  inputReschFund.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/cls_ymd/@value",  	clsYmd);
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/accnt_no_nm/@value", inputAccntNoNm.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/accnt_rspns_nm/@value", inputAccntRspnsNm.getValue());
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/posi_nm/@value", 	accntRspnsPosiNm);	
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/dept_nm/@value", 	accntRspnsDeptNm);
+				
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/attach_full_path/@value", gridSpec.getCellData(0, "attach_full_path"));
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/org_file/@value", 	gridSpec.getCellData(0, "org_file"));
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/dept_nm/@value", 	accntRspnsDeptNm);
+				
+				// 기술이전 추가정보
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/tech_outline/@value", 	techOutline.getValue()) ; // 기술개요
+				
+				// 신규 추가건
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/attach_img_no1/@value", attachImgFile1.getValue().trim()) ; // 기술이미지1
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/attach_img_no2/@value", attachImgFile2.getValue().trim()) ; // 기술이미지2
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/attach_img_no3/@value", attachImgFile3.getValue().trim()) ; // 기술이미지3
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/six_t/@value", 	selectboxSixTClsf.getText()) ; // 기술적용분야
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/ind_tech_clsf/@value", 	selectboxBigClsf.getText()) ; // 산업기술분류코드
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/dev_lead_st/@value", 	devLeadTimeSt.getValue()) ; // 기술개발소요기간 시작일
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/dev_lead_ed/@value", 	devLeadTimeEd.getValue()) ; // 기술개발소요기간 종료일
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/expect_effect/@value", 	expectEffect.getValue()) ; // 기대효과
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/tech_grow_level/@value", 	radioGrowLevel.getValue()) ; // 기술성숙도
+				var selGrowLv = radioGrowLevel.getValue();
+				
+				if(selGrowLv == "1" || selGrowLv == "2") {
+					WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/grow_level_nm/@value", 	"기초연구단계") ;
+					
+				} else if(selGrowLv == "3" || selGrowLv == "4") {
+					WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/grow_level_nm/@value", 	"실험단계") ;
+					
+				} else if(selGrowLv == "5" || selGrowLv == "6") {
+					WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/grow_level_nm/@value", 	"시작품단계") ;
+					
+				} else if(selGrowLv == "7" || selGrowLv == "8") {
+					WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/grow_level_nm/@value", 	"실용화단계") ;
+					
+				} else if(selGrowLv == "9") {
+					WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/grow_level_nm/@value", 	"사업화단계") ;
+				} 
+				
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/target_market/@value", 	targetMarket.getValue()) ; // 목표시장
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/inbound_mkt/@value", 	inboundMkt.getValue()) ; // 국내
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/outbound_mkt/@value", 	outboundMkt.getValue()) ; // 해외
+				
+				// 특허정보
+				var doc1 = gridSmit.getAllXML(); // 그리드 데이터를 xml 형태로 반환
+				WebSquare.ModelUtil.setInstanceNode(doc1, "request/APPROVAL/doc1");
+				// 업체정보
+				var doc2 = gridVend.getAllXML(); // 그리드 데이터를 xml 형태로 반환
+				WebSquare.ModelUtil.setInstanceNode(doc2, "request/APPROVAL/doc2");
+				// 기술자료
+				var doc3 = gridSpec.getAllXML(); // 그리드 데이터를 xml 형태로 반환
+				WebSquare.ModelUtil.setInstanceNode(doc3, "request/APPROVAL/doc3");
+				// 기술이전 참여자
+				var doc4 = gridPsn.getAllXML(); // 그리드 데이터를 xml 형태로 반환
+				WebSquare.ModelUtil.setInstanceNode(doc4, "request/APPROVAL/doc4");
+				// 중개기관
+				var doc5 = gridAgncy.getAllXML(); // 그리드 데이터를 xml 형태로 반환
+				WebSquare.ModelUtil.setInstanceNode(doc5, "request/APPROVAL/doc5");
+
+				// snapshot에서 첨부파일을 출력한다.
+				//기타첨부
+				var attachCnt = 0;
+				if (0 < KitechAttach.action.getTotalFileCount('upload_A')) {
+					attachCnt++;
+					WebSquare.ModelUtil.setInstanceNode( KitechAttach.getAttachFiles('upload_A'), "request/APPROVAL/fileList_A", null, "replace");
+				}
+				//사업자등록증
+				if (0 < KitechAttach.action.getTotalFileCount('upload_B')) {
+					attachCnt++;
+					WebSquare.ModelUtil.setInstanceNode( KitechAttach.getAttachFiles('upload_B'), "request/APPROVAL/fileList_B", null, "replace");
+				}
+				//과제협약서
+				if (0 < KitechAttach.action.getTotalFileCount('upload_C')) {
+					attachCnt++;
+					WebSquare.ModelUtil.setInstanceNode( KitechAttach.getAttachFiles('upload_C'), "request/APPROVAL/fileList_C", null, "replace");					
+					
+				}
+				// 비밀유지서약서
+				 if (0 < KitechAttach.action.getTotalFileCount('upload_D')) {
+					attachCnt++;
+					WebSquare.ModelUtil.setInstanceNode( KitechAttach.getAttachFiles('upload_D'), "request/APPROVAL/fileList_D", null, "replace");					
+				}
+
+				// 첨부파일 여부 확인
+				WebSquare.ModelUtil.setInstanceValue("request/APPROVAL/attachCnt/@value", attachCnt);
+				
+				var reqDoc = WebSquare.ModelUtil.findInstanceNode("request/APPROVAL");
+				
+				var url = "/kitech/res/trs/ResTecTrnsInfoReg.xsl";
+				
+				// 스냅샷생성
+				approvalRequest3(apyNode, reqDoc, url);
+			}
+			//==============================================================================
+			// <function name="openUserInfo">
+			// <summary >사용자검색</summary>
+			// <return type= ""></return>
+			// </function>
+			//==============================================================================		
+			// 사용자 검색 팝업
+			function openUserInfo() {
+				var node = "";
+				//Post 방식 Data 정의     
+				var row = gridPsn.getFocusedRowIndex();
+				var nm = gridPsn.getCellData(row, "nm");
+
+				var searchYn = "N";
+				if(nm.trim() != "") searchYn = "Y";
+
+				//팝업 아규먼트 예시..다른 아규먼트는 필요에 따라 사용하면 됨.
+				node = "searchYn=" + searchYn +"&gfnYn=N&inputEmpNoNm="+nm+"&work_clsf=HAG010";
+				
+				var url = "/kitech/hum/com/HumComUserSel.xml";
+				WebSquare.uiplugin.popup.createPopup("pop2", "window", "", "top:100px;left:100px;width:810px;height:520px", "false", "false", url, null, null, node);     
+			}
+			// 사용자 검색 팝업에서 받아온 값을 inputbox에 넣어줌
+			function setUserInfo(arrInfo) {
+				gridPsn.setCellData(getRow, "empno", arrInfo["empNo"]);
+				gridPsn.setCellData(getRow, "nm", arrInfo["nm"]);
+				gridPsn.setCellData(getRow, "syspayno", arrInfo['sysPayNo']);
+				gridPsn.setCellData(getRow, "posi_nm", arrInfo['posiNm']);
+				gridPsn.setCellData(getRow, "dept_nm", arrInfo['deptNm']);
+		
+				var posiCd = arrInfo['posiCd'];
+				if (arrInfo['workClsf'] == "HAG010") {
+					if (posiCd == "351010" || posiCd == "354000" || posiCd == "350010" || posiCd == "330020") { // 연구생, 연수생, 학생연구원
+						gridPsn.setCellData(getRow, "user_div", "5");
+					} else {
+						gridPsn.setCellData(getRow, "user_div", "1");
+					}
+				} else {
+					gridPsn.setCellData(getRow, "user_div", "3");
+				}
+			}
+			//==============================================================================
+			// <function name="getVenderInfo">
+			// <summary>협약업체정보</summary>
+			// <return type= "">none</return>
+			// </function>
+			//==============================================================================
+			function getVenderInfo(row, col) {
+				var vendAbbr = this.getCellData(row, "vend_abbr");
+				vendObj = this;
+				WebSquare.ModelUtil.setInstanceValue("popData/vend_abbr/@value", vendAbbr);
+				var param = WebSquare.ModelUtil.findInstanceNode("popData");
+			
+				var url = "/kitech/res/tec/ResTechVendPop.xml";
+			
+				WebSquare.uiplugin.popup.createPopup("ResTechVendPop", "window", "", "top:100px;left:100px;width:750px;height:395px", "false", "false", url, null, null, param);
+			}	
+			//==============================================================================
+			// <function name="gfnSetResTecVendPopupData">
+			// <summary>받아온 업체정보 세팅</summary>
+			// <return type= ""></return>
+			// </function>
+			//==============================================================================
+			function gfnSetResTecVendPopupData(returnData) {
+				var returnDataXml = WebSquare.xml.parse(returnData);
+				var row = vendObj.getFocusedRowIndex();
+			
+				vendObj.setCellData(row, "vend_cd", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/vend_cd", "value"));
+				vendObj.setCellData(row, "vend_abbr", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/vend_abbr", "value"));
+				vendObj.setCellData(row, "charg", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/charg", "value"));
+				vendObj.setCellData(row, "charg_posi_nm", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/charg_posi_nm", "value"));
+				vendObj.setCellData(row, "charg_tel", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/charg_tel", "value"));
+				vendObj.setCellData(row, "charg_email", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/charg_email", "value"));
+				vendObj.setCellData(row, "charg_addr", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/addr", "value"));
+				vendObj.setCellData(row, "charg_postmt_no", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/postmt_no", "value"));
+				
+				
+				if(vendObj.id == "gridVend"){
+					vendObj.setCellData(row, "charg_fax", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/fax", "value"));
+				}
+				vendObj.setCellData(row, "reprs_psn_nm", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/reprs_psn_nm", "value"));
+				// 사업자번호 확인하기
+				vendObj.setCellData(row, "bsns_psn_regst_no", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/bsns_psn_regst_no", "value"));
+				vendObj.setCellData(row, "corp_resid_no", WebSquare.xml.getValue(returnDataXml, "msgXodfVend/corp_resid_no", "value"));
+				
+			}
+
+            //==============================================================================
+			// <function name="setApplyList">
+			// <summary>팝업창에서 선택한 출원정보 가져오기</summary>
+			// <return type= ""></return>
+			// </function>
+			//==============================================================================	
+		 	function setApplyList(param){
+		 		var tmpData = WebSquare.xml.serialize( param );	
+		 		while(tmpData.indexOf("msgPatMastr") != -1){
+		 			tmpData = tmpData.replace("msgPatMastr", "msgResTrnsRelatPatMS01");
+		 		}   
+				var dataXml = WebSquare.xml.parse(tmpData);
+				var maxRow = gridSmit.getRowCount();
+				gridSmit.setXML( dataXml , "append");
+
+				for(var i=maxRow; i<gridSmit.getRowCount(); i++){
+					gridSmit.modifyRowStatus( i , "C" );
+					gridSmit.setCellChecked( i , "radio1" , true );
+					
+					for(var j=0; j<gridSmit.getRowCount(); j++){
+						gridSmit.setCellData( j , "repr_yn" , "N" );
+					}
+					
+					gridSmit.setCellData( i , "repr_yn" , "Y" );
+					//alert(gridSmit.getRowStatus( i ));
+				}
+			}
+			function menuGotoList() {
+				if (param4.trim() == "apr") { // 결재에서 호출
+//					if (param3 < "XAD020") { // 작성중문서함
+						document.location.href = "http://apr.kitech.re.kr/processparticipant/worklist/kitech_workList_saved.jsp?currentPage=1";
+//					} else {
+//						if (param3 == "XAD100") { // 결재완료함
+//							document.location.href = "http://apr.kitech.re.kr/processparticipant/worklist/kitech_instanceList_completed.jsp?currentPage=1";
+//							document.location.href = "http://apr.kitech.re.kr/processparticipant/worklist/kitech_workList_work.jsp?currentPage=1";// 업무대기함
+//						} else {// 결재대기함,결재양식함
+//							document.location.href = "http://apr.kitech.re.kr/processparticipant/worklist/kitech_workList.jsp?currentPage=1";
+//						}
+//					}
+				} else {
+					var param = "&args=" + args + 
+								"&trns_resch_empno=" + p_trns_resch_empno + 
+								"&trns_resch_nm=" + p_trns_resch_nm +
+								"&nego_rspns_empno=" + p_nego_rspns_empno +
+								"&nego_rspns_nm=" + p_nego_rspns_nm +
+								"&admn_wrk_rspns_empno=" + p_admn_wrk_rspns_empno +
+								"&admn_wrk_rspns_nm=" + p_admn_wrk_rspns_nm +
+								"&his_back=Y";
+			
+					gfnSetLocationBySvrId(p_xml_id, param); // J770
+				}
+			}
+
+			//==============================================================================
+			// <function name="popupAccntInfo">
+			// <summary>계정번호조회</summary>
+			// <return type= ""></return>
+			// </function>
+			//==============================================================================	
+			function popupAccntInfo(){
+				var accntNo =  inputAccntNo.getValue();
+				var searchYn = 'N';
+				if(accntNo != "") searchYn = "Y";
+				var node = "&AccntNo="+accntNo+"&mngmt_clsf=R&searchYn=" + searchYn + "&bizwrk_clsf=R&accnt_clsf=RAR001";
+				var url = "/kitech/fin/fin/com/FinSearchPopupAccntNo.xml";
+				WebSquare.uiplugin.popup.createPopup("pop", "window", "", "top:100px;left:100px;width:750px;height:400px", "false", "false", url, null, null, node);
+			}  
+		
+			function setAccNoInfo(arrInfo){
+				inputAccntNo.setValue(arrInfo['AccntNo']);	
+				inputAccntRspnsNm.setValue(arrInfo['AccntRspnsNm']);
+				inputAccntRspnsEmpno.setValue(arrInfo['EmpNo']);
+				inputAccntNoNm.setValue(arrInfo['AccntNoNm']);
+				inputAccntRspns.setValue(arrInfo['AccntRspns']);
+				inputReschFund.setValue(arrInfo["ReschFund"]);
+				var bsnsCdInout = arrInfo["BsnsCdInout"];
+				var bsnsCdOfic = arrInfo["BsnsCdOfic"];
+				
+				if(bsnsCdInout == "RHA001"){ //정부연구과제
+					if(bsnsCdOfic == "022000000"){ //산업통상부 과제
+						selectboxTechPrjClsf.setValue("RFL001"); //정부수탁(산업부)
+					}else if(bsnsCdOfic == "027000000"){ //미래부 과제
+						selectboxTechPrjClsf.setValue("RFL004"); //정부수탁(미래부)						
+					}else{
+						selectboxTechPrjClsf.setValue("RFL002"); //정부수탁(기타)
+					}
+				}else{
+					selectboxTechPrjClsf.setValue("RFL003"); //일반과제
+				}
+				setCompo();
+				if(radioMouClsf.getValue() == "RFD001"){
+					WebSquare.ModelUtil.setInstanceValue( "request/selectData/accnt_no/@value" , arrInfo['AccntNo']);
+					WebSquare.ModelUtil.setInstanceValue( "request/selectData/src_flag/@value" , "patInfo");
+					
+					gfnExecuteSubmission("getPatInfo"); //kitech.res.trs.xda.PatMastrMS01
+				}
+			} 
+			//==============================================================================
+			// <function name="getUserInfo">
+			// <summary>사용자조회</summary>
+			// <return type= ""></return>
+			// </function>
+			//==============================================================================	
+			function getUserInfo(codeObj, descObj, sysCodeObj){
+				Kitech.search.empInfo(codeObj,
+										[  {colName : "empno", obj : codeObj}
+										 , {colName : "nm", obj : descObj}
+										 , {colName : "syspayno", obj : sysCodeObj}
+									]);
+			}
+			
+			function openEmpPopup(codeObj, descObj, sysCodeObj){
+				Kitech.search.openEmpPopup(codeObj,
+										[  {colName : "empno", obj : codeObj}
+										 , {colName : "nm", obj : descObj}
+										 , {colName : "syspayno", obj : sysCodeObj}
+									]);
+			}
+
+			//==============================================================================
+			// <function name="setAttachFile">
+			// <summary >첨부 파일</summary>
+			// <return type= ""></return>
+			// </function>
+			//============================================================================== 
+				// 그리드 첨부 파일 설정
+			function setAttachFile(attachFileNo, gridNm) {
+				var gridSelRow = -1;
+			
+				if (gridNm == "gridAgncy") {
+					gridSelRow = gridAgncy.getFocusedRowIndex();
+					gridAgncy.setCellData(gridSelRow, "attach_file_no", attachFileNo);
+					
+				} else if (gridNm == "gridSpec") {
+					gridSelRow = gridSpec.getFocusedRowIndex();
+					gridSpec.setCellData(gridSelRow, "attach_file_no", attachFileNo);
+				}	
+			}	
+
+
+			/**
+			 * 파일 다운로드
+			 * @param file_no /was/IMIS_FILES/res/ 디렉토리의 실제 풀 경로
+			 * @param file_nm 다운받고자 하는 임의의 파일명
+			 */
+			function downFileinfo(file_nm,file_no){
+				var params = "?fileName="+ "/res/"+ file_no +"&realName="+ encodeURIComponent(file_nm) + "&bizKind=OLD";
+			 	var url = "/kitech/com/jsp/FileDownloadProcess.jsp" + params; 
+			 	downloadPOSTFIXID.setSrc(url);
+				
+			}
+			
+			function setCompo(){
+				var mouClsf = radioMouClsf.getValue();
+				//var techPrjClsf = selectboxTechPrjClsf.getValue();
+
+				// if(mouClsf == "RFD002" && techPrjClsf == "RFL003"){// know-how, 일반과제
+				outputAccntNo.changeClass( "labelC" , "labelCP" );
+				outputAccntRspns.changeClass( "labelC" , "labelCP" );
+				if(mouClsf == "RFD002"){ // know-how > 과제구분과 상관없이 노하우일 때 참여자현황입력할 수 있도록 수정(박세호 요청) 20160830
+					triggerSmitAppAdd.setDisabled( true );
+					groupPsn.show();
+				}else if(mouClsf == "RFD010"){
+					triggerSmitAppAdd.setDisabled( false );
+					groupPsn.hide();
+					outputAccntNo.changeClass( "labelCP" , "labelC" );
+					outputAccntRspns.changeClass( "labelCP" , "labelC" );
+				}else{
+					triggerSmitAppAdd.setDisabled( false );
+					groupPsn.hide();
+				}
+			}
+			
+			function postDeleteFile(uploadId){
+				var returnMsg = "";
+				if(uploadId == "_A"){
+					returnMsg = gfnDeleteAttachFile("restrnsrcptinfo", "attach_file_no", "req_no", inputReqNo.getValue());
+				}else if(uploadId == "_B"){
+					returnMsg = gfnDeleteAttachFile("restrnsrcptinfo", "attach_file_no_2", "req_no", inputReqNo.getValue());
+				}else if(uploadId == "_C"){
+					returnMsg = gfnDeleteAttachFile("restrnsrcptinfo", "attach_file_no_3", "req_no", inputReqNo.getValue());
+				}
+				$l("postDeleteFile/returnMsg==" + returnMsg);
+			}
+			
+			/**
+			 * 그리드 액션
+			 */
+			var grid = {
+				
+				handleColumnName: 'radio1', 
+				/**
+				 * onChange 이벤트 헨들러
+				 */
+				onchange: function(row, col){
+					var colName = gridSmit.getColumnID(col);
+					for (var i = 0; i < gridSmit.getRowCount(); i++) {
+						gridSmit.setReadOnly( "cell" , i , 1 , false );
+					}
+					/** if ("indst_right_clsf" == colName || "grid_radio" == colName){
+						this.initRowBackgroudColor();
+						gridSmit.setRowBackgroundColor( row, "pink");
+					} */
+				},
+
+				/**
+				 * onCellClick 이벤트 헨들러
+				 */
+				onclick: function(row, col){
+					
+					var colName = gridSmit.getColumnID(col);
+			
+					for (var i = 0; i < gridSmit.getRowCount(); i++) {
+						//gridSmit radio 버튼 표시
+						gridSmit.setCellData( i ,  'repr_yn' , 'N' );
+					}
+					
+					if ("radio1" == colName){
+					//gridSmit.setColumnDefaultValue( "repr_yn" , "N" );
+					// 라디오 버튼 체크
+						
+						if (gridSmit.getColumnVisible( this.handleColumnName)){
+							gridSmit.setCellChecked( row, this.handleColumnName, true);
+							gridSmit.setCellData( row ,  'repr_yn' , 'Y' );
+						}
+					}
+				},
+				
+				initRowBackgroudColor: function(){
+					var rows = gridSmit.getUpdatedIndex();
+					rows.forEach( function( row, index){
+						gridSmit.setRowBackgroundColor( row, "");
+					});
+				}
+			};
+			
+			Form_OnLoadCompleted();
+		]]></script>
+	</head>
+	<body>
+		<xf:group id="group1" style="position:absolute;left:10px;top:10px;width:992px;height:1815px;">
+			<xf:group style="position:relative;left:0px;width:988px;height:38px;" id="group34">
+				<w2:textbox style="word-wrap:break-word;position:absolute;top:5px;left:2px;width:200px;height:18px;" label="기술이전신청서작성" id="output2" class="title" />
+				<w2:iframe style="position:absolute;left:0px;top:0px;width:141px;height:10px;display:none;" id="downloadPOSTFIXID" />
+				<xf:group style="position:absolute;top:5px;left:291px;width:307px;height:21px;visibility:hidden;" id="group29">
+					<xf:input onFocusStyle="" style="word-wrap:break-word;top:0px;left:0px;vertical-align:middle;width:25px;position:absolute;height:19px;" disabled="true" id="inputReqPsn"
+						type="" class="inputRd">
+						<xf:label />
+					</xf:input>
+					<xf:input onFocusStyle="" style="word-wrap:break-word;top:0px;left:35px;vertical-align:middle;width:25px;position:absolute;height:19px;" disabled="true"
+						id="inputTrnsReschRspns" type="" class="inputRd">
+						<xf:label />
+					</xf:input>
+					<xf:input onFocusStyle="" style="word-wrap:break-word;top:0px;left:103px;vertical-align:middle;width:25px;position:absolute;height:19px;" disabled="true" id="inputAccntRspns"
+						type="" class="inputRd">
+						<xf:label />
+					</xf:input>
+					<xf:input onFocusStyle="" style="word-wrap:break-word;top:0px;left:69px;vertical-align:middle;width:25px;position:absolute;height:19px;" disabled="true"
+						id="inputTrnsRspnsDeptNewYmd" type="" class="inputRd">
+						<xf:label />
+					</xf:input>
+					<xf:input onFocusStyle="" style="word-wrap:break-word;top:0px;left:138px;vertical-align:middle;width:25px;position:absolute;height:19px;" disabled="true" id="inputReqDeptNm"
+						type="" class="inputRd">
+						<xf:label />
+					</xf:input>
+					<xf:input onFocusStyle="" style="position:absolute;vertical-align:middle;word-wrap:break-word;top:0px;left:174px;width:20px;height:19px;" disabled="true" id="inputRegionCd"
+						type="" class="inputRd">
+						<xf:label />
+					</xf:input>
+				</xf:group>
+				
+				<xf:group style="position:absolute;top:7px;left:748px;width:240px;height:27px;" id="group31">
+					<xf:trigger centerOffImageClass="btn03C" leftOnImageClass="btn03L" rightOffImageClass="btn03R" leftOffImageClass="btn03L"
+						style="position:relative;float:right;word-wrap:break-word;top:0px;width:55px;height:21px;" id="triggerList" centerOnImageClass="btn03C" rightOnImageClass="btn03R" type="image">
+						<xf:label>목록</xf:label>
+						<script ev:event="onclick" type="javascript"><![CDATA[
+						menuGotoList();
+					]]></script>
+					</xf:trigger>
+					
+					<xf:trigger centerOffImageClass="btn02C" leftOnImageClass="btn02L" rightOffImageClass="btn02R" leftOffImageClass="btn02L"
+						style="position:relative;float:right;margin-right:5px;word-wrap:break-word;top:0px;width:72px;height:21px;left:0px;" id="trigger52" centerOnImageClass="btn02C" rightOnImageClass="btn02R"
+						type="image">
+						<xf:label>결재인쇄</xf:label>
+						<script ev:event="onclick" type="javascript"><![CDATA[
+							var reqNo = inputReqNo.getValue();
+							//var param = "req_no=" + reqNo;
+							//OZFlashOpen("/res/tec/ResTecTrnsInfoReq.ozr", "ResTecTrnsInfoReq", "Y", param);
+							var url = "http://apr.kitech.re.kr/processparticipant/worklist/workitemHandler.jsp?reqno="+reqNo;
+							//window.open(url);
+							eip3Snapshot(reqNo);
+							//window.open(url,"기술이전신청","scrollbars=yes,toolbar=no,location=no,status=no,menubar=no,resizable=yes,width=920,height=660,left=100,top=100");
+						]]></script>
+					</xf:trigger> 
+					
+					<xf:trigger centerOffImageClass="btn03C" leftOnImageClass="btn03L" rightOffImageClass="btn03R" leftOffImageClass="btn03L"
+						style="word-wrap:break-word;position:relative;float:right;margin-right:5px;top:0px;width:78px;height:21px;left:1px;" tabIndex="5" id="btnApproval" centerOnImageClass="btn03C"
+						rightOnImageClass="btn03R" type="image">
+						<xf:label>결재신청</xf:label>
+						<script ev:event="onclick" type="javascript"><![CDATA[
+						btnClsf = "";
+						KitechAttach.transport(menuApproval);
+					]]></script>
+					</xf:trigger>
+				</xf:group>
+				
+				<xf:select appearance="full" style="position: absolute ;left:698px;top:9px;width: 67px;height: 18px;visibility:hidden;" id="checkboxMgrYn" selectedindex="-1" rows=""
+					cols="1">
+					<xf:choices>
+						<xf:item>
+							<xf:label>관리자</xf:label>
+							<xf:value>Y</xf:value>
+						</xf:item>
+					</xf:choices>
+				</xf:select>
+			</xf:group>
+			<xf:group id="group21" style="position:relative;left:0px;width:989px;height:636px;">
+				<w2:textbox tagname="label" label="기술구분" class="labelCP" id="output308" style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:24px;" />
+				<w2:textbox label="" class="fieldL" id="output309" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:24px;" />
+				<w2:textbox label="신청 번호" class="labelCP" id="output310" style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:0px;" />
+				<w2:textbox class="fieldL" id="outputReqNo" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:0px;" />
+				<xf:select1 appearance="full" cols="5" id="radioMouClsf" rows="" selectedIndex="0"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;left:173px;top:26px;width:405px;height:20px;">
+					<xf:choices>
+						<xf:itemset nodeset="response/commCode/hashtable/data[@hashkey='RFD']/vector/data/msgCodCcomMst001">
+							<xf:label ref="cd_nm/@value" />
+							<xf:value ref="cd/@value" />
+						</xf:itemset>
+					</xf:choices>
+					<script type="javascript" ev:event="onradioclick(index,value)"><![CDATA[
+						if(selectboxTechPrjClsf.getValue() != "") setCompo();
+					]]></script>
+					<script ev:event="onchange" type="javascript"><![CDATA[
+						if(radioMouClsf.getValue() == "RFD010"){
+							var consultInfo_gb = "Y";  // 기술자문구분
+							var param = "&consultInfo_gb=" + consultInfo_gb;
+							gfnSetLocationBySvrId("I721", param);
+//							outputAccntNo.changeClass( "labelCP" , "labelC" );
+//							outputAccntRspns.changeClass( "labelCP" , "labelC" );
+						}else{
+							outputAccntNo.changeClass( "labelC" , "labelCP" );
+							outputAccntRspns.changeClass( "labelC" , "labelCP" );
+						}
+						
+					 ]]></script>
+				</xf:select1>
+				<w2:textbox label="이전기술명(국문)" class="labelCP" id="output313" style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:48px;" />
+				<w2:textbox class="fieldL" id="output314" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:48px;" />
+				<w2:textbox label="기술이전책임자" class="labelCP" id="output316" style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:96px;" />
+				<xf:input class="input" id="inputTrnsKrnNm" maxlength="" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:50px;left:173px;width:804px;height:19px;ime-mode:active;" tabIndex="1" maxByteLength="400">
+					<xf:label />
+				</xf:input>
+				<w2:textbox label="" class="fieldL" id="output318" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:96px;" />
+				<w2:textbox label="부서" class="labelCP" id="output317" style="position:absolute; word-wrap:break-word;top:96px;left:360px;width:123px;height:23px;" />
+				<xf:trigger centerOffImageStyle="" centerOnImageStyle="" id="trigger41" leftOffImageClass="searchBtn" leftOffImageStyle="" leftOnImageClass="searchBtn_on"
+					leftOnImageStyle="" rightOffImageStyle="" rightOnImageStyle="" style="position:absolute;word-wrap:break-word;top:99px;left:254px;width:23px;height:19px;" tabIndex="26"
+					toolTip="찾기" type="image">
+					<xf:label />
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						Kitech.search.openEmpPopup(inputTrnsReschEmpno,
+									[  {colName : "empno", obj : inputTrnsReschEmpno}
+									 , {colName : "nm", obj : inputTrnsReschNm}
+									 , {colName : "syspayno", obj : inputTrnsReschRspns}
+									 , {colName : "dept_cd", obj : inputTrnsRspnsDeptCd}
+									 , {colName : "dept_nm", obj : inputTrnsRspnsDeptNm}
+									 , {colName : "dept_new_ymd", obj : inputTrnsRspnsDeptNewYmd}
+								]);
+					]]></script>
+				</xf:trigger>
+				<xf:input class="input" id="inputTrnsReschEmpno" maxlength="7" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:98px;left:173px;width:69px;height:19px;ime-mode:active;" tabIndex="3">
+					<xf:label />
+					<script ev:event="onkeyup" type="javascript"><![CDATA[
+						if (event.keyCode == 13) {
+							 //팝업 확인
+							Kitech.search.empInfo(inputTrnsReschEmpno,
+									[  {colName : "empno", obj : inputTrnsReschEmpno}
+									 , {colName : "nm", obj : inputTrnsReschNm}
+									 , {colName : "syspayno", obj : inputTrnsReschRspns}
+									 , {colName : "dept_cd", obj : inputTrnsRspnsDeptCd}
+									 , {colName : "dept_nm", obj : inputTrnsRspnsDeptNm}
+									 , {colName : "dept_new_ymd", obj : inputTrnsRspnsDeptNewYmd}
+								]);
+
+						} else {
+							if ((event.keyCode != 9) && (event.keyCode != 229)) {
+								inputTrnsReschNm.setValue("");
+								inputTrnsReschRspns.setValue("");
+							}
+						}
+					]]></script>
+				</xf:input>
+				<xf:input class="inputRd" disabled="true" id="inputTrnsReschNm" onFocusStyle=""
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:98px;left:280px;width:70px;height:19px;">
+					<xf:label />
+				</xf:input>
+				<w2:textbox tagname="label" label="계정번호" class="labelCP" id="outputAccntNo"
+					style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:120px;" />
+				<w2:textbox label="" class="fieldL" id="output320" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:120px;" />
+				<xf:input class="input" id="inputReschFund" maxlength="15" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:122px;left:856px;width:121px;height:19px;;text-align:right" tabIndex="1" dataType="number" displayFormat="#,###"
+					disabled="true" applyFormat="all">
+					<xf:label />
+				</xf:input>
+				<w2:textbox label="이전기술명(영문)" class="labelC" id="output322" style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:72px;" />
+				<w2:textbox class="fieldL" id="output323" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:72px;" />
+				<xf:input class="input" id="inputTransEngNm" maxlength="" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:74px;left:173px;width:804px;height:19px;ime-mode:disabled;" tabIndex="1" maxByteLength="400">
+					<xf:label />
+				</xf:input>
+				<xf:input class="inputRd" id="inputTrnsRspnsDeptCd" maxlength="255" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:98px;left:499px;width:72px;height:19px;ime-mode:active;" tabIndex="1">
+					<xf:label />
+				</xf:input>
+				<w2:textbox label="신청자" class="labelCP" id="output325" style="position:absolute; word-wrap:break-word;top:0px;left:326px;width:157px;height:23px;" />
+				<xf:input class="inputRd" disabled="true" id="inputReqNm" onFocusStyle=""
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:2px;left:604px;width:70px;height:19px;">
+					<xf:label />
+				</xf:input>
+				<xf:input class="input" id="inputReqEmpno" maxlength="7" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:2px;left:499px;width:69px;height:19px;ime-mode:active;" tabIndex="3">
+					<xf:label />
+					<script type="javascript" ev:event="onkeyup"><![CDATA[
+						if (event.keyCode == 13) {
+							// 팝업 확인
+							getUserInfo(inputReqEmpno, inputReqNm, inputReqPsn);
+						} else {
+							if ((event.keyCode != 9) && (event.keyCode != 229)) {
+								inputReqNm.setValue("");
+								inputReqPsn.setValue("");
+							}
+						}
+					]]></script>
+				</xf:input>
+				<xf:input class="inputRd" disabled="true" id="inputReqNo" onFocusClass="input_on" onFocusStyle="" readOnly=""
+					style="word-wrap:break-word;position:absolute;top:2px;left:173px;width:144px;height:19px;text-align:center;" tabIndex="3">
+					<xf:label />
+				</xf:input>
+				<xf:trigger id="trigger47" leftOffImageClass="searchBtn" leftOnImageClass="searchBtn_on"
+					style="position:absolute;word-wrap:break-word;top:3px;left:579px;width:23px;height:19px;" tabIndex="26" toolTip="찾기" type="image">
+					<xf:label />
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						openEmpPopup(inputReqEmpno, inputReqNm, inputReqPsn);
+					]]></script>
+				</xf:trigger>
+				<w2:textbox label="신청일자" class="labelCP" id="output400" style="position:absolute; word-wrap:break-word;top:0px;left:683px;width:157px;height:23px;" />
+				<w2:inputCalendar class="sCalendar" id="inputCalendarReqYmd" style="position:absolute;word-wrap:break-word;top:2px;left:856px;width:128px;height:19px;"
+					tabIndex="5" />
+				<xf:input class="inputRd" id="inputTrnsRspnsDeptNm" maxlength="255" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:98px;left:580px;width:399px;height:19px;ime-mode:active;" tabIndex="1">
+					<xf:label />
+				</xf:input>
+				<xf:input class="input" disabled="" id="inputAccntNo" onFocusClass="input_on" onFocusStyle="" readOnly=""
+					style="word-wrap:break-word;position:absolute;top:122px;left:173px;width:117px;height:19px;text-align:center;ime-mode:disabled" tabIndex="3">
+					<xf:label />
+					<script type="javascript" ev:event="onkeyup"><![CDATA[
+						if (event.keyCode == 13) {
+							if(radioMouClsf.getValue() == ""){
+								alert("기술구분을 선택하세요.");
+								inputAccntNo.setValue("");
+								return;
+							}
+							var accntNoTrim = inputAccntNo.getValue().trim();
+							var accntNoNm = "";
+							var accntNo = "";
+						
+							if (accntNoTrim != "") {
+								// 영문,숫자인지 체크(숫자면 계정번호, 아니면 계정명)
+								var accntNoChk = accntNoTrim.isEngNum();
+								if (accntNoChk == true) {
+									if (accntNoTrim.length == 8) {
+										accntNo = accntNoTrim.substring(0, 7) + '0';
+									} else {
+										accntNo = accntNoTrim + '%';
+									}
+								} else {
+									// 앞뒤로 % 붙임
+									accntNoNm = '%' + accntNoTrim + '%';
+								}
+						
+								WebSquare.ModelUtil.setInstanceValue("request/AccntNoInfo/accnt_no/@value", accntNo);
+								WebSquare.ModelUtil.setInstanceValue("request/AccntNoInfo/accnt_no_nm/@value", accntNoNm);
+								gfnExecuteSubmission("getFinAccntNoNm");
+							}
+						} else {
+							if (event.keyCode != 9 && event.keyCode != 229) {
+								inputAccntRspnsNm.setValue(""); // 계정책임자
+							}
+						}
+					]]></script>
+				</xf:input>
+				<w2:textbox tagname="label" label="계정책임자" class="labelCP" id="outputAccntRspns"
+					style="position:absolute; word-wrap:break-word;top:120px;left:326px;width:157px;height:23px;" />
+				<xf:input class="inputRd" disabled="true" id="inputAccntRspnsNm" onFocusStyle=""
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:122px;left:580px;width:94px;height:19px;">
+					<xf:label />
+				</xf:input>
+				<xf:input class="inputRd" id="inputAccntRspnsEmpno" maxlength="7" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:122px;left:499px;width:72px;height:19px;ime-mode:active;" tabIndex="3">
+					<xf:label />
+				</xf:input>
+				<w2:textbox tagname="label" label="실 투입 연구비(원)" class="labelC" id="output402"
+					style="position:absolute; word-wrap:break-word;top:120px;left:683px;width:157px;height:23px;" />
+				<xf:trigger centerOffImageStyle="" centerOnImageStyle="" id="trigger48" leftOffImageClass="searchBtn" leftOffImageStyle="" leftOnImageClass="searchBtn_on"
+					leftOnImageStyle="" rightOffImageStyle="" rightOnImageStyle="" style="position:absolute;word-wrap:break-word;top:123px;left:301px;width:23px;height:19px;" tabIndex="26"
+					toolTip="찾기" type="image">
+					<xf:label />
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						if(radioMouClsf.getValue() == ""){
+							alert("기술구분을 선택하세요.");
+							return;
+						}
+						popupAccntInfo();
+					]]></script>
+				</xf:trigger>
+				<w2:textbox tagname="label" label="진행상태" class="labelCP" id="output405"
+					style="position:absolute; word-wrap:break-word;top:24px;left:683px;width:157px;height:23px;;display:none" />
+				<w2:textbox label="계정명" class="labelC" id="output403" style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:144px;" />
+				<w2:textbox class="fieldL" id="output404" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:144px;" />
+				<xf:input class="input" id="inputAccntNoNm" maxByteLength="400" maxlength="" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:146px;left:173px;width:804px;height:19px;ime-mode:active;" tabIndex="1">
+					<xf:label />
+				</xf:input>
+				<w2:textbox class="fieldL" id="output424" style="position:absolute;height:150px;width:811px;left:170px;word-wrap:break-word;top:168px;" />
+				<xf:group id="upload_A" style="position:absolute;top:192px;left:172px;width:818px;height:127px;" />
+				<w2:textbox label="청렴유지서약서" class="labelCP" id="output423" style="position:absolute;height:150px;width:157px;left:0px;word-wrap:break-word;top:168px;" />
+				<xf:select1 activeClass="selectA" appearance="minimal" chooseOption="true" class="input" defaultClass="selectD"
+					defaultStyle="text-align:center;vertical-align:middle" disabled="true" displayMode="0" id="selectboxTechPrjClsf"
+					style="position:absolute;height:19px;width:128px;left:579px;top:26px;" submenuSize="auto" visibleRowNum="10">
+					<xf:choices>
+						<xf:itemset nodeset="response/commCode/hashtable/data[@hashkey='RFL']/vector/data/msgCodCcomMst001">
+							<xf:label ref="cd_nm/@value" />
+							<xf:value ref="cd/@value" />
+						</xf:itemset>
+					</xf:choices>
+					<script type="javascript" ev:event="onchange"><![CDATA[
+						var techPrjClsf = selectboxTechPrjClsf.getValue();
+						if(techPrjClsf == "RFL001" || techPrjClsf == "RFL002" || techPrjClsf == "RFL004"){ //정부연구과제(미래부 추가)
+							group21.setSize(989,636);						
+							group32.show();
+							KitechAttach.action.show('upload_C');
+						}else{
+							group21.setSize(989,486);
+							group32.hide();
+							KitechAttach.action.hide('upload_C');
+						}
+					]]></script>
+				</xf:select1>
+				<xf:group style="position:absolute;top:319px;left:0px;width:989px;height:153px;" id="group033">
+					<w2:textbox tagname="label" style="position:absolute;height:150px;width:157px;left:0px;word-wrap:break-word;top:0px;" label="비밀유지서약서" id="textbox01"
+						class="labelCP" />
+					<w2:textbox style="position:absolute;height:150px;width:811px;left:170px;word-wrap:break-word;top:0px;" id="textbox02" class="fieldL" />
+					<xf:group id="upload_D" style="position:absolute;top:25px;left:172px;width:815px;height:125px;" />
+					<xf:trigger id="trigger055" centerOffImageClass="btn03C" style="word-wrap:break-word;position:absolute;top:2px;width:100px;height:21px;left:775px;"
+						leftOnImageClass="btn03L" tabIndex="5" rightOffImageClass="btn03R" centerOnImageClass="btn03C" type="image" rightOnImageClass="btn03R" leftOffImageClass="btn03L">
+						<xf:label>일반정보제공용</xf:label>
+						<script ev:event="onclick" type="javascript"><![CDATA[
+							downFileinfo("비밀유지계약서(일반정보제공용).hwp","security_agree_general");
+						]]></script>
+					</xf:trigger>
+					<xf:trigger id="trigger056" centerOffImageClass="btn03C" style="word-wrap:break-word;position:absolute;top:2px;width:100px;height:21px;left:880px;"
+						leftOnImageClass="btn03L" tabIndex="5" rightOffImageClass="btn03R" centerOnImageClass="btn03C" type="image" rightOnImageClass="btn03R" leftOffImageClass="btn03L">
+						<xf:label>상호정보제공용</xf:label>
+						<script ev:event="onclick" type="javascript"><![CDATA[
+							downFileinfo("비밀유지계약서(상호정보제공용).hwp","security_agree_both");
+						]]></script>
+					</xf:trigger>
+				</xf:group>
+				<xf:group style="position:absolute;top:470px;left:0px;width:989px;height:153px;visibility:hidden;" id="group32">
+					<w2:textbox tagname="label" style="position:absolute;height:150px;width:157px;left:0px;word-wrap:break-word;top:0px;" label="과제협약서" id="textbox1"
+						class="labelC" />
+					<w2:textbox style="position:absolute;height:150px;width:811px;left:170px;word-wrap:break-word;top:0px;" id="textbox2" class="fieldL" />
+					<xf:group id="upload_C" style="position:absolute;top:0px;left:172px;width:817px;height:151px;" />
+				</xf:group>
+				<xf:trigger centerOffImageClass="btn03C" centerOnImageClass="btn03C" id="trigger58" leftOffImageClass="btn03L" leftOnImageClass="btn03L" rightOffImageClass="btn03R"
+					rightOnImageClass="btn03R" style="word-wrap:break-word;position:absolute;top:170px;width:110px;height:21px;left:875px;" tabIndex="5" type="image">
+					<xf:label>청렴유지서약서</xf:label>
+					<script ev:event="onclick" type="javascript"><![CDATA[
+							downFileinfo("청렴유지 서약서.hwp","clean_keep_covenant");
+						]]></script>
+				</xf:trigger>
+			</xf:group>
+			<xf:group id="group22" style="position:relative;left:0px;width:100.0%;height:157px;">
+				<w2:textbox label="관련 지식재산권" class="subtitle" id="output327" style="word-wrap:break-word;position:absolute;top:5px;left:0px;width:202px;height:14px;" />
+				<w2:grid baseNode="vector" editModeEvent="onclick"
+					focusMode="row" id="gridSmit" readOnly="true"
+					repeatNode="data/msgResTrnsRelatPatMS01" rowNumHeaderValue="순번"
+					rowNumStyle="" rowNumVisible="true"
+					style="position:absolute;top:23px;left:1px;width:100%;height:110px;"
+					tooltipStyle="vertical-align:middle;word-wrap:break-word"
+					valueNode="value" autoFit="allColumn">
+					<w2:header class="gridHeaderTable"
+						columnClass="gridHeaderTD" columnStyle=";" id="header8"
+						style="height:26px" width="1704">
+						<w2:row>
+							<w2:column id="column272"
+								style="height:26px" inputType="text" width="70" value="신청번호" />
+							<w2:column id="column491"
+								style="height:26px" inputType="text" width="52" value="대표" />
+							<w2:column id="column492"
+								style="height:26px" inputType="text" width="52" value="대표" />
+							<w2:column id="column276"
+								style="height:26px" inputType="text" width="52" value="순번" />
+							<w2:column id="column287"
+								style="height:26px" inputType="text" width="84" value="지식재산권구분" />
+							<w2:column id="column288"
+								style="height:26px" inputType="text" width="70"
+								value="지식재산권구분명" />
+							<w2:column id="column165" inputType="text"
+								style="height:26px" value="발명의 명칭" valueType="binary"
+								width="252" />
+							<w2:column id="column489"
+								style="height:26px" inputType="text" width="79" value="상태" />
+							<w2:column id="column487"
+								style="height:26px" inputType="text" width="70"
+								valueType="binary" value="관련계정번호" />
+							<w2:column id="column166" inputType="text"
+								style="height:26px" value="출원번호" valueType="binary" width="138" />
+							<w2:column id="column286"
+								style="height:26px" inputType="text" width="70" value="출원명" />
+							<w2:column colSpan="1" id="column167"
+								inputType="text" style="height:26px" value="출원일자"
+								valueType="binary" width="80" />
+							<w2:column id="column168" inputType="text"
+								style="height:26px" value="등록번호" valueType="binary" width="159" />
+							<w2:column id="column169" inputType="text"
+								style="height:26px" value="등록일자" valueType="binary" width="80" />
+							<w2:column id="column268"
+								style="height:26px" inputType="text" width="70" value="등록명" />
+							<w2:column id="column170" inputType="text"
+								style="height:26px" value="주발명자개인번호" valueType="binary"
+								width="70" />
+							<w2:column hidden="false" id="column171"
+								inputType="text" style="height:26px" value="주발명자"
+								valueType="binary" width="79" />
+							<w2:column id="column516"
+								style="height:26px" inputType="text" width="70"
+								value="기술이전여부">
+							</w2:column>
+							<w2:column id="column490"
+								style="height:26px" inputType="text" width="70" value="발명신고서번호" />
+							<w2:column id="column488"
+								style="height:26px" inputType="text" width="70" value="관리번호" />
+						</w2:row>
+					</w2:header>
+					<w2:gBody class="gridBodyTable"
+						columnClass="gridBodyTD" columnStyle=";" id="gBody8"
+						style="height:22px" width="2657">
+						<w2:row>
+							<w2:column id="req_no" style="height:22px"
+								inputType="text" width="70" hidden="true" />
+							<w2:column id="grid_radio" inputType="radio" col_id="radio1" style="font-color:#ffffff;" trueValue="Y" falseValue="N" valueType="binary" />
+							<w2:column id="repr_yn" style="height:22px"	inputType="text" width="52" hidden="true" />
+							<w2:column id="odr" style="height:22px"	inputType="text" width="52" hidden="true" />
+							<w2:column id="indst_right_clsf" style="height:22px" inputType="select" width="84" readOnly="false" visibleRowNum="10">
+								<w2:choices>
+									<w2:itemset
+										nodeset="response/commCode/hashtable/data[@hashkey='RFE']/vector/data/msgCodCcomMst001">
+										<w2:label ref="cd_nm/@value" />
+										<w2:value ref="cd/@value" />
+									</w2:itemset>
+								</w2:choices>
+							</w2:column>
+							<w2:column id="indst_right_clsf_nm"
+								style="height:22px" inputType="text" width="70" hidden="true" />
+							<w2:column id="invnt_krn_nm"
+								inputType="text" readOnly="false" style="height:22px"
+								valueType="binary" width="252" textAlign="left" />
+							<w2:column id="state_desc"
+								style="height:22px" inputType="text" width="79" />
+							<w2:column id="accnt_no" style="height:22px"
+								inputType="text" width="70" valueType="binary" />
+							<w2:column id="smitapp_no" readOnly="true"
+								style="height:22px" valueType="binary" width="138" />
+							<w2:column id="smitapp_krn_nm"
+								style="height:22px" inputType="text" width="70" />
+							<w2:column id="smitapp_ymd" inputType="text"
+								style="height:22px" valueType="binary" width="88"
+								dataType="date" displayFormat="yyyy-MM-dd" />
+							<w2:column id="regst_no" inputType="text"
+								style="height:22px" valueType="binary" width="115" />
+							<w2:column id="regst_ymd" inputType="text"
+								style="height:22px" valueType="binary" width="84"
+								dataType="date" displayFormat="yyyy-MM-dd" />
+							<w2:column id="regst_krn_nm"
+								style="height:22px" inputType="text" width="70" />
+							<w2:column id="invnt_syspayno"
+								inputType="text" style="height:22px" valueType="binary"
+								width="70" hidden="true" />
+							<w2:column id="invnt_nm" inputType="text"
+								style="height:22px" valueType="binary" width="79" />
+							<w2:column id="trns_yn" style="height:22px"
+								inputType="text" width="70">
+							</w2:column>
+							<w2:column id="pat_req_no"
+								style="height:22px" inputType="text" width="70" hidden="true" />
+							<w2:column id="mngmt_no" style="height:22px"
+								inputType="text" width="70" hidden="true" />
+						</w2:row>
+					</w2:gBody>
+					<script ev:event="onchange(row,col,newData,oldData)" type="javascript"><![CDATA[
+						grid.onchange(row, col);
+					]]></script>
+					<script ev:event="oncellclick(row,col)" type="javascript"><![CDATA[
+						grid.onclick(row, col);
+					]]></script>
+				</w2:grid>
+				<xf:trigger centerOffImageClass="btn03C" centerOnImageClass="btn03C" id="trigger4" leftOffImageClass="btn03L" leftOnImageClass="btn03L" rightOffImageClass="btn03R"
+					rightOnImageClass="btn03R" style="word-wrap:break-word;position:absolute;top:-1px;right:80px;width:100px;height:21px;" type="image">
+					<xf:label>엑셀내리기</xf:label>
+					<script ev:event="onclick" type="javascript"><![CDATA[ 					
+						if(gridSmit.getRowCount() == '0'){
+							alert("다운로드 할 데이터가 없습니다.");
+							return false;
+						}
+						
+						var options = {};    
+	                    options.fileName = "관련 지식재산권.xls"; //파일의 이름을 결정합니다.(영문만)
+	                    options.type  = "0"; //type이 1인 경우 눈에 보이는 데이터를 0인 경우 실제 데이터를 가지고 옵니다.	                     
+	                    options.startRowIndex = 0; //excel에서 gird의 데이터가 시작될 row의 index입니다.
+	                    options.startColumnIndex = 0; //excel에서 gird의 데이터가 시작될 column의 index입니다.	                     
+	                    options.removeColumns   = "0,1,4,18,19";	                     
+	                    var infoArr = []; //그리드에 대한 내용을 추가로 다른 셀에 표현하는 경우 사용하는 배열입니다.	                      
+	                    gridSmit.advancedExcelDownload(options , infoArr); 
+	            	]]></script>
+				</xf:trigger>
+				<xf:trigger id="triggerSmitAppAdd" leftOffImageClass="addrowbtn" leftOnImageClass="addrowbtn"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:0px;width:20px;height:20px;right:39px;" toolTip="행추가" type="image">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						// Post 방식 Data 정의
+						var node = "flag=Y&indst_right_clsf=RFE001";
+						var url = "/kitech/res/tec/ResTechAgReg2Pop1.xml";
+						WebSquare.uiplugin.popup.createPopup("pop6", "window", "", "top:100px;left:100px;width:750px;height:400px", "false", "false", url, null, null, node);
+						// setApplyList 호출
+					]]></script>
+				</xf:trigger>
+				<xf:trigger id="trigger44" leftOffImageClass="delrowbtn" leftOnImageClass="delrowbtn"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:0px;width:20px;height:20px;right:14px;" toolTip="행삭제" type="image">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						var row = gridSmit.getFocusedRowIndex();
+						
+						if (row < 0) {
+							alert("삭제할 row를 선택하세요.");
+							return;
+						}
+						
+						var saveVec = new WebSquare.collection.Vector();
+						var data = gridSmit.getRowXML(row);
+						var status = WebSquare.xml.getValue(data, "msgResTrnsRelatPatMS01", "statusValue");
+						
+						$l("status=" + status);
+						if (status != "V") {
+							WebSquare.xml.setValue(data, "msgResTrnsRelatPatMS01/cud_type", "value", "D");
+							saveVec.addElement(WebSquare.xml.serialize(data));
+							var tmpData = saveVec.toDocument();
+							var tmpDoc = WebSquare.xml.findNode(tmpData, "vector/data");
+							WebSquare.ModelUtil.setInstanceNode(tmpDoc, "request/saveProc/hashtable/data[@hashkey='gridSmit']/vector", null, "append");
+						}
+						gridSmit.removeRow(row);
+					]]></script>
+				</xf:trigger>
+			</xf:group>
+			<xf:group id="group26" style="position:relative;left:0px;width:989px;height:165px;">
+				<w2:textbox label="기술자료(사양포함)" class="subtitle" id="output330" style="word-wrap:break-word;position:absolute;top:5px;left:4px;width:202px;height:14px;" />
+				<xf:trigger id="triggerGridSpecAdd" leftOffImageClass="addrowbtn" leftOnImageClass="addrowbtn"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:7px;width:20px;height:20px;right:39px;" toolTip="행추가" type="image">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						gridSpec.insertRow();
+					]]></script>
+				</xf:trigger>
+				<xf:trigger id="triggerGridSpecDelete" leftOffImageClass="delrowbtn" leftOnImageClass="delrowbtn"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:7px;width:20px;height:20px;right:14px;" toolTip="행삭제" type="image">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						var row =  gridSpec.getFocusedRowIndex();
+						if (row < 0) {
+							alert("삭제할 row를 선택하세요.");
+							return;
+						}
+						var saveVec = new WebSquare.collection.Vector();
+						var data = gridSpec.getRowXML(row);
+						var status = WebSquare.xml.getValue(data, "msgResTrnsTechRefMS01", "statusValue");
+						$l("status=" + status);
+						if (status != "V") {
+							WebSquare.xml.setValue(data, "msgResTrnsTechRefMS01/cud_type", "value", "D");
+							saveVec.addElement(WebSquare.xml.serialize(data));
+							var tmpData = saveVec.toDocument();
+							var tmpDoc = WebSquare.xml.findNode(tmpData, "vector/data");
+							WebSquare.ModelUtil.setInstanceNode(tmpDoc, "request/saveProc/hashtable/data[@hashkey='gridSpec']/vector", null, "append");
+						}
+						gridSpec.removeRow(row);
+					]]></script>
+				</xf:trigger>
+				<w2:grid autoFit="allColumn" baseNode="vector" editModeEvent="onclick" focusMode="row" id="gridSpec" readOnly="" repeatNode="data/msgResTrnsTechRefMS01"
+					rowNumHeaderValue="순번" rowNumStyle="" rowNumVisible="true" style="position:absolute;top:31px;left:0px;width:100%;height:110px;" tooltipStyle="vertical-align:middle;word-wrap:break-word"
+					valueNode="value">
+					<w2:header class="gridHeaderTable" columnClass="gridHeaderTD" columnStyle=";" id="header15" style="height:26px" width="1704">
+						<w2:row>
+							<w2:column id="column385" inputType="text" style="height:26px" value="기술자료(사양포함)" width="259" />
+							<w2:column id="column409" style="height:26px" hidden="" inputType="text" width="103" valueType="binary" value="단위" />
+							<w2:column id="column426" style="height:26px" inputType="text" width="70" value="단위명" />
+							<w2:column id="column411" style="height:26px" hidden="" inputType="text" width="62" valueType="binary" value="수량" />
+							<w2:column id="column417" style="height:26px" hidden="" inputType="text" width="127" valueType="binary" value="이전예정일" />
+							<w2:column id="column419" style="height:26px" hidden="" inputType="text" width="204" valueType="binary" value="비고" />
+							<w2:column id="column425" style="height:26px" hidden="" inputType="text" width="190" valueType="binary" value="첨부파일" colSpan="2" rowSpan="" />
+							<w2:column id="column427" style="height:26px" inputType="text" width="70" value="첨부화일명" />
+							<w2:column id="column429" style="height:26px" inputType="text" width="70" value="첨부화일경로" />
+							<w2:column id="column421" style="height:26px" hidden="true" inputType="text" width="70" valueType="binary" value="신청번호" />
+							<w2:column id="column423" style="height:26px" hidden="true" inputType="text" width="70" valueType="binary" value="순번" />
+						</w2:row>
+					</w2:header>
+					<w2:gBody class="gridBodyTable" columnClass="gridBodyTD" columnStyle=";" id="gBody15" style="height:22px" width="2657">
+						<w2:row>
+							<w2:column allOption="" chooseOption="" id="tech_ref_data" inputType="text" readOnly="false" style="height:22px" width="259" textAlign="left" />
+							<w2:column id="unit_cd" style="height:22px" hidden="" inputType="select" width="103" valueType="binary">
+								<w2:choices>
+									<w2:itemset nodeset="response/commCode/hashtable/data[@hashkey='PFA']/vector/data/msgCodCcomMst001">
+										<w2:label ref="cd_nm/@value" />
+										<w2:value ref="cd/@value" />
+									</w2:itemset>
+								</w2:choices>
+							</w2:column> 
+							<w2:column id="unit_cd_nm" style="height:22px" inputType="text" width="70" hidden="true" />
+							<w2:column id="qty" style="height:22px" hidden="" inputType="text" width="62" valueType="binary" />
+							<w2:column id="trns_schdl_ymd" style="height:22px" hidden="" inputType="calendar" width="127" valueType="binary" />
+							<w2:column id="rmk" style="height:22px" hidden="" inputType="text" width="204" valueType="binary" />
+							<w2:column id="attach_file_no" style="height:22px" hidden="" inputType="text" width="125" valueType="binary" readOnly="true" />
+							<w2:column id="btn_attach" style="height:22px" hidden="" inputType="button" width="65" valueType="binary" value="첨부" readOnly="true" />
+							<w2:column id="org_file" style="height:22px" inputType="text" width="70" hidden="true" />
+							<w2:column id="attach_full_path" style="height:22px" inputType="text" width="70" hidden="true" />
+							<w2:column id="req_no" style="height:22px" hidden="" inputType="text" width="70" valueType="binary" />
+							<w2:column id="odr" style="height:22px" hidden="" inputType="text" width="70" valueType="binary" />
+						</w2:row>
+					</w2:gBody>
+						<script ev:event="oncellclick(row,col)" type="javascript"><![CDATA[
+						if (col == gridSpec.getColumnIndex("btn_attach")) {
+							var url = "/kitech/res/twe/ResGridAttachPop.xml";
+							var attachFileNo = gridSpec.getCellData(row, "attach_file_no").replace(/ /gi, "");
+							WebSquare.ModelUtil.setInstanceValue("popData/attach_file_no/@value", attachFileNo);
+							WebSquare.ModelUtil.setInstanceValue("popData/type_code/@value", typeCode);
+							WebSquare.ModelUtil.setInstanceValue("popData/sys_clsf/@value", "WRITE");
+							WebSquare.ModelUtil.setInstanceValue("popData/grid_clsf/@value", "gridSpec");
+						
+							var param = WebSquare.ModelUtil.findInstanceNode("popData");
+							
+							WebSquare.uiplugin.popup.createPopup("ResTecTrnsMouSpecP", "window", "", "top:100px;left:100px;width:616px;height:230px", "false", "false", url, null, null, param);
+						}
+					]]></script>
+					<script ev:event="onafteredit(row,col,value)" type="javascript"><![CDATA[
+						var trnsSchdlYmd = gridSpec.getCellData(row, "trns_schdl_ymd");
+						var trnsCompltYmd = inputCalendarTrnsCompltYmd.getValue();
+						if(trnsSchdlYmd.trim() != "" && trnsSchdlYmd != trnsCompltYmd){
+							inputCalendarTrnsCompltYmd.setValue(trnsSchdlYmd);
+						}
+					]]></script>
+				</w2:grid>
+				<xf:group id="group30" style="position:absolute;top:6px;left:361px;width:564px;height:21px;">
+					<w2:textbox label="
+							* 노하우 기술이전의 경우 기술이전 노하우 양식 작성후 업로드 필수(업로드 시 HWP 한글문서로 업로드)
+						" id="output421"
+						style="position:absolute; word-wrap:break-word;top:1px;left:-199px;width:582px;height:19px;vertical-align:middle;border:none;;color:#FF0000" class="labelL" />
+
+					<xf:trigger id="trigger55" centerOffImageClass="btn03C" style="word-wrap:break-word;position:absolute;top:0px;width:170px;height:21px;left:392px;" leftOnImageClass="btn03L"
+						tabIndex="5" rightOffImageClass="btn03R" centerOnImageClass="btn03C" type="image" rightOnImageClass="btn03R" leftOffImageClass="btn03L">
+						<xf:label>기술이전 노하우 양식다운로드</xf:label>
+						<script ev:event="onclick" type="javascript"><![CDATA[
+							downFileinfo("[양식]기술이전노하우.hwp","trnsForm");
+						]]></script>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			<xf:group id="group40" style="position:relative;left:0px;width:989px;height:250px;">
+				<w2:textbox tagname="label" label="기술 개요" class="subtitle" id="subtit40" style="word-wrap:break-word;position:absolute;top:5px;left:4px;width:202px;height:14px;" />
+				<w2:textbox class="fieldL" id="output401" style="position:absolute;height:210px;width:977px;left:0px;word-wrap:break-word;top:25px;" />
+				<xf:textarea class="textarea" id="techOutline" style="position:absolute;vertical-align:middle;height:201px;left:3px;width:976px;word-wrap:break-word;top:28px;" />
+			</xf:group>
+			<xf:group id="group41" style="position:relative;left:0px;width:989px;height:330px;">
+				<w2:textbox tagname="label" label="기술 이미지" class="subtitle" id="subtit41" style="word-wrap:break-word;position:absolute;top:5px;left:4px;width:202px;height:14px;" />
+				<w2:textbox id="attachImgNo1" class="fieldL" style="position: absolute ;left:0px;top:25px;width:322px;height:210px;" />
+				<xf:image id="image1" style="position: absolute ;left: 5px;top: 30px;width: 320px;height: 202px;" src="">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+							var photoFileNo = attachImgFile1.getValue();
+							
+							if (photoFileNo == null || photoFileNo == "") {
+								alert("첨부된 파일이 없습니다.");
+								return false;
+							}
+												
+							var photoUrl = "http://biz.kitech.re.kr/" + photoFileNo;
+							
+							window.open(photoUrl, "", "width=1280 height=750, top=100, toolbar=no, menubar=no, resizable=yes, titlebar=yes");
+					]]></script>
+				</xf:image>
+				<w2:textbox id="attachImgNo2" class="fieldL" style="position: absolute ;left:329px;top:25px;width:322px;height:210px;" />
+				<xf:image id="image2" style="position: absolute ;left: 333px;top: 30px;width: 320px;height: 202px;" src="">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+							var photoFileNo = attachImgFile2.getValue();
+						
+							if (photoFileNo == null || photoFileNo == "") {
+								alert("첨부된 파일이 없습니다.");
+								return false;
+							}
+												
+							var photoUrl = "http://biz.kitech.re.kr/" + photoFileNo;
+							
+							window.open(photoUrl, "", "width=1280 height=750, top=100, toolbar=no, menubar=no, resizable=yes, titlebar=yes");
+					]]></script>
+				</xf:image>
+				<w2:textbox id="attachImgNo3" class="fieldL" style="position: absolute ;left:657px;top:25px;width:322px;height:210px;" />
+				<xf:image id="image3" style="position: absolute ;left: 662px;top: 30px;width: 320px;height: 202px;" src="">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+							var photoFileNo = attachImgFile3.getValue();
+							
+							if (photoFileNo == null || photoFileNo == "") {
+								alert("첨부된 파일이 없습니다.");
+								return false;
+							}
+												
+							var photoUrl = "http://biz.kitech.re.kr/" + photoFileNo;
+							
+							window.open(photoUrl, "", "width=1280 height=750, top=100, toolbar=no, menubar=no, resizable=yes, titlebar=yes");
+					]]></script>
+				</xf:image>
+				<w2:textbox tagname="label" label="기술이미지1" class="labelC" id="grp411" style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:240px;" />
+				<w2:textbox class="fieldL" id="grp412" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:240px;" />
+				<w2:upload id="uploadAttachFileImg1" style="position:absolute;vertical-align:middle;word-wrap:break-word;left:172px;top:242px;width:710px;height:19px;" imageStyle="position:absolute;vertical-align:middle;word-wrap:break-word"
+					subDir="tecimage" inputStyle="position:absolute;vertical-align:middle;word-wrap:break-word" type="image">
+					<script ev:event="onInputValueChange( fileName )" type="javascript"><![CDATA[
+						var fileExt = fileName.split(".").pop(); // 확장자 받아오는 함수
+						fileExt = fileExt.trim();
+						fileExt = fileExt.toUpperCase();
+						
+						if (fileExt != "") {
+							// Report 이미지 업로드 시 Flash Player 미지원으로 BMP확장자는 업로드가 되지 않도록 함(2013.10.30) : 포시에스 확인 및 팀장님 지시
+							if (fileExt != "JPG" && fileExt != "JPEG" && fileExt != "GIF" && fileExt != "PNG") {
+								alert("이미지 첨부파일의 확장자는 'JPG, JPEG, GIF, PNG'이어야 합니다.\n(대소문자 관계없음)");
+								upload.reset();
+								return;
+							}
+						
+							uploadAttachFileImg1.submit();
+						
+						} else {
+							alert("첨부된 파일의 확장자가 불분명합니다.\n확인바랍니다.");
+							image1.setSrc("");
+						
+							return;
+						}
+					]]></script>
+					<script ev:event="ondone(retXml)" type="javascript"><![CDATA[
+						var retXmlStr = WebSquare.xml.serialize(retXml);
+						var attachFilePathPhoto = retXmlStr.split("<key>")[1].split("</key>")[0];
+						var attachFilePhoto = retXmlStr.split("<storedFileList>")[1].split("</storedFileList>")[0];
+						var photoFilePathArr = attachFilePathPhoto.split("/");
+						var attachFileImg1 = "/bizimages/tec/" + photoFilePathArr[photoFilePathArr.length-1] +"/"+ attachFilePhoto;
+						
+						image1.setSrc(attachFileImg1);
+						attachImgFile1.setValue(attachFileImg1);
+						triggerPhoto1.show();
+    				]]></script>
+				</w2:upload>
+				<xf:input id="attachImgFile1" style="word-wrap:break-word;position:absolute;top:242px;left:800px;width:151px;height:19px;text-align:left;" class="input" type="hidden">
+					<xf:label />
+				</xf:input>
+				<xf:trigger centerOffImageClass="btn01C" toolTip="이미지를 다운받으시려면 버튼을 누르세요." tabIndex="380" type="image" leftOffImageClass="btn01L" id="triggerPhoto1"
+					style="position:absolute;word-wrap:break-word;top:242px;width:55px;height:21px;left:900px;display:none;" leftOnImageClass="btn01L_on" rightOffImageClass="btn01R"
+					rightOffImageStyle="" centerOnImageClass="btn01C_on" rightOnImageClass="btn01R_on">
+					<xf:label>Down</xf:label>
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						downloadForXsl(attachImgFile1.getValue().substring(1), 'IMG');
+					]]></script>
+				</xf:trigger>
+				<w2:textbox tagname="label" label="기술이미지2" class="labelC" id="grp413" style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:264px;" />
+				<w2:textbox class="fieldL" id="grp414" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:264px;" />
+				<w2:upload id="uploadAttachFileImg2" style="position:absolute;vertical-align:middle;word-wrap:break-word;left:172px;top:267px;width:710px;height:19px;" imageStyle="position:absolute;vertical-align:middle;word-wrap:break-word"
+					subDir="tecimage" inputStyle="position:absolute;vertical-align:middle;word-wrap:break-word" type="image">
+					<script ev:event="onInputValueChange( fileName )" type="javascript"><![CDATA[
+						var fileExt = fileName.split(".").pop(); // 확장자 받아오는 함수
+						fileExt = fileExt.trim();
+						fileExt = fileExt.toUpperCase();
+						
+						if (fileExt != "") {
+							// Report 이미지 업로드 시 Flash Player 미지원으로 BMP확장자는 업로드가 되지 않도록 함(2013.10.30) : 포시에스 확인 및 팀장님 지시
+							if (fileExt != "JPG" && fileExt != "JPEG" && fileExt != "GIF" && fileExt != "PNG") {
+								alert("이미지 첨부파일의 확장자는 'JPG, JPEG, GIF, PNG'이어야 합니다.\n(대소문자 관계없음)");
+								upload.reset();
+								return;
+							}
+						
+							uploadAttachFileImg2.submit();
+						
+						} else {
+							alert("첨부된 파일의 확장자가 불분명합니다.\n확인바랍니다.");
+							image2.setSrc("");
+							return;
+						}
+					]]></script>
+					<script ev:event="ondone(retXml)" type="javascript"><![CDATA[
+						var retXmlStr = WebSquare.xml.serialize(retXml);
+						var attachFilePathPhoto = retXmlStr.split("<key>")[1].split("</key>")[0];
+						var attachFilePhoto = retXmlStr.split("<storedFileList>")[1].split("</storedFileList>")[0];
+						var photoFilePathArr = attachFilePathPhoto.split("/");
+						var attachFileImg2 = "/bizimages/tec/" + photoFilePathArr[photoFilePathArr.length-1] +"/"+ attachFilePhoto;
+						
+						image2.setSrc(attachFileImg2);
+						attachImgFile2.setValue(attachFileImg2);
+						triggerPhoto2.show();
+    				]]></script>
+				</w2:upload>
+				<xf:input id="attachImgFile2" style="word-wrap:break-word;position:absolute;top:267px;left:800px;width:151px;height:19px;text-align:left;" class="input" type="hidden">
+					<xf:label />
+				</xf:input>
+				<xf:trigger centerOffImageClass="btn01C" toolTip="이미지를 다운받으시려면 버튼을 누르세요." tabIndex="380" type="image" leftOffImageClass="btn01L" id="triggerPhoto2"
+					style="position:absolute;word-wrap:break-word;top:267px;width:55px;height:21px;left:900px;display:none;" leftOnImageClass="btn01L_on" rightOffImageClass="btn01R"
+					rightOffImageStyle="" centerOnImageClass="btn01C_on" rightOnImageClass="btn01R_on">
+					<xf:label>Down</xf:label>
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						downloadForXsl(attachImgFile2.getValue().substring(1), 'IMG');
+					]]></script>
+				</xf:trigger>
+				<w2:textbox tagname="label" label="기술이미지3" class="labelC" id="grp415" style="position:absolute;height:23px;width:157px;left:0px;word-wrap:break-word;top:288px;" />
+				<w2:textbox class="fieldL" id="grp416" style="position:absolute;height:23px;width:811px;left:170px;word-wrap:break-word;top:288px;" />
+				<w2:upload id="uploadAttachFileImg3" style="position:absolute;vertical-align:middle;word-wrap:break-word;left:172px;top:290px;width:710px;height:19px;" imageStyle="position:absolute;vertical-align:middle;word-wrap:break-word"
+					subDir="tecimage" inputStyle="position:absolute;vertical-align:middle;word-wrap:break-word" type="image">
+					<script ev:event="onInputValueChange( fileName )" type="javascript"><![CDATA[
+						var fileExt = fileName.split(".").pop(); // 확장자 받아오는 함수
+						fileExt = fileExt.trim();
+						fileExt = fileExt.toUpperCase();
+						
+						if (fileExt != "") {
+							// Report 이미지 업로드 시 Flash Player 미지원으로 BMP확장자는 업로드가 되지 않도록 함(2013.10.30) : 포시에스 확인 및 팀장님 지시
+							if (fileExt != "JPG" && fileExt != "JPEG" && fileExt != "GIF" && fileExt != "PNG") {
+								alert("이미지 첨부파일의 확장자는 'JPG, JPEG, GIF, PNG'이어야 합니다.\n(대소문자 관계없음)");
+								upload.reset();
+								return;
+							}
+						
+							uploadAttachFileImg3.submit();
+						
+						} else {
+							alert("첨부된 파일의 확장자가 불분명합니다.\n확인바랍니다.");
+							image3.setSrc("");
+							return;
+						}
+					]]></script>
+					<script ev:event="ondone(retXml)" type="javascript"><![CDATA[
+						var retXmlStr = WebSquare.xml.serialize(retXml);
+						var attachFilePathPhoto = retXmlStr.split("<key>")[1].split("</key>")[0];
+						var attachFilePhoto = retXmlStr.split("<storedFileList>")[1].split("</storedFileList>")[0];
+						var photoFilePathArr = attachFilePathPhoto.split("/");
+						var attachFileImg3 = "/bizimages/tec/" + photoFilePathArr[photoFilePathArr.length-1] +"/"+ attachFilePhoto;
+						
+						image3.setSrc(attachFileImg3);
+						attachImgFile3.setValue(attachFileImg3);
+						triggerPhoto3.show();
+    				]]></script>
+				</w2:upload>
+				<xf:input id="attachImgFile3" style="word-wrap:break-word;position:absolute;top:290px;left:800px;width:151px;height:19px;text-align:left;" class="input" type="hidden">
+					<xf:label />
+				</xf:input>
+				<xf:trigger centerOffImageClass="btn01C" toolTip="이미지를 다운받으시려면 버튼을 누르세요." tabIndex="380" type="image" leftOffImageClass="btn01L" id="triggerPhoto3"
+					style="position:absolute;word-wrap:break-word;top:290px;width:55px;height:21px;left:900px;display:none;" leftOnImageClass="btn01L_on" rightOffImageClass="btn01R"
+					rightOffImageStyle="" centerOnImageClass="btn01C_on" rightOnImageClass="btn01R_on">
+					<xf:label>Down</xf:label>
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						downloadForXsl(attachImgFile3.getValue().substring(1), 'IMG');
+					]]></script>
+				</xf:trigger>
+			</xf:group>
+			<xf:group id="group42" style="position:relative;left:0px;width:989px;height:120px;">
+				<w2:textbox label="기술차별성(타기술대비 특징/기술특징 및 비교 우위성)" class="subtitle" id="subtit42" style="word-wrap:break-word;position:absolute;top:5px;left:4px;width:960px;height:14px;" />
+				<w2:textbox tagname="label" label="기술 적용분야" class="labelCP" id="output701" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:26px;" />
+				<w2:textbox class="fieldL" id="output702" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:26px;" />
+				<xf:select1 activeClass="selectA" appearance="minimal" chooseOption="true" class="input" defaultClass="selectD" defaultStyle="text-align:center;vertical-align:middle"
+					displayMode="0" id="selectboxSixTClsf" style="position:absolute;height:19px;width:200px;left:185px;top:28px;" submenuSize="auto" visibleRowNum="10" chooseOptionLabel="">
+					<xf:choices>
+						<xf:itemset nodeset="response/commCode/hashtable/data[@hashkey='RAH']/vector/data/msgCodCcomMst001">
+							<xf:label ref="cd_nm/@value" />
+							<xf:value ref="cd/@value" />
+						</xf:itemset>
+					</xf:choices>
+				</xf:select1>
+				<w2:textbox tagname="label" label="산업기술분류코드" class="labelCP" id="output703" style="position:absolute;height:23px;width:160px;left:438px;word-wrap:break-word;top:26px;" />
+				<xf:select1 submenuSize="auto" appearance="minimal" defaultStyle="text-align:center;vertical-align:middle" chooseOption="true" disabled="false"
+					style="position:absolute;top:28px;left:615px;width:200px;height:19px;" id="selectboxBigClsf" visibleRowNum="10" displayMode="label">
+					<xf:choices>
+						<xf:itemset nodeset="response/selectComboBoxBig/vector/data/msgResIndTeccMS01">
+							<xf:label ref="bigcls/@value" />
+							<xf:value ref="cd/@value" />
+						</xf:itemset>
+					</xf:choices>
+				</xf:select1>
+				<w2:textbox tagname="label" label="총 기술개발소요기간" class="labelCP" id="output704" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:50px;" />
+				<w2:textbox class="fieldL" id="output705" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:50px;" />
+				<w2:inputCalendar class="sCalendar" id="devLeadTimeSt" style="position:absolute; word-wrap:break-word;top:52px;left:185px;width:128px;height:19px;ime-mode:active;" />
+				<w2:textbox id="calendarbox" style="position:absolute;vertical-align:middle;word-wrap:break-word;top:57px;left:322px;width:20px;height:15px;text-align:center;"
+					label="~" />
+				<w2:inputCalendar class="sCalendar" id="devLeadTimeEd" style="position:absolute; word-wrap:break-word;top:52px;left:350px;width:128px;height:19px;ime-mode:active;" maxYear="2050" minHour="" minYear="1900"/>
+				<w2:textbox tagname="label" label="기대효과" class="labelCP" id="output706" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:74px;" />
+				<w2:textbox class="fieldL" id="output707" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:74px;" />
+				<xf:input class="input" id="expectEffect" onFocusClass="input_on" style="position:absolute; word-wrap:break-word;top:76px;left:185px;width:792px;height:19px;ime-mode:active;"
+					maxByteLength="255" />
+			</xf:group>
+			<xf:group id="group43" style="position:relative;left:0px;width:989px;height:196px;">
+				<w2:textbox tagname="label" label="기술성숙도" class="subtitle" id="subtit43" style="word-wrap:break-word;position:absolute;top:5px;left:4px;width:960px;height:14px;" />
+				<w2:textbox tagname="label" label="기초연구단계" class="labelC" id="output708"
+					style="position:absolute;height:25px;width:220px;padding-left:0px;left:0px;word-wrap:break-word;top:25px;text-align:center;" />
+				<w2:textbox tagname="label" label="실험단계" class="labelC" id="output709"
+					style="position:absolute;height:25px;width:220px;padding-left:0px;left:221px;word-wrap:break-word;top:25px;text-align:center;" />
+				<w2:textbox tagname="label" label="시작품단계" class="labelC" id="output710"
+					style="position:absolute;height:25px;width:220px;padding-left:0px;left:442px;word-wrap:break-word;top:25px;text-align:center;" />
+				<w2:textbox tagname="label" label="실용화단계" class="labelC" id="output711"
+					style="position:absolute;height:25px;width:220px;padding-left:0px;left:663px;word-wrap:break-word;top:25px;text-align:center;" />
+				<w2:textbox tagname="label" label="사업화단계" class="labelC" id="output712"
+					style="position:absolute;height:25px;width:105px;padding-left:0px;left:884px;word-wrap:break-word;top:25px;text-align:center;" />
+				<w2:textbox label="1" class="labelC" id="output721" style="position:absolute;height:25px;width:110px;padding-left:0px;left:0px;word-wrap:break-word;top:51px;text-align:center;" />
+				<w2:textbox label="2" class="labelC" id="output722" style="position:absolute;height:25px;width:110px;padding-left:0px;left:111px;word-wrap:break-word;top:51px;text-align:center;" />
+				<w2:textbox label="3" class="labelC" id="output723" style="position:absolute;height:25px;width:110px;padding-left:0px;left:221px;word-wrap:break-word;top:51px;text-align:center;" />
+				<w2:textbox label="4" class="labelC" id="output724" style="position:absolute;height:25px;width:110px;padding-left:0px;left:332px;word-wrap:break-word;top:51px;text-align:center;" />
+				<w2:textbox label="5" class="labelC" id="output725" style="position:absolute;height:25px;width:110px;padding-left:0px;left:442px;word-wrap:break-word;top:51px;text-align:center;" />
+				<w2:textbox label="6" class="labelC" id="output726" style="position:absolute;height:25px;width:110px;padding-left:0px;left:553px;word-wrap:break-word;top:51px;text-align:center;" />
+				<w2:textbox label="7" class="labelC" id="output727" style="position:absolute;height:25px;width:110px;padding-left:0px;left:663px;word-wrap:break-word;top:51px;text-align:center;" />
+				<w2:textbox label="8" class="labelC" id="output728" style="position:absolute;height:25px;width:110px;padding-left:0px;left:774px;word-wrap:break-word;top:51px;text-align:center;" />
+				<w2:textbox label="9" class="labelC" id="output729" style="position:absolute;height:25px;width:105px;padding-left:0px;left:884px;word-wrap:break-word;top:51px;text-align:center;" />
+				<w2:textbox class="fieldL" id="output731" label="기초이론&lt;br/&gt;/실험"
+					style="position:absolute;height:70px;width:110px;left:0px;word-wrap:break-word;top:77px;text-align:center;padding-left:0px;vertical-align:center;line-height:16px;" />
+				<w2:textbox class="fieldL" id="output732" label="실용목적&lt;br/&gt;아이디어,&lt;br/&gt;개념정립"
+					style="position:absolute;height:70px;width:110px;left:111px;word-wrap:break-word;top:77px;text-align:center;padding-left:0px;line-height:16px;" />
+				<w2:textbox class="fieldL" id="output733" label="실험규모의&lt;br/&gt;기본성능&lt;br/&gt;검증"
+					style="position:absolute;height:70px;width:110px;left:221px;word-wrap:break-word;top:77px;text-align:center;padding-left:0px;line-height:16px;" />
+				<w2:textbox class="fieldL" id="output734" label="실험실&lt;br/&gt;규모의&lt;br/&gt;소재/부품/시스템&lt;br/&gt;핵심성능평가"
+					style="position:absolute;height:70px;width:110px;left:332px;word-wrap:break-word;top:77px;text-align:center;padding-left:0px;line-height:16px;" />
+				<w2:textbox class="fieldL" id="output735" label="확정된&lt;br/&gt;소재/부품/시스템&lt;br/&gt;시작품 제작 및&lt;br/&gt;성능평가"
+					style="position:absolute;height:70px;width:110px;left:442px;word-wrap:break-word;top:77px;text-align:center;padding-left:0px;line-height:16px;" />
+				<w2:textbox class="fieldL" id="output736" label="파일롯 규모&lt;br/&gt;시작품 제작 및&lt;br/&gt;성능평가"
+					style="position:absolute;height:70px;width:110px;left:553px;word-wrap:break-word;top:77px;text-align:center;padding-left:0px;line-height:16px;" />
+				<w2:textbox class="fieldL" id="output737" label="신뢰성평가 및&lt;br/&gt;수요기업 평가"
+					style="position:absolute;height:70px;width:110px;left:663px;word-wrap:break-word;top:77px;text-align:center;padding-left:0px;line-height:16px;" />
+				<w2:textbox class="fieldL" id="output738" label="시제품인증 및&lt;br/&gt;표준화"
+					style="position:absolute;height:70px;width:110px;left:774px;word-wrap:break-word;top:77px;text-align:center;padding-left:0px;line-height:16px;" />
+				<w2:textbox class="fieldL" id="output739" label="사업화"
+					style="position:absolute;height:70px;width:105px;left:884px;word-wrap:break-word;top:77px;text-align:center;padding-left:0px;line-height:16px;" />
+				<w2:textbox class="fieldL" id="output741"
+					style="position:absolute;height:25px;width:110px;left:0px;word-wrap:break-word;top:148px;text-align:center;padding-left:0px;vertical-align:center;" />
+				<w2:textbox class="fieldL" id="output742" style="position:absolute;height:25px;width:110px;left:111px;word-wrap:break-word;top:148px;text-align:center;padding-left:0px;" />
+				<w2:textbox class="fieldL" id="output743" style="position:absolute;height:25px;width:110px;left:221px;word-wrap:break-word;top:148px;text-align:center;padding-left:0px;" />
+				<w2:textbox class="fieldL" id="output744" style="position:absolute;height:25px;width:110px;left:332px;word-wrap:break-word;top:148px;text-align:center;padding-left:0px;" />
+				<w2:textbox class="fieldL" id="output745" style="position:absolute;height:25px;width:110px;left:442px;word-wrap:break-word;top:148px;text-align:center;padding-left:0px;" />
+				<w2:textbox class="fieldL" id="output746" style="position:absolute;height:25px;width:110px;left:553px;word-wrap:break-word;top:148px;text-align:center;padding-left:0px;" />
+				<w2:textbox class="fieldL" id="output747" style="position:absolute;height:25px;width:110px;left:663px;word-wrap:break-word;top:148px;text-align:center;padding-left:0px;" />
+				<w2:textbox class="fieldL" id="output748" style="position:absolute;height:25px;width:110px;left:774px;word-wrap:break-word;top:148px;text-align:center;padding-left:0px;" />
+				<w2:textbox class="fieldL" id="output749" style="position:absolute;height:25px;width:105px;left:884px;word-wrap:break-word;top:148px;text-align:center;padding-left:0px;" />
+				<xf:select1 appearance="full" cols="" id="radioGrowLevel" style="position:absolute;vertical-align:middle;word-wrap:break-word;left:0px;top:152px;width:100%;height:20px;padding-left:45px;"
+					rows="1">
+					<xf:choices>
+						<xf:item>
+							<xf:label />
+							<xf:value>1</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label />
+							<xf:value>2</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label />
+							<xf:value>3</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label />
+							<xf:value>4</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label />
+							<xf:value>5</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label />
+							<xf:value>6</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label />
+							<xf:value>7</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label />
+							<xf:value>8</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label />
+							<xf:value>9</xf:value>
+						</xf:item>
+					</xf:choices>
+					<script type="javascript" ev:event="onradioclick(index,value)"><![CDATA[
+					]]></script>
+				</xf:select1>
+			</xf:group>
+			<xf:group id="group44" style="position:relative;left:0px;width:989px;height:120px;">
+				<w2:textbox tagname="label" label="응용제품의 시장규모" class="subtitle" id="subtit44" style="word-wrap:break-word;position:absolute;top:5px;left:4px;width:960px;height:14px;" />
+				<w2:textbox tagname="label" label="목표시장" class="labelC" id="output751" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:26px;" />
+				<w2:textbox class="fieldL" id="output752" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:26px;" />
+				<xf:input class="input" id="targetMarket" onFocusClass="input_on" style="position:absolute; word-wrap:break-word;top:28px;left:185px;width:792px;height:19px;ime-mode:active;"
+					maxByteLength="255" />
+				<w2:textbox tagname="label" label="국내" class="labelC" id="output753" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:51px;" />
+				<w2:textbox class="fieldL" id="output754" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:51px;" />
+				<xf:input class="input" id="inboundMkt" onFocusClass="input_on" style="position:absolute; word-wrap:break-word;top:53px;left:185px;width:792px;height:19px;ime-mode:active;"
+					maxByteLength="255" />
+				<w2:textbox tagname="label" label="해외" class="labelC" id="output755" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:76px;" />
+				<w2:textbox class="fieldL" id="output756" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:76px;" />
+				<xf:input class="input" id="outboundMkt" onFocusClass="input_on" style="position:absolute; word-wrap:break-word;top:78px;left:185px;width:792px;height:19px;ime-mode:active;"
+					maxByteLength="255" />
+			</xf:group>
+			<xf:group id="group27" style="position:relative;left:0px;width:989px;height:370px;">
+				<w2:textbox tagname="label" label="계약 형태" class="labelCP" id="output341" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:22px;" />
+				<w2:textbox label="" class="fieldL" id="output342" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:22px;" />
+				<xf:select appearance="full" cols="8" id="checkboxTransTyp" rows=""
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;left:185px;top:25px;width:800px;height:19px;text-align:justify;">
+					<xf:choices>
+						<xf:itemset nodeset="response/commCode/hashtable/data[@hashkey='RFC']/vector/data/msgCodCcomMst001">
+							<xf:label ref="cd_nm/@value" />
+							<xf:value ref="cd/@value" />
+						</xf:itemset>
+					</xf:choices>
+				</xf:select>
+				<w2:textbox tagname="label" label="실시 범위" class="labelCP" id="output343" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:46px;" />
+				<w2:textbox label="" class="fieldL" id="output344" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:46px;" />
+				<xf:select1 appearance="full" cols="3" id="radioTrnsScop" rows="" selectedIndex="0"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;left:185px;top:49px;width:251px;height:20px;">
+					<xf:choices>
+						<xf:itemset nodeset="response/commCode/hashtable/data[@hashkey='RTR']/vector/data/msgCodCcomMst001">
+							<xf:label ref="cd_nm/@value" />
+							<xf:value ref="cd/@value" />
+						</xf:itemset>
+					</xf:choices>
+				</xf:select1>
+				<w2:textbox label="기술이전조건" class="subtitle" id="output345" style="word-wrap:break-word;position:absolute;top:4px;left:4px;width:202px;height:14px;" />
+				<w2:textbox label="* 이전예정 기술 내용 및 기술이전 범위 등의 내용 입력(복수선택가능)" class="labelL" id="output346"
+					style="position:absolute; word-wrap:break-word;top:73px;left:185px;width:776px;height:19px;color:#ff0000;vertical-align:middle;border:none;" />
+				<w2:textbox tagname="label" label="기타기술이전조건(기술이전책임자희망)" class="labelC" id="output347" style="position:absolute;height:98px;width:170px;left:0px;word-wrap:break-word;top:70px;" />
+				<w2:textbox class="fieldL" id="output348" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:70px;" />
+				<w2:textbox class="fieldL" id="output349" style="position:absolute;height:74px;width:800px;left:181px;word-wrap:break-word;top:94px;" />
+				<xf:textarea class="textarea" id="textareaEtcCnd" minlength=""
+					style="position:absolute;vertical-align:middle;height:66px;width:798px;left:184px;word-wrap:break-word;top:96px;" tabIndex="58" minByteLength="" maxByteLength="1500" />
+				<w2:textbox label=" 추가공동연구개발 필요 여부, 기업에 대한 요구사항, 기술이전책임자측실무담당자 지정 등 " class="labelL" id="output350"
+					style="position:absolute; word-wrap:break-word;top:74px;left:185px;width:776px;height:19px;/*color:#ff0000;*/vertical-align:middle;border:none;" />
+				<w2:textbox tagname="label" label="기술료제안(예상기술료)" class="labelCP" id="output351" style="position:absolute;height:151px;width:90px;left:0px;word-wrap:break-word;top:169px;" />
+				<w2:textbox class="fieldL" id="output352" style="position:absolute;height:23px;width:731px;left:249px;word-wrap:break-word;top:169px;" />
+				<w2:textbox class="fieldL" id="output353" style="position:absolute;height:55px;width:800px;left:181px;word-wrap:break-word;top:265px;" />
+				<xf:textarea class="textarea" id="textareaTechFeeContnt" minlength="100"
+					style="position:absolute;vertical-align:middle;height:47px;width:798px;left:184px;word-wrap:break-word;top:267px;" tabIndex="58" maxByteLength="400" />
+				<w2:textbox tagname="label" label="수요기업존재여부" class="labelCP" id="output354" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:321px;" />
+				<w2:textbox class="fieldL" id="output355" style="position:absolute;height:23px;width:800px;left:181px;word-wrap:break-word;top:321px;" />
+				<xf:select1 appearance="full" cols="2" id="radioDmndVendYn" rows="" selectedIndex="0"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;left:184px;top:323px;width:165px;height:20px;">
+					<xf:choices>
+						<xf:item>
+							<xf:label>Y</xf:label>
+							<xf:value>Y</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label>N</xf:label>
+							<xf:value>N</xf:value>
+						</xf:item>
+					</xf:choices>
+				</xf:select1>
+				<w2:textbox tagname="label" label="정액기술료" class="labelC" id="output358" style="position:absolute;height:71px;width:65px;left:103px;word-wrap:break-word;top:169px;" />
+				<w2:textbox tagname="label" label="협상조건" class="labelC" id="output361" style="position:absolute;height:55px;width:65px;left:103px;word-wrap:break-word;top:265px;" />
+				<xf:input class="input" dataType="number" displayFormat="#,###" id="inputFxdSuplyValue" maxByteLength="15" maxlength="15" minlength="0" onFocusClass="input_on"
+					style="position:absolute;word-wrap:break-word;top:171px;left:252px;width:135px;height:19px;ime-mode:active;text-align:right" tabIndex="1">
+					<xf:label />
+					<script type="javascript" ev:event="onblur"><![CDATA[
+						var fxdTechSuplyValue = inputFxdSuplyValue.getValue();
+						var fxdTechTaxFee = Number(fxdTechSuplyValue)/10;
+						var fxdTechFee = Number(fxdTechSuplyValue) + Number(fxdTechTaxFee);
+						inputFxdTechTaxFee.setValue(fxdTechTaxFee);
+						inputFxdTechFee.setValue(fxdTechFee);
+					 ]]></script>
+				</xf:input>
+				<w2:textbox label="원" id="output406" style="position:absolute; word-wrap:break-word;top:169px;left:398px;width:35px;height:20px;padding-top:5px;" />
+				<w2:textbox class="fieldL" id="output417" style="position:absolute;height:23px;width:799px;left:181px;word-wrap:break-word;top:241px;" />
+				<xf:input class="input" dataType="number" displayFormat="#,###.##" id="inputRunRyalty" maxByteLength="" maxlength="" minlength="0" onFocusClass="input_on"
+					style="position:absolute;height:19px;width:135px;ime-mode:active;left:184px;word-wrap:break-word;top:243px;;text-align:right" tabIndex="1">
+					<xf:label />
+				</xf:input>
+				<w2:textbox tagname="label" label="경상기술료" class="labelC" id="output414" style="position:absolute;height:23px;width:65px;left:103px;word-wrap:break-word;top:241px;" />
+				<xf:select1 selectedIndex="0" appearance="full" id="radioUnitTyp" style="position: absolute ;height:22px;width:106px;left:330px;top:243px;" cols="2" rows="">
+					<xf:choices>
+						<xf:item>
+							<xf:label>%</xf:label>
+							<xf:value>P</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label>원</xf:label>
+							<xf:value>W</xf:value>
+						</xf:item>
+					</xf:choices>
+				</xf:select1>
+				<w2:textbox tagname="label" label="경상기술료 산정기준" class="labelC" id="output418" style="position:absolute;height:23px;width:160px;left:440px;word-wrap:break-word;top:169px;" />
+				<xf:input class="input" dataType="text" displayFormat="" id="inputEstmtStndrd" maxByteLength="100" maxlength="33" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:171px;left:615px;width:362px;height:19px;" tabIndex="1">
+					<xf:label />
+				</xf:input>
+				<w2:textbox tagname="label" label="희망계약기간" class="labelCP" id="output419" style="position:absolute;height:23px;width:160px;left:438px;word-wrap:break-word;top:46px;" />
+				<w2:inputCalendar class="sCalendar" id="inputCalendarContrctStartYmd" style="position:absolute;vertical-align:middle;height:20px;width:104px;left:614px;word-wrap:break-word;top:48px;"
+					tabIndex="6" />
+				<w2:textbox label="~" id="output420" style="position:absolute;vertical-align:middle;word-wrap:break-word;top:48px;left:721px;width:20px;height:21px;text-align:center;" /><w2:inputCalendar calendarClass="class1" class="sCalendar" id="inputCalendarContrctClsYmd"
+					style="position:absolute;vertical-align:middle;height:20px;width:104px;left:742px;word-wrap:break-word;top:48px;" tabIndex="7" maxYear="2050" minYear="1900" monthNames=""/>
+				<w2:textbox tagname="label" label="공급가액" class="labelC" id="output430" style="position:absolute;height:23px;width:55px;left:181px;word-wrap:break-word;top:169px;" />
+				<w2:textbox label="" class="fieldL" id="output431" style="position:absolute;height:23px;width:731px;left:249px;word-wrap:break-word;top:193px;" />
+				<w2:textbox tagname="label" label="부가세" class="labelC" id="output432" style="position:absolute;height:23px;width:55px;left:181px;word-wrap:break-word;top:193px;" />
+				<w2:textbox label="원" id="output433" style="position:absolute; word-wrap:break-word;top:193px;left:398px;width:35px;height:20px;padding-top:5px;" />
+				<xf:input class="input" dataType="number" displayFormat="#,###" id="inputFxdTechTaxFee" maxByteLength="15" maxlength="15" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:195px;left:252px;width:135px;height:19px;ime-mode:active;text-align:right;" tabIndex="1" readOnly="">
+					<xf:label />
+					<script type="javascript" ev:event="onblur"><![CDATA[
+						var fxdTechSuplyValue = inputFxdSuplyValue.getValue();
+						var fxdTechTaxFee = inputFxdTechTaxFee.getValue();
+						var fxdTechFee = Number(fxdTechSuplyValue) + Number(fxdTechTaxFee);
+						
+						inputFxdTechFee.setValue(fxdTechFee); 
+					 ]]></script>
+				</xf:input>
+				<w2:textbox label="" class="fieldL" id="output434" style="position:absolute;height:23px;width:731px;left:249px;word-wrap:break-word;top:217px;" />
+				<w2:textbox label="총액" class="labelC" id="output435" style="position:absolute;height:23px;width:55px;left:181px;word-wrap:break-word;top:217px;" />
+				<xf:input class="input" dataType="number" displayFormat="#,###" id="inputFxdTechFee" maxByteLength="15" maxlength="15" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:219px;left:252px;width:135px;height:19px;ime-mode:active;text-align:right;" tabIndex="1">
+					<xf:label />
+					<script type="javascript" ev:event="onblur"><![CDATA[
+						var fxdTechFee = inputFxdTechFee.getValue();
+						var fxdTechSuplyValue =  Math.floor(Number(fxdTechFee) * 10 / 11);
+						var fxdTechTaxFee = Number(fxdTechFee) - Number(fxdTechSuplyValue);
+						
+						inputFxdSuplyValue.setValue(fxdTechSuplyValue);
+						inputFxdTechTaxFee.setValue(fxdTechTaxFee);
+					 ]]></script>
+				</xf:input>
+				<w2:textbox label="원" id="output436" style="position:absolute; word-wrap:break-word;top:218px;left:398px;width:35px;height:19px;padding-top:5px;" />
+				<w2:textbox tagname="label" label="경상기술료 징수예상액" class="labelC" id="output438" style="position:absolute;height:23px;width:160px;left:440px;word-wrap:break-word;top:193px;" />
+				<xf:input class="input" dataType="number" displayFormat="#,###" id="inputEstmtCollctAmt" maxByteLength="15" maxlength="15" minlength="0" onFocusClass="input_on"
+					style="position:absolute;height:19px;text-align:right;width:132px;left:615px;word-wrap:break-word;top:195px;" tabIndex="1">
+					<xf:label />
+				</xf:input>
+				<w2:textbox label="* 경상기술료(매출액의 5% 이내로 기재)" class="labelL" id="output439"
+					style="position:absolute; word-wrap:break-word;top:196px;left:757px;width:223px;height:19px;/*color:#ff0000;*/vertical-align:middle;border:none;" />
+				<w2:textbox class="labelCP" id="textbox3" label="중개기관 존재여부" style="position:absolute;height:23px;width:160px;left:440px;word-wrap:break-word;top:321px;" tagname="label" />
+				<xf:select1 appearance="full" cols="2" id="radioAgncyVendYn" rows="" selectedIndex="1"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;left:616px;top:323px;width:165px;height:20px;">
+					<xf:choices>
+						<xf:item>
+							<xf:label>Y</xf:label>
+							<xf:value>Y</xf:value>
+						</xf:item>
+						<xf:item>
+							<xf:label>N</xf:label>
+							<xf:value>N</xf:value>
+						</xf:item>
+					</xf:choices>
+					<script type="javascript" ev:event="onradioclick(index,value)"><![CDATA[
+						if(radioAgncyVendYn.getValue() == "Y"){
+							group33.show();
+						}else{
+							group33.hide();
+						}
+					]]></script>
+					<script type="javascript" ev:event="onlabelclick(index,value)"><![CDATA[
+						if(radioAgncyVendYn.getValue() == "Y"){
+							group33.show();
+						}else{
+							group33.hide();
+						}
+					]]></script>
+				</xf:select1>
+			</xf:group>
+			<xf:group id="group28" style="position:relative;left:0px;width:100.0%;height:320px;">
+				<w2:textbox label="예상수요업체&amp;담당자정보" class="subtitle" id="output362" style="word-wrap:break-word;position:absolute;top:7px;left:4px;width:202px;height:14px;" />
+				<w2:textbox tagname="label"
+					label="미등록된 신규업체의 경우, [재무관리-기준정보-거래처 관리]에서 거래처 등록 후 입력하시기 바랍니다." class="labelL"
+					id="output398" style="position:absolute; word-wrap:break-word;top:4px;left:208px;width:617px;height:19px;vertical-align:middle;border:none;" />
+				<xf:trigger id="triggerDel" style="position:absolute;vertical-align:middle;word-wrap:break-word;top:2px;width:18px;height:20px;right:14px;left:958px;"
+					leftOnImageClass="delrowbtn" toolTip="행삭제" type="image" leftOffImageClass="delrowbtn">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						var row =  gridVend.getFocusedRowIndex();
+						if (row < 0) {
+							alert("삭제할 row를 선택하세요.");
+							return;
+						}
+						
+						var saveVec = new WebSquare.collection.Vector();
+						var data = gridVend.getRowXML(row);
+						var status = WebSquare.xml.getValue(data, "msgResTrnsVendMS01", "statusValue");
+						
+						$l("status=" + status);
+						if (status != "V") {
+							WebSquare.xml.setValue(data, "msgResTrnsVendMS01/cud_type", "value", "D");
+							saveVec.addElement(WebSquare.xml.serialize(data));
+							var tmpData = saveVec.toDocument();
+							var tmpDoc = WebSquare.xml.findNode(tmpData, "vector/data");
+							WebSquare.ModelUtil.setInstanceNode(tmpDoc, "request/saveProc/hashtable/data[@hashkey='gridVend']/vector", null, "append");
+						}
+						gridVend.removeRow(row);
+					]]></script>
+				</xf:trigger>
+				<w2:grid baseNode="vector" editModeEvent="onclick"
+					focusMode="row" id="gridVend" readOnly="true"
+					repeatNode="data/msgResTrnsVendMS01" rowNumHeaderValue="순번"
+					rowNumStyle="" rowNumVisible="true"
+					style="position:absolute;top:25px;left:0px;width:100.0%;height:127px;"
+					tooltipStyle="vertical-align:middle;word-wrap:break-word"
+					valueNode="value">
+					<w2:header class="gridHeaderTable"
+						columnClass="gridHeaderTD" columnStyle=";" id="header10"
+						style="height:26px" width="1704">
+						<w2:row>
+							<w2:column id="column280"
+								style="height:49px" inputType="text" width="70" rowSpan="2"
+								value="신청번호" />
+							<w2:column id="column283"
+								style="height:49px" inputType="text" width="48" rowSpan="2"
+								value="순번" />
+							<w2:column id="column277"
+								style="height:49px" inputType="text" width="70" rowSpan="2"
+								value="업체코드" />
+							<w2:column id="column198" inputType="text"
+								style="height:49px" value="업체명" valueType="binary" width="166"
+								rowSpan="2" />
+							<w2:column id="column199" inputType="text"
+								style="height:49px" value="사업자등록번호" valueType="binary"
+								width="95" rowSpan="2" />
+							<w2:column id="column200" inputType="text"
+								style="height:49px" value="법인번호" valueType="binary"
+								width="95" rowSpan="2" />	
+							<w2:column id="column486"
+								style="height:47px" inputType="text" width="70"
+								valueType="binary" rowSpan="2" value="대표자" />
+							<w2:column id="column267"
+								style="height:49px" inputType="text" width="82" rowSpan="2"
+								value="업체규모" />
+							<w2:column id="column290"
+								style="height:47px" inputType="text" width="70" rowSpan="2"
+								value="업체규모명" />
+							<w2:column id="column201" inputType="text"
+								rowSpan="2" style="height:49px" value="담당자성명" valueType="binary"
+								width="77" />
+							<w2:column id="column214"
+								style="height:49px" width="85" inputType="text"
+								valueType="binary" value="소속/직위" rowSpan="2" />
+							<w2:column id="column202" inputType="text"
+								rowSpan="2" style="height:49px" value="부서" valueType="binary"
+								width="77" />										
+							<w2:column id="column265"
+								style="height:23px;" inputType="text" width="271"
+								valueType="binary" colSpan="2" value="담당자주소" />
+							<w2:column id="column203" inputType="text"
+								style="height:49px" value="연락처" valueType="binary" width="126"
+								rowSpan="2" />
+							<w2:column id="column235"
+								style="height:49px" inputType="text" width="124"
+								valueType="binary" value="E-mail" rowSpan="2" />
+							<w2:column id="column233"
+								style="height:49px" inputType="text" width="112"
+								valueType="binary" value="Fax" rowSpan="2" />
+							<w2:column id="column248"
+								style="height:49px" inputType="text" width="177"
+								valueType="binary" value="기타" rowSpan="2" />
+							<w2:column id="column293"
+								style="height:47px" inputType="text" width="70" rowSpan="2"
+								value="업종" />
+							<w2:column id="column296"
+								style="height:47px" inputType="text" width="70" rowSpan="2"
+								value="업체주소" />
+						</w2:row>
+						<w2:row id="row4" style="">
+							<w2:column id="column266"
+								style="height:24px;" inputType="text" width="70"
+								valueType="binary" value="우편번호" />
+							<w2:column id="column263"
+								style="height:24px;" inputType="text" width="201"
+								valueType="binary" value="주소" />
+						</w2:row>
+					</w2:header>
+					<w2:gBody class="gridBodyTable"
+						columnClass="gridBodyTD" columnStyle=";" id="gBody10"
+						style="height:22px" width="2657">
+						<w2:row>
+							<w2:column id="req_no" style="height:22px"
+								inputType="text" width="70" hidden="true" />
+							<w2:column id="odr" style="height:22px"
+								inputType="text" width="48" hidden="true" />
+							<w2:column id="vend_cd" style="height:22px"
+								inputType="text" width="70" />
+							<w2:column id="vend_abbr"
+								inputType="textImage" style="height:22px" valueType="binary"
+								width="166" editType="select" imageClickFunction='getVenderInfo'
+								imageSrc="/kitech/images/icon_search_on.gif" readOnly="false" />
+								
+							<w2:column id="bsns_psn_regst_no"
+								inputType="text" style="height:22px" 
+								width="95"  valueType="binary" readOnly="false" />
+								
+							<w2:column id="corp_resid_no"
+								style="height:22px" inputType="text" width="70"
+							 />
+							 
+							<w2:column id="reprs_psn_nm"
+								style="height:22px" inputType="text" width="70"
+								valueType="binary" />
+							<w2:column id="cmpy_typ" style="height:22px"
+								inputType="select" width="82" readOnly="false">
+								<w2:choices>
+									<w2:itemset
+										nodeset="response/commCode/hashtable/data[@hashkey='RZB']/vector/data/msgCodCcomMst001">
+										<w2:label ref="cd_nm/@value" />
+										<w2:value ref="cd/@value" />
+									</w2:itemset>
+								</w2:choices>
+							</w2:column>
+							<w2:column id="cmpy_typ_desc"
+								style="height:22px" inputType="text" width="70" hidden="true" />
+							<w2:column id="charg" inputType="text"
+								readOnly="false" style="height:22px" valueType="binary"
+								width="77" />
+							<w2:column id="charg_posi_nm"
+								inputType="text" style="height:22px" valueType="binary"
+								width="85" readOnly="false" />
+							<w2:column id="charg_dept"
+								inputType="text" style="height:22px" valueType="binary"
+								width="85" readOnly="false" />	
+							<w2:column id="charg_postmt_no"
+								style="height:22px" inputType="text" width="70"
+								valueType="binary" readOnly="false" editModeEvent="onclick" />
+							<w2:column id="charg_addr"
+								style="height:22px" inputType="text" width="201"
+								valueType="binary" readOnly="false" editModeEvent="onclick" />
+							<w2:column id="charg_tel" inputType="text"
+								style="height:22px" valueType="binary" width="82"
+								readOnly="false" />
+							<w2:column id="charg_email"
+								style="height:22px" inputType="text" width="124"
+								valueType="binary" readOnly="false" />
+							<w2:column id="charg_fax"
+								style="height:22px" inputType="text" width="112"
+								valueType="binary" readOnly="false" />
+							<w2:column id="etc" style="height:22px"
+								inputType="text" width="177" valueType="binary"
+								readOnly="false" />
+							<w2:column id="biztyp" style="height:22px"
+								inputType="text" width="70" hidden="true" />
+							<w2:column id="addr" style="height:22px"
+								inputType="text" width="70" hidden="true" />
+						</w2:row>
+					</w2:gBody>
+				</w2:grid>
+				<xf:trigger id="trigger49" leftOffImageClass="addrowbtn" leftOnImageClass="addrowbtn"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:2px;width:20px;height:20px;right:39px;" toolTip="행추가" type="image">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						gridVend.insertRow();
+					]]></script>
+				</xf:trigger>
+				<w2:textbox label="" id="output441" style="word-wrap:break-word;top:161px;left:170px;width:811px;position:absolute;height:150px;" class="fieldL" />
+				<xf:group id="upload_B" style="top:162px;left:172px;width:818px;position:absolute;height:152px;"/>
+				<w2:textbox label="사업자등록증" id="output440" style="word-wrap:break-word;top:161px;left:0px;width:157px;position:absolute;height:150px;" class="labelCP" />
+			</xf:group>
+			<xf:group id="group33" style="position:relative;left:0px;width:100.0%;height:176px;display:none">
+				<w2:textbox class="subtitle" id="textbox4" label="기술이전 중개기관" style="word-wrap:break-word;position:absolute;top:7px;left:4px;width:202px;height:14px;" />
+				<xf:trigger id="trigger56" leftOffImageClass="delrowbtn" leftOnImageClass="delrowbtn"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:2px;width:18px;height:20px;right:14px;left:958px;" toolTip="행삭제" type="image">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						var row =  gridAgncy.getFocusedRowIndex();
+						if (row < 0) {
+							alert("삭제할 row를 선택하세요.");
+							return;
+						}
+						
+						var saveVec = new WebSquare.collection.Vector();
+						var data = gridAgncy.getRowXML(row);
+						var status = WebSquare.xml.getValue(data, "msgResTrnsAgncyVendMS01", "statusValue");
+						
+						$l("gridAgncy///status=" + status);
+						if (status != "V") {
+							WebSquare.xml.setValue(data, "msgResTrnsAgncyVendMS01/cud_type", "value", "D");
+							saveVec.addElement(WebSquare.xml.serialize(data));
+							var tmpData = saveVec.toDocument();
+							var tmpDoc = WebSquare.xml.findNode(tmpData, "vector/data");
+							WebSquare.ModelUtil.setInstanceNode(tmpDoc, "request/saveProc/hashtable/data[@hashkey='gridAgncy']/vector", null, "append");
+						}
+						gridAgncy.removeRow(row);
+					]]></script>
+				</xf:trigger>
+				<w2:grid baseNode="vector" editModeEvent="onclick" focusMode="row" id="gridAgncy" readOnly="true" repeatNode="data/msgResTrnsAgncyVendMS01" rowNumHeaderValue="순번"
+					rowNumStyle="" rowNumVisible="true" style="position:absolute;top:25px;left:0px;width:100.0%;height:127px;" tooltipStyle="vertical-align:middle;word-wrap:break-word" valueNode="value"
+					autoFit="allColumn">
+					<w2:header class="gridHeaderTable" columnClass="gridHeaderTD" columnStyle=";" id="header10" style="height:26px" width="1704">
+						<w2:row>
+							<w2:column id="column280" inputType="text" style="height:27px" value="신청번호" width="70" />
+							<w2:column id="column283" inputType="text" style="height:27px" value="순번" width="48" />
+							<w2:column id="column277" inputType="text" style="height:27px" value="업체코드" width="70" />
+							<w2:column id="column198" inputType="text" style="height:27px" value="업체명" valueType="binary" width="166" />
+							<w2:column id="column199" inputType="text" style="height:27px" value="사업자등록번호" valueType="binary" width="95" />
+							<w2:column id="column200" inputType="text" style="height:27px" value="법인번호" valueType="binary" width="95" />
+							<w2:column id="column486" inputType="text" style="height:27px" value="대표자" valueType="binary" width="70" />
+							<w2:column id="column267" inputType="text" style="height:27px" value="중개수수료내용" width="180" />
+							<w2:column width="70" inputType="text" style="height:27px" id="column509" value="중개수수료율(%)" />
+							<w2:column width="84" inputType="text" style="height:27px" id="column511" value="금액" />
+							<w2:column width="70" inputType="text" style="height:27px" id="column513" value="부가세" />
+							<w2:column width="96" inputType="text" style="height:27px" id="column515" value="합계" />
+							<w2:column id="column201" inputType="text" style="height:27px" value="담당자성명" valueType="binary" width="77" />
+							<w2:column id="column214" inputType="text" style="height:27px" value="직책" valueType="binary" width="85" />
+							<w2:column id="column203" inputType="text" style="height:27px" value="연락처" valueType="binary" width="113" />
+							<w2:column id="column235" inputType="text" style="height:27px" value="E-mail" valueType="binary" width="124" />
+							<w2:column width="154" inputType="text" style="height:27px" id="column620" colSpan="2" value="첨부화일" />
+							<w2:column id="column621" style="height:27px" inputType="text" width="70" value="첨부화일(순번)" />
+							<w2:column id="column622" style="height:27px" inputType="text" width="70" value="화일명" />
+							
+						</w2:row>
+					</w2:header>
+					<w2:gBody class="gridBodyTable" columnClass="gridBodyTD" columnStyle=";" id="gBody10" style="height:22px" width="2657">
+						<w2:row>
+							<w2:column hidden="true" id="req_no" inputType="text" style="height:22px" width="70" />
+							<w2:column hidden="true" id="odr" inputType="text" style="height:22px" width="48" />
+							<w2:column id="vend_cd" inputType="text" style="height:22px" width="70" hidden="true" />
+							<w2:column id="vend_abbr" imageClickFunction="getVenderInfo" imageSrc="/kitech/images/icon_search_on.gif" inputType="textImage" readOnly="false" style="height:22px"
+								valueType="binary" width="166" />
+							<w2:column id="bsns_psn_regst_no" inputType="text" style="height:22px" valueType="binary" width="95" />
+							<w2:column id="corp_resid_no" inputType="text" style="height:22px" valueType="binary" width="95" />
+							<w2:column id="reprs_psn_nm" inputType="text" style="height:22px" valueType="binary" width="70" />
+							<w2:column id="agncy_contnt" inputType="textarea" readOnly="false" style="height:22px" width="180" maxLength="85" textAlign="left" />
+							<w2:column width="70" inputType="text" style="height:22px" id="agncy_fee_rt" dataType="number" textAlign="right" displayFormat="###.##" defaultValue="0" readOnly="false" />
+							<w2:column width="84" inputType="text" style="height:22px" id="suply_value" dataType="number" textAlign="right" displayFormat="#,###" readOnly="false"
+								defaultValue="0" />
+							<w2:column width="70" inputType="text" style="height:22px" id="add_tax" dataType="number" textAlign="right" displayFormat="#,###" readOnly="false" defaultValue="0" />
+							<w2:column width="96" inputType="text" style="height:22px" id="agncy_fee" dataType="number" textAlign="right" displayFormat="#,###" defaultValue="0" />
+							<w2:column id="charg" inputType="text" readOnly="false" style="height:22px" valueType="binary" width="77" />
+							<w2:column id="charg_posi_nm" inputType="text" readOnly="false" style="height:22px" valueType="binary" width="85" />
+							<w2:column hidden="" id="charg_tel" inputType="text" readOnly="false" style="height:22px" valueType="binary" width="69" />
+							<w2:column hidden="" id="charg_email" inputType="text" readOnly="false" style="height:22px" valueType="binary" width="124" />
+							<w2:column width="115" inputType="text" style="height:22px" id="attach_file_no" />
+							<w2:column width="39" inputType="image" style="height:22px" id="attach_img" imageSrc="/kitech/images/icon_attach.gif" />
+							<w2:column id="attach_full_path" style="height:22px" inputType="text" width="70" hidden="true" />
+							<w2:column id="org_file" style="height:22px" inputType="text" width="70" hidden="true" />
+						</w2:row>
+					</w2:gBody>
+					<script ev:event="onchange(row,col,newData,oldData)" type="javascript"><![CDATA[
+						var colId = gridAgncy.getColumnID(col);
+						var suplyValue = WebSquare.util.getNumber(gridAgncy.getCellData(row, "suply_value"));
+						var addTax = 0;
+						if(colId == "suply_value"){
+							addTax = suplyValue*0.1;
+							gridAgncy.setCellData(row, "add_tax", addTax);
+							gridAgncy.setCellData(row, "agncy_fee", (suplyValue + addTax));
+						}else if(colId == "add_tax"){
+							addTax = WebSquare.util.getNumber(gridAgncy.getCellData(row, "add_tax"));
+							gridAgncy.setCellData(row, "agncy_fee", (suplyValue + addTax));
+						}
+					]]></script>
+					<script type="javascript" ev:event="oncellclick(row,col)"><![CDATA[
+						if (col == gridAgncy.getColumnIndex("attach_img")) {
+							console.log("시작");
+							var url = "/kitech/res/twe/ResGridAttachPop.xml";
+							var attachFileNo = gridAgncy.getCellData(row, "attach_file_no").replace(/ /gi, "");
+							console.log(attachFileNo);
+							WebSquare.ModelUtil.setInstanceValue("popData/attach_file_no/@value", attachFileNo);
+							WebSquare.ModelUtil.setInstanceValue("popData/type_code/@value", typeCode);
+							WebSquare.ModelUtil.setInstanceValue("popData/sys_clsf/@value", "WRITE");
+							WebSquare.ModelUtil.setInstanceValue("popData/grid_clsf/@value", "gridAgncy");
+						
+							var param = WebSquare.ModelUtil.findInstanceNode("popData");
+							console.log(param);
+							WebSquare.uiplugin.popup.createPopup("ResTecTrnsInfoAgncyP", "window", "", "top:100px;left:100px;width:616px;height:230px", "false", "false", url, null, null, param);
+						}
+					]]></script>
+				</w2:grid>
+				<xf:trigger id="trigger57" leftOffImageClass="addrowbtn" leftOnImageClass="addrowbtn"
+					style="position:absolute;vertical-align:middle;word-wrap:break-word;top:2px;width:20px;height:20px;right:39px;" toolTip="행추가" type="image">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						gridAgncy.insertRow();
+					]]></script>
+				</xf:trigger>
+			</xf:group>
+			<xf:group id="groupPsn" style="position:relative;left:0px;width:992px;height:354px;">
+				<w2:textbox label="참여자현황" id="output425" style="word-wrap:break-word;position:absolute;top:3px;left:8px;width:202px;height:14px;" class="subtitle" />
+				<w2:grid baseNode="vector" rowNumHeaderValue="순번" valueNode="value" autoFit="allColumn" rowNumVisible="true" id="gridPsn" focusMode="row" readOnly="true"
+					style="position:absolute;top:22px;left:0px;width:100.0%;height:115px;border:1px solid #C0C0C0" tooltipStyle="vertical-align:middle;word-wrap:break-word" editModeEvent="onclick"
+					rowNumStyle="" repeatNode="data/msgResTrnsTecPareMS01">
+					<w2:header id="header16" style="height:26px" width="1704" columnClass="gridHeaderTD" class="gridHeaderTable" columnStyle=";">
+						<w2:row>
+							<w2:column id="column430" style="height:30px" colSpan="" width="107" inputType="text" value="신청번호" hidden="true" />
+							<w2:column id="column431" style="height:30px" colSpan="" width="64" inputType="text" value="순번" hidden="true" />
+							<w2:column id="column479" style="height:30px" width="80" inputType="text" value="대상자구분" />
+							<w2:column id="column478" style="height:30px" width="91" inputType="text" value="사용자구분" />
+							<w2:column id="column432" style="height:30px" colSpan="2" width="129" inputType="text" rowSpan="" value="성명" />
+							<w2:column id="column433" style="height:30px" colSpan="" hidden="" width="88" inputType="text" value="개인번호" valueType="binary" />
+							<w2:column id="column434" style="height:30px" colSpan="" hidden="true" width="78" inputType="text" value="시스템 개인번호" valueType="binary" />
+							<w2:column id="column435" style="height:30px" colSpan="" width="124" inputType="text" value="직급" />
+							<w2:column id="column437" style="height:30px" colSpan="" width="169" inputType="text" value="소속부서" valueType="binary" />
+							<w2:column id="column438" style="height:30px" colSpan="" hidden="" width="85" inputType="text" value="기여수준(%)" valueType="binary" />
+						</w2:row>
+					</w2:header>
+					<w2:gBody id="gBody16" style="height:22px" width="2657" columnClass="gridBodyTD" class="gridBodyTable" columnStyle=";">
+						<w2:row>
+							<w2:column id="req_no" style="height:22px" hidden="true" width="107" inputType="text" />
+							<w2:column id="odr" style="height:22px" width="64" inputType="text" hidden="true" />
+							<w2:column id="init_cd" style="height:22px" inputType="select" width="82" readOnly="false">
+							<w2:choices>
+									<w2:itemset
+										nodeset="response/commCode/hashtable/data[@hashkey='RZC']/vector/data/msgCodCcomMst001">
+										<w2:label ref="cd_nm/@value" />
+										<w2:value ref="cd/@value" />
+									</w2:itemset>
+								</w2:choices>
+							</w2:column>
+							<w2:column id="user_div" chooseOptionLabel="" style="height:22px" chooseOption="true" width="91" inputType="select" allOption="" readOnly="false">
+								<w2:choices>
+									<w2:item>
+										<w2:label>내부자</w2:label>
+										<w2:value>1</w2:value>
+									</w2:item>
+									<w2:item>
+										<w2:label>외부자</w2:label>
+										<w2:value>3</w2:value>
+									</w2:item>
+									<w2:item>
+										<w2:label>학생연구원(연구생등)</w2:label>
+										<w2:value>5</w2:value>
+									</w2:item>
+								</w2:choices>
+							</w2:column>
+							<w2:column id="nm" readOnly="false" style="height:22px" width="99" inputType="text" />
+							<w2:column id="emp_btn" imageSrc="/kitech/images/icon_popup.gif" style="height:22px" width="30" inputType="image" />
+							<w2:column id="empno" readOnly="" style="height:22px" hidden="" width="88" inputType="text" valueType="binary" editType="" />
+							<w2:column id="syspayno" style="height:22px" hidden="true" width="78" inputType="text" valueType="binary" />
+							<w2:column id="posi_nm" readOnly="false" style="height:22px" width="124" inputType="text" chooseOption="" allOption="" />
+							<w2:column id="dept_nm" readOnly="false" style="height:22px" width="169" inputType="text" valueType="binary" />
+							<w2:column id="contrbt_rt" readOnly="false" style="height:22px" width="85" inputType="text" valueType="binary" />
+							<w2:column id="init_nm" readOnly="false" style="height:22px" width="85" inputType="text" valueType="binary" hidden="true" />
+						</w2:row>
+					</w2:gBody>
+					<script ev:event="oncellclick(row,col)" type="javascript"><![CDATA[
+						getRow = row;
+						var colId = gridPsn.getColumnID(col);
+						if(	colId == "emp_btn"){
+							 HumComUserSel_Popup();
+						}
+					]]></script>
+					<script ev:event="onchange(row,col,newData,oldData)" type="javascript"><![CDATA[
+						var colId = gridPsn.getColumnID(col);
+						if (colId == "nm") {
+							getRow = row;
+							var getInputData = newData;
+							var setSysPayNo = "";
+							var setNm = "";
+						
+							if (getInputData.trim() != "") {
+								 //숫자인지 체크(숫자면 개인번호, 아니면 성명)
+								if (getInputData.num()) {
+									//  앞뒤로 % 붙임
+									setSysPayNo = '%' + getInputData + '%';
+								} else {
+									// 앞뒤로 % 붙임
+									setNm = '%' + getInputData + '%';
+								}
+						
+								WebSquare.ModelUtil.setInstanceValue("request/HumBasicInfo/syspayno/@value", setSysPayNo);
+								WebSquare.ModelUtil.setInstanceValue("request/HumBasicInfo/nm/@value", setNm);
+						
+								gfnExecuteSubmission("searchHumBasicInfoNm");
+							}
+						}
+					]]></script>
+				</w2:grid>
+				<xf:trigger id="trigger54" style="position:absolute;vertical-align:middle;word-wrap:break-word;top:0px;width:20px;height:20px;right:14px;" leftOnImageClass="delrowbtn"
+					toolTip="행삭제" type="image" leftOffImageClass="delrowbtn">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						var row = gridPsn.getFocusedRowIndex();
+						
+						if (row < 0) {
+							alert("삭제할 row를 선택하세요.");
+						} else {
+							var saveVec = new WebSquare.collection.Vector();
+							var data = gridPsn.getRowXML(row);
+							var status = WebSquare.xml.getValue(data, "msgResTrnsTecPareMS01", "statusValue");
+						
+							$l("status=" + status);
+							if (status != "V") {
+								WebSquare.xml.setValue(data, "msgResTrnsTecPareMS01/cud_type", "value", "D");
+								saveVec.addElement(WebSquare.xml.serialize(data));
+								var tmpData = saveVec.toDocument();
+								var tmpDoc = WebSquare.xml.findNode(tmpData, "vector/data");
+								WebSquare.ModelUtil.setInstanceNode(tmpDoc, "request/saveProc/hashtable/data[@hashkey='gridPsn']/vector", null, "append");
+							}
+							gridPsn.removeRow(row);
+						}
+					]]></script>
+				</xf:trigger>
+				<xf:trigger id="trigger53" style="position:absolute;vertical-align:middle;word-wrap:break-word;top:0px;width:20px;height:20px;right:39px" leftOnImageClass="addrowbtn"
+					toolTip="행추가" type="image" leftOffImageClass="addrowbtn" disabled="">
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						gridPsn.insertRow();
+					]]></script>
+				</xf:trigger>
+				<w2:textbox label="※ 참여자의 경우 기술이전연구자보상금 지급시 활용 &lt;/br&gt; " id="output426" style="position: absolute ;left:21px;top:145px;width:309px;height:19px;color:#FF8000" />
+				<w2:textbox label="□ 기술실시보상금 지급요령(제9조)에 따른 개인별 지급 상한비율 안내(별표1 참조)" id="output428" style="position: absolute ;left:8px;top:170px;width:859px;height:20px;;font-weight:bold" />
+				<w2:grid baseNode="base" repeatNode="INFO" id="gridinfo" style="position: absolute ;left:14px;top:230px;width:506px;height:97px;" valueNode="value">
+					<w2:header id="header17" style="">
+						<w2:row id="row6" style="">
+							<w2:column id="column482" style="height:20px" inputType="text" width="274" value="구분" />
+							<w2:column id="column480" style="height:20px" width="229" inputType="text" value="개인별 지급 상한 비율" />
+						</w2:row>
+					</w2:header>
+					<w2:gBody id="gBody17" style="">
+						<w2:row id="row7" style="">
+							<w2:column id="title" style="height:20px" inputType="text" width="274" value="" />
+							<w2:column id="info" style="height:20px" width="229" inputType="text" value="" />
+						</w2:row>
+					</w2:gBody>
+				</w2:grid>
+				<w2:textbox label="- 지식재산권(일반과제)의 경우 발명신고서의지분율, 정부연구과제의 경우 과제참여율을 적용함
+						&amp;nbsp;&lt;/br&gt; - 노하우(일반과제)의 경우 아래와 같은개인별 지급상한기준이 존재" id="output429"
+					style="position: absolute ;left:7px;top:190px;width:859px;height:38px;" />
+			</xf:group>
+			<xf:group id="groupNegoAlloc" style="position:relative;left:0px;width:989px;height:54px;visibility:hidden;">
+				<w2:textbox label="기술이전협약 담당자 지정" id="output409" style="word-wrap:break-word;position:absolute;top:0px;left:4px;width:202px;height:14px;" class="subtitle" />
+				<w2:textbox tagname="label" label="협상 담당자" id="output410" style="position:absolute; word-wrap:break-word;top:20px;left:494px;width:170px;height:23px;" class="labelCP" />
+				<w2:textbox id="output411" style="position:absolute; word-wrap:break-word;top:20px;left:677px;width:304px;height:23px;" class="fieldL" />
+				<w2:textbox tagname="label" label="행정 담당자" id="output412" style="position:absolute;height:23px;width:170px;left:0px;word-wrap:break-word;top:20px;" class="labelCP" />
+				<w2:textbox id="output413" style="position:absolute; word-wrap:break-word;top:20px;left:181px;width:306px;height:23px;" class="fieldL" />
+				<xf:trigger toolTip="찾기" tabIndex="26" type="image" leftOffImageClass="searchBtn" id="trigger50" leftOnImageClass="searchBtn_on"
+					style="position:absolute;word-wrap:break-word;top:23px;left:264px;width:21px;height:19px;">
+					<xf:label />
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						openEmpPopup(inputAdmnWrkRspnsEmpno, inputAdmnWrkRspnsNm, inputAdmnWrkRspns);
+					]]></script>
+				</xf:trigger>
+				<xf:input minlength="0" id="inputAdmnWrkRspnsEmpno" maxlength="7" style="position:absolute; word-wrap:break-word;top:22px;left:184px;width:68px;height:19px;ime-mode:active;"
+					onFocusClass="input_on" tabIndex="3" class="input">
+					<xf:label />
+					<script ev:event="onkeyup" type="javascript"><![CDATA[
+						if (event.keyCode == 13) {
+							// 팝업 확인
+							getUserInfo(inputAdmnWrkRspnsEmpno, inputAdmnWrkRspnsNm, inputAdmnWrkRspns);
+						} else {
+							if ((event.keyCode != 9) && (event.keyCode != 229)) {
+								inputAdmnWrkRspnsNm.setValue("");
+								inputAdmnWrkRspns.setValue("");
+							}
+						}
+					]]></script>
+				</xf:input>
+				<xf:input id="inputAdmnWrkRspnsNm" style="position:absolute;vertical-align:middle;word-wrap:break-word;top:22px;left:288px;width:70px;height:19px;" onFocusStyle=""
+					class="inputRd" disabled="true">
+					<xf:label />
+				</xf:input>
+				<xf:input id="inputNegoRspnsNm" style="position:absolute;vertical-align:middle;word-wrap:break-word;top:22px;left:784px;width:70px;height:19px;" onFocusStyle="" class="inputRd"
+					disabled="true">
+					<xf:label />
+				</xf:input>
+				<xf:input minlength="0" id="inputNegoRspnsEmpno" maxlength="7" style="position:absolute; word-wrap:break-word;top:22px;left:680px;width:68px;height:19px;ime-mode:active;"
+					onFocusClass="input_on" tabIndex="3" class="input">
+					<xf:label />
+					<script ev:event="onkeyup" type="javascript"><![CDATA[
+						if (event.keyCode == 13) {
+							// 팝업 확인
+							getUserInfo(inputNegoRspnsEmpno, inputNegoRspnsNm, inputNegoRspns);
+						} else {
+							if ((event.keyCode != 9) && (event.keyCode != 229)) {
+								inputNegoRspnsNm.setValue("");
+								inputNegoRspns.setValue("");
+							}
+						}
+					]]></script>
+				</xf:input>
+				<xf:trigger centerOffImageStyle="" leftOnImageStyle="" rightOnImageStyle="" toolTip="찾기" tabIndex="26" type="image" leftOffImageClass="searchBtn" id="trigger51"
+					leftOnImageClass="searchBtn_on" style="position:absolute;word-wrap:break-word;top:23px;left:760px;width:21px;height:19px;" centerOnImageStyle="" leftOffImageStyle=""
+					rightOffImageStyle="">
+					<xf:label />
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						openEmpPopup(inputNegoRspnsEmpno, inputNegoRspnsNm, inputNegoRspns);
+					]]></script>
+				</xf:trigger>
+				<xf:input class="inputRd" id="inputAdmnWrkRspns" maxlength="7" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:22px;left:368px;width:25px;height:19px;ime-mode:active;visibility:hidden;" tabIndex="3">
+					<xf:label />
+				</xf:input>
+				<xf:input class="inputRd" id="inputNegoRspns" maxlength="7" minlength="0" onFocusClass="input_on"
+					style="position:absolute; word-wrap:break-word;top:22px;left:864px;width:20px;height:19px;ime-mode:active;visibility:hidden;" tabIndex="3">
+					<xf:label />
+				</xf:input>
+				<xf:trigger centerOffImageClass="btn01C" centerOffImageStyle="" centerOnImageClass="btn01C_on" centerOnImageStyle="" id="triggerSave" leftOffImageClass="btn01L"
+					leftOffImageStyle="" leftOnImageClass="btn01L_on" leftOnImageStyle="" rightOffImageClass="btn01R" rightOffImageStyle="" rightOnImageClass="btn01R_on" rightOnImageStyle=""
+					style="position:absolute;height:21px;width:56px;word-wrap:break-word;right:7px;top:21px;display:none;" type="image">
+					<xf:label>저장</xf:label>
+					<script ev:event="onclick" type="javascript"><![CDATA[ 
+						btnClsf = "temp"; 
+						if(inputAdmnWrkRspns.getValue() == ""){
+							alert("행정담당자를 입력하세요.");
+							return;
+						}
+						if(inputNegoRspns.getValue() == ""){
+							alert("협상담당자를 입력하세요.");
+							return;
+						} 
+						WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/req_no/@value" ,  inputReqNo.getValue());  
+						WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/admn_wrk_rspns/@value" ,  inputAdmnWrkRspns.getValue());                           
+						WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/nego_rspns/@value" ,      inputNegoRspns.getValue());
+						WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/proc_state/@value" ,  "RTS030");
+						WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/syspayno/@value", sn);					
+						WebSquare.ModelUtil.setInstanceValue("request/saveProc/hashtable/data[@hashkey='form']/com/save_clsf/@value", saveClsf);
+						WebSquare.ModelUtil.setInstanceValue("request/saveProc/scrn_clsf/@value", "trnsInfo");
+						  
+						gfnExecuteSubmission("setSaveData");
+	 				]]></script>
+				</xf:trigger>
+			</xf:group>
+			<xf:group id="groupButton" style="position:relative;left:2px;width:983px;height:31px;">
+				<xf:trigger centerOffImageClass="btn01C" centerOffImageStyle="" leftOnImageStyle="" rightOnImageStyle="" type="image" leftOffImageClass="btn01L" id="trigger2"
+					style="position:absolute;height:21px;width:78px;word-wrap:break-word;right:134px;" leftOnImageClass="btn01L_on" centerOnImageStyle="" leftOffImageStyle="" rightOffImageClass="btn01R"
+					rightOffImageStyle="" centerOnImageClass="btn01C_on" rightOnImageClass="btn01R_on">
+					<xf:label>임시저장</xf:label>
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						btnClsf = "temp"; 
+				
+						KitechAttach.transport(menuSave);
+					]]></script>
+				</xf:trigger>
+				<xf:trigger centerOffImageClass="btn01C" centerOffImageStyle="" leftOnImageStyle="" rightOnImageStyle="" type="image" leftOffImageClass="btn01L" id="btnSave"
+					style="position:absolute;height:21px;width:56px;word-wrap:break-word;right:74px;" leftOnImageClass="btn01L_on" centerOnImageStyle="" leftOffImageStyle="" rightOffImageClass="btn01R"
+					rightOffImageStyle="" centerOnImageClass="btn01C_on" rightOnImageClass="btn01R_on">
+					<xf:label>저장</xf:label>
+					<script ev:event="onclick" type="javascript"><![CDATA[  
+						btnClsf = "";
+						if (!preSave(btnClsf)) return;
+						// 2015.3.20 ssy. 이지희 연구원 요청
+						if(!confirm("※ 기술이전 신청서 처리완료까지 최소한달 이상이 소요됩니다.\n 저장하시겠습니까?")) return;
+						
+												
+						KitechAttach.transport(menuSave);
+					]]></script>
+				</xf:trigger>
+				<xf:trigger centerOffImageClass="btn01C" centerOffImageStyle="" leftOnImageStyle="" rightOnImageStyle="" type="image" leftOffImageClass="btn01L" id="btnDel"
+					style="position:absolute;height:21px;width:56px;word-wrap:break-word;right:14px;" leftOnImageClass="btn01L_on" centerOnImageStyle="" leftOffImageStyle="" rightOffImageClass="btn01R"
+					rightOffImageStyle="" centerOnImageClass="btn01C_on" rightOnImageClass="btn01R_on">
+					<xf:label>삭제</xf:label>
+					<script ev:event="onclick" type="javascript"><![CDATA[
+						menuDelete();
+					]]></script>
+				</xf:trigger>
+				<w2:textbox label="※ 기술이전 신청서 처리완료까지 최소한달 이상이 소요됩니다." id="output442"
+					style="position: absolute ;left:20px;top:3px;width:410px;height:19px;color:red;font-size:10pt;font-weight:bold;" />
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

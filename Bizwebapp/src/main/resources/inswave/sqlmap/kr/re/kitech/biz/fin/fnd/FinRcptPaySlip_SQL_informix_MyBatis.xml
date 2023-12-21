@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.fnd">
+<!-- 출금결의생성 목록조회 -->
+<select id="selectFinRcptPaySlipList" parameterType="kr.re.kitech.biz.fin.fnd.vo.PaySlipSrcVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FinRcptPaySlipVo">
+SELECT /* kr.re.kitech.biz.fin.fnd.selectFinRcptPaySlipList */
+       a.unslip_no
+     , a.unslip_odr
+     , TRIM(c.slip_no) AS slip_no
+     , g.apr_state
+     , fun_xodxcommst_cd_nm(g.apr_state, 0) ||'('||i.empname||')' AS apr_state_nm
+     , a.send_odr
+     , a.pay_unslip_no
+     , a.rmk
+     , c.slip_ymd
+     , c.accnt_ymd
+     , a.send_req_amt
+     , a.send_amt
+     , a.pay_clsf
+     , a.vend_cd
+     , a.vend_nm
+     , a.syspayno
+     , CASE WHEN a.pay_clsf IN ('FAX020', 'FAX090') OR NVL(a.pay_unslip_no, '') != '' THEN a.bankaccnt_no ELSE '' END AS bankaccnt_no
+     , CASE WHEN a.pay_clsf IN ('FAX020', 'FAX090') OR NVL(a.pay_unslip_no, '') != '' THEN a.bank ELSE '' END AS bank
+     , CASE WHEN a.pay_clsf IN ('FAX090', 'FAX100', 'FAX110', 'FAX020') OR NVL(a.pay_unslip_no, '') != '' THEN a.depstr_nm ELSE '' END AS depstr_nm
+     , a.bankaccnt_no AS bankaccnt_no_send
+     , a.bank AS bank_send
+     , a.depstr_nm AS depstr_nm_send
+     , b.accnt_cd
+     , b.accnt_no
+     , e.accnt_rspns
+     , b.rmk_1
+     , b.rmk_2
+     , b.rmk_3
+     , c.decsn_ex
+     , c.slip_typ_cd       
+     , NVL(e.fomat_unit, 'FCC011') AS fomat_unit
+     , a.pay_clsf
+     , h.nm || '(' || h.empno || ')' AS nm_payno                                                                   
+     , f.decsn_ex AS pay_decsn_ex 
+  FROM fspsendreq a
+  JOIN fspslipd b ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr 
+  JOIN fspsliph c ON b.unslip_no = c.unslip_no 
+  JOIN resbgacctm e ON b.accnt_no = e.accnt_no
+  LEFT JOIN fspsliph f ON a.pay_unslip_no = f.unslip_no 
+  LEFT JOIN xomxintfatab g ON c.slip_no=g.req_no
+  LEFT JOIN humbasicinfo h ON a.syspayno = h.syspayno
+  LEFT JOIN bpm:emptable i ON g.endpoints = i.empcode
+ WHERE a.pay_clsf <![CDATA[ < ]]> 'FAX900'  
+   AND NVL(b.rcms_pay_clsf, '') != 'FDC010' 
+   AND c.decsn_ex = 'Y' 
+   AND c.slip_ymd BETWEEN #{from_ymd} AND #{to_ymd} 
+  <if test='vend_cd != null and vend_cd != ""'> AND NVL(a.vend_cd, '') = #{vend_cd} </if>
+  <if test='syspayno != null and syspayno != ""'> AND a.syspayno = #{syspayno} </if>
+  <if test='unslip_no != null and unslip_no != ""'> AND a.unslip_no LIKE #{unslip_no} ||'%' </if>
+  <if test='slip_no != null and slip_no != ""'> AND c.slip_no LIKE #{slip_no} ||'%' </if>
+  <if test='pay_unslip_no != null and pay_unslip_no != ""'> AND NVL(a.pay_unslip_no,'') LIKE #{pay_unslip_no} ||'%' </if>
+  <if test='slip_chk != null and slip_chk == "N"'> AND NVL(a.pay_unslip_no, '') = '' </if>
+  <if test='slip_chk != null and slip_chk == "Y"'> AND a.pay_unslip_no LIKE '430%' </if>
+  <if test='apr_state != null and apr_state != ""'> AND g.apr_state = #{apr_state} </if>
+ ORDER BY a.unslip_no
+</select>
+
+<!-- 출금조회 목록조회 -->
+<select id="selectFinRcptPaySendList" parameterType="kr.re.kitech.biz.fin.fnd.vo.PaySlipSrcVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FinRcptPaySlipVo">
+	SELECT /* QueryID :kr.re.kitech.biz.fin.fnd.selectFinRcptPaySendList */ 
+			 b.unslip_no
+		      ,a.wrte_psn
+		      ,a.slip_no
+		      ,c.accnt_no
+		      ,i.empno AS accnt_rspns_empno
+		      ,i.nm AS accnt_rspns_nm
+		      ,TRIM(i.nm)||'('||TRIM(i.empno)||')' AS accnt_rspns
+		      ,a.accnt_ymd AS unslip_accnt_ymd
+		      ,e.accnt_cd_abbr
+		      ,b.pay_clsf
+		      ,b.vend_nm
+		      ,d.nm
+		      ,'****'||SUBSTR(b.bankaccnt_no, 5, length(b.bankaccnt_no)-6)||'**' AS bankaccnt_no
+		      ,b.bank
+		      ,b.depstr_nm
+		      ,a.wrte_ymd
+		      ,CASE WHEN nvl(c.rcms_pay_unslip_no, '') <![CDATA[ <> ]]> '' THEN b.send_req_amt ELSE  b.send_amt END AS send_amt                 
+		      ,CASE WHEN b.unslip_no <![CDATA[ <> ]]> c.req_no THEN c.req_no||'/'||c.rmk_1 ELSE c.rmk_1 END AS rmk_1
+		      ,c.rmk_2
+		      ,CASE WHEN nvl(b.pay_unslip_no, '') = '' THEN c.rcms_pay_unslip_no ELSE b.pay_unslip_no END AS pay_unslip_no
+		      ,a.slip_ymd
+		      ,CASE WHEN nvl(f.accnt_ymd, '') = '' THEN x0.accnt_ymd ELSE f.accnt_ymd END AS accnt_ymd
+		      ,a.decsn_ex
+		      ,fun_emp_nm(a.wrte_psn) as wrte_psn_nm
+		   ,g.bsns_psn_regst_no
+		FROM fspsliph a
+		JOIN fspsendreq b ON b.unslip_no = a.unslip_no
+		JOIN fspslipd c ON c.unslip_no = b.unslip_no AND c.unslip_odr = b.unslip_odr
+		JOIN xodfaccnt e ON e.accnt_cd = c.accnt_cd
+		LEFT JOIN humbasicinfo d ON d.syspayno = b.syspayno
+		LEFT JOIN fspslipdecsnh f ON  f.unslip_no = b.pay_unslip_no
+		LEFT JOIN fspslipdecsnh x0 ON  x0.unslip_no = c.rcms_pay_unslip_no
+		LEFT JOIN xodfvend g ON b.vend_cd = g.vend_cd AND b.pay_clsf = 'FAX020'
+		LEFT JOIN resbgacctm h ON h.accnt_no = c.accnt_no
+		LEFT JOIN humbasicinfo i ON i.syspayno = h.accnt_rspns
+		WHERE a.wrte_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+		AND   a.decsn_ex = 'Y'		
+		<if test='pay_clsf != null and pay_clsf != ""'> AND b.pay_clsf = #{pay_clsf}</if>
+		<if test='vend_cd != null and vend_cd != ""'> AND NVL(b.vend_cd, '') = #{vend_cd} </if>
+  		<if test='syspayno != null and syspayno != ""'> AND a.wrte_psn = #{syspayno} </if>
+  		<if test='unslip_no != null and unslip_no != ""'> AND a.unslip_no LIKE #{unslip_no} ||'%' </if>
+  		<if test='slip_no != null and slip_no != ""'> AND a.slip_no LIKE #{slip_no} ||'%' </if>
+  		<if test='depstr_nm != null and depstr_nm != ""'> AND b.depstr_nm LIKE #{depstr_nm} </if>	
+		<if test='bankaccnt_no != null and bankaccnt_no != ""'> AND REPLACE(b.bankaccnt_no,  '-', '') LIKE #{bankaccnt_no}||'%'</if>	
+		<if test='pay_from_ymd != null and pay_from_ymd != ""'> AND f.accnt_ymd <![CDATA[ >= ]]> #{pay_from_ymd} </if>
+		<if test='pay_to_ymd != null and pay_to_ymd != ""'>AND f.accnt_ymd  <![CDATA[ <= ]]> #{pay_to_ymd} </if>
+		--ORDER BY accnt_ymd
+</select>
+<!-- 개인 계좌정보 조회 -->
+<select id="selectFbaApartAccnt" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntVo">
+SELECT /* kr.re.kitech.biz.fin.fnd.selectFbaApartAccnt */
+       FIRST 1bankaccnt_no
+     , bank
+     , depstr_nm
+     , odr
+  FROM (
+       SELECT bankaccnt_no
+            , bank
+            , depstr_nm
+            , 1 AS odr
+        FROM fbaapartaccnt 
+       WHERE syspayno = #{syspayno}
+       UNION
+       SELECT bankaccnt_no
+            , salry_bank
+            , fun_emp_nm(syspayno) AS depstr_nm
+            , 2
+         FROM humslbasinfo
+        WHERE syspayno = #{syspayno}
+ )
+ORDER BY odr
+</select>
+
+<!-- 송금내역 계좌정보 업데이트 -->
+<update id="updateFspSendReqBank" parameterType="kr.re.kitech.biz.fin.fnd.vo.FinRcptPaySlipVo">
+UPDATE /* kr.re.kitech.biz.fin.fnd.updateFspSendReqBank */
+      fspsendreq 
+   SET bank = #{bank}
+     , depstr_nm = #{depstr_nm}
+     , bankaccnt_no = #{bankaccnt_no}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE unslip_no  = #{unslip_no}
+   AND unslip_odr = #{unslip_odr}
+   AND send_odr = #{send_odr}
+</update>
+
+<!-- 송금내역 지급구분 업데이트 -->
+<update id="updateFspSendReqPayClsf" parameterType="kr.re.kitech.biz.fin.fnd.vo.FinRcptPaySlipVo">
+UPDATE /* kr.re.kitech.biz.fin.fnd.updateFspSendReqPayClsf */
+       fspsendreq
+   SET pay_clsf = #{pay_clsf}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE unslip_no  = #{unslip_no}
+   AND unslip_odr = #{unslip_odr}
+   AND send_odr = #{send_odr}
+</update>
+
+<!-- 지급결의취소시 송금내역 업데이트 -->
+<update id="updateFspSendReqDel" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.fin.fnd.updateFspSendReqDel */
+       fspsendreq
+   SET pay_unslip_no  = NULL,
+       pay_unslip_odr = NULL,
+       send_amt = 0
+ WHERE pay_unslip_no  = #{pay_unslip_no}
+</update>
+
+<!-- 출금결의생성 대변 회계코드 조회 -->
+<select id="selectPaySlipAccntCd" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.fnd.selectPaySlipAccntCd */
+       accnt_cd 
+  FROM fcpdepst 
+ WHERE bankaccnt_no = #{bankaccnt_no}
+</select>
+
+<!-- 출금결의생성후 지급결의번호 업데이트 -->
+<update id="updateSendReqPayUnslipNo" parameterType="kr.re.kitech.biz.fin.fnd.vo.FinRcptPaySlipVo">
+UPDATE /* kr.re.kitech.biz.fin.fnd.updateSendReqPayUnslipNo */
+       fspsendreq
+   SET pay_unslip_no  = #{pay_unslip_no},
+       pay_unslip_odr = #{pay_unslip_odr},
+       send_amt = #{send_amt},
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE unslip_no  = #{unslip_no}
+   AND unslip_odr = #{unslip_odr}
+   AND send_odr = #{send_odr}
+</update>
+
+<!-- 출금결의생성 중복 체크 -->
+<select id="selectDupPaySlipCrtCnt" resultType="int" parameterType="kr.re.kitech.biz.fin.fnd.vo.FinRcptPaySlipVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectDupPaySlipCrtCnt */
+       COUNT(1) AS cnt
+  FROM fspsendreq
+ WHERE unslip_no = #{unslip_no}
+   AND unslip_odr = #{unslip_odr}
+   AND send_odr = #{send_odr}
+   AND NVL(pay_unslip_no, '') != ''
+</select>
+</mapper>

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="나의메뉴 등록 팝업">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataList baseNode="list" id="dlt_myMenu" repeatNode="map" saveRemovedData="true" style="">
+					<w2:columnInfo>
+						<w2:column id="syspayno" name="사번" dataType="text"></w2:column>
+						<w2:column id="service_id" name="서비스ID" dataType="text"></w2:column>
+						<w2:column dataType="text" id="menu_id" name="나의메뉴ID"></w2:column>
+						<w2:column id="menu_up_id" name="상위폴더ID" dataType="text"></w2:column>
+						<w2:column dataType="text" id="menu_lvl" name="레벨"></w2:column>
+						<w2:column dataType="text" id="menu_seq" name="정렬순서"></w2:column>
+						<w2:column dataType="text" id="menu_folder_nm" name="메뉴명"></w2:column>
+
+					</w2:columnInfo>
+				</w2:dataList>
+				<w2:dataList baseNode="list" id="dlt_folder" repeatNode="map" saveRemovedData="true" style="">
+					<w2:columnInfo>
+						<w2:column dataType="text" id="chk" ignoreStatus="true" name="선택"></w2:column>
+						<w2:column dataType="text" id="service_id" name="서비스ID"></w2:column>
+						<w2:column dataType="text" id="menu_id" name="폴더ID"></w2:column>
+
+						<w2:column id="menu_up_id" name="상위폴더ID" dataType="text"></w2:column>
+						<w2:column dataType="text" id="menu_lvl" name="레벨"></w2:column>
+						<w2:column dataType="text" id="menu_seq" name="정렬순서"></w2:column>
+						<w2:column dataType="text" id="menu_folder_nm" name="폴더명"></w2:column>
+					</w2:columnInfo>
+				</w2:dataList>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_saveMyMenu" ref='data:json,{"action":"modified","id":"dlt_myMenu","key":"mymenuVoList"}' target='' action="MymenuListSaveAstar.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 나의메뉴 등록 팝업
+ 	 * 변경 이력 : 2022-01-01	문철주	최초작성
+ 	 ****************************************************/
+
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		scwin.menuObj = com.getParameter();
+		ibx_menuNm.setValue(scwin.menuObj[gcm.MENU_INFO.MENU_NM]);
+		dlt_folder.setJSON($p.top().wfm_side.getWindow().dlt_myMenu.getMatchedJSON("menu_id", "FOLDER", false)); // 나의메뉴 폴더
+		if (dlt_folder.getTotalRow() > 0) {
+			// 기존 폴더가 있는 경우 첫번째 폴더 선택
+			grd_folder.setCellChecked(0, "chk", true);
+		} else {
+			// 기존 폴더가 없는 경우 새폴더 생성
+			scwin.btn_add_onclick();
+		}
+	};
+
+	/**
+	 * 새폴더
+	 */
+	scwin.btn_add_onclick = function(e) {
+		debugger;
+		var rowIdx = dlt_folder.getTotalRow()-1;
+		if (dlt_folder.getRowStatus(rowIdx) != "C") {
+			rowIdx = com.addRow(grd_folder, "menu_folder_nm", { readOnly : false });
+			// 폴더 ID, 순번 셋팅
+			if (rowIdx == 0) {
+				dlt_folder.setCellData(0, "menu_id", "FOLDER001");
+				dlt_folder.setCellData(0, "menu_seq", 1);
+			} else {
+				var maxMenuId = "FOLDER000"; 
+				var maxSeq = 0;
+				for(var i=0; i<dlt_folder.getTotalRow(); i++) {
+					var rowObj = dlt_folder.getRowJSON(i);
+					if (maxSeq < Number(rowObj["menu_seq"])) {
+						maxSeq = Number(rowObj["men_seq"]);
+					}
+				}
+				dlt_folder.setCellData(rowIdx, "menu_id", scwin.folderNumChk(dlt_folder, "menu_id"));
+				dlt_folder.setCellData(rowIdx, "menu_seq", maxSeq + 1);
+			}
+			dlt_folder.setCellData(rowIdx, "service_id", "#");
+			dlt_folder.setCellData(rowIdx, "menu_up_id", "");
+			dlt_folder.setCellData(rowIdx, "menu_lvl", 1);
+		}
+		grd_folder.setCellChecked(rowIdx, "chk", true);
+		grd_folder.setFocusedCell(rowIdx, "menu_folder_nm", true);
+	};
+
+	/**
+	 * 저장
+	 */
+	scwin.btn_save_onclick = function(e) {
+		// 나의 메뉴명 필수 체크
+		if (com.isEmpty(ibx_menuNm.getValue())) {
+			com.warn("message.xom.wq.004", function() {
+				ibx_menuNm.focus();
+			});			
+			return;
+		}
+		// 새폴더명 필수 체크
+		var chkIdx = grd_folder.getCheckedIndex("chk")[0];
+		if (dlt_folder.getRowStatus(chkIdx) == "C" && com.isEmpty(dlt_folder.getCellData(chkIdx, "menu_folder_nm"))) {
+			com.warn("message.xom.wq.004", function() {
+				grd_folder.setFocusedCell(chkIdx, "menu_folder_nm", true);	
+			});			
+			return;
+		}
+		// 저장할 데이터 셋팅
+		var arrMyMenu = []; 
+		var maxSeq = 0; 
+		// 새폴더인 경우 폴더 추가
+		if (dlt_folder.getRowStatus(chkIdx) == "C") {
+			dlt_myMenu.setRowJSON(0, dlt_folder.getRowJSON(chkIdx));
+			dlt_myMenu.setCellData(0, "syspayno", com.getLoginInfo("sn"));
+		} else {
+			// 순번 (해당 폴더 맨 아래)
+			var arrMyMenu = $p.top().wfm_side.getWindow().dlt_myMenu.getMatchedJSON("menu_up_id", dlt_folder.getCellData(chkIdx, "menu_id"));
+			for(var i=0; i<arrMyMenu.length; i++) {
+				if (maxSeq < Number(arrMyMenu[i]["menu_seq"])) {
+					maxSeq = Number(arrMyMenu[i]["menu_seq"]);
+				}
+			}
+		}
+		// 나의메뉴 추가
+		dlt_myMenu.setRowJSON(dlt_myMenu.getTotalRow(), {
+			  syspayno : com.getLoginInfo("sn")
+			, service_id : scwin.menuObj[gcm.MENU_INFO.SERVICE_ID]
+			, menu_id : scwin.menuObj[gcm.MENU_INFO.MENU_ID]
+			, menu_up_id : dlt_folder.getCellData(chkIdx, "menu_id")
+			, menu_lvl : 2
+			, menu_folder_nm : ibx_menuNm.getValue() 
+			, menu_seq : maxSeq + 1
+			, deleteAt : 0
+		});
+		// 저장 처리
+		com.execute(sbm_saveMyMenu, {
+			successCallback : function(e) {
+				com.closePopup(scwin.menuObj[gcm.MENU_INFO.MENU_ID]);
+			}
+		});
+	};
+
+	/**
+	 * 취소
+	 */
+	scwin.btn_cancel_onclick = function(e) {
+		com.closePopup();
+	};
+
+	/**
+	 * 셀 클릭시 선택 처리
+	 */
+	scwin.grd_folder_oncellclick = function(row,col,colId) {
+		row = this.getRealRowIndex(row);
+		grd_folder.setCellChecked(row, "chk", true);
+	};
+	
+	/**
+	 * → 폴더 넘버 체크
+	 */
+	scwin.folderNumChk = function(dltC, chkCol) {
+		let cdArr = [];
+		for (let i = 0; i < dltC.getRowCount(); i++) {
+			const menuId = dltC.getCellData(i, chkCol);
+			if (menuId.indexOf('FOLDER') > -1) {
+				cdArr.push(parseInt(menuId.substring(6, 9)));
+			}
+		}
+
+		let result;
+		for (let j = 1; j <= 200; j++) {
+			if (cdArr.indexOf(j) == -1) {
+				if (j > 999) {
+					result = 'fail';
+					break;
+				} else {
+					debugger;
+					result = 'FOLDER' + com.lpad(j, 3, '0');
+					break;
+				}
+			}
+		}
+
+		return result;
+	};]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group class="pop_contents" id="" style="">
+			<xf:group class="w2tb tbl" id="grp_myMenu" style="" tagname="table">
+				<w2:attributes>
+					<w2:summary></w2:summary>
+				</w2:attributes>
+				<xf:group tagname="caption"></xf:group>
+				<xf:group tagname="colgroup">
+					<xf:group style="width:120px;" tagname="col"></xf:group>
+					<xf:group style="" tagname="col"></xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="나의 메뉴명" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<xf:input adjustMaxLength="false" id="ibx_menuNm" style="width : 100%" maskFormat="" displayFormat="" placeholder=""
+							disabled="" refSync="">
+						</xf:input>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="titleSection" id="" style="">
+				<xf:group class="le" id="">
+					<w2:textbox class="tit_tbl" id="" label="폴더" style="" tagname="h3"></w2:textbox>
+					<xf:group class="result" id=""></xf:group>
+				</xf:group>
+				<xf:group class="ri" id="">
+					<xf:group class="btnarea" id="" style="">
+						<xf:trigger class="btn" id="btn_add" style="" type="button" ev:onclick="scwin.btn_add_onclick">
+							<xf:label><![CDATA[새폴더]]></xf:label>
+						</xf:trigger>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<w2:gridView autoFit="lastColumn" class="grid" dataList="data:dlt_folder" id="grd_folder" rowStatusVisible="true"
+				style="height: 180px;" ev:oncellclick="scwin.grd_folder_oncellclick" defaultCellHeight="28">
+				<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+				<w2:header id="header1" style="">
+					<w2:row id="row1" style="">
+						<w2:column displayMode="label" id="column9" inputType="text" style="" value="선택" width="50"></w2:column>
+						<w2:column displayMode="label" id="column7" inputType="text" style="" value="폴더명" width="100"></w2:column>
+					</w2:row>
+				</w2:header>
+				<w2:gBody id="gBody1" style="">
+					<w2:row id="row2" style="">
+						<w2:column displayMode="label" id="chk" inputType="radio" style="" width="50" radioLabel="선택"></w2:column>
+						<w2:column class="le" displayMode="label" id="menu_folder_nm" inputType="drilldown" style="" width="300"
+								placeholder="폴더명을 입력하세요." value="" depthColumn="menu_lvl" depthType="div" showDepth="1">
+						</w2:column>
+					</w2:row>
+				</w2:gBody>
+			</w2:gridView>
+			<xf:group class="btnGroup" id="" style="">
+				<xf:group class="le" id="" style=""></xf:group>
+				<xf:group class="ri" id="">
+					<xf:trigger class="btn pro" id="btn_cancel" style="" type="button" ev:onclick="scwin.btn_cancel_onclick">
+						<xf:label><![CDATA[취소]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class=" btn pro conf" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+						<xf:label><![CDATA[저장]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+
+		</xf:group>
+
+
+	</body>
+</html>

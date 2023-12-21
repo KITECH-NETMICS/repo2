@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+
+<select id="selectHumApyPrsList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyPrsList */ 
+ DISTINCT 
+ a.req_no
+ ,a.req_ymd
+ ,c.empno
+ ,c.nm
+ ,fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm
+ ,fun_posi_nm(c.posi_cd) AS posi_nm
+ ,d.syspayno AS tar_syspayno
+ ,d.empno AS tar_empno
+ ,d.nm AS tar_nm
+ ,fun_dept_nm(d.dept_cd, d.dept_new_ymd) AS tar_dept_nm
+ ,fun_posi_nm(d.posi_cd)  AS tar_posi_nm
+ ,e.apr_state  --결제상태
+ ,fun_xodxcommst_cd_nm(e.apr_state, 0) AS apr_state_nm  --결제상태 이름
+ ,approval_state
+ ,a.rmk
+ ,a.attach_file_no
+ ,fun_dept_nm(old_dept_cd,old_dept_new_ymd) AS old_dept_nm
+ ,old_pruse_respn_psn
+ ,CASE 
+    WHEN new_dept_cd != '' OR new_dept_new_ymd != '' THEN fun_dept_nm(new_dept_cd,new_dept_new_ymd)
+    ELSE fun_dept_nm(new_dept_cd2,new_dept_new_ymd2) 
+  END new_dept_nm
+ ,CASE 
+    WHEN new_pruse_respn_psn != '' THEN new_pruse_respn_psn
+    ELSE new_pruse_respn_psn2
+  END new_pruse_respn_psn
+FROM humapybasic a
+INNER JOIN humapypruserespninfo b ON a.req_no = b.req_no 
+INNER JOIN humbasicinfo c ON a.syspayno = c.syspayno 
+INNER JOIN humbasicinfo d ON a.tar_syspayno = d.syspayno 
+INNER JOIN xomxintfatab e ON a.req_no = e.req_no AND e.state_inform_flag = '1' 
+INNER JOIN (SELECT m.req_no
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='O' THEN s.nm ELSE '' END) AS old_pruse_respn_psn
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='O' THEN m.dept_cd ELSE '' END) AS old_dept_cd
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='O' THEN m.dept_new_ymd ELSE '' END) AS old_dept_new_ymd
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='N' THEN s.nm ELSE '' END) AS new_pruse_respn_psn
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='U' THEN s.nm ELSE '' END) AS new_pruse_respn_psn2
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='N' THEN m.dept_cd ELSE '' END) AS new_dept_cd
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='U' THEN m.dept_cd ELSE '' END) AS new_dept_cd2
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='N' THEN m.dept_new_ymd ELSE '' END) AS new_dept_new_ymd
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='U' THEN m.dept_new_ymd ELSE '' END) AS new_dept_new_ymd2
+    FROM humapypruserespninfo m
+    INNER JOIN humbasicinfo s ON m.pruse_respn_psn = s.syspayno 
+    GROUP BY m.req_no) f ON a.req_no = f.req_no
+WHERE 1 = 1 
+    <if test="apr_state != null and apr_state != ''">
+	 and e.apr_state = #{apr_state}
+</if>
+    <if test="req_no != null and req_no != ''">
+	 and a.req_no LIKE #{req_no}
+</if>
+    <if test="syspayno != null and syspayno != ''">
+	 and a.syspayno = #{syspayno}
+</if>
+    <if test="tar_syspayno != null and tar_syspayno != ''">
+	 and a.tar_syspayno = #{tar_syspayno}
+</if>
+    <if test="dept_cd != null and dept_cd != ''">
+	 and a.dept_cd = #{dept_cd}
+</if>
+    <if test="req_ymd_from != null and req_ymd_from != ''">
+	 and a.req_ymd  <![CDATA[>=]]>  #{req_ymd_from}
+</if>
+    <if test="req_ymd_to != null and req_ymd_to != ''">
+	 and a.req_ymd  <![CDATA[<=]]>  #{req_ymd_to}
+</if>
+    <if test="req_no_knd != null and req_no_knd != ''">
+	 and a.req_no LIKE #{req_no_knd} || '%'
+</if>
+ORDER BY a.req_no DESC
+</select>
+<select id="selectHumApyPrsUptCnt" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyPrsUptCnt */ 
+  a.req_no
+ ,a.pruse_respn_psn
+ ,a.respn_clsf
+ ,a.data_clsf
+ ,a.use_yn
+ ,b.tar_syspayno AS syspayno
+FROM humapypruserespninfo a
+JOIN humapybasic b ON b.req_no = a.req_no
+--WHERE a.data_clsf <![CDATA[ < ]]><![CDATA[ > ]]> 'O'
+WHERE a.data_clsf  != 'O'
+AND a.use_yn = 'Y'
+AND a.req_no = #{req_no}
+</select>
+<select id="selectHumApyPrsInsCnt" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+select /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyPrsInsCnt */ 
+		 count(*) as cnt from humpruserespninfo
+where syspayno = #{syspayno}
+and pruse_respn_psn = #{pruse_respn_psn}
+
+</select>
+<insert id="insertHumApyPrsAppr" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyPrsAppr */ 
+		 INTO humpruserespninfo
+           ( 
+             syspayno
+           , pruse_respn_psn
+           , respn_clsf
+           , use_yn
+           , regst_syspayno
+           , regst_daytm) 
+ VALUES
+ 		  (
+ 			#{syspayno}
+ 		  , #{pruse_respn_psn}
+ 		  , #{respn_clsf}
+ 		  , #{use_yn}
+ 		  , #{regst_syspayno}
+ 		  , sysdate
+ 		  )
+</insert>
+<update id="updateHumApyPrsAppr" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+update /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyPrsAppr */ 
+		 humpruserespninfo
+set respn_clsf = #{respn_clsf},
+      use_yn =#{use_yn}, 
+      updt_syspayno = #{updt_syspayno},
+      updt_daytm = sysdate
+where syspayno = #{syspayno}
+and pruse_respn_psn =  #{pruse_respn_psn}
+
+</update>
+<update id="updateHumBasicAppr" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+update /* QueryID : kr.re.kitech.biz.hum.apy.updateHumBasicAppr */ 
+		 humbasicinfo
+set pruse_respn_psn = #{pruse_respn_psn},
+updt_syspayno = #{updt_syspayno},
+updt_daytm = current
+where syspayno = #{syspayno}
+
+</update>
+<update id="updateHumPrsAppr" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+update /* QueryID : kr.re.kitech.biz.hum.apy.updateHumPrsAppr */ 
+		 humapypruserespninfo
+set approval_state ='승인완료',
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = sysdate
+where req_no =#{req_no}
+</update>
+<delete id="deleteHumApyBsc" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsSrchVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyBsc */ 
+		 FROM
+ humapybasic
+WHERE
+ req_no = #{req_no}
+</delete>
+
+<delete id="deleteHumApyPrs" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsSrchVo">
+delete /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyPrs */ 
+		 from humapypruserespninfo
+where req_no = #{req_no}
+<if test="pruse_respn_psn != null and pruse_respn_psn != ''">
+	 and pruse_respn_psn = #{pruse_respn_psn}
+</if>
+<if test="data_clsf != null and data_clsf != ''">
+	 and data_clsf= #{data_clsf}
+</if>
+
+</delete>
+<select id="selectHumApyPrsInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyPrsInfo */ 
+ b.empno
+ ,a.pruse_respn_psn
+ ,b.nm
+ ,fun_dept_nm(dept_cd,dept_new_ymd) AS dept_nm
+ ,fun_posi_nm(b.posi_cd) AS posi_nm
+ ,decode(a.respn_clsf,'M',1,0) AS respn_clsf
+ ,decode(nvl(b.retire_ymd,'') ,'', a.use_yn,'N') AS use_yn
+ ,dept_cd
+ ,dept_new_ymd 
+FROM humpruserespninfo a 
+INNER JOIN humbasicinfo b ON a.pruse_respn_psn = b.syspayno
+WHERE a.syspayno = #{syspayno}
+AND a.use_yn= 'Y'
+
+</select>
+<select id="selectHumApyPrsDtl" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyPrsDtl */ 
+ DISTINCT 
+ a.req_no
+ ,a.req_ymd
+ ,c.empno
+ ,c.nm
+ ,fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm
+ ,fun_posi_nm(c.posi_cd) AS posi_nm
+ ,d.syspayno AS tar_syspayno
+ ,d.empno AS tar_empno
+ ,d.nm AS tar_nm
+ ,fun_dept_nm(d.dept_cd, d.dept_new_ymd) AS tar_dept_nm
+ ,fun_posi_nm(d.posi_cd)  AS tar_posi_nm
+ ,e.apr_state  --결제상태
+ ,fun_xodxcommst_cd_nm(e.apr_state, 0) AS apr_state_nm  --결제상태 이름
+ ,approval_state
+ ,a.rmk
+ ,a.attach_file_no
+ ,fun_dept_nm(old_dept_cd,old_dept_new_ymd) AS old_dept_nm
+ ,old_pruse_respn_psn
+ ,CASE 
+    WHEN new_dept_cd != '' OR new_dept_new_ymd != '' THEN fun_dept_nm(new_dept_cd,new_dept_new_ymd)
+    ELSE fun_dept_nm(new_dept_cd2,new_dept_new_ymd2) 
+  END new_dept_nm
+ ,CASE 
+    WHEN new_pruse_respn_psn != '' THEN new_pruse_respn_psn
+    ELSE new_pruse_respn_psn2
+  END new_pruse_respn_psn
+FROM humapybasic a
+INNER JOIN humapypruserespninfo b ON a.req_no = b.req_no 
+INNER JOIN humbasicinfo c ON a.syspayno = c.syspayno 
+INNER JOIN humbasicinfo d ON a.tar_syspayno = d.syspayno 
+INNER JOIN xomxintfatab e ON a.req_no = e.req_no AND e.state_inform_flag = '1' 
+INNER JOIN (SELECT m.req_no
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='O' THEN s.nm ELSE '' END) AS old_pruse_respn_psn
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='O' THEN m.dept_cd ELSE '' END) AS old_dept_cd
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='O' THEN m.dept_new_ymd ELSE '' END) AS old_dept_new_ymd
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='N' THEN s.nm ELSE '' END) AS new_pruse_respn_psn
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='U' THEN s.nm ELSE '' END) AS new_pruse_respn_psn2
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='N' THEN m.dept_cd ELSE '' END) AS new_dept_cd
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='U' THEN m.dept_cd ELSE '' END) AS new_dept_cd2
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='N' THEN m.dept_new_ymd ELSE '' END) AS new_dept_new_ymd
+        ,MAX(CASE WHEN m.respn_clsf ='M' AND m.data_clsf='U' THEN m.dept_new_ymd ELSE '' END) AS new_dept_new_ymd2
+    FROM humapypruserespninfo m
+    INNER JOIN humbasicinfo s ON m.pruse_respn_psn = s.syspayno 
+    GROUP BY m.req_no) f ON a.req_no = f.req_no
+WHERE 1 = 1 
+    <if test="apr_state != null and apr_state != ''">
+	 and e.apr_state = #{apr_state}
+</if>
+    <if test="req_no != null and req_no != ''">
+	 and a.req_no = #{req_no}
+</if>
+    <if test="syspayno != null and syspayno != ''">
+	 and a.syspayno = #{syspayno}
+</if>
+    <if test="tar_syspayno != null and tar_syspayno != ''">
+	 and a.tar_syspayno = #{tar_syspayno}
+</if>
+    <if test="dept_cd != null and dept_cd != ''">
+	 and a.dept_cd = #{dept_cd}
+</if>
+    <if test="req_ymd_from != null and req_ymd_from != ''">
+	 and a.req_ymd  <![CDATA[>=]]>  #{req_ymd_from}
+</if>
+    <if test="req_ymd_to != null and req_ymd_to != ''">
+	 and a.req_ymd  <![CDATA[<=]]>  #{req_ymd_to}
+</if>
+    <if test="req_no_knd != null and req_no_knd != ''">
+	 and a.req_no LIKE #{req_no_knd}
+</if>
+ORDER BY a.req_no DESC
+</select>
+<select id="selectHumApyPrsBefore" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyPrsBefore */ 
+		 a.req_no
+       ,c.empno AS empno
+       ,b.pruse_respn_psn
+       ,c.nm as nm
+       ,fun_dept_nm(c.dept_cd,c.dept_new_ymd) AS dept_nm
+       ,fun_posi_nm(c.posi_cd)  AS posi_nm
+       ,decode(b.respn_clsf,'M',1,0) AS respn_clsf
+       ,CASE
+          WHEN d.posi_cd = '354000' OR d.posi_cd = '350010' OR d.posi_cd = '351010' THEN decode(b.respn_clsf,'M','지도교수','공동지도교수')
+          ELSE decode(b.respn_clsf,'M','활용책임자','공동지도교수')
+        END AS respn_clsf_nm
+       ,b.data_clsf
+       ,b.use_yn
+       
+       ,c.dept_new_ymd
+       ,c.dept_cd
+       
+  FROM humapybasic a
+       INNER JOIN humapypruserespninfo b ON a.req_no = b.req_no
+       INNER JOIN humbasicinfo c ON b.pruse_respn_psn = c.syspayno
+       LEFT JOIN (
+                  SELECT f.req_no,
+                         e.posi_cd
+                    FROM humbasicinfo e
+                    INNER JOIN humapybasic f ON f.tar_syspayno = e.syspayno 
+                   )d ON a.req_no = d.req_no 
+WHERE a.req_no = #{req_no}
+  AND b.data_clsf = 'O'
+order by b.respn_clsf desc
+</select>
+<select id="selectHumApyPrsAfter" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyPrsAfter */ 
+		 a.req_no
+      ,c.empno AS empno
+      ,c.nm AS nm
+      ,b.pruse_respn_psn
+      ,fun_dept_nm(c.dept_cd,c.dept_new_ymd) AS dept_nm
+      ,fun_posi_nm(c.posi_cd)  AS posi_nm
+      ,decode(b.respn_clsf,'M',1,0) AS respn_clsf
+      ,CASE
+         WHEN d.posi_cd = '354000' OR d.posi_cd = '350010' OR d.posi_cd = '351010' THEN decode(b.respn_clsf,'M','지도교수','공동지도교수')
+         ELSE decode(b.respn_clsf,'M','활용책임자','공동지도교수')
+       END AS respn_clsf_nm
+      ,b.data_clsf
+      ,b.use_yn
+      ,c.work_clsf
+      
+       ,c.dept_new_ymd
+       ,c.dept_cd
+      
+FROM humapybasic a
+     INNER JOIN humapypruserespninfo b ON a.req_no = b.req_no 
+     					--AND b.data_clsf <![CDATA[ < ]]><![CDATA[ > ]]> 'O'
+     					AND b.data_clsf != 'O'
+     INNER JOIN humbasicinfo c ON b.pruse_respn_psn = c.syspayno
+     LEFT JOIN (
+                 SELECT f.req_no,
+                        e.posi_cd
+                   FROM humbasicinfo e
+                   INNER JOIN humapybasic f ON f.tar_syspayno = e.syspayno
+                )d ON a.req_no = d.req_no
+WHERE  a.req_no = #{req_no}
+ORDER BY b.respn_clsf DESC
+</select>
+<insert id="insertHumApyPrs" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsSaveVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyPrs */ 
+		 INTO humapybasic 
+	(
+	req_no   , --신청번호      
+	req_typ  , --기본신청유형(문서종류)        
+	req_ymd  , --신청일              
+	syspayno  , --시스템개인번호      
+	tar_syspayno, --대상자시스템개인번호
+	dept_cd  , --부서코드            
+	dept_new_ymd  , --부서신설일         
+	rmk  , --비고  
+	attach_file_no  , --첨부파일번호     
+	regst_syspayno  , --등록시스템개인번호  
+	regst_daytm   --등록일시            
+	)
+VALUES
+	(
+	#{req_no}  , --신청번호      
+    #{req_typ}  , --기본신청유형(문서종류)        
+    #{req_ymd}  , --신청일              
+    #{syspayno}  , --시스템개인번호 
+    #{tar_syspayno}  , --대상자시스템개인번호  
+    #{dept_cd}  , --부서코드            
+    #{dept_new_ymd}  , --부서신설일          
+    #{rmk}  , --비고 (기존 bas_rmk였는데 rmk로 명칭 변경)
+    #{attach_file_no}  , --첨부파일번호      
+    #{regst_syspayno}  , --등록시스템개인번호  
+    CURRENT  --등록일시 
+	)
+</insert>
+<update id="updateHumApyPrs" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsSaveVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyPrs */ 
+		 humapybasic SET    
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = current
+        <if test="rmk != null and rmk != ''">
+	 , rmk = #{rmk}
+</if>
+<!--         <if test="rpt_req_no != null and rpt_req_no != ''">
+	 , rpt_req_no = #{rpt_req_no}
+</if> -->
+<!--         <if test="rpt_req_typ != null and rpt_req_typ != ''">
+	 , rpt_req_typ = #{rpt_req_typ}
+</if> -->
+<!--         <if test="rpt_req_ymd != null and rpt_req_ymd != ''">
+	 , rpt_req_ymd = #{rpt_req_ymd}
+</if> -->
+<!--         <if test="rpt_syspayno != null and rpt_syspayno != ''">
+	 , rpt_syspayno = #{rpt_syspayno}
+</if> -->
+<!--         <if test="rpt_dept_cd != null and rpt_dept_cd != ''">
+	 , rpt_dept_cd = #{rpt_dept_cd}
+</if> -->
+<!--         <if test="rpt_dept_new_ymd != null and rpt_dept_new_ymd != ''">
+	 , rpt_dept_new_ymd = #{rpt_dept_new_ymd}
+</if> -->
+<!--         <if test="rpt_contnt != null and rpt_contnt != ''">
+	 , rpt_contnt = #{rpt_contnt}
+</if> -->
+<!--         <if test="rpt_attach_file_no != null and rpt_attach_file_no != ''">
+	 , rpt_attach_file_no = #{rpt_attach_file_no}
+</if> -->
+        <if test="attach_file_no != null and attach_file_no != ''">
+	 , attach_file_no = #{attach_file_no}
+</if>
+WHERE
+    req_no = #{req_no}
+</update>
+<insert id="insertHumApyPrsInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyPrsInfo */ 
+		 INTO humapypruserespninfo
+		(req_no, 
+		 pruse_respn_psn,
+		 dept_cd,
+		 dept_new_ymd,
+		 respn_clsf, 
+		 data_clsf, 
+		 use_yn,
+		 regst_syspayno, 
+		 regst_daytm ) 
+ VALUES(
+		 #{req_no}
+	   , #{pruse_respn_psn}
+	   , #{dept_cd}
+	   , #{dept_new_ymd}
+	   , decode(#{respn_clsf},'1','M','S')
+	   , #{data_clsf}
+	   , #{use_yn}
+	   , #{regst_syspayno}
+	   , sysdate
+	   )
+</insert>
+<update id="updateHumApyPrsInfo">
+update /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyPrsInfo */ 
+		  humapypruserespninfo
+set respn_clsf  = decode(#{respn_clsf},'1','M','S'),
+      use_yn = #{use_yn},
+      updt_syspayno = #{updt_syspayno},
+      updt_daytm = sysdate
+where req_no = #{req_no}
+  and pruse_respn_psn = #{pruse_respn_psn}
+  and data_clsf = #{data_clsf}
+</update>
+<insert id="insertHumApyPrsBeforeInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsBeforeVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyPrsBeforeInfo */ 
+		 INTO humapypruserespninfo
+		(req_no, 
+		 pruse_respn_psn,
+		 dept_cd,
+		 dept_new_ymd,
+		 respn_clsf, 
+		 data_clsf, 
+		 use_yn,
+		 regst_syspayno, 
+		 regst_daytm ) 
+ VALUES(
+		 #{req_no}
+	   , #{pruse_respn_psn}
+	   , #{dept_cd}
+	   , #{dept_new_ymd}
+	   , decode(#{respn_clsf},'1','M','S')
+	   , #{data_clsf}
+	   , #{use_yn}
+	   , #{regst_syspayno}
+	   , sysdate
+	   )
+</insert>
+<delete id="deleteHumApyPrsAfter" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPrsInfoVo">
+delete /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyPrsAfter */ 
+		 from humapypruserespninfo
+where req_no = #{req_no}
+<if test="pruse_respn_psn != null and pruse_respn_psn != ''">
+	 and pruse_respn_psn = #{pruse_respn_psn}
+</if>
+<if test="data_clsf != null and data_clsf != ''">
+	 and data_clsf= #{data_clsf}
+</if>
+</delete>
+</mapper>

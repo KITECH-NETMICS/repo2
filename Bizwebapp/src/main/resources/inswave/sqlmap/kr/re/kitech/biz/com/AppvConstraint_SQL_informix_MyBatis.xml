@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.com.con">
+
+	<!-- 결재문서 조회 -->
+	<select id="selectXslUrlViaalias" resultType="kr.re.kitech.biz.com.vo.BetaTesterVo" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo">
+		SELECT	/* kr.re.kitech.biz.com.con.selectXslUrlViaalias */
+				TRIM(procdefalias) as alias 
+			 ,	xslurl
+			 ,	xslurl_ready
+		  FROM	appv_applicationmap
+		 WHERE	procdefalias = #{alias}
+	</select>
+
+	<!-- 결재 제약 쿼리 조회 -->
+	<select id="selectAppvConstList" resultType="kr.re.kitech.biz.com.vo.AppvConstraintVo" parameterType="kr.re.kitech.biz.com.vo.AppvConstraintVo">
+		SELECT	/* kr.re.kitech.biz.com.con.selectAppvConstList */
+				TRIM(B.cd) as action_cd, CAST(#{alias} as CHAR(3)) as alias, query, message, is_use, rmk
+		  FROM 	(
+		   		 SELECT *
+		    	   FROM appv_constraint
+		    	  WHERE alias = #{alias}
+				) AS A
+		RIGHT JOIN (
+		    	 SELECT cd
+		    	   FROM xodxcommst 
+		    	  WHERE cd_clsf = 'APC' AND use_ex = 'Y'
+				) AS B
+		   ON B.cd = A.action_cd
+	</select>
+	
+	<!-- 결재문서 제약쿼리 저장 -->
+	<update id="mergeAppvConstraint" parameterType="kr.re.kitech.biz.com.vo.AppvConstraintVo">
+		MERGE	/* kr.re.kitech.biz.com.con.mergeAppvConstraint */
+		 		INTO appv_constraint a
+ 		USING dual b ON a.alias = #{alias} AND a.action_cd = #{action_cd}
+ 		 WHEN MATCHED THEN
+ 		 		UPDATE
+ 		 		   SET 	a.query 		= #{query}
+ 		 		   	 ,	a.message 		= #{message}
+ 		 		   	 ,	a.is_use		= #{is_use}
+ 		 		<if test="rmk != null and rmk != ''">
+ 		 		   	 ,	a.rmk			= #{rmk}
+ 		 		</if>
+ 		 		   	 ,	a.updt_syspayno	= #{regst_syspayno}
+ 		 		   	 ,	a.updt_daytm	= CURRENT
+ 		 WHEN NOT MATCHED THEN
+ 		 		INSERT	(
+ 		 					a.alias
+ 		 				  , a.action_cd
+ 		 				  , a.query
+ 		 				  , a.message
+ 		 				  , a.is_use
+ 		 		<if test="rmk != null and rmk != ''">
+ 		 				  , a.rmk
+ 		 		</if>
+ 		 				  , a.regst_syspayno
+ 		 				  , a.regst_daytm
+ 		 				)
+ 		 		VALUES	(
+ 		 					#{alias}
+ 		 				  , #{action_cd}
+ 		 				  , #{query}
+ 		 				  , #{message}
+ 		 				  , #{is_use}
+ 		 		<if test="rmk != null and rmk != ''">
+ 		 				  , #{rmk}
+ 		 		</if>
+ 		 				  , #{regst_syspayno}
+ 		 				  , CURRENT
+ 		 				)
+	</update>
+	
+	<!-- 결재문서 스냅샷 경로 수정 -->
+	<update id="updateAppvApplicationMap" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo">
+		UPDATE 	/* kr.re.kitech.biz.com.con.updateAppvApplicationMap */
+				appv_applicationmap
+		   SET 	xslurl 			= #{xslurl}
+		     , 	xslurl_ready	= #{xslurl_ready}
+		 WHERE 	procdefalias	= #{alias}
+	</update>
+	
+	<update id="swapAppvApplicationMap" parameterType="kr.re.kitech.biz.com.vo.BetaTesterVo">
+		UPDATE /* kr.re.kitech.biz.com.con.updateAppvApplicationMap */
+				appv_applicationmap
+		   SET (xslurl, xslurl_ready) = ((SELECT
+						  				         NVL(x2.xslurl_ready, '') as xslurl
+						  				       , NVL(x2.xslurl, '') as xslurl_ready
+						  			        FROM appv_applicationmap x2
+						  			       WHERE x2.procdefalias = appv_applicationmap.procdefalias
+						  				))
+		 WHERE procdefalias = #{alias}
+	</update>
+	
+</mapper>

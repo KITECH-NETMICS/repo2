@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="대출메일발송">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="loan_ymd" name="대출연도" dataType="text"></w2:key>
+
+        				<w2:key id="resv_yn" name="예약여부" dataType="text"></w2:key>
+        				<w2:key id="retrn_yn" name="연체여부" dataType="text"></w2:key>
+        				<w2:key id="centr_cd" name="소장지역" dataType="text"></w2:key>
+        				<w2:key id="loan_psn_syspayno" name="대출자시스템번호" dataType="text"></w2:key>
+        				<w2:key id="dept_typ" name="대출자지역" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_bookLoan" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="chk" name="chk" dataType="text"></w2:column>
+        				<w2:column id="loan_psn_nm" name="대출자명" dataType="text"></w2:column>
+        				<w2:column id="loan_psn_email" name="대출자이메일" dataType="text"></w2:column>
+
+        				<w2:column id="centr_nm" name="대출자지역본부" dataType="text"></w2:column>
+        				<w2:column id="loan_no" name="대출번호" dataType="text"></w2:column>
+        				<w2:column id="loan_book_no" name="대출도서번호" dataType="text"></w2:column>
+        				<w2:column id="loan_book_nm" name="대출도서명" dataType="text"></w2:column>
+        				<w2:column id="loan_ymd" name="대출일자" dataType="text"></w2:column>
+        				<w2:column id="retrn_schdl_ymd" name="반납예정일자" dataType="text"></w2:column>
+        				<w2:column id="retrn_ymd" name="반납일자" dataType="text"></w2:column>
+        				<w2:column id="retrn_yn" name="반납여부" dataType="text"></w2:column>
+        				<w2:column id="loan_clsf" name="대출유형" dataType="text"></w2:column>
+        				<w2:column id="resv_psn_nm" name="예약자명" dataType="text"></w2:column>
+        				<w2:column id="resv_psn_email" name="예약자이메일" dataType="text"></w2:column>
+        				<w2:column id="resv_yn" name="예약여부" dataType="text"></w2:column>
+
+        			</w2:columnInfo>
+        			<w2:data use="false">
+        			</w2:data>
+        		</w2:dataList>
+
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectKbkLoanList" ref="data:json,dma_search" target="" action="SvcKBKBRWBMLR01.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /*************************************************************************************************************
+     *
+     *	전역변수
+     *
+     *************************************************************************************************************/
+    scwin.currentDate = com.getServerDateTime("yyyy");
+    
+    
+    /*************************************************************************************************************
+     *
+     *	페이지 이벤트 함수
+     *
+     *************************************************************************************************************/
+    /*
+     * 페이지 열기
+     */
+	scwin.onpageload = function() {
+		var codeOptions = [
+			{ code : "BAC", compID :"sbx_centr" }
+		,	{ code : "HCF", compID :"sbx_deptTyp" }
+		];
+		com.setCmnCd(codeOptions, function() {
+			scwin.init();
+			com.setEnterKeyEvent(grd_searchbox, scwin.btn_hum_onclick);
+		});
+	};
+	
+	/*
+     * 페이지 닫기
+     */
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	/*************************************************************************************************************
+     *
+     *	사용자 정의 함수
+     *
+     *************************************************************************************************************/
+    /*
+     * 초기화
+     */
+	scwin.init = function() {
+		dma_search.set("loan_ymd", scwin.currentDate);
+	};
+	
+	/*
+     * 조회
+     */
+	scwin.search = function() {
+		if(scwin.validation()) {
+			com.execute(sbm_selectKbkLoanList, {
+				successCallback : function(e) {
+					dlt_bookLoan.setJSON(e.responseJSON.kbkBookLoanVoList, false);
+				}
+			});
+		}
+	};
+	
+	/*
+     * 검증
+     */
+	scwin.validation = function() {
+		var flag = true;
+		var massage = "";
+		
+		if(!dma_search.get("resv_yn") && !dma_search.get("retrn_yn")) {
+			massage = "예약여부와 연체여부 중 하나의 조건을 선택하세요";
+			flag = false;
+		}
+		else if(dma_search.get("resv_yn") == "N" && dma_search.get("retrn_yn") == "N") {
+			massage = "미예약, 미연체는 함께 조회할 수 없습니다";
+			flag = false;
+		}
+		
+		if(!flag)
+			alert(massage);
+		
+		return flag;
+	};
+	
+	/*
+     * 날짜포맷
+     */
+	scwin.dateFormat = function(ret) {
+		var ymd = ret.trim();
+		
+		if(ymd)
+			return ymd.substr(0, 4) + "-" + ymd.substr(4, 2) + "-" + ymd.substr(6);
+		else
+			return ymd;
+	};
+	
+	
+	/*************************************************************************************************************
+     *
+     *	컴포넌트 이벤트 함수
+     *
+     *************************************************************************************************************/
+	/*
+     * 대출자 조회
+     */
+	scwin.btn_hum_onclick = function(e) {
+		var data = {
+			empno : inp_empno.getValue()
+		};
+		com.pop.open(com.pop.TYPE.HUM, data, function(ret) {
+			if(ret) {
+				inp_nm.setValue(ret.nm);
+				inp_empno.setValue(ret.empno);
+				dma_search.set("loan_psn_syspayno", ret.syspayno);
+			}
+		});
+	};
+	
+	/*
+     * 대출자 변경
+     */
+	scwin.inp_empno_onviewchange = function(info) {
+		if(info.newValue === "") {
+			inp_nm.setValue("");
+			inp_empno.setValue("");
+			dma_search.set("loan_psn_syspayno", "");
+		}
+	};
+	
+	/*
+     * 도서 조회
+     */
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	/*
+     * 메일 발송
+     */
+	scwin.btn_mail_onclick = function(e) {
+		var ret = dlt_bookLoan.getAllJSON().filter(function(elt, idx) {
+			if(elt.chk === "Y")
+				return true;
+			else
+				return false;
+		});
+		com.executeDynamic({ id : "sbm_mail", action : "SvcKBKBRWBMSP01.pwkjson" }, {
+			requestData: ret
+		,   successCallback: function(e) {
+				com.alert("정상 처리되었습니다");
+			}
+		});
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="검색조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:80px;"></xf:group>
+    						<xf:group tagname="col" style="width:240px;"></xf:group>
+    						<xf:group style="width:100px;" tagname="col"></xf:group>
+    						<xf:group style="width:150px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:150px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="대출연도" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:inputCalendar calendarValueType="year" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="" placeholder="년,월" renderDiv="true" rightAlign="false" style="" ref="data:dma_search.loan_ymd">
+    							</w2:inputCalendar>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th" style="">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="예약여부" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="전체" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="" ref="data:dma_search.resv_yn" style="width:100px;" submenuSize="auto"
+    								title="예약여부">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[예약]]></xf:label>
+    										<xf:value><![CDATA[Y]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[미예약]]></xf:label>
+    										<xf:value><![CDATA[N]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="연체여부" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="전체" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="" ref="data:dma_search.retrn_yn" style="width:100px;" submenuSize="auto"
+    								title="연체여부">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[연체]]></xf:label>
+    										<xf:value><![CDATA[Y]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[미연체]]></xf:label>
+    										<xf:value><![CDATA[N]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="소장지역" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="전체" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_centr" ref="data:dma_search.centr_cd"
+    								style="width:100px;" submenuSize="auto" title="소장지역">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="대출자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td" id="grd_searchbox">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpSch" id="" style="width: 100px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="inp_empno" style="" title="대출자" ev:onviewchange="scwin.inp_empno_onviewchange"></xf:input>
+    								<xf:trigger class="btn" id="btn_hum" style="" title="대출자 조회" type="button" ev:onclick="scwin.btn_hum_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_nm" style="width: 100px;" title="대출자 상세" disabled="true"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="대출자지역본부" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>5</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="전체" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_deptTyp" ref="data:dma_search.dept_typ"
+    								style="width:150px;" submenuSize="auto" title="센터구분">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="">
+    			</xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:trigger class="btn" id="btn_mail" style="" type="button" ev:onclick="scwin.btn_mail_onclick">
+    					<xf:label><![CDATA[메일발송]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="40"
+    			dataList="data:dlt_bookLoan" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="" visibleRowNum="20"
+    			class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="40" inputType="checkbox" style="height:28px;" id="column7" value="대출번호" displayMode="label"
+    						checkboxLabel="전체선택" fixColumnWidth="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column5" value="대출자" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column20" value="대출자지역본부" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column29" value="도서번호" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:28px;" id="column27" value="도서명" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column42" value="대출구분" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column52" value="반납예정일자" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column50" value="연체구분" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column48" value="예약구분" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column inputType="checkbox" style="height:28px;" id="chk" displayMode="label" fixColumnWidth="true"></w2:column>
+    					<w2:column inputType="text" readOnly="true" style="height:28px;" id="loan_psn_nm" escape="false"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column inputType="text" readOnly="true" style="height:28px;" id="centr_nm" displayMode="label"></w2:column>
+    					<w2:column inputType="text" style="height:28px;" id="loan_book_no" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" style="height:28px;" id="loan_book_nm" displayMode="label" readOnly="true"
+    						textAlign="left">
+    					</w2:column>
+    					<w2:column inputType="text" style="height:28px" id="loan_clsf" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" style="height:28px" id="retrn_schdl_ymd" displayMode="label" readOnly="true"
+    						displayFormatter="scwin.dateFormat">
+    					</w2:column>
+    					<w2:column inputType="text" style="height:28px" id="retrn_yn" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" style="height:28px" id="resv_yn" displayMode="label" readOnly="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

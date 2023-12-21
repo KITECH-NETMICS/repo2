@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.com">
+
+	<select id="selectGenerationNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo" resultType="kr.re.kitech.biz.com.vo.GenerationVo">
+		SELECT yr, genrt_no, sys_clsf, docu_clsf, etc /* QueryID : kr.re.kitech.biz.com.vo.selectGenerationNumber */
+		FROM xodxcomgenno 
+		WHERE sys_clsf = #{sys_clsf}
+		AND docu_clsf= #{docu_clsf}
+		and yr = to_char(current, '%Y')
+	</select>
+	
+    <update id="mergeGenerationNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo">
+MERGE  /* QueryID : kr.re.kitech.biz.com.vo.mergeGenerationNumber */
+ INTO xodxcomgenno AS A
+USING DUAL B ON A.sys_clsf = #{sys_clsf} AND  A.docu_clsf= #{docu_clsf} AND A.yr = TO_CHAR(current, '%Y')
+WHEN MATCHED THEN 
+  UPDATE
+     SET genrt_no = #{genrt_no}
+WHEN NOT MATCHED THEN 
+  INSERT(
+      sys_clsf, docu_clsf, yr, genrt_no, etc
+  ) VALUES (
+      #{sys_clsf}, #{docu_clsf}, TO_CHAR(current, '%Y'), #{genrt_no}, ''
+  )
+</update>
+	
+    <select id="selectGenerationFileNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo" resultType="kr.re.kitech.biz.com.vo.GenerationVo">
+		SELECT First 1 yr, genrt_no, sys_clsf, docu_clsf, etc, is_evid /* QueryID : kr.re.kitech.biz.com.vo.selectGenerationFileNumber */
+		FROM xodxcomfilegenno 
+		WHERE sys_clsf = #{sys_clsf}
+		AND docu_clsf= #{docu_clsf}
+		<choose>
+			<when test= "yr != null and yr != ''">
+				AND yr = #{yr}
+			</when>
+			<otherwise>
+				AND yr = to_char(current, '%Y')
+			</otherwise>
+		</choose>
+	</select>
+		
+	<update id="mergeGenerationFileNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo">	
+		MERGE INTO xodxcomfilegenno AS A	/* QueryID : kr.re.kitech.biz.com.vo.mergeGenerationFileNumber */
+		USING DUAL B ON A.sys_clsf = #{sys_clsf} AND  A.docu_clsf= #{docu_clsf} AND A.yr = TO_CHAR(current, '%Y')
+		WHEN MATCHED THEN 
+		UPDATE
+		SET genrt_no = #{genrt_no}
+		WHEN NOT MATCHED THEN 
+		INSERT
+		(
+		    sys_clsf, docu_clsf, yr, genrt_no, etc
+		)
+		VALUES
+		(
+		    #{sys_clsf}, #{docu_clsf}, TO_CHAR(current, '%Y'), #{genrt_no}, #{etc}
+		)
+    </update>
+	
+	<select id="selectGenerationFinNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo" resultType="kr.re.kitech.biz.com.vo.GenerationVo">
+		SELECT First 1 req_no, sys_clsf, docu_clsf, yr, genrt_no, etc, regst_daytm /* QueryID : kr.re.kitech.biz.com.vo.selectGenerationFinNumber */
+		FROM xodxfingenno 
+		WHERE sys_clsf = #{sys_clsf}
+		AND docu_clsf= #{docu_clsf}
+		AND yr = to_char(current, '%Y')
+		ORDER BY req_no DESC
+	</select>
+	
+	<update id="mergeGenerationFinNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo">	
+		MERGE INTO xodxfingenno AS A	/* QueryID : kr.re.kitech.biz.com.vo.mergeGenerationFinNumber */
+		USING DUAL B ON A.req_no = #{req_no}		
+		WHEN NOT MATCHED THEN 
+		INSERT
+		(
+		    req_no, sys_clsf, docu_clsf, yr, genrt_no, etc, regst_daytm
+		)
+		VALUES
+		(
+		    #{req_no}, #{sys_clsf}, #{docu_clsf}, TO_CHAR(current, '%Y'), #{genrt_no}, #{etc}, current
+		)
+    </update>
+	
+	<select id="selectGenerationSlipNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo" resultType="kr.re.kitech.biz.com.vo.GenerationVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.vo.selectGenerationSlipNumber */
+     b.slip_typ_cd
+   , NVL(a.yr, d.yr) AS yr
+   , NVL(a.month, d.month) AS month
+   , CASE WHEN a.genrt_no IS NULL THEN '0000' ELSE a.genrt_no END AS genrt_no
+   , b.slip_typ_nm AS etc
+FROM fbasliptyph b 
+JOIN (SELECT CAST(#{yr} AS CHAR(2)) AS yr
+           , CAST(#{month} AS CHAR(1)) AS month
+        FROM dual
+     ) d ON 1=1
+LEFT JOIN xodxslipgenno a ON b.slip_typ_cd = a.slip_typ_cd AND a.yr = #{yr} AND a.month= #{month}
+WHERE b.slip_typ_cd = #{slip_typ_cd}
+AND b.complt_yn = 'Y'
+UNION
+SELECT b.slip_typ_cd
+   , d.yr
+   , d.month
+   , TRIM(c.genrt_no) AS genrt_no
+   , b.slip_typ_nm AS etc
+FROM fbasliptyph b 
+JOIN (SELECT CAST(#{yr} AS CHAR(2)) AS yr
+           , CAST(#{month} AS CHAR(1)) AS month
+        FROM dual
+     ) d ON 1=1
+JOIN (SELECT CASE WHEN NVL(TRIM(SUBSTR(MAX(unslip_no), 7, 4)),'') = '' THEN '0000' ELSE  SUBSTR(MAX(unslip_no), 7, 4) END AS genrt_no
+        FROM fspsliph  
+       WHERE unslip_no LIKE #{slip_typ_cd}||#{yr}||#{month}|| '%'
+         AND slip_typ_cd = #{slip_typ_cd}
+      ) c ON 1=1
+WHERE b.slip_typ_cd = #{slip_typ_cd}
+AND b.complt_yn != 'Y'
+</select>
+
+<!-- 결의번호 채번 저장 -->	
+<update id="mergeGenerationSlipNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo">
+MERGE /* QueryID : kr.re.kitech.biz.com.vo.mergeGenerationSlipNumber */
+ INTO xodxslipgenno AS A
+USING DUAL B ON A.slip_typ_cd = #{slip_typ_cd} AND A.yr = #{yr} AND  A.month = #{month} 
+ WHEN MATCHED THEN 
+    UPDATE
+       SET genrt_no = #{genrt_no}
+ WHEN NOT MATCHED THEN 
+    INSERT(
+       slip_typ_cd, yr, month, genrt_no, etc
+      )
+    VALUES(
+       #{slip_typ_cd}, #{yr}, #{month}, #{genrt_no}, #{etc}
+    )
+</update>
+    
+    <select id="selectGenerationCtrNoNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo" resultType="kr.re.kitech.biz.com.vo.GenerationVo">
+		SELECT MAX(creat_odr) creat_odr, to_char(current,'%y%m%d') as creat_ymd /* QueryID : kr.re.kitech.biz.com.vo.selectGenerationCtrNoNumber */
+		FROM fbagenno 
+		WHERE creat_ymd = #{creat_ymd}
+		  AND  no_clsf= 'C'
+	</select>
+	
+	<insert id="insertGenerationCtrNoNumber" parameterType="kr.re.kitech.biz.com.vo.GenerationVo">	
+		INSERT INTO FBAGENNO	/* QueryID : kr.re.kitech.biz.com.vo.insertGenerationCtrNoNumber */
+		(
+    		no_clsf, creat_no, creat_ymd, creat_odr, rmk, regst_syspayno, regst_daytm
+		)
+		VALUES
+		(
+			'C', #{creat_no}, #{creat_ymd}, #{creat_odr}, ' ', #{regst_syspayno}, CURRENT
+		)
+    </insert>
+
+<select id="selectGenerationSlipNumber2" parameterType="kr.re.kitech.biz.com.vo.GenerationVo" resultType="kr.re.kitech.biz.com.vo.GenerationVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.vo.selectGenerationSlipNumber2 */
+     b.slip_typ_cd
+   , d.yr
+   , d.month
+   , TRIM(c.genrt_no) AS genrt_no
+   , b.slip_typ_nm AS etc
+FROM fbasliptyph b 
+JOIN (SELECT CAST(#{yr} AS CHAR(2)) AS yr
+           , CAST(#{month} AS CHAR(1)) AS month
+        FROM dual
+     ) d ON 1=1
+JOIN (SELECT CASE WHEN NVL(TRIM(SUBSTR(MAX(unslip_no), 7, 4)),'') = '' THEN '0000' ELSE  SUBSTR(MAX(unslip_no), 7, 4) END AS genrt_no
+        FROM fspsliph  
+       WHERE unslip_no LIKE #{slip_typ_cd}||#{yr}||#{month}|| '%'
+         AND slip_typ_cd = #{slip_typ_cd}
+      ) c ON 1=1
+WHERE b.slip_typ_cd = #{slip_typ_cd}
+</select>
+
+<!-- 거래처코드 채번 -->
+<select id="selectFbaGenNo" parameterType="kr.re.kitech.biz.fin.std.vo.FbaGenNoVo" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.com.selectFbaGenNo */
+      MAX(creat_no) creat_no 
+ FROM fbagenno 
+ WHERE no_clsf = 'V'
+</select>
+
+<!-- 거래처 신규채번 저장 -->
+<update id="updateFbaGenNo" parameterType="kr.re.kitech.biz.fin.std.vo.FbaGenNoVo">
+UPDATE fbagenno
+   SET creat_no = #{creat_no}
+     , regst_syspayno = #{regst_syspayno}
+     , regst_daytm = SYSDATE
+ WHERE creat_no = #{old_creat_no}
+   AND no_clsf  = 'V'
+</update>
+
+<!-- 기술지원 접수 번호 생성 조회 -->
+<select id="selectSptGenro" parameterType="java.lang.String" resultType="kr.re.kitech.biz.com.vo.SptGenroVo">
+SELECT /* kr.re.kitech.biz.com.selectSptGenro */
+      supt_year
+    , supt_team
+    , supt_clsf
+    , supt_team_code
+    , genrt_no + 1 AS genrt_no
+  FROM sptgenro
+ WHERE supt_team = #{supt_team}
+</select>
+
+<!-- 기술지원 접수번호 채번 업데이트 -->
+<update id="updateSptGenro" parameterType="kr.re.kitech.biz.com.vo.SptGenroVo">
+UPDATE /* kr.re.kitech.biz.com.updateSptGenro */
+       sptgenro
+   SET supt_year = #{supt_year}
+     , genrt_no = #{genrt_no}
+WHERE supt_team = #{supt_team}
+</update>
+
+<!-- 계정번호관리 계정등록을 위한 채번  -->
+<select id="selectResBgAcctMGenNo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectResBgAcctMGenNo */ 
+	TO_CHAR(NVL( MAX(accnt_no[5,8]),0) + 1, <![CDATA[ '&&&&' ]]>) AS max_no
+    , b.mngmt_item_1
+FROM xodxcommst b
+LEFT JOIN resbgacctm a ON a.accnt_no LIKE b.mngmt_item_1 ||#{start_year}||'%'
+WHERE b.cd = #{accnt_grp}
+GROUP BY b.mngmt_item_1  -- 'FAK011'
+</select>
+</mapper>

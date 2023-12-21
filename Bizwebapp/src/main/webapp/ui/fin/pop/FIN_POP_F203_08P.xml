@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="어음번호">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="prmsnt_no" name="어음번호" dataType="text"></w2:column>
+            			<w2:column id="prmsnt_clsf" name="어음구분" dataType="text"></w2:column>
+            			<w2:column id="amt" name="금액" dataType="text"></w2:column>
+            			<w2:column id="contpat_accnt_cd" name="상대회계코드" dataType="text"></w2:column>
+            			<w2:column id="vend_cd" name="거래처코드" dataType="text"></w2:column>
+            			<w2:column id="vend_abbr" name="거래처명" dataType="text"></w2:column>
+            			<w2:column id="expir_ymd" name="만기일자" dataType="text"></w2:column>
+            			<w2:column id="accnt_no" name="계정번호" dataType="text"></w2:column>
+            			<w2:column id="issu_psn" name="발행자" dataType="text"></w2:column>
+            			<w2:column id="rmk" name="적요" dataType="text"></w2:column>
+            			<w2:column id="depst_req_no" name="어음입금의뢰번호" dataType="text"></w2:column>
+            			<w2:column id="pay_bank_nm" name="지급은행명" dataType="text"></w2:column>
+            			<w2:column id="issu_ymd" name="발행일자" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="prmsnt_clsf" name="어음구분"></w2:key>
+            			<w2:key id="vend_cd" name="거래처코드" dataType="text"></w2:key>
+            			<w2:key id="expir_ymd" name="만기일자" dataType="text"></w2:key>
+            			<w2:key id="vend_abbr" name="거래처명" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 조회 -->
+        	<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' 
+        		action="SvcFINSPMPOPR11.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace=""
+        		errorHandler="" customHandler="" mode="asynchronous" processMsg="조회중..." ev:submit="" ev:submitdone="" ev:submiterror=""
+        		abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+	 * 화면 설명 : 어음번호 조회
+	 * 변경 이력 : 2022-08-17	이영희	최초 작성
+	 ****************************************************/      
+	/**
+	 * 페이지 로딩 이벤트
+	 */   
+	scwin.onpageload = function() {
+		// 공통코드
+		var codeOptions = [{ code : "FAO", compID :"sbx_prmsnt_clsf,grd_prmsnt:prmsnt_clsf" }];
+		com.setCmnCd(codeOptions, function() {
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 거래처 조회
+	 */ 
+	scwin.btn_vend_onclick = function(e) {
+		com.pop.open(com.pop.TYPE.VEND, {ref_yn:"Y"}, function(ret) {
+			dma_search.set("vend_cd", ret.vend_cd);
+			dma_search.set("vend_abbr", ret.vend_abbr);
+		});
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.btn_search_onclick = function(e) {
+		com.execute(sbm_selectData, {
+			successCallback : function(e){
+				dlt_grd.setJSON(e.responseJSON.fcpPrmsntVoList);
+			}
+		});
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**
+	 * 그리드 더블클릭 이벤트
+	 */
+	scwin.grd_prmsnt_oncelldblclick = function(row,col,colId) {
+		com.closePopup(dlt_grd.getRowJSON(row));
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection " id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:180px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="어음구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_prmsnt_clsf" style="width:150px;" submenuSize="auto"
+    								title="어음구분" ref="data:dma_search.prmsnt_clsf">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="거래처" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="inpSch" id="" style="width: 120px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="" style="" title="거래처" ref="data:dma_search.vend_cd"></xf:input>
+    								<xf:trigger class="btn" id="btn_vend" style="" type="button" title="거래처 조회" ev:onclick="scwin.btn_vend_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="" style="width: 150px;" title="거래처 상세" ref="data:dma_search.vend_abbr"></xf:input>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="만기일자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="" placeholder="시작일" renderDiv="true" rightAlign="false" style="" title="만기일자" ref="data:dma_search.expir_ymd">
+    							</w2:inputCalendar>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_prmsnt" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb"
+    			rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태"
+    			rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    			selectedRowColor="#fbf2cd" style="height: 85px;" summaryAuto="true" visibleRowNum="10"
+    			ev:oncelldblclick="scwin.grd_prmsnt_oncelldblclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="어음구분" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="어음번호" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="만기일자" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column29" inputType="text" style="height:28px;" value="금액" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column32" inputType="text" style="height:28px" value="계정번호" width="80"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="column49" value="회계코드" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="column30" inputType="text" style="height:28px" value="거래처" width="130"
+    						class="">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column46" inputType="text" style="height:28px" value="발행자" width="100">
+    					</w2:column>
+    					<w2:column width="150" inputType="text" style="height:28px" id="column48" value="적요" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" escape="false" id="prmsnt_clsf" inputType="select" readOnly="true"
+    						style="height:28px;" width="90">
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="prmsnt_no" inputType="text" readOnly="true" style="height:28px;"
+    						width="100">
+    					</w2:column>
+    					<w2:column displayMode="label" id="expir_ymd" inputType="text" readOnly="true" style="height:28px;" width="90"
+    						dataType="date">
+    					</w2:column>
+    					<w2:column displayMode="label" id="amt" inputType="text" readOnly="true" style="height:28px;" width="100"
+    						dataType="number" displayFormat="#,###" class="ri">
+    					</w2:column>
+    					<w2:column displayMode="label" id="accnt_no" inputType="text" readOnly="true" style="height:28px" width="80"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="contpat_accnt_cd" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column displayMode="label" id="vend_abbr" inputType="text" readOnly="true" style="height:28px" width="130" class="le"></w2:column>
+    					<w2:column displayMode="label" id="issu_psn" inputType="text" readOnly="true" style="height:28px" value=""
+    						width="100" class="le">
+    					</w2:column>
+    					<w2:column width="150" inputType="text" style="height:28px" id="rmk" value="" displayMode="label" readOnly="true"
+    						class="le">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro conf" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

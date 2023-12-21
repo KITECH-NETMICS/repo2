@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.com.sms">
+
+  <select id="selectListItemMsgSendLog" parameterType="kr.re.kitech.biz.com.sms.vo.MsgSendLogVo" resultType="kr.re.kitech.biz.com.sms.vo.MsgSendLogVo">
+    SELECT /* QueryID : kr.re.kitech.biz.com.sms.selectListItemMsgSendLog */
+  x0.seq_no
+  , DECODE(x1.nm, NULL, '시스템', x1.nm) nm
+  , x1.empno
+  , x0.syspayno
+  , DECODE(x0.is_success, 't', '성공', '실패') is_success
+  , x0.cmid
+  , DECODE(x0.msg_type, '0', 'SMS', '5', 'MMS', '6', '알림톡', '기타') msg_type
+  , x0.dest_phone
+  , x0.dest_name
+  , x0.dest_syspayno
+  , x0.send_time
+  , x0.send_phone
+  , x0.send_name
+  , x0.send_syspayno
+  , x0.business_yn
+  , x0.subject
+  , x0.msg_body
+  , x0.template_code
+  , x0.re_type
+FROM msgsendlog x0
+LEFT JOIN humbasicinfo AS x1 ON x1.syspayno = x0.syspayno
+WHERE 
+<if test="start_ymd != ''">x0.send_time <![CDATA[>=]]> TO_DATE(#{start_ymd}, '%Y%m%d') AND x0.send_time <![CDATA[<=]]> TO_DATE(#{close_ymd}, '%Y%m%d')+(Interval (23:59:59) HOUR TO SECOND) </if>
+<if test="syspayno != ''">AND x0.syspayno = #{syspayno} </if>
+<if test="msg_type != ''">AND x0.msg_type = #{msg_type} </if>
+<if test="subject != ''">AND x0.subject LIKE '%' || #{subject} || '%' </if>
+<if test="msg_body != ''">AND x0.msg_body LIKE '%' || #{msg_body} || '%' </if>
+<if test="sys != ''">AND x1.nm IS NULL </if>
+ORDER BY x0.send_time DESC
+  </select>
+
+</mapper>

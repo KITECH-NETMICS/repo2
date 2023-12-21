@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ccs.pop">
+<!-- 국내출장신청 검색 팝업 -->
+<select id="selectPopCtrDomList" resultType="kr.re.kitech.biz.ccs.pop.vo.CtrTripPopVo" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo">
+SELECT DISTINCT /* kr.re.kitech.biz.ccs.pop.selectPopCtrDomList */
+       '국내출장' as trip_knd
+     , a.req_no
+     , a.req_psn_syspayno
+     , a.biztrip_start_ymd
+     , a.biztrip_cls_ymd 
+     , CONCAT(SUBSTR(TO_DATE(a.biztrip_start_ymd, '%Y%m%d'), 0, 10), CONCAT(' ~ ', SUBSTR(TO_DATE(a.biztrip_cls_ymd, '%Y%m%d'), 0, 10))) as biztrip_term
+     , a.biztrip_goal_clsf
+     , fun_xodxcommst_cd_nm(DECODE(TRIM(nvl(b.truth_biztrip_goal_cd,'')), '', a.biztrip_goal_clsf, b.truth_biztrip_goal_cd), 0) as biztrip_goal
+     , a.region
+     , fun_xodxcommst_cd_nm(a.arriv_region, 0) as biztrip_region_nm
+     , b.req_ymd AS rep_ymd
+     , a.tot_expns
+     , a.unslip_no
+     , b.rep_req_no
+     , fun_get_trip_compn_list(a.req_no, 'TQ') AS biztrip_psn_nm
+     , MAX(e.accnt_no) AS accnt_no          
+     , CASE WHEN MAX(f.card_meal) IS NULL THEN MAX(a.card_meal) || '식 (정산:-)'
+            ELSE MAX(a.card_meal) || '식 (정산:'||MAX(f.card_meal)||'식)' END AS card_meal
+  FROM ctrdom AS a 
+  LEFT JOIN ctrdomrep AS b ON a.req_no = b.biztrip_req_no
+  JOIN ctrdomcompn c ON a.req_no = c.req_no
+  JOIN xomxintfatab AS d ON a.req_no = d.req_no
+  LEFT JOIN ctrdomaccnt AS e ON e.req_no = a.req_no
+  LEFT JOIN ctrdomexpns AS f ON b.rep_req_no = f.req_no
+ WHERE a.biztrip_start_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+ <if test='apr_state != null and apr_state != ""'> AND d.apr_state = #{apr_state} </if>
+ <if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+ <if test='biztrip_psn_syspayno != null and biztrip_psn_syspayno != ""'>  AND c.biztrip_psn_syspayno = #{biztrip_psn_syspayno} </if>
+ <if test='type != null and type == "evid"'> AND a.no_trvel_expns = 'Y' </if>
+ <if test='flag != null and flag == "DomCvnTrip"'> 
+   AND d.apr_state <![CDATA[ >= ]]> 'XAD020' 
+   <if test='act_clsf != null and act_clsf ="CLA003"'> AND (a.biztrip_goal_clsf = 'FBV150' OR b.truth_biztrip_goal_cd = 'FBV150') </if>
+   <if test='act_clsf != null and act_clsf ="CLA004"'> AND (a.biztrip_goal_clsf = 'FBV151' OR b.truth_biztrip_goal_cd = 'FBV151') </if>
+ </if> <!--외부강의 -->
+ GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+ ORDER BY  a.biztrip_start_ymd DESC
+</select>
+<!-- 해외출장 신청번호 검색 -->
+<select id="selectPopCtrOverList" resultType="kr.re.kitech.biz.ccs.pop.vo.CtrTripPopVo" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo">
+SELECT  /* kr.re.kitech.biz.ccs.pop.selectPopCtrOverList */
+       CASE WHEN SUBSTR(a.req_no, 0, 3) = 'C96' THEN '주재국출장' ELSE '해외출장' END AS trip_knd
+     , a.req_no
+     , a.req_psn_syspayno
+     , a.biztrip_start_ymd
+     , a.biztrip_cls_ymd 
+     , SUBSTR(TO_DATE(a.biztrip_start_ymd, '%Y%m%d'), 1, 10) || ' ~ '|| CASE WHEN a.biztrip_cls_ymd  != '' THEN SUBSTR(TO_DATE(a.biztrip_cls_ymd, '%Y%m%d'), 0, 10) ELSE '' END AS biztrip_term 
+     , a.biztrip_goal_clsf
+     , fun_xodxcommst_cd_nm(DECODE(TRIM(nvl(b.truth_biztrip_goal_clsf,'')), '', a.biztrip_goal_clsf, b.truth_biztrip_goal_clsf), 0) as biztrip_goal
+     , fun_xodxcommst_cd_nm(a.biztrip_region, 0) as biztrip_region_nm
+     , b.req_ymd as rep_ymd
+     , a.tot_expns
+     , a.unslip_no
+     , b.rep_req_no AS rep_no
+     , d.apr_state
+     , GROUP_CONCAT( c.biztrip_psn_nm)  AS biztrip_psn_nm
+     , a.cabin_meal || '식' AS card_meal
+     , MAX(e.accnt_no) AS accnt_no
+  FROM ctrover a 
+  LEFT JOIN ctroverrep b ON a.req_no = b.biztrip_req_no
+  JOIN ctrovercompn c ON a.req_no = c.req_no
+  JOIN xomxintfatab d ON a.req_no = d.req_no
+  LEFT JOIN ctroveraccnt e on e.req_no = a.req_no
+ WHERE a.biztrip_start_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+ <if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+ <if test='apr_state != null and apr_state != ""'> AND d.apr_state = #{apr_state} </if>
+ <if test='biztrip_psn_syspayno != null and biztrip_psn_syspayno != ""'>  AND c.biztrip_psn_syspayno = #{biztrip_psn_syspayno} </if>
+ <if test='flag != null and flag == "OverCvntrip"'> 
+   AND d.apr_state <![CDATA[ >= ]]> 'XAD020'    
+   <if test='act_clsf != null and act_clsf ="CLA003"'> AND (a.biztrip_goal_clsf = 'FBV150' OR b.truth_biztrip_goal_clsf = 'FBV150') </if>
+   <if test='act_clsf != null and act_clsf ="CLA004"'> AND (a.biztrip_goal_clsf = 'FBV151' OR b.truth_biztrip_goal_clsf = 'FBV151') </if>
+ </if> <!--외부강의 -->
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,16
+ORDER BY a.biztrip_start_ymd DESC, a.req_no, b.rep_req_no
+</select>
+<select id="selectPopCtrLocalList" resultType="kr.re.kitech.biz.ccs.pop.vo.CtrTripPopVo" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo">
+SELECT /* kr.re.kitech.biz.ccs.pop.selectPopCtrLocalList */
+       '근거리출장' AS trip_knd
+     , a.req_no
+     , a.req_psn_syspayno
+     , a.biztrip_ymd AS biztrip_start_ymd
+     , a.biztrip_ymd AS biztrip_cls_ymd 
+     , CONCAT(SUBSTR(TO_DATE(a.biztrip_ymd, '%Y%m%d'), 1, 10), CONCAT(' ~ ', SUBSTR(TO_DATE(a.biztrip_ymd, '%Y%m%d'), 1, 10))) AS biztrip_term
+     , a.biztrip_goal_clsf
+     , fun_xodxcommst_cd_nm(a.biztrip_goal_clsf, 0) AS biztrip_goal
+     , a.arriv_region
+     , fun_xodxcommst_cd_nm(a.arriv_region, 0) AS biztrip_region_nm
+     , a.tot_expns
+     , a.unslip_no
+     , a.accnt_no
+     ,'' AS rep_no
+     , '' AS rep_ymd
+     , '0식' AS card_meal
+     , GROUP_CONCAT( c.biztrip_psn_nm) AS biztrip_psn_nm
+  FROM ctrlocal a 
+  JOIN xomxintfatab b on a.req_no = b.req_no
+  JOIN ctrlocalcompn c on a.req_no = c.req_no
+ WHERE a.biztrip_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+ <if test='apr_state != null and apr_state != ""'> AND b.apr_state = #{apr_state} </if>
+ <if test='flag != null and flag == "LocalCvnTrip"'> 
+   AND b.apr_state <![CDATA[ >= ]]> 'XAD020' 
+  <if test='act_clsf != null and act_clsf ="CLA003"'> AND a.biztrip_goal_clsf = 'FBV150' </if>
+  <if test='act_clsf != null and act_clsf ="CLA004"'> AND a.biztrip_goal_clsf = 'FBV151' </if>
+ </if> <!--외부강의 -->
+ <if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+ <if test='biztrip_psn_syspayno != null and biztrip_psn_syspayno != ""'>
+   AND (c.biztrip_psn_syspayno = #{biztrip_psn_syspayno} OR a.req_psn_syspayno = #{biztrip_psn_syspayno} OR a.regst_psn_syspayno = #{biztrip_psn_syspayno})
+ </if>
+ GROUP BY 2,3,4,5,6,7,8,9,10,11,12,13
+ ORDER BY a.biztrip_ymd DESC, a.req_no
+</select>
+
+<!-- 병가 증빙 미처리 현황 -->
+<select id="selectSickVaccNoFileList" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgslappSchVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgslappVo">
+SELECT /* kr.re.kitech.biz.ccs.pop.selectSickVaccNoFileList */
+      x0.req_no
+    , x1.nm AS req_psn_nm
+    , x1.empno AS req_psn_empno
+    , fun_xodxcommst_cd_nm(x0.holiday_clsf,0) AS holiday_clsf_nm
+    , x0.holiday_start_ymd
+    , x0.holiday_cls_ymd
+    , x0.holiday_cause
+    ,NVL(x0.attach_file_no,'') AS attach_file_no
+FROM cgslapp AS x0
+JOIN humbasicinfo AS x1 ON x1.syspayno = x0.req_psn_syspayno
+JOIN xomxintfatab AS x2 ON x2.req_no = x0.req_no
+WHERE TODAY > TO_DATE( x0.holiday_cls_ymd, '%Y%m%d') + 14 UNITS DAY /* 14일 적용 */
+AND x2.apr_state >= 'XAD020'    /* 상신이전 단계 건은 제외 */
+AND x0.holiday_clsf = 'HBI008'  /* 해당 휴가원 */ 
+AND NVL(x0.attach_file_no,'') = ''  /* 증빙파일 누락 건 */
+AND x0.req_psn_syspayno = #{syspayno}
+AND x0.holiday_start_ymd >= #{start_ymd} /* 정책 시작일 */
+</select>
+
+<!-- 국내출장 정산 팝업 -->
+<select id="selectCtrDomAdList" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo" resultType="kr.re.kitech.biz.ccs.pop.vo.CtrTripPopVo">
+SELECT /* kr.re.kitech.biz.ccs.pop.selectCtrDomAdList */
+       a.req_no,   
+       g.apr_state,
+       a.biztrip_req_no,
+       c.accnt_no,
+       e.biztrip_start_ymd,
+       e.biztrip_cls_ymd,
+       e.biztrip_goal_clsf,
+       fun_xodxcommst_cd_nm(e.biztrip_goal_clsf, 0) as biztrip_goal,
+       e.region,
+       fun_xodxcommst_cd_nm(e.arriv_region, 0) as biztrip_region_nm,
+       concat(substr(to_date(e.biztrip_start_ymd, '%Y%m%d'), 0, 10), concat(' ~ ', substr(to_date(e.biztrip_cls_ymd, '%Y%m%d'), 0, 10))) as biztrip_term,
+       concat(substr(to_date(A.chng_orign_ymd, '%Y%m%d'), 0, 10), concat(' ~ ', substr(to_date(A.chng_cls_ymd, '%Y%m%d'), 0, 10))) as biztrip_chn_term,           
+       fun_get_trip_compn_list(a.biztrip_req_no, 'TQ') AS biztrip_psn_nm ,
+       a.unslip_no,
+       a.adjst_tot_expns as tot_expns,
+       fun_xodxcommst_cd_nm(g.apr_state, 0) as apr_state_nm,
+       a.req_psn_syspayno,  
+       max(f.card_meal)||'식' card_meal
+FROM ctrdomad a 
+JOIN ctrdomcompn b ON a.biztrip_req_no = b.req_no AND a.req_no LIKE 'C87%'
+JOIN ctrdom e ON a.biztrip_req_no = e.req_no
+JOIN ctrdomexpns f ON a.req_no = f.req_no
+LEFT JOIN ctrdomadaccnt c ON a.req_no = c.req_no
+JOIN xomxintfatab g ON a.req_no = g.req_no AND g.apr_state = 'XAD100'
+LEFT JOIN ctrdomcompn h ON a.biztrip_req_no = h.req_no AND h.biztrip_psn_clsf <![CDATA[ <>]]> 'FBH040' 
+WHERE 1=1
+AND e.biztrip_start_ymd >= #{from_ymd} AND e.biztrip_cls_ymd <![CDATA[<=]]> #{to_ymd}
+<if test='biztrip_req_no != null and biztrip_req_no !=""' > AND a.biztrip_req_no = #{biztrip_req_no} </if>
+<if test='biztrip_psn_syspayno != null and biztrip_psn_syspayno !=""'> AND h.biztrip_psn_syspayno = #{biztrip_psn_syspayno} </if>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+ORDER BY e.biztrip_start_ymd DESC
+</select>
+<select id="selectCtrAirMileUseList" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo" resultType="kr.re.kitech.biz.ccs.pop.vo.CtrAirMileUseVo">
+SELECT /* kr.re.kitech.biz.ccs.pop.selectCtrAirMileUseList */
+       a.req_no
+     , a.in_out_clsf
+     , a.syspayno
+     , to_char(a.regst_daytm,'%Y%m%d') AS regst_daytm
+     , a.biztrip_req_no
+     , b.nm
+  FROM ctrairmileuse a
+  JOIN humbasicinfo b ON b.syspayno = a.syspayno
+ WHERE TO_CHAR(a.regst_daytm,'%Y%m%d') BETWEEN #{from_ymd} AND #{to_ymd}
+ <if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+ <if test='biztrip_psn_syspayno != null and biztrip_psn_syspayno != ""'> AND a.syspayno = #{biztrip_psn_syspayno} </if>
+</select>
+
+<!-- 대출중도산환신청 - 대출내역조회 -->
+<select id="selectCwlLoanPopList" parameterType="kr.re.kitech.biz.ccs.pop.vo.CwlLoanPopVo" resultType="kr.re.kitech.biz.ccs.pop.vo.CwlLoanPopVo">
+	select /* QueryID : kr.re.kitech.biz.ccs.pop.selectCwlLoanPopList */ 
+	    a.syspayno, 
+	    fun_emp_nm(a.syspayno) as req_nm,
+	    a.loan_cd, 
+	    decode(a.loan_cd, '507', '상조회대출', '525', '학자금대출', '') as loan_nm,
+	    a.loan_ymd, 
+	    a.loan_tot_liq,   --대출금액
+	    a.tot_repay_amt,  --정기상환총금액
+	    a.tot_repay_intrst, --정기상환이자총금액
+	    a.tot_midway_repay_amt, --중도상환총금액
+	    a.tot_midway_repay_intrst, --중도상환총이자
+	    a.tot_repay_amt + a.tot_midway_repay_amt as sum_repay_amt,  --대출상환총액
+	    a.loan_ramt,  -- 대출잔액
+	    a.loan_rts,    -- 대출이자
+	    a.midway_repay_ymd as pre_midway_repay_ymd,   --기중도상환일자
+	    a.midway_repay_times,
+	    b.req_no
+	from cwlloan a, outer cwlloanmidrepayreq b
+	where a.loan_cd = b.loan_cd
+	and a.loan_ymd = b.loan_ymd
+	and a.syspayno = b.loan_syspayno
+	and nvl(a.dedct_progrss_state, '') not in ('2') -- 1:진행, 2:만기완료, 3:중도상환
+	and a.loan_ramt <![CDATA[ > ]]> 0
+	and a.loan_cd = '507'      -- 하재건 수석 요청(XC2202301B11)    
+	and a.syspayno = #{syspayno}
+	and a.loan_ymd between #{start_ymd} and #{end_ymd}
+	and b.biz_proc_cd != 'Y' -- 확정처리 제외
+	order by a.loan_ymd
+  </select>
+
+  <!-- 부양가족찾기  -->
+  <select id="selectHumFamyInfoList" parameterType="kr.re.kitech.biz.ccs.pop.vo.CwlHumFamyInfoPopVo" resultType="kr.re.kitech.biz.ccs.pop.vo.CwlHumFamyInfoPopVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.pop.selectHumFamyInfoList */ 
+	     a.syspayno ,
+	     a.resid_no ,
+	     (a.resid_no[1,8]||'●●●●●●') as s_resid_no,
+	     a.relat ,
+	     a.nm ,
+	     a.ocpt_nm ,
+	     a.educ ,
+	     a.postmt_no ,
+	     a.addr ,
+	     a.detls_addr ,
+	     a.psinsr_yn ,
+	     a.cohbt_yn ,
+	     a.obst_yn ,
+	     a.human_dedct_yn ,
+	     a.fam_payamt_yn ,
+	     a.payamt_occr_ymd ,
+	     a.payamt_cls_ymd ,
+	     a.rmk ,
+	(SELECT SUM(c.auinsp_tot_amt) as auinsp_tot_amt 
+	FROM cwlunivloandetl c LEFT JOIN cwlunivloanreq d
+	ON c.req_no = d.req_no
+	WHERE 1=1
+	AND c.bnft_psn_resid_no = a.resid_no
+	AND substring(to_char(d.req_ymd) from 1 for 4) =  substring(to_char(CURRENT,'%Y') from 1 for 4)) as auinsp_tot_amt,     
+	     a.regst_syspayno ,
+	     a.regst_daytm ,
+	     a.updt_syspayno ,
+	     a.updt_daytm
+	FROM humfamyinfo a LEFT JOIN humbasicinfo b
+	ON a.syspayno = b.syspayno
+	WHERE 1=1
+	AND (a.relat ='HAH003' OR a.relat ='HAH004')
+	AND b.empno LIKE DECODE(#{empno},'','%',#{empno})
+	AND b.nm LIKE DECODE(#{nm},'','%',#{nm})
+  </select>
+
+</mapper>

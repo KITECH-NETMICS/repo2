@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+  <select id="selectListItemCgsWorkingStatus" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsWorkingStatusVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsWorkingStatusVo">
+    SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListItemCgsWorkingStatus */ 
+       TO_CHAR(startDate, '%Y-%m-%d') AS start_ymd,
+       TO_CHAR(endDate, '%Y-%m-%d') AS cls_ymd,
+       title,
+       scheduleId,
+       repeatType,
+       repeatPeriod,
+       repeatPeriodOption,
+       repeatStartDate,
+       repeatEndDate,
+       categoryId,
+       workspaceId,
+       place,
+       wholeday,
+       schedulePublic,
+       attendanceRequest,
+       registerId,
+       sendmail,
+       color,
+       facilityId,
+       scheduleType,
+       scheduleGroupId,
+       categoryName,
+       icon,
+       participantId,
+       system_name,
+       fun_emp_nm(registerid) AS nm,
+       CASE WHEN title LIKE '%시간제연차%' THEN TO_CHAR(startdate, '%H:%M') || ' ~ ' || TO_CHAR(enddate, '%H:%M') ELSE '' END AS partTimeHours,
+       '' as blank
+FROM(
+       SELECT
+              DISTINCT
+              S.start_date AS startDate,
+              S.end_date       AS endDate,
+              S.title            AS title,
+              S.schedule_id       AS scheduleId,
+              R.repeat_type       AS repeatType,
+              R.repeat_period       AS repeatPeriod,
+              R.repeat_period_option       AS repeatPeriodOption,
+              R.repeat_start_date       AS repeatStartDate,
+              R.repeat_end_date       AS repeatEndDate,
+              S.category_id       AS categoryId,
+              S.workspace_id       AS workspaceId,
+              S.place              AS place,
+              S.wholeday           AS wholeday,
+              S.schedule_public       AS schedulePublic,
+              S.attendance_request       AS attendanceRequest,
+              S.register_id       AS registerId,
+              S.sendmail          AS sendmail,
+              S.color             AS color,
+              NULL::VARCHAR       AS facilityId,
+              S.schedule_type       AS scheduleType,
+              S.schedule_group_id       AS scheduleGroupId,
+              C.category_name       AS categoryName,
+              C.icon               AS icon,
+              TRIM(DECODE(S.schedule_public, 1, portal:ikep4_sd_get_participant_list(S.schedule_id), '')) AS participantId,
+              S.system_name AS system_name
+       FROM
+              portal:ikep4_sd_schedule S
+                     INNER JOIN portal:ikep4_sd_category C ON C.category_id = S.category_id
+                     LEFT OUTER JOIN portal:ikep4_sd_participant P ON P.schedule_id = S.schedule_id AND P.target_type = 1
+                     LEFT OUTER JOIN portal:ikep4_sd_repeat R ON R.schedule_group_id = S.schedule_group_id AND S.start_date BETWEEN R.repeat_start_date AND R.repeat_end_date
+                     JOIN imis:HUMBASICINFO H ON S.register_id = H.SYSPAYNO
+       WHERE
+       		  S.start_date <![CDATA[<=]]> #{end_ymd} || ' 23:59:59' AND
+              S.end_date <![CDATA[>=]]> #{start_ymd} || ' 00:00:00' AND
+              S.title::varchar NOT LIKE '%출장복명%' AND
+               S.system_name IN ('출장','휴가','재택근무')
+              AND (#{dept_cd} = '' OR H.dept_cd = #{dept_cd})
+              AND (#{syspayno} = '' OR H.SYSPAYNO = #{syspayno})
+       ORDER BY categoryid DESC
+)
+  </select>
+  <select id="selectHolidayListItem" parameterType="kr.re.kitech.biz.ccs.cgs.vo.XomDtMstVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.XomDtMstVo">
+    SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListItemXomDtMst */ 
+		 ymd, apply_dept_cd, day, day_no, off_yn, off_rmk, rmk, month_week, year_week, regst_psn_syspayno, regst_daytm, updt_psn_syspayno, updt_daytm
+		FROM xomdtmst 
+		WHERE ymd <![CDATA[>=]]> #{req_fr_ymd}
+		AND ymd <![CDATA[<=]]> #{req_to_ymd}
+  </select>
+  <select id="selectListItemHumPotletGetDepartment" parameterType="kr.re.kitech.biz.ccs.cgs.vo.HumPotletGetDepartmentVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.HumPotletGetDepartmentVo">
+    SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListItemHumPotletGetDepartment */ 
+		 a.dept_nm
+     , a.nm
+     , a.empno
+     , b.goal
+     , b.region
+     , b.clsf
+     , NVL(b.clsf_nm, '근무') AS state_nm
+     , NVL(b.flag, '0') AS flag
+     , a.posi_nm
+     , a.ext_no
+     , a.mobile
+     , a.email
+FROM v_humbasicinfo a
+LEFT OUTER JOIN (
+       SELECT a.biztrip_psn_syspayno AS syspayno
+             , b.biztrip_goal         AS goal
+             , b.biztrip_region       AS region
+             , '국내출장'             AS clsf
+             , '국내출장'             AS clsf_nm
+             , '1'                    AS flag
+       FROM ctrdomcompn a
+       INNER JOIN ctrdom b ON a.req_no = b.req_no
+       INNER JOIN xomxintfatab c ON a.req_no = c.req_no AND c.apr_state > 'XAD015'
+       WHERE a.req_no NOT IN( SELECT a.biztrip_req_no
+                                  FROM ctrdomrep a 
+                           INNER JOIN xomxintfatab b ON a.rep_req_no = b.req_no AND b.apr_state >= 'XAD020'
+                                 WHERE a.chng_resn = 'FBQ020')  --출장취소
+       AND #{ymd} BETWEEN b.biztrip_start_ymd AND b.biztrip_cls_ymd
+    UNION ALL
+       SELECT a.biztrip_psn_syspayno AS syspayno
+            , b.biztrip_goal          AS goal
+            , fun_xodxcommst_cd_nm(b.biztrip_region, 0) AS region
+            , '국외출장'              AS clsf
+            , '국외출장'              AS clsf_nm
+            , '2'                     AS flag
+       FROM ctrovercompn a
+       INNER JOIN ctrover b ON a.req_no = b.req_no
+       INNER JOIN xomxintfatab c ON a.req_no = c.req_no AND c.apr_state > 'XAD015'
+       WHERE a.req_no NOT IN ( SELECT a.biztrip_req_no
+                                   FROM ctroverrep a 
+                            INNER JOIN xomxintfatab b ON a.rep_req_no = b.req_no AND b.apr_state >= 'XAD020' AND a.chng_resn = 'FBQ020' ) --출장취소
+       AND #{ymd} BETWEEN b.biztrip_start_ymd AND b.biztrip_cls_ymd
+    UNION ALL
+       SELECT c.biztrip_psn_syspayno   AS syspayno
+            , a.major_intrv_psn         AS goal
+            , a.biztrip_land            AS region
+            , '근거리'                  AS clsf
+            , '근거리'                  AS clsf_nm
+            , '3'                       AS flag --근거리
+       FROM ctrlocal a
+       INNER JOIN xomxintfatab b ON a.req_no = b.req_no AND b.apr_state > 'XAD015'
+       INNER JOIN ctrlocalcompn c ON a.req_no = c.req_no
+       WHERE a.biztrip_ymd = #{ymd}
+    UNION ALL
+       SELECT a.req_psn_syspayno   AS syspayno
+            , a.holiday_cause       AS goal
+            , a.destin              AS region
+            , '휴가원'              AS clsf
+            , b.cd_nm               AS clsf_nm
+            , '4'                   AS flag --휴가
+       FROM cgslapp a
+       INNER JOIN xodxcommst b ON a.holiday_clsf = b.cd
+       INNER JOIN xomxintfatab c ON a.req_no = c.req_no AND c.apr_state > 'XAD015'
+       WHERE #{ymd} BETWEEN a.holiday_start_ymd AND a.holiday_cls_ymd
+    UNION ALL
+       SELECT a.syspayno
+            , a.appont_resn    AS goal
+            , a.dispatch_loc   AS region
+            , '발령처리'       AS clsf
+            , b.cd_nm          AS clsf_nm
+            , '5'              AS flag --휴직/파견
+       FROM humappnthst a
+       INNER JOIN xodxcommst b ON a.appont_typ = b.cd AND b.mngmt_item_1 IN('휴직','파견')
+       WHERE #{ymd} BETWEEN a.appont_start_ymd AND a.appont_cls_ymd
+    UNION ALL
+     SELECT a.syspayno
+          , a.cause    AS goal
+          , ''   AS region
+          , '재택근무'       AS clsf
+          , '재택근무'       AS clsf_nm
+          , '6'              AS flag -- 재택근무
+     FROM cwsoutwork a
+     INNER JOIN xomxintfatab b ON b.req_no = a.req_no
+     WHERE #{ymd} BETWEEN a.start_ymd AND a.cls_ymd
+    ) b ON a.syspayno = b.syspayno
+INNER JOIN xodhdeptinfo x ON a.dept_cd = x.dept_cd AND a.dept_new_ymd = x.dept_new_ymd
+WHERE (a.dept_cd = #{dept_cd} OR x.divsn_dept = #{dept_cd})
+AND (a.dept_new_ymd  = #{dept_new_ymd} OR x.divsn_dept_new_ymd = #{dept_new_ymd})
+AND a.work_clsf = 'HAG010'
+ORDER BY a.duty_cd desc, a.posi_cd, a.dept_cd, a.nm
+  </select>
+</mapper>

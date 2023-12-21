@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<select id="selectHumApyAccList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAccSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAccInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAccList */ 
+		 a.req_no  --신청번호
+        ,a.req_ymd--신청일
+        ,a.syspayno
+        ,b.empno     --개인번호
+        ,b.nm        --성명
+        ,b.dept_cd   --부서코드
+        ,b.dept_nm   --부서명
+        ,b.posi_cd   --직급코드
+        ,b.posi_nm   --직급명
+        ,b.entr_ymd  --입원일(입사일)
+        ,a.salry_bank --은행코드
+        ,d.cd_nm AS salry_bank_nm --은행명
+        ,a.depstr       --예금주
+        ,a.bankaccnt_no --계좌번호
+        ,c.apr_state    --결제상태
+        ,e.cd_nm AS apr_state_nm  --결제상태 이름
+        ,a.regst_syspayno --신청자사번
+        ,f.nm as regst_nm          --신청자이름
+FROM  humapybankacct a     --급여계좌 신청
+     ,v_humbASicinfo b
+     ,xomxintfatab c
+     ,xodxcommst d
+     ,xodxcommst e
+     ,humbasicinfo f
+WHERE
+     a.syspayno=b.syspayno
+     AND a.req_no=c.req_no
+     AND c.apr_state=e.cd
+     AND a.salry_bank=d.cd
+     AND c.state_inform_flag = '1'
+     AND a.regst_syspayno = f.syspayno
+         <if test="apr_state != null and apr_state != ''">
+	 and c.apr_state  = #{apr_state}
+</if>
+         <if test="syspayno != null and syspayno != ''">
+	 and (a.syspayno  = #{syspayno} or a.regst_syspayno  = #{syspayno})
+</if>
+         <if test="req_no != null and req_no != ''">
+	 and a.req_no LIKE #{req_no}
+</if>
+         <if test="dept_cd != null and dept_cd != ''">
+	 and (b.dept_cd  = #{dept_cd} or f.dept_cd = #{dept_cd})
+</if>
+         <if test="req_ymd_from != null and req_ymd_from != ''">
+	 and a.req_ymd  <![CDATA[ >= ]]>  #{req_ymd_from}
+</if>
+         <if test="req_ymd_to != null and req_ymd_to != ''">
+	 and a.req_ymd   <![CDATA[ <= ]]>   #{req_ymd_to}
+</if>
+ORDER BY a.req_no DESC
+</select>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<select id="selectHumApyAccBscInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAccSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAccInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAccBscInfo */ 
+ a.nm,
+ a.nm_eng,
+ fun_dept_nm(a.dept_cd, a.dept_new_ymd) dept_nm,
+ fun_posi_nm(a.posi_cd) posi_nm,
+ a.posi_cd,
+ a.empno,
+ a.dept_cd,
+ a.dept_new_ymd,
+ a.home_tel,
+ a.ext_no,
+ a.mobile,
+ a.email,
+ a.addr_postmt_no,
+ a.addr_base,
+ a.addr_detls,
+ a.entr_ymd,
+ b.longwk_cntfr_ymd,
+ a.resid_no,
+ b.sci_tech_anuty,
+ b.savng_shape_dedct,
+ a.syspayno,
+ b.bankaccnt_no a_bankaccnt_no,
+ c.bankaccnt_no b_bankaccnt_no,
+ fun_xodxcommst_cd_nm(b.salry_bank,0) a_bankaccnt_nm,
+ fun_xodxcommst_cd_nm(c.bank,0) b_bankaccnt_nm,
+ a.job_clsf,
+ d.cd_nm as job_clsf_nm
+FROM
+   humbasicinfo a,
+   humslbasinfo b,
+   OUTER fbaapartaccnt c,
+   xodxcommst d
+WHERE
+   a.syspayno = #{syspayno}
+   AND a.syspayno = b.syspayno
+   AND a.syspayno = c.syspayno
+   AND a.job_clsf = d.cd
+</select>
+<select id="selectHumApyAccInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAccSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAccInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumApyAccInfo */ 
+ a.req_no,
+ a.req_ymd,   -- 신청일자
+ a.salry_bank,   --은행명
+ a.bankaccnt_no,   --계좌번호
+ a.bankaccnt_attach_file_no, --계좌사본 파일번호
+ a.attach_file_no,  --첨부파일번호
+ a.dept_new_ymd,
+ a.dept_cd,
+ a.depstr,
+ b.nm,    --성명
+ b.empno,   --개인번호
+ b.syspayno,   --시스템개인번호
+ b.resid_no, -- 주민등록번호
+ c.dept_nm,   --부서명
+ d.posi_nm,   --직무명
+ h.syspayno AS regst_syspano,
+ fun_humbasicinfo_cd_nm(h.syspayno,0) AS regst_nm,
+ fun_humbasicinfo_cd_nm(h.syspayno,1) AS regst_empno,
+ fun_humbasicinfo_cd_nm(h.syspayno,4) AS regst_posi_nm,
+ fun_humbasicinfo_cd_nm(h.syspayno,8) AS regst_dept_nm,
+ fun_humbasicinfo_cd_nm(h.syspayno,18) AS regst_dept_cd,
+ fun_humbasicinfo_cd_nm(h.syspayno,28) AS regst_dept_new_ymd,
+ fun_xodxcommst_cd_nm(e.apr_state,0) apr_state_nm,
+ e.apr_state,
+ e.mngmt_item_3 ret_yn,
+ f.bankaccnt_no a_bankaccnt_no,
+ g.bankaccnt_no b_bankaccnt_no,
+ fun_xodxcommst_cd_nm(f.salry_bank,0) a_bankaccnt_nm,
+ fun_xodxcommst_cd_nm(g.bank,0) b_bankaccnt_nm 
+FROM 
+ humapybankacct a
+ JOIN humbasicinfo b ON b.syspayno = a.syspayno
+ JOIN xodhdeptinfo c ON c.dept_cd = b.dept_cd  AND c.dept_new_ymd = b.dept_new_ymd
+ JOIN xodhposiinfo d ON d.posi_cd = b.posi_cd
+ JOIN xomxintfatab e ON e.req_no = a.req_no  AND e.state_inform_flag = '1'
+ JOIN humslbasinfo f ON f.syspayno = a.syspayno
+ LEFT JOIN fbaapartaccnt g ON g.syspayno = a.syspayno
+ JOIN humbasicinfo h ON h.syspayno = a.regst_syspayno
+WHERE a.req_no = #{req_no}
+</select>
+<delete id="deleteHumApyAcc" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAccSrchVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.sal.deleteHumApyAcc */ 
+		 FROM humapybankacct WHERE req_no = #{req_no}
+</delete>
+<insert id="insertHumApyAcc" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAccInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.sal.insertHumApyAcc */ 
+		 INTO humapybankacct(
+   req_no ,   --신청번호          
+   req_ymd,          --신청일            
+   syspayno,          --시스템개인번호    
+   dept_cd,          --부서코드          
+   dept_new_ymd,          --부서신설일        
+   depstr ,          --예금주            
+   salry_bank,          --급여은행           
+   bankaccnt_no,          --계좌번호          
+   bankaccnt_attach_file_no, --계좌사본          
+   attach_file_no ,  --첨부파일번호      
+   regst_syspayno ,  --등록시스템개인번호  
+   regst_daytm   --등록일시            
+)VALUES(
+ #{req_no}, 
+ #{req_ymd}, 
+ #{syspayno}, 
+ #{dept_cd}, 
+ #{dept_new_ymd}, 
+ #{depstr}, 
+ #{salry_bank}, 
+ #{bankaccnt_no}, 
+ #{bankaccnt_attach_file_no}, 
+ #{attach_file_no}, 
+ #{regst_syspayno},
+ CURRENT
+)
+</insert>
+<update id="updateHumApyAcc" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAccInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.sal.updateHumApyAcc */ 
+		 humapybankacct SET
+ depstr = #{depstr},          --예금주            
+ salry_bank = #{salry_bank},          --급여은행           
+ bankaccnt_no = #{bankaccnt_no},          --계좌번호    
+ bankaccnt_attach_file_no = #{bankaccnt_attach_file_no}, --계좌사본  
+ attach_file_no = #{attach_file_no},           
+ updt_syspayno = #{regst_syspayno},
+ updt_daytm = CURRENT
+WHERE
+ req_no = #{req_no}
+</update>
+<select id="selectHumApyAccAprChk" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAccSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAccInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumApyAccAprChk */ 
+		 count(*) AS cnt
+FROM  humapybankacct a     	--급여계좌 신청
+      JOIN v_humbASicinfo b  ON a.syspayno=b.syspayno
+      JOIN xomxintfatab c ON  a.req_no=c.req_no AND c.state_inform_flag = '1'
+      JOIN xodxcommst d ON a.salry_bank=d.cd
+      JOIN xodxcommst e ON c.apr_state=e.cd
+      JOIN humbasicinfo f ON a.regst_syspayno = f.syspayno 
+WHERE a.regst_syspayno  = #{syspayno}
+     AND c.apr_state <![CDATA[ <> ]]> 'XAD100'
+</select>
+<update id="updateHumApyAccUserInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAccInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyAccUserInfo */ 
+		 humslbasinfo SET
+updt_syspayno = #{updt_syspayno},
+updt_daytm = CURRENT
+  <if test="salry_bank != null and salry_bank != ''">
+	 , salry_bank = #{salry_bank}
+</if>
+  <if test="bankaccnt_no != null and bankaccnt_no != ''">
+	 , bankaccnt_no = #{bankaccnt_no}
+</if>
+  <if test="depstr != null and depstr != ''">
+	 , depstr = #{depstr}
+</if>
+  <if test="savng_shape_dedct != null and savng_shape_dedct != ''">
+	 , savng_shape_dedct = #{savng_shape_dedct}
+</if>
+  <if test="sci_tech_anuty != null and sci_tech_anuty != ''">
+	 , sci_tech_anuty = #{sci_tech_anuty}
+</if>
+  <if test="add_pay_amt != null and add_pay_amt != ''">
+	 , add_pay_amt = add_pay_amt + #{add_pay_amt}
+</if>
+  <if test="tot_bankaccnt_no != null and tot_bankaccnt_no != ''">
+	 , tot_bankaccnt_no = #{tot_bankaccnt_no}
+</if>
+  <if test="own_driv_sub_pay != null and own_driv_sub_pay != ''">
+	 , own_driv_sub_pay = #{own_driv_sub_pay}
+</if>
+WHERE
+ syspayno = #{syspayno}
+</update>
+</mapper>

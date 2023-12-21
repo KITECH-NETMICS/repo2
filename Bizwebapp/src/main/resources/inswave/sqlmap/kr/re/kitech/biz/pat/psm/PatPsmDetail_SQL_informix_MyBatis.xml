@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.psm">
+  <select id="selectPatPsmDtlSS01" parameterType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo" resultType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo">
+/* XDA : kitech.pat.psm.dtl.xda.PatPsmDtlSS01 소연심의 마스터 정보 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.psm.selectPatPsmDtlSS01 */ 
+		 pem.exam_id
+      , pem.wri_id
+      , fun_emp_nm(pem.wri_id) wri_nm
+      , TO_CHAR(pem.wri_daytm, '%Y%m%d') AS wri_daytm
+      , pem.exam_year
+      , pem.exam_cnt || '회' AS exam_cnt
+      , TO_CHAR(pem.exam_daytm, '%Y%m%d') AS exam_daytm
+      , SUBSTR(pem.exam_hour, 0, 2) || ':' || SUBSTR(pem.exam_hour, 3) AS exam_hour
+      , pem.exam_addr
+      , pem.exam_title
+      , pem.exam_comment
+      , pem.job_state_cd
+      , pem.attach_file_no
+  FROM patexam pem
+ WHERE pem.exam_id = #{exam_id}
+  </select>
+  <select id="selectPatPiiDtlSS03" parameterType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo" resultType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo">
+/* XDA : kitech.pat.pii.dtl.xda.PatPiiDtlSS03 발명자 인터뷰 대상지역본부 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.psm.selectPatPiiDtlSS03 */ 
+		 area_nm
+     , area_cd
+  FROM patexamarea pea
+ WHERE pea.exam_id = #{exam_id}
+  </select>
+  <select id="selectPatPsmDtlSS02" parameterType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo" resultType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo">
+/* XDA : kitech.pat.psm.dtl.xda.PatPsmDtlSS02 소연심의 국내출원 심의대상 및 결과, 프로그램 저작물(S/W) 등록 보고 대상 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.psm.selectPatPsmDtlSS02 */ 
+		 pam.invnt_krn_nm AS rvew_objct
+      , pam.invnt_syspayno 
+      , fun_emp_nm(pam.invnt_syspayno) AS rel_psn_nm
+      , pam.req_no AS key_1
+      , DECODE( peo.obj_eval_1, '0', 'PME010', '1', 'PME030', '2' , 'PME020', '-') AS rvew_rst_cd
+      , peo.obj_comment AS rvew_rst
+      , MAX(pac.prj_nm) || ' 외 ' || TRUNC(COUNT(pac.prj_nm) - 1, 0) || '건' prj_nm
+      , mst.mngmt_no AS key_2
+      , pam.pat_clsf
+      , peo.obj_exam_id
+FROM patexamobj peo
+JOIN patappmastr pam ON pam.req_no = peo.req_no
+JOIN patmastr mst ON mst.req_no = pam.req_no
+LEFT JOIN patapprelatreschprj pac ON pac.req_no = pam.req_no
+WHERE peo.exam_id = #{exam_id}
+AND peo.obj_exam_clsf = #{obj_exam_clsf}
+GROUP BY 1, 2, 3, 4, 5, 6, 8, 9, 10
+ORDER BY peo.obj_exam_id DESC
+  </select>
+  <select id="selectPatPsmDtlSS03" parameterType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo" resultType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo">
+/* XDA : kitech.pat.psm.dtl.xda.PatPsmDtlSS03 소연심의 자유발명, 기타심의 대상 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.psm.selectPatPsmDtlSS03 */ 
+		 pam.invnt_krn_nm AS rvew_objct
+     , pam.invnt_syspayno 
+     , fun_emp_nm(pam.invnt_syspayno) AS rel_psn_nm
+     , pam.req_no AS key_1
+     , peo.obj_comment AS rvew_rst
+     , mst.mngmt_no AS key_2
+     , pam.pat_clsf
+     , peo.obj_exam_id
+     , DECODE( peo.obj_eval_1, '0', 'PME010', '1', 'PME030', '2' , 'PME020', '-') AS rvew_rst_cd
+     , peo.comment
+FROM patexamobj peo
+JOIN patappmastr pam ON pam.req_no = peo.req_no
+JOIN patmastr mst ON mst.req_no = pam.req_no
+WHERE peo.exam_id = #{exam_id}
+AND peo.obj_exam_clsf = #{obj_exam_clsf}
+ORDER BY req_no, mngmt_no
+  </select>
+  <select id="selectPatPsmDtlSS04" parameterType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo" resultType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo">
+/* XDA : kitech.pat.psm.dtl.xda.PatPsmDtlSS04 소연심의 기타심의 대상 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.psm.selectPatPsmDtlSS04 */ 
+		 peo.obj_comment AS rvew_rst
+     , peo.obj_exam_id
+     , DECODE( peo.obj_eval_1, '0', 'PME010', '1', 'PME030', '2' , 'PME020', '-') AS rvew_rst_cd
+     , peo.comment AS rvew_objct
+FROM patexamobj peo
+WHERE peo.exam_id = #{exam_id}
+AND peo.obj_exam_clsf = #{obj_exam_clsf}
+  </select>
+  <select id="selectResSmlRvewHSS01" parameterType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo" resultType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo">
+/* XDA : kitech.res.app.xda.ResSmlRvewHSS01 소연심의 헤더조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.psm.selectResSmlRvewHSS01 */ 
+		 a.req_no
+     , a.rvew_yr
+     , a.rvew_sbj
+     , a.rvew_seq
+     , a.rvew_ymd
+     , a.rvew_plc
+     , a.open_way
+     , a.dept_typ
+     , fun_xodxcommst_cd_nm(a.dept_typ, 0) AS dept_typ_nm
+     , a.meet_clsf
+     , a.tech_clsf
+     , a.attach_file_no
+     , a.elecapp_docu_no
+     , a.set_yn
+     , b.nm AS regst_nm
+     , TO_CHAR(a.regst_daytm, '%Y%m%d') AS regst_ymd
+FROM ressmlrvewh a
+LEFT JOIN humbasicinfo b ON a.regst_syspayno = b.syspayno
+WHERE ( req_no = #{req_no} OR elecapp_docu_no = #{req_no})
+  </select>
+  <select id="selectResSmlRvewDMS02" parameterType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo" resultType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo">
+/* XDA : kitech.res.app.xda.ResSmlRvewDMS02 소연심위안건상정(안건내역조회) 다건*/
+-- 2018.04.03. 지재권소연심의 사용위해 join절에 resbgacctm 추가, pat_clsf
+-- 2018.05.15. 컬럼 추가(seq) 
+SELECT /* QueryID : kr.re.kitech.biz.pat.psm.selectResSmlRvewDMS02 */ 
+		 a.key_1
+     , a.key_2
+     , a.seq
+     , a.biz_clsf
+     , a.item_clsf
+     , a.item_seq
+     , a.item_clsf||a.item_seq AS item_clsf_seq
+     , a.rvew_objct
+     , a.rmk
+     , a.req_no
+     , TRIM(b.nm) ||'('||b.empno||')' AS rel_psn_nm
+     , a.accnt_no
+     , a.chrg_psn
+     , a.rvew_rst_cd
+     , a.rvew_rst
+     , a.cmt_clsf
+     , a.attach_file_no
+     , e.pat_clsf
+     , d.accnt_no_nm AS prj_nm
+FROM ressmlrvewd a
+JOIN humbasicinfo b ON a.syspayno = b.syspayno
+JOIN xodxcommst c ON a.biz_clsf = c.cd AND c.cd_clsf ='RBS'
+LEFT JOIN patappmastr e ON a.key_1 = e.req_no
+LEFT JOIN resbgacctm d ON a.accnt_no = d.accnt_no
+WHERE a.req_no = #{req_no}
+<if test='obj_exam_clsf != null and obj_exam_clsf != ""'>
+AND a.biz_clsf IN ('RBS001', 'RBS009')
+</if>
+<if test='biz_clsf != null and biz_clsf != ""'>
+AND a.biz_clsf = #{biz_clsf}
+</if>
+ORDER BY a.item_clsf, a.item_seq
+  </select>
+  <update id="updatePatPiiMakLstSU02" parameterType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo">
+/* XDA : kitech.pat.pii.mak.xda.PatPiiMakLstSU02 첨부파일 수정기능 추가 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.psm.updatePatPiiMakLstSU02 */ 
+		 patexam
+   SET attach_file_no = #{attach_file_no}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+ WHERE exam_id = #{exam_id}
+  </update>
+  <select id="selectPatPpoMasterFileSearch" parameterType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo" resultType="kr.re.kitech.biz.pat.psm.vo.PatPsmDetailVo">
+/* XDA : kitech.pat.ppo.xda.PatPpoMasterFileSearchSS01 첨부파일 팝업 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.psm.selectPatPpoMasterFileSearch */ 
+     mst.pat_clsf                   
+     , pre.rpt_srh_attach_file       
+     , pre.rpt_announce_attach_file  
+     , pam.pct_attach_file_no        
+     , pam.etc_attach_file_no     -- 기타 (공동소유인 경우 사유를 증명하는 협약서 등 첨부서류
+     , pam.out_deed_attach_file_no   
+     , pam.com_apply_attach_file_no  
+FROM patmastr mst
+JOIN patappmastr pam ON pam.req_no = mst.req_no
+LEFT JOIN patsrh psh ON psh.req_no = mst.req_no AND psh.mngmt_no = mst.mngmt_no
+LEFT JOIN patsrhres pre ON pre.srh_id = psh.srh_id AND pre.srh_sn = (SELECT MAX(srh_sn) FROM patsrhres WHERE srh_id = psh.srh_id)
+WHERE mst.req_no = #{req_no}
+AND   mst.mngmt_no = #{mngmt_no}
+  </select>
+</mapper>

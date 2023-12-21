@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="사업분류코드 검색">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="bsns_cd_inout" name="bsns_cd_inout" dataType="text"></w2:key>
+        				<w2:key id="bsns_cd_ofic_nm" name="bsns_cd_ofic_nm" dataType="text"></w2:key>
+        				<w2:key id="bsns_cd_exclsv_agncy_nm" name="bsns_cd_exclsv_agncy_nm" dataType="text"></w2:key>
+        				<w2:key id="bsns_cd_bsns_nm" name="bsns_cd_bsns_nm" dataType="text"></w2:key>
+        				<w2:key id="bsns_cd_detls_bsns_nm" name="bsns_cd_detls_bsns_nm" dataType="text"></w2:key>
+        				<w2:key id="bsns_grp_cd" name="bsns_grp_cd" dataType="text"></w2:key>
+        				<w2:key id="use_ex" name="use_ex" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_bsnsCd" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="bsns_cd_ofic" name="bsns_cd_ofic" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_ofic_nm" name="bsns_cd_ofic_nm" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_bsns" name="bsns_cd_bsns" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_bsns_nm" name="bsns_cd_bsns_nm" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_detls_bsns" name="bsns_cd_detls_bsns" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_detls_bsns_nm" name="bsns_cd_detls_bsns_nm" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_inout" name="bsns_cd_inout" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_inout_nm" name="bsns_cd_inout_nm" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_exclsv_agncy" name="bsns_cd_exclsv_agncy" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_exclsv_agncy_nm" name="bsns_cd_exclsv_agncy_nm" dataType="text"></w2:column>
+        				<w2:column id="oh_absrp_rt" name="oh_absrp_rt" dataType="text"></w2:column>
+        				<w2:column id="accnt_mngmt_cd" name="accnt_mngmt_cd" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectRbaCodeList" ref="data:json,dma_search"
+        		target='' action="SvcRESCOMRBAR03.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		var codeOptions = [ { code : "RHA", compID : "sbx_bsns_cd_inout"} ];		
+		com.setCmnCd(codeOptions, function() {
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	scwin.btn_search_onclick = function(e) {
+		dma_search.set("use_ex", "Y");
+		if(sbx_bsns_cd_inout.getValue() == ""){
+			alert("내외구분을 선택해 주세요.");
+			return;
+		}
+		
+		com.execute(sbm_selectRbaCodeList, {
+			successCallback : function(e) {
+				dlt_bsnsCd.setJSON(e.responseJSON.resBsnsCodeVoList);
+			}
+		});
+	};
+	
+		/**
+	 * 그리드 더블클릭 이벤트
+	 */ 
+	scwin.grd_bsnsCd_oncelldblclick = function(row,col,colId) {
+		var retRow = dlt_bsnsCd.getRowJSON(row);
+		if (retRow.bsns_cd_inout == "RHA002") {
+			com.alert("message.alert.res.com.0002", function(e) {
+				com.closePopup(retRow);		
+			}, true);
+			return;	// 팝업 표시를 위해 return 처리
+		}else{
+			com.closePopup(retRow);
+		}
+	};
+	
+	scwin.btn_conf_onclick = function(e) {
+		if (grd_bsnsCd.getFocusedRowIndex() <= -1) {
+			com.closePopup();
+			return;
+		} 
+		
+		scwin.grd_bsnsCd_oncelldblclick(grd_bsnsCd.getFocusedRowIndex());	
+	}
+	
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="조회조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="width:190px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+   							<xf:group style="width:200px;" tagname="col"></xf:group>
+   							<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="내외구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_bsns_cd_inout" ref="data:dma_search.bsns_cd_inout" style="width:150px;" submenuSize="auto"
+    								title="공고분류">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="관계부처" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" id="" style="" ref="data:dma_search.bsns_cd_ofic_nm"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    								<w2:attributes></w2:attributes>
+    								<w2:textbox id="" label="전문기관" style="" tagname="span"></w2:textbox>
+    							</xf:group>
+    							<xf:group class="w2tb_td" tagname="td">
+    								<w2:attributes></w2:attributes>
+    								<xf:input adjustMaxLength="false" id="" style="" ref="data:dma_search.bsns_cd_exclsv_agncy_nm"></xf:input>
+    							</xf:group>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group class="sch_more" id="" style="display: block">
+    					<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    						<w2:attributes>
+    							<w2:summary></w2:summary>
+    						</w2:attributes>
+    						<xf:group tagname="caption" text="조회조건 상세"></xf:group>
+    						<xf:group tagname="colgroup">
+    							<xf:group style="width:80px;" tagname="col"></xf:group>
+    							<xf:group style="width:190px;" tagname="col"></xf:group>
+    							<xf:group style="width:60px;" tagname="col"></xf:group>
+    							<xf:group tagname="col"></xf:group>
+    						</xf:group>
+    						<xf:group style="" tagname="tr">
+    							<xf:group class="w2tb_th" style="" tagname="th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox id="" label="사업분류" style="" tagname="span"></w2:textbox>
+    							</xf:group>
+    							<xf:group class="w2tb_td" style="" tagname="td">
+    								<xf:input adjustMaxLength="false" id="" style="" ref="data:dma_search.bsns_cd_bsns_nm"></xf:input>
+    							</xf:group>
+    							<xf:group class="w2tb_th" style="" tagname="th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox id="" label="내역사업" style="" tagname="span"></w2:textbox>
+    							</xf:group>
+    							<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" id="" style="" ref="data:dma_search.bsns_cd_detls_bsns_nm"></xf:input>
+    							</xf:group>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_bsnsCd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_bsnsCd" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="10" ev:oncelldblclick="scwin.grd_bsnsCd_oncelldblclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="내외구분" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="관계부처" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="전담기관" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column29" inputType="text" style="height:28px;" value="사업분류" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column32" inputType="text" style="height:28px" value="내역사업" width="200"></w2:column>
+    					<w2:column displayMode="label" id="column31" inputType="text" style="height:28px" value="계정구분" width="70"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" escape="false" id="bsns_cd_inout_nm" inputType="text" readOnly="true" style="height:28px;"
+    						width="70" class="">
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="bsns_cd_ofic_nm" inputType="text" readOnly="true" style="height:28px;"
+    						width="120">
+    					</w2:column>
+    					<w2:column displayMode="label" id="bsns_cd_exclsv_agncy_nm" inputType="text" readOnly="true" style="height:28px;" width="120" class="le"></w2:column>
+    					<w2:column displayMode="label" id="bsns_cd_bsns_nm" inputType="text" readOnly="true" style="height:28px;" width="120" class="le"></w2:column>
+    					<w2:column displayMode="label" id="bsns_cd_detls_bsns_nm" inputType="link" readOnly="true" style="height:28px" width="200" class="le"></w2:column>
+    					<w2:column displayMode="label" id="accnt_mngmt_cd" inputType="text" readOnly="true" style="height:28px" width="70" class=""></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le">
+    				<w2:textbox id="" label="※  사업분류 신설 문의: 사업평가관리실(담당 : 윤보윤)" style="font-weight: bold;color: blue;font-size:13px;"></w2:textbox>
+    			</xf:group>
+    			<xf:group id="" class="ri">
+	    			<xf:trigger style="" id="btn_conf" type="button" class=" btn pro conf" ev:onclick="scwin.btn_conf_onclick">
+						<xf:label><![CDATA[확인]]></xf:label>
+					</xf:trigger>
+    				<xf:trigger class=" btn pro" id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

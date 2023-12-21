@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.pse">
+  <select id="selectPatPseDtlSS02" parameterType="kr.re.kitech.biz.pat.pse.vo.PatPseDetailVo" resultType="kr.re.kitech.biz.pat.pse.vo.PatPseDetailVo">
+/* XDA : kitech.pat.pse.dtl.xda.PatPseDtlSS02 지심의 국외출원 심의대상, 공동출원 심의대상 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.pse.selectPatPseDtlSS02 */ 
+     mst.invnt_krn_nm
+      , mst.invnt_syspayno
+      , fun_emp_nm(mst.invnt_syspayno) invnt_syspaynm
+      , mst.req_no
+      , CASE peo.obj_eval_1 WHEN '0' THEN '의결'
+                            WHEN '1' THEN '재심의'
+                            WHEN '2' THEN '부결'
+                            ELSE '-' END obj_eval_1
+      , peo.obj_comment
+      , MAX(pac.prj_nm) || ' 외 ' || TRUNC(COUNT(pac.prj_nm) - 1, 0) || '건' prj_nm
+      , mst.mngmt_no
+      , mst.pat_clsf
+      , peo.obj_exam_id
+  FROM patexamobj peo
+INNER JOIN patmastr mst ON mst.req_no = mst.req_no AND mst.mngmt_no = peo.mngmt_no
+LEFT JOIN patapprelatreschprj pac ON pac.req_no = peo.req_no
+ WHERE 1=1
+   AND peo.exam_id = #{exam_id}
+   AND peo.obj_exam_clsf = #{obj_exam_clsf}
+GROUP BY 1, 2, 3, 4, 5, 6, 8, 9, 10
+  </select>
+  <select id="selectPatPseDtlSS01" parameterType="kr.re.kitech.biz.pat.pse.vo.PatPseDetailVo" resultType="kr.re.kitech.biz.pat.pse.vo.PatPseDetailVo">
+/* XDA : kitech.pat.pse.dtl.xda.PatPseDtlSS01 지심의 마스터 정보 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.pse.selectPatPseDtlSS01 */ 
+     pem.exam_id
+      , pem.wri_id
+      , fun_emp_nm(pem.wri_id) wri_nm
+      , TO_CHAR(pem.wri_daytm, '%Y%m%d') AS wri_daytm
+      , pem.exam_year
+      , pem.exam_cnt || '회' AS exam_cnt
+      , TO_CHAR(pem.exam_daytm, '%Y%m%d') AS exam_daytm
+      , SUBSTR(pem.exam_hour, 0, 2) || ':' || SUBSTR(pem.exam_hour, 3) AS exam_hour
+      , pem.exam_addr
+      , pem.exam_title
+      , pem.exam_comment
+      , pem.exam_entry
+  FROM patexam pem
+ WHERE pem.exam_id = #{exam_id}
+  </select>
+</mapper>

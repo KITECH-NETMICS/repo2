@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/ext/OZHtml5Viewer/jquery/jquery-ui.css" type="text/css"?>
+<?xml-stylesheet href="/cm/ext/OZHtml5Viewer/ui.dynatree.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="오즈리포트 뷰어">
+        <w2:type>DEFAULT</w2:type>
+        <w2:buildDate />
+        <xf:model>
+            <xf:instance>
+                <data xmlns="" />
+            </xf:instance>
+            <w2:dataCollection baseNode="map"></w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+        </xf:model>
+        <script type="text/javascript" src="/cm/ext/OZHtml5Viewer/jquery/jquery-1.8.3.min.js"></script>
+        <script type="text/javascript" src="/cm/ext/OZHtml5Viewer/jquery/jquery-ui.min.js"></script>
+        <script type="text/javascript" src="/cm/ext/OZHtml5Viewer/jquery.dynatree.js"></script>
+        <script type="text/javascript" src="/cm/ext/OZHtml5Viewer/OZJSViewer.js"></script>
+        <script type="text/javascript" lazy="false"><![CDATA[
+		
+		    scwin.onpageload = function() {
+			    
+		        scwin.reportParam = {};
+		        
+			    scwin.makeChartData();
+		        
+		        //start_ozjs("OZViewer", "/cm/ext/OZHtml5Viewer/");
+		    };
+		    
+		    
+		    function SetOZParamters_OZViewer(){
+			    /*
+		         * params : 레포트 팝업 파라미터 json object  
+		         * params.reportArr 레포트 정보 array
+		         * params.isConcatpage ture/false 멀티폼을 하나의 리포트 처럼 이용할 지 여부
+		         * params.printMode 프린트 모드, true : silent(윈도우출력창)로 설정, 그외 ""(오즈출력창 -> 윈도우출력창)
+		         * params.reportArr.ozr : ozr 레포트파일명
+		         * params.reportArr.odi : odi 파일명
+		         * params.reportArr.displayName : 다건 레포트인경우 미리보기 화면 좌측 트리에 보여질 레포트 명
+		         * params.reportArr.param : 파라미터 key1=value1&key2=value2 
+		         * params.filename : 저장시 파일명
+		         * params.applyformat : 저장시 포맷 목록
+		         */
+		        let params = scwin.reportParam;
+		        
+		        let mainRpt = params.reportArr[0];
+		        
+		        
+				oz = document.getElementById("OZViewer");
+		        // 메인 리포트 정보
+				oz.sendToActionScript("connection.servlet", "http://oz.kitech.re.kr/oz70/server");
+				oz.sendToActionScript("connection.reportname", mainRpt.ozr);
+				oz.sendToActionScript("connection.pcount", "1");
+				oz.sendToActionScript("export.filename", params.filename);
+				oz.sendToActionScript("export.applyformat", params.applyformat);
+				oz.sendToActionScript("export.format", params.applyformat.split(",")[0]);
+		        oz.sendToActionScript("connection.displayname", mainRpt.displayname); //좌측 트리창에서보여지는 이름
+		        oz.sendToActionScript("odi.odinames", mainRpt.odi);
+		        oz.sendToActionScript("odi." + mainRpt.odi + ".pcount" , 1);
+		        oz.sendToActionScript("odi." + mainRpt.odi + ".args1", mainRpt.param);
+		                
+		        
+		        oz.sendToActionScript("connection.compressedform", "true");
+		        oz.sendToActionScript("viewer.mode", "preview");  // print:바로출력, export:저장, preview:미리보기. flash에서는 print모드 지원않됨.
+		        oz.sendToActionScript("print.mode", params.printMode ? "silent" : "");
+		        oz.sendToActionScript("print.pagerange", "all");
+		        oz.sendToActionScript("toolbar.showtree", "false");
+		        oz.sendToActionScript("toolbar.open", "false");
+		        oz.sendToActionScript("toolbar.refresh", "false");
+		        oz.sendToActionScript("toolbar.addmemo", "false");
+		        oz.sendToActionScript("toolbar.inputparameter", "false");
+		        oz.sendToActionScript("information.debug", "true");
+		        oz.sendToActionScript("viewer.fontdpi", "auto");
+		        
+		        
+		        // child문서
+		        let childReports = params.reportArr;
+		        let rptCnt = childReports.length;
+		        // 0번째 인덱스는 메인 레포트
+		        for (var j=1; j < rptCnt; j++){
+		            let afterDoc = childReports[j];
+		            oz.sendToActionScript("child"+j+".connection.servlet", "http://oz.kitech.re.kr/oz70/server");
+		            oz.sendToActionScript("child"+j+".viewer.configmode", "html");
+		            oz.sendToActionScript("child"+j+".viewer.isframe", "false");
+		            oz.sendToActionScript("child"+j+".connection.reportname", afterDoc.ozr);                 
+		            oz.sendToActionScript("child"+j+".connection.displayname", afterDoc.displayname); //좌측 트리창에서보여지는 이름
+		            oz.sendToActionScript("child"+j+".odi.odinames", afterDoc.odi);
+		            oz.sendToActionScript("child"+j+".odi." + afterDoc.odi + ".pcount" , 1);
+		            oz.sendToActionScript("child"+j+".odi." + afterDoc.odi + ".args1", afterDoc.param);
+		        }
+		        
+		        // 다건 리포트인 경우 자식 리포트 정보를 추가 한다.        
+		        oz.sendToActionScript("viewer.childcount", rptCnt - 1); // 하나의 오즈 뷰어에 여러 개의 보고서를 보여줄 때 메인 보고서 외에 추가되는 차일드 보고서의 개수를 설정합니다.
+		        
+		        // 멀티폼을 하나의 리포트 처럼 이용할 지 여부를 설정합니다. True이면 멀티폼의 페이지 번호등이 연결됩니다.
+		        oz.sendToActionScript("global.concatpage", params.isConcatpage ? "true" : "false");
+		        oz.sendToActionScript("print.alldocument", "true"); // 멀티문서 형식의 보고서를 한번에 모두 인쇄할지 여부를 설정합니다.
+		        
+		        return true;
+		    } 
+		    
+		    
+		    
+		    scwin.makeChartData = function() {
+			   
+		        let reportArr = [];                
+		        let reqNoArr = ["req_no=C95202200C28","req_no=C95202200C27","req_no=C95202200C26"];
+		        
+		        // 오즈 정보 생성
+		        for(let i=0; i<3; i++) {
+		            // 오즈 기본 파라미터   
+		            //let ozParam = com.oz.getDefOzInfo();
+		            let ozParam = {	  
+		                              ozr : "",			// ozr 파일 경로, 
+		                    		  odi : "",			// odi 파일명
+		                    		  param : "",			// odi 파라미터 정보 예)key1=value1&key2=value2 
+		                    		  displayname : ""	// 다건 레포트인경우 미리보기 화면 좌측 트리에 보여질 레포트 명
+		                    	   };
+		             
+		            ozParam.ozr = "ccs/cws/CwsPartTimer.ozr";
+		            ozParam.odi = "CwsPartTimer";
+		            ozParam.param = reqNoArr[i];
+		            ozParam.displayname = "비상은업무일지" + (i+1);
+		            
+		            reportArr.push(ozParam);
+		        }
+		        
+		        /**
+		         * oz레포트 팝업 호출
+		         * @param reportArr 레포트 정보 array
+		         * @param isConcatpage 멀티폼을 하나의 리포트 처럼 이용할 지 여부 true, false
+		         * @param printModeYn  프린트 모드  true면 "silent"로 설정 그외 ""
+		                    프린트 창 모드 : "": 오즈출력창 -> 윈도우출력창, silent:윈도우출력창
+		         */
+		         
+		        // 오즈 파일 저장 명 설정(옵션)
+		        let saveFilename = "비상은업무일지";
+		        // 오즈 파일 저장 확장자 목록 설정(옵션), 미설정 시 기본값으로 설정
+		        let saveApplyformat = "html,pdf";
+		        
+		        scwin.reportParam = {	        
+		            reportArr : reportArr,
+		            isConcatpage : true,
+		            printMode : true,
+		            filename : saveFilename,
+		            applyformat : saveApplyformat || "pdf,hwp,hml,doc,ppt,xls,html,cvs,txt,jpg,tif,svg,mht,ozd"
+			    };       
+		            
+		        // 레포트 시작    
+		        start_ozjs("OZViewer", "/cm/ext/OZHtml5Viewer/");    
+			}
+		    
+		    
+		    // 팝업창 보기 클릭 이벤트 핸들러
+		    // 오즈 레포트를 팝업 창으로 연다.
+		    scwin.btn_viewer_onclick = function(e) {
+		
+		        let reportArr = [];                
+		        let reqNoArr = ["req_no=C95202200C28","req_no=C95202200C27","req_no=C95202200C26"];
+		        
+		        // 오즈 정보 생성
+		        reqNoArr.forEach( function(reqNo, index) {
+		            // 오즈 기본 파라미터   
+		//            let ozParam = com.oz.getDefOzInfo();
+		//             
+		//            ozParam.ozr = "ccs/cws/CwsPartTimer.ozr";
+		//            ozParam.odi = "CwsPartTimer";
+		//            ozParam.param = reqNo;
+		//            ozParam.displayname = "비상은업무일지" + (index + 1);
+		            
+		            reportArr.push({
+						ozr: "ccs/cws/CwsPartTimer.ozr",
+						odi: "CwsPartTimer",      
+						param: reqNo,                         
+						displayname: "비상은업무일지" + (index + 1),
+		            });
+		        });
+		        
+		        /**
+		         * oz레포트 팝업 호출
+		         * @param reportArr 레포트 정보 array
+		         * @param isConcatpage 멀티폼을 하나의 리포트 처럼 이용할 지 여부 true, false
+		         * @param printModeYn  프린트 모드 "Y"면 "silent"로 설정 그외 ""
+		                    프린트 창 모드 : "": 오즈출력창 -> 윈도우출력창, silent:윈도우출력창
+		         */
+		         
+		        // 오즈 파일 저장 명 설정(옵션)
+		        let saveFilename = "비상은업무일지";
+		        // 오즈 파일 저장 확장자 목록 설정(옵션), 미설정 시 기본값으로 설정
+		        let saveApplyformat = "pdf,html";
+		        
+		        // com.oz.openPopup(reportArr, true, true, saveFilename, saveApplyformat);    
+		        com.oz.openPopup(reportArr);
+		    };
+			
+
+		]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="" style=""></xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class="btn" id="btn_viewer" style="" type="button" ev:onclick="scwin.btn_viewer_onclick">
+    					<xf:label><![CDATA[팝업창 보기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+	    	<xf:group id="grp_content" style="width:1100px;height:720px;" >
+	    		<div id="OZViewer" style="witdh:98%; height:98%;" />
+    		</xf:group>
+    	</xf:group>
+   	</body>
+</html>

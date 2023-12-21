@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="교육과정등록">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="mngmt_item_1" name="교육구분" dataType="text"></w2:key>
+        				<w2:key id="cd_clsf" name="코드구분" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="mngmt_item_1" name="관리항목" dataType="text"></w2:column>
+        				<w2:column id="sys_clsf" name="시스템구분" dataType="text"></w2:column>
+        				<w2:column id="cd_clsf" name="분류코드" dataType="text"></w2:column>
+        				<w2:column id="cd" name="교육명코드" dataType="text"></w2:column>
+        				<w2:column id="cd_nm" name="교육명" dataType="text"></w2:column>
+        				<w2:column id="cd_desc" name="코드상세설명" dataType="text"></w2:column>
+        				<w2:column id="seq" name="seq" dataType="text"></w2:column>
+        				<w2:column id="use_ex" name="사용유무" dataType="text"></w2:column>
+        				<w2:column id="cud_type" name="cud_type" dataType="text"></w2:column>
+        				<w2:column id="regst_syspayno" name="regst_syspayno" dataType="text"></w2:column>
+        				<w2:column id="updt_syspayno" name="updt_syspayno" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' action="SvcHUMBASCCDMR01.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<!-- 저장 -->
+			<xf:submission id="sbm_saveData" ref='data:json,{"action":"modified", "id":"dlt_grd", "key":"basComCdList"}' target='' action="SvcHUMBASCCDMI01.pwkjson" 
+				method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /*
+     * 페이지 열기
+     */      
+	scwin.onpageload = function() {
+		// 공통코드
+		var codeOptions = [ 
+			{ code : "HDI", compID : "sbx_educ_typ, grd_list:mngmt_item_1"}
+		];
+		
+		com.setCmnCd(codeOptions, function(){
+			dma_search.set("cd_clsf", "HDO");
+			dma_search.set("use_ex", "Y");
+			scwin.search();
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	/*
+     * 조회
+     */
+	scwin.search = function() {
+		com.execute(sbm_selectData, { 
+			successCallback : function(e){
+				dlt_grd.setJSON(e.responseJSON.humBasComCdVoList);
+			}
+		}); 
+	};
+	
+	scwin.btn_add_onclick = function(e) {
+		var lastRow = dlt_grd.getRowCount();
+		dlt_grd.insertRow(lastRow);
+		var preCd = dlt_grd.getCellData(lastRow-1, "cd").substring(0,3);
+		var lastCd = "";
+		var cd = 0;
+		if (dlt_grd.getCellData(lastRow-1, "cd").substring(5,6) == 0) {
+			lastCd = dlt_grd.getCellData(lastRow-1, "cd").substring(3,6);
+			cd = Number(lastCd)+10;
+		} else {
+			lastCd = dlt_grd.getCellData(lastRow-1, "cd").substring(4,6);
+			cd = Number(lastCd)+1;
+		}
+		grd_list.setReadOnly("cell", lastRow, "cd", "false");
+		grd_list.setReadOnly("cell", lastRow, "mngmt_item_1", "false");
+
+		dlt_grd.setCellData(lastRow, "sys_clsf", "HUM");
+		dlt_grd.setCellData(lastRow, "cd_clsf", "HDO");
+		dlt_grd.setCellData(lastRow, "cd", "HDO" + scwin.fillzero(cd,3));
+		dlt_grd.setCellData(lastRow, "use_ex", "Y");
+		dlt_grd.setCellData(lastRow, "cud_type", "C");
+	};
+	
+	scwin.fillzero = function(obj, len) {
+		obj= '00' + obj;
+		return obj.substring(obj.length-len);
+	}
+	
+	scwin.btn_del_onclick = function(e) {
+		var row = dlt_grd.getRowCount()-1;
+		
+		if(dlt_grd.getRowStatus(row) != "C") {
+			alert("저장 된 교육코드는 삭제 할 수 없습니다. \n교육구분 삭제 시 [시스템문의] 해주시기 바랍니다.");
+		} else {
+			dlt_grd.removeRow(row);
+		
+		}
+	};
+	
+	scwin.btn_save_onclick = function(e) {
+		var count = dlt_grd.getRowCount();
+		
+		for(var i = 0; i < count; i++) {
+			for(var z = 0; z < count; z++) {
+				if(i != z) {
+					if(dlt_grd.getCellData(i , "cd") == dlt_grd.getCellData(z , "cd")) {
+						alert((i + 1) + "행 과  "+ (z + 1) +"행 중복된 교육명코드가 확인 됩니다.");
+						return;
+					}
+				}
+			}
+		}
+		
+		if (!com.validateData(dlt_grd,[
+				{ id : "cd_nm", mandatory : true},
+				{ id : "cd_desc", mandatory : true},
+			], false)
+		) return;
+		
+		com.confirm("message.xom.wq.017"/*저장 하시겠습니까?*/, function(ret){
+			if(ret){
+				com.execute(sbm_saveData, {
+					successCallback : function(e) { // 성공 콜백
+						com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function(){
+							// 조회
+							dma_search.set("cd_clsf", "HDO");
+							dma_search.set("use_ex", "Y");
+							scwin.search();
+						});
+					}
+				});
+			}
+		})
+	};
+	
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup(e);
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="titleSection pt0" id="" style="">
+    			<xf:group class="le" id="">
+    				<w2:textbox class="tit_tbl" id="" label="교육과정등록" style="" tagname="h3"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="btnarea" id="" style="">
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="" style="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="조회조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="width:190px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="교육구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 appearance="minimal" chooseOption="true" chooseOptionLabel="-전체-" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_educ_typ" ref="data:dma_search.mngmt_item_1" style="width:170px;"
+    								submenuSize="auto" title="상태" visibleRowNum="10">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group class="schbtn" id="" style="">
+    					<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+    						<xf:label><![CDATA[조회]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="btnGroup" id="" style="padding-top:5px;padding-bottom:5px;">
+    			<xf:group class="left" id="">
+    				<xf:group class="result" id=""></xf:group>
+    			</xf:group>
+    			<xf:group id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class="bt_plus" id="btn_add" style="" type="button" ev:onclick="scwin.btn_add_onclick">
+    					<xf:label><![CDATA[추가]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="bt_minus" id="btn_del" style="" type="button" ev:onclick="scwin.btn_del_onclick">
+    					<xf:label><![CDATA[삭제]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="20">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column width="150" inputType="text" style="height:28px" id="column33" value="교육구분" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column43" value="시스템구분" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column45" value="분류코드" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column41" value="교육명코드" displayMode="label"></w2:column>
+    					<w2:column width="250" inputType="text" style="height:28px" id="column39" value="교육명" displayMode="label"></w2:column>
+    					<w2:column width="150" inputType="text" style="height:28px" id="column37" value="코드상세설명" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column49" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column35" value="사용유무" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column47" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column width="150" inputType="select" style="height:28px" id="mngmt_item_1" value="" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="sys_clsf" value="" displayMode="label"
+    						readOnly="true" hidden="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="cd_clsf" value="" displayMode="label" readOnly="true"
+    						hidden="true">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="cd" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="250" inputType="text" style="height:28px" id="cd_nm" value="" displayMode="label" readOnly="false"
+    						textAlign="left">
+    					</w2:column>
+    					<w2:column width="150" inputType="text" style="height:28px" id="cd_desc" value="" displayMode="label"
+    						readOnly="false" textAlign="left">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="seq" value="" displayMode="label" readOnly="true"
+    						hidden="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="select" style="height:28px" id="use_ex" value="" displayMode="label" allOption=""
+    						chooseOption="" ref="" readOnly="true" hidden="true">
+    						<w2:choices>
+    							<w2:item>
+    								<w2:label><![CDATA[사용]]></w2:label>
+    								<w2:value><![CDATA[Y]]></w2:value>
+    							</w2:item>
+    							<w2:item>
+    								<w2:label><![CDATA[미사용]]></w2:label>
+    								<w2:value><![CDATA[N]]></w2:value>
+    							</w2:item>
+    						</w2:choices>
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="cud_type" value="" displayMode="label"
+    						readOnly="true" hidden="true">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class=" btn pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

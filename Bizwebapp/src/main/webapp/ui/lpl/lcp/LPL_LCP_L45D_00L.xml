@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="대외협력조회">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="natn_cd" name="natn_cd" dataType="text"></w2:key>
+				       <w2:key id="agncy_clsf" name="agncy_clsf" dataType="text"></w2:key>
+				       <w2:key id="agncy_nm" name="agncy_nm" dataType="text"></w2:key>
+				       <w2:key id="mou_cntnt" name="mou_cntnt" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+					<w2:columnInfo>
+						<w2:column id="cust_no" name="기관코드" dataType="text"></w2:column>
+						<w2:column id="natn_nm" name="국가" dataType="text"></w2:column>
+						<w2:column id="cmpy_nm" name="기관명" dataType="text"></w2:column>
+						<w2:column id="cmpy_nm_eng" name="영문기관명" dataType="text"></w2:column>
+						<w2:column id="cmpy_nm_krchar" name="한글기관명" dataType="text"></w2:column>
+					</w2:columnInfo>
+				</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 기관명 리스트 조회 -->
+            <xf:submission id="sbm_selectList" ref="data:json,dma_search" target='data:json,[{"id":"dlt_list","key":"lcpAgncyMstVoList"}]' 
+        	    action="SvcLPLLCPMSTR01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>            
+        </xf:model>
+         <script src="/cm/js/biz/lpl.js" cache="false" />
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 대외협력조회
+ 	 * 변경 이력 : 2023-11-23	김준하	최초 작성
+ 	 ****************************************************/
+ 	scwin.data = {}; 	
+	/**
+	 * 페이지 로딩 이벤트
+	 */           
+	scwin.onpageload = function() {
+		var codeOptions = [ { code : "FDA", compID :"sbx_natn_cd" },//국가
+							{ code : "LCO", compID :"sbx_agency_clsf" } ];//국내 기관분휴	
+		com.setCmnCd(codeOptions, function() {
+            var param = com.getParameter();
+            var session = com.getLoginInfo();
+			scwin.flag = param.flag;
+			scwin.searchCon1 = param.searchCon1;
+			scwin.searchCon2 = param.searchCon2;
+			scwin.searchCon3 = param.searchCon3;
+			scwin.agncyNm = param.agncyNm;  // 해외출장/복명서 이동시 값 전달됨
+			scwin.agncyCd = param.agncyCd;    // 해외출장/복명서 이동시 값 전달됨
+			
+			if (scwin.flag == "search") {
+				ibx_agncy_nm.setValue(scwin.searchCon2);
+				tabContainer.setSelectedIndex(scwin.searchCon3, "true");
+			} else if (scwin.flag == "pop" || scwin.flag == "OverTrip" || scwin.flag == "OverRep") { // 해외출장신청서/복명서 등에서 오픈한 경우
+				ibx_agncy_nm.setValue(scwin.agncyNm);
+				scwin.menuFind();
+			}					
+		});	
+	};
+	scwin.menuFind = function(e) {
+		dma_search.set("gubun", sbx_clsf.getValue());
+		dma_search.set("agncy_nm", ibx_agncy_nm.getValue().trim());
+		dma_search.set("natn_cd", sbx_natn_cd.getValue());
+		dma_search.set("agncy_clsf", sbx_agency_clsf.getValue());
+		dma_search.set("mou_cntnt", ibx_mou_cntnt.getValue().trim());
+		dma_search.set("cust_no", scwin.agncyCd);
+		com.execute(sbm_selectList, {				
+			successCallback : function(e){
+				tbx_result.setValue(dlt_list.getTotalRow());					
+			}	
+		});							
+	};	
+	scwin.onpageunload = function() {	
+	};
+	
+	
+	scwin.btn_search_onclick = function(e) {
+		scwin.menuFind();		
+	};
+	
+	// 국가 변경 이벤트
+	scwin.sbx_natn_onchange = function(info) {
+		if (sbx_natn_cd.getValue() == "FDA001") {  // 국내 기관분류
+			var codeOptions = [{ code : "LCO", compID :"sbx_agency_clsf"}];		
+			com.setCmnCd(codeOptions, function(){
+			});
+		} else {  // 국외 기관분류
+			var codeOptions = [{ code : "LCC", compID :"sbx_agency_clsf"}];		
+			com.setCmnCd(codeOptions, function(){
+			});
+		}		
+	};
+	
+	scwin.ibx_mou_cntnt_onkeypress = function(e) {
+		if (event.keyCode == 13) {
+			if (ibx_mou_cntnt.getValue().trim() != "") {
+				scwin.menuFind();
+			} else {
+				alert("[알림] 협약제목에 검색값을 입력하세요.");
+			}
+		}		
+	};
+	
+	scwin.ibx_agncy_nm_onkeypress = function(e) {
+		if (event.keyCode == "13") {
+			if (ibx_agncy_nm.getValue().trim() != "") {
+				scwin.menuFind();
+			} else {
+				alert("[알림] 기관명에 검색값을 입력하세요.");
+			}
+		}		
+	};
+	
+	scwin.btn_agncy_onclick = function(e) {
+		var data = {};
+		data.useFlag = "N";
+		biz.lpl.pop.open(biz.lpl.pop.TYPE.AGENCY, data, function(ret) {
+			ibx_agncy_nm.setValue(ret.cmpy_nm_krchar);
+		})		
+	};
+	
+	scwin.grd_agency_list_oncellclick = function(row,col,colId) {
+		wframe1.getWindow().scwin.searchBaseInfo(dlt_list.getCellData(row, dlt_list.getColumnIndex("cust_no")));	
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group class="pageWrap" id="" style="">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:60.00px;" tagname="col"></xf:group>
+    						<xf:group style="width:124.00px;" tagname="col"></xf:group>
+    						<xf:group style="width:83.00px;" tagname="col"></xf:group>
+    						<xf:group style="width:178.00px;" tagname="col"></xf:group>
+    						<xf:group style="width:114.00px;" tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpcalWrap" id="" style=""></xf:group>
+    							<xf:select1 appearance="minimal" chooseOption="true" chooseOptionLabel="-전체-" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_clsf" ref="" style="width:97px;" submenuSize="auto" title="상태"
+    								visibleRowNum="10">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[협약]]></xf:label>
+    										<xf:value>MOU</xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[공동연구]]></xf:label>
+    										<xf:value>RES</xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[출장]]></xf:label>
+    										<xf:value>TRIP</xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[귀빈접견]]></xf:label>
+    										<xf:value>VIP</xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[국제행사]]></xf:label>
+    										<xf:value>EVNT</xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="기관명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="inpSch" id="" style="width: 120px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="ibx_agncy_nm" style="" title="사용자명"
+    									ev:onkeypress="scwin.ibx_agncy_nm_onkeypress">
+    								</xf:input>
+    								<xf:trigger class="btn" id="btn_agncy" style="" title="기관 조회" type="button"
+    									ev:onclick="scwin.btn_agncy_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="국가" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 appearance="minimal" chooseOption="true" chooseOptionLabel="-전체-" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_natn_cd" ref="" style="width:134px;" submenuSize="auto" title="상태"
+    								visibleRowNum="10" ev:onchange="scwin.sbx_natn_onchange">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="기관분류" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 appearance="minimal" chooseOption="true" chooseOptionLabel="-전체-" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_agency_clsf" ref="" style="width:132px;" submenuSize="auto"
+    								title="상태" visibleRowNum="10">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="협약제목" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_mou_cntnt" style="width:100px;" title="사용자명"
+    								ev:onkeypress="scwin.ibx_mou_cntnt_onkeypress">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:wframe id="wframe1" style="position:absolute;left:325px;top:144px;width:75%;height:87%;"
+    			src="/ui/lpl/lcp/LPL_LCP_L45D_00D.xml" />
+    		<xf:group class="left" id="" style="">
+    			<xf:group class="result" id="" style="width:300px; margin-top: 20px;">
+    				<w2:span id="" label="*조회결과 " style=""></w2:span>
+    				<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    				<w2:span id="" label="건" style=""></w2:span>
+    			</xf:group>
+    			<xf:group class="result ml20" id=""></xf:group>
+    		</xf:group>    			
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_list" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_agency_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb"
+    			rowNumBackgroundColor="#fff" rowNumWidth="60" rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false"
+    			scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd"
+    			style="height: 85px; width:300px;" summaryAuto="true" visibleRowNum="17" ev:oncellclick="scwin.grd_agency_list_oncellclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column1" inputType="text" style="height:28px;" value="기관명" width="120"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column class="" displayMode="label" id="cmpy_nm" inputType="text" readOnly="true" style="height:28px; width:300px;"
+    						value="" width="300" escape="false">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

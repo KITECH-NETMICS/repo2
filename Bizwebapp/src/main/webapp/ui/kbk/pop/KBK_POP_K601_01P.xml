@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="단행본폐기및이관">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_book">
+        			<w2:keyInfo>
+        				<w2:key id="rowStatus" name="상태" dataType="text"></w2:key>
+        				<w2:key id="regst_no" name="등록번호" dataType="text"></w2:key>
+        				<w2:key id="regst_ymd" name="등록일자" dataType="text"></w2:key>
+        				<w2:key id="centr_cd" name="센터구분" dataType="text"></w2:key>
+        				<w2:key id="pur_way_cd" name="구입방법" dataType="text"></w2:key>
+        				<w2:key id="accnt_no" name="계정번호" dataType="text"></w2:key>
+        				<w2:key id="expns_cd" name="비용코드" dataType="text"></w2:key>
+        				<w2:key id="curncy_unit" name="화폐단위" dataType="text"></w2:key>
+        				<w2:key id="pur_amt" name="구입금액" dataType="text"></w2:key>
+        				<w2:key id="isbn" name="ISBN" dataType="text"></w2:key>
+        				<w2:key id="book_nm" name="서명" dataType="text"></w2:key>
+        				<w2:key id="data_typ_cd" name="사료유형" dataType="text"></w2:key>
+        				<w2:key id="natn_cd" name="국가구분" dataType="text"></w2:key>
+        				<w2:key id="publ_form" name="출판지" dataType="text"></w2:key>
+        				<w2:key id="auth_nm" name="저자" dataType="text"></w2:key>
+        				<w2:key id="publ_yr" name="출판년도" dataType="text"></w2:key>
+        				<w2:key id="publ_vend" name="출판사" dataType="text"></w2:key>
+        				<w2:key id="clsfsgn" name="분류기호" dataType="text"></w2:key>
+        				<w2:key id="authcd" name="저자기호" dataType="text"></w2:key>
+        				<w2:key id="copy" name="복본" dataType="text"></w2:key>
+        				<w2:key id="page" name="페이지" dataType="text"></w2:key>
+        				<w2:key id="ill" name="일러" dataType="text"></w2:key>
+        				<w2:key id="photo" name="사진" dataType="text"></w2:key>
+        				<w2:key id="tbl" name="테이블" dataType="text"></w2:key>
+        				<w2:key id="size" name="크기" dataType="text"></w2:key>
+        				<w2:key id="kwd" name="키워드" dataType="text"></w2:key>
+        				<w2:key id="contnt" name="목차" dataType="text"></w2:key>
+        				<w2:key id="apdix_cdrom" name="부록_CD" dataType="text"></w2:key>
+        				<w2:key id="apdix_book" name="부록_책자" dataType="text"></w2:key>
+        				<w2:key id="accnt_no_nm" name="계정명" dataType="text"></w2:key>
+        				<w2:key id="checkup_req_no" name="checkup_req_no" dataType="text"></w2:key>
+        				<w2:key id="contrct_nm" name="contrct_nm" dataType="text"></w2:key>
+        				<w2:key id="apr_state" name="결재상태" dataType="text"></w2:key>
+        				<w2:key id="abol_trans_clsf" name="폐기/이관 구분" dataType="text"></w2:key>
+        				<w2:key id="abol_trans_ymd" name="폐기/이관 날짜" dataType="text"></w2:key>
+        				<w2:key id="abol_trans_resn" name="폐기/이관 이유" dataType="text"></w2:key>
+        				<w2:key id="trans" name="이관처" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectBookDetail" ref="data:json,dma_book" target="data:json,dma_book" action="SvcKBKPOPDTLR01.pwkjson"
+        		method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler=""
+        		mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_saveBookTrans" ref="data:json,dma_book" target="" action="SvcKBKPOPTRSM01.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /** 
+    	TODO H031503  <--- 폐기/이관 처리 한 데이터
+    	serviceId : K60B
+    */
+        
+	scwin.onpageload = function() {
+		var regst_no = com.getParameter('regst_no');
+		
+		if (regst_no) {
+			dma_book.set('regst_no', regst_no);
+			com.execute(sbm_selectBookDetail, {
+				successCallback : function(e) {
+					inp_regst_no.setDisabled(true);
+					cal_abol_trans_ymd.setValue(com.getServerDateTime());					
+				}
+			});
+		} else {
+			com.alert('비정상적인 접근경로입니다.', function() {
+				scwin.closePop();
+			});
+		}
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	scwin.closePop = function(data) {
+		com.closePopup(data);
+	}
+	scwin.btn_close_onclick = function(e) {
+		scwin.closePop();
+	};
+	
+	scwin.btn_abol_trans_onclick = function(e) {
+		if (!cal_abol_trans_ymd.getValue()) {
+			com.alert("폐기/이관일을 입력하십시오.");
+			return;
+		}
+		
+		dma_book.set('rowStatus', 'C');
+		
+		com.execute(sbm_saveBookTrans, {
+			successCallback : function(e) {
+				com.alert("폐기/이관 처리되었습니다.", function(){
+					scwin.closePop({});
+				});
+			}
+		});
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="단행본폐기 및 이관  상세정보"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="등록번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_regst_no" style="" title="등록번호" ref="data:dma_book.regst_no"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="도서명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="도서명" ref="data:dma_book.book_nm"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="저자명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="저자명" ref="data:dma_book.auth_nm"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="폐기/이관구분" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -" class="sel"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_abol_trans_clsf" style="width:150px;"
+    						submenuSize="auto" title="폐기/이관구분" ref="data:dma_book.abol_trans_clsf">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[폐기]]></xf:label>
+    								<xf:value>폐기</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[이관]]></xf:label>
+    								<xf:value>이관</xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="폐기/이관일" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false" id="cal_abol_trans_ymd"
+    						placeholder="시작일" renderDiv="true" rightAlign="false" style="" title="폐기/이관일" ref="data:dma_book.abol_trans_ymd">
+    					</w2:inputCalendar>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="폐기/이관 사유" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="폐기/이관 사유" ref="data:dma_book.abol_trans_resn"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="이관처" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="이관처" ref="data:dma_book.trans"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class=" btn  pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_abol_trans" type="button" class=" btn pro conf" ev:onclick="scwin.btn_abol_trans_onclick">
+    					<xf:label><![CDATA[폐기/이관]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

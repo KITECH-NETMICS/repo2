@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+
+	<!-- 차량조회 -->
+	<select id="selectListCar" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+		SELECT   /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCar */
+		     car_no ,
+		     fun_xodxcommst_cd_nm(region_cd,0) || ':' || carmdl_nm || ':' ||
+		     car_no ||'/' as rpt,
+		     admin_syspayno,
+		     regst_psn_syspayno ,
+		     regst_daytm ,
+		     updt_psn_syspayno ,
+		     updt_daytm
+		FROM  cgscar
+		WHERE car_no != ''
+		 <if test="region_cd != null">and region_cd like decode(#{region_cd}, '', '%', #{region_cd})</if>
+		 and car_use_yn = 'Y' 
+		 /*<if test="car_use_yn == 'N'">and car_use_yn = 'N' </if>*/
+		ORDER BY region_cd desc,carmdl_nm
+	</select>
+	
+	<!-- 차량담당자 조회 -->
+	<select id="selectCarAdmin" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+SELECT /* kr.re.kitech.biz.ccs.cgs.selectCarAdmin */
+     x0.car_no,
+     x0.region_cd,
+     x0.carmdl_nm,
+     x0.admin_syspayno,
+     fun_humbasicinfo_cd_nm(x0.admin_syspayno,0) as admin_nm,
+     x1.email
+FROM cgscar as x0
+LEFT JOIN humbasicinfo AS x1 ON x1.syspayno = x0.admin_syspayno
+WHERE 1=1
+<if test="car_no != null and car_no !=''"> AND car_no = #{car_no} </if>
+AND car_use_yn = 'Y'
+</select>
+
+	<!-- 배차리스트조회 -->
+	<select id="selectListCgs" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+		SELECT     /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCgs */
+		     a.use_orign_ymd,
+		     a.use_orign_time,
+		     a.use_cls_ymd,
+		     a.use_cls_time,
+		     fun_day(a.use_orign_ymd) ||' '|| a.use_orign_time ||'~'|| fun_day(a.use_cls_ymd) ||' '|| a.use_cls_time as use_ymd,
+		     fun_xodxcommst_cd_nm(b.region_cd,0) ||':'||b.carmdl_nm||':'||a.car_no as car_info,
+		     a.req_seq,
+		     trim(a.car_no) as car_no,
+		     b.carmdl_nm,
+		     a.destin,
+		     a.req_region_cd,
+		     fun_xodxcommst_cd_nm(a.req_region_cd,0) as req_region_nm,
+		     a.driv_psn_syspayno,
+		     a.driv_psn_nm,
+		     a.bsns_contnt,
+		     a.bizwrk_prity_rank,
+		     a.req_psn_tel,
+		     fun_humbasicinfo_cd_nm(b.admin_syspayno,0) as charg_nm,
+		     a.req_state,
+		     fun_xodxcommst_cd_nm(a.req_state,0) as req_state_nm,  
+		     a.recv_ymd ,
+		     a.recv_time ,     
+		     fun_day(a.recv_ymd) || ' ' || a.recv_time as recv_daytm,
+		     a.retrn_ymd ,
+		     a.retrn_time ,
+		     fun_day(a.retrn_ymd) || ' ' || a.retrn_time as retrn_daytm,
+		     a.biztrip_req_no,
+		     to_char(a.regst_daytm, '%Y-%m-%d %H:%M') as regst_daytm,
+		     a.req_psn_syspayno,
+		     c.nm as req_nm
+		FROM cgscarreq a, cgscar b, humbasicinfo c
+		WHERE a.car_no = b.car_no
+		and a.req_psn_syspayno = c.syspayno
+			<if test="req_state != null and req_state != ''">and a.req_state LIKE DECODE(#{req_state},'','%',#{req_state}) </if>
+			<if test="req_region_cd != null and req_region_cd != ''">and a.req_region_cd LIKE DECODE(#{req_region_cd},'','%',#{req_region_cd})</if>
+			<if test="car_no != null and car_no != ''">and a.car_no LIKE DECODE(#{car_no},'','%',#{car_no}) </if>
+		<![CDATA[
+		and a.use_cls_ymd >= #{use_orign_ymd}
+		and a.use_orign_ymd <= #{use_cls_ymd}
+		]]>
+		and a.req_state LIKE DECODE(#{req_state},'','%',#{req_state})
+		ORDER BY a.regst_daytm desc
+	</select>
+	
+	<!-- 바차상세조회 -->	
+	<select id="selectCgs" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+		SELECT     /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgs */
+		     a.use_orign_ymd ,
+		     a.use_orign_time,
+		     a.use_cls_ymd ,
+		     a.use_cls_time,
+		     a.req_seq ,
+		     trim(a.car_no) as car_no ,
+		     a.car_no||':'||b.carmdl_nm as car_info,
+		     a.destin ,
+		     a.req_region_cd ,
+		     a.driv_psn_syspayno ,
+		     fun_humbasicinfo_cd_nm(a.driv_psn_syspayno,1) as driv_empno, 
+		     a.driv_psn_nm ,
+		     a.onbrd_psn ,
+		     a.bsns_contnt ,
+		     a.bizwrk_prity_rank,
+		     a.req_psn_syspayno ,
+		     fun_humbasicinfo_cd_nm(a.req_psn_syspayno,0) as req_psn_nm, 
+		     a.req_psn_dept ,
+		     a.req_psn_dept_new_ymd,
+		     a.req_psn_mail_addr ,
+		     a.req_psn_tel ,
+		     b.admin_syspayno AS charg_syspayno,
+		     fun_humbasicinfo_cd_nm(b.admin_syspayno,0) as charg_nm,
+		     a.req_state ,
+		     fun_xodxcommst_cd_nm(a.req_state, 0) as req_state_nm,
+		     a.rmk ,
+		     TRIM(a.recv_ymd) AS recv_ymd,
+		     a.recv_time ,
+		     TRIM(a.retrn_ymd) AS retrn_ymd ,
+		     a.retrn_time ,
+		     a.start_meter ,
+		     a.arriv_meter ,
+		     a.mvmnt_dist ,
+		     a.start_flow ,
+		     a.arriv_flow ,
+		     a.suply_flow ,
+		     a.biztrip_req_no ,
+		     a.biztrip_car_use_yn ,
+		     a.unslip_no,
+		     a.driv_psn_syspayno_1 ,
+		     fun_humbasicinfo_cd_nm(a.driv_psn_syspayno_1,1) as driv_empno_1, 
+		     a.driv_psn_nm_1 ,
+		     a.driv_psn_syspayno_2 ,
+		     fun_humbasicinfo_cd_nm(a.driv_psn_syspayno_2,1) as driv_empno_2, 
+		     a.driv_psn_nm_2,
+		     a.charge_amount
+		FROM cgscarreq a, cgscar b
+		WHERE a.car_no = b.car_no
+		AND a.use_orign_ymd = #{use_orign_ymd}
+		AND a.use_orign_time = #{use_orign_time}
+		AND a.use_cls_ymd = #{use_cls_ymd}
+		AND a.use_cls_time = #{use_cls_time}
+		AND a.req_seq = #{req_seq}
+	</select>
+	
+	<!-- 배차신청 -->
+	<insert id="insertCgs" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+		INSERT INTO cgscarreq     /* QueryID : kr.re.kitech.biz.ccs.cgs.insertCgs */
+			(
+		     <if test="use_orign_ymd        != null and use_orign_ymd != ''" >use_orign_ymd ,</if> 
+		     <if test="use_orign_time       != null and use_orign_time != ''">use_orign_time ,</if>
+		     <if test="use_cls_ymd          != null and use_cls_ymd != ''">use_cls_ymd ,</if>
+		     <if test="use_cls_time         != null and use_cls_time != ''">use_cls_time ,</if>
+		     <if test="use_orign_ymd        != null and use_orign_time != null and use_cls_ymd != null and use_cls_time != null"> req_seq ,</if>
+		     <if test="car_no               != null and car_no != ''">car_no ,</if>
+		     <if test="destin               != null and destin != ''">destin ,</if>
+		     <if test="req_region_cd        != null and req_region_cd != ''">req_region_cd ,</if>
+		     <if test="driv_psn_syspayno    != null and driv_psn_syspayno != ''">driv_psn_syspayno ,</if>
+		     <if test="driv_psn_nm          != null and driv_psn_nm != ''">driv_psn_nm ,</if>
+		     <if test="onbrd_psn            != null and onbrd_psn != ''">onbrd_psn ,</if>
+		     <if test="bsns_contnt          != null and bsns_contnt != ''">bsns_contnt ,</if>
+		     <if test="bizwrk_prity_rank    != null and bizwrk_prity_rank != ''">bizwrk_prity_rank ,</if>
+		     <if test="req_psn_syspayno     != null and req_psn_syspayno != ''">req_psn_syspayno ,</if>
+		     <if test="req_psn_dept         != null and req_psn_dept != ''">req_psn_dept ,</if>
+		     <if test="req_psn_dept_new_ymd != null and req_psn_dept_new_ymd != ''">req_psn_dept_new_ymd,</if>
+		     <if test="req_psn_mail_addr    != null and req_psn_mail_addr != ''">req_psn_mail_addr ,</if>
+		     <if test="req_psn_tel          != null and req_psn_tel != ''">req_psn_tel ,</if>
+		     <if test="charg_syspayno       != null and charg_syspayno != ''">charg_syspayno ,</if>
+		     req_state ,
+		     <if test="rmk                  != null and rmk != ''">rmk ,</if>
+		     <if test="recv_ymd             != null and recv_ymd != ''">recv_ymd ,</if>
+		     <if test="recv_time            != null and recv_time != ''">recv_time ,</if>
+		     <if test="retrn_ymd            != null and retrn_ymd != ''">retrn_ymd ,</if>
+		     <if test="retrn_time           != null and retrn_time != ''">retrn_time ,</if>
+		     <if test="start_meter          != null and start_meter != ''">start_meter ,</if>
+		     <if test="arriv_meter          != null and arriv_meter != ''">arriv_meter ,</if>
+		     <if test="mvmnt_dist           != null and mvmnt_dist != ''">mvmnt_dist ,</if>
+		     <if test="start_flow           != null and start_flow != ''">start_flow ,</if>
+		     <if test="arriv_flow           != null and arriv_flow != ''">arriv_flow ,</if>
+		     <if test="suply_flow           != null and suply_flow != ''">suply_flow ,</if>
+		     <if test="biztrip_req_no       != null and biztrip_req_no != ''">biztrip_req_no ,</if>
+		     <if test="biztrip_car_use_yn   != null and biztrip_car_use_yn != ''">biztrip_car_use_yn ,</if>
+		     <if test="unslip_no            != null and unslip_no != ''">unslip_no ,</if>
+		     <if test="regst_syspayno   != null and regst_syspayno != ''">regst_psn_syspayno ,</if>
+		     <if test="driv_psn_syspayno_1  != null and driv_psn_syspayno_1 != ''">driv_psn_syspayno_1 ,</if>
+		     <if test="driv_psn_nm_1        != null and driv_psn_nm_1 != ''">driv_psn_nm_1 ,</if>
+		     <if test="driv_psn_syspayno_2  != null and driv_psn_syspayno_2 != ''">driv_psn_syspayno_2 ,</if>  
+		     <if test="driv_psn_nm_2        != null and driv_psn_nm_2 != ''">driv_psn_nm_2 ,</if>
+		     <if test="charge_amount        != null and charge_amount != ''">charge_amount ,</if>
+		     regst_daytm 
+		) VALUES ( 
+		     <if test="use_orign_ymd        != null and use_orign_ymd != ''">#{use_orign_ymd} ,</if> 
+		     <if test="use_orign_time       != null and use_orign_time != ''">#{use_orign_time} ,</if>
+		     <if test="use_cls_ymd          != null and use_cls_ymd != ''">#{use_cls_ymd} ,</if>
+		     <if test="use_cls_time         != null and use_cls_time != ''">#{use_cls_time} ,</if>
+		     
+		     <if test="use_orign_ymd != null and use_orign_time != null and use_cls_ymd != null and use_cls_time != null">
+		     (select nvl(max(req_seq),0)+1 
+		     from cgscarreq 
+		     where use_orign_ymd =#{use_orign_ymd} 
+		     and  use_orign_time =#{use_orign_time} 
+		     and use_cls_ymd = #{use_cls_ymd}  
+		     and  use_cls_time = #{use_cls_time} ), </if>
+		     
+		     <if test="car_no               != null and car_no != ''">#{car_no} ,</if>
+		     <if test="destin               != null and destin != ''">#{destin} ,</if>
+		     <if test="req_region_cd        != null and req_region_cd != ''">#{req_region_cd} ,</if>
+		     <if test="driv_psn_syspayno    != null and driv_psn_syspayno != ''">#{driv_psn_syspayno} ,</if>
+		     <if test="driv_psn_nm          != null and driv_psn_nm != ''">#{driv_psn_nm} ,</if>
+		     <if test="onbrd_psn            != null and onbrd_psn != ''">#{onbrd_psn} ,</if>
+		     <if test="bsns_contnt          != null and bsns_contnt != ''">#{bsns_contnt} ,</if>
+		     <if test="bizwrk_prity_rank    != null and bizwrk_prity_rank != ''">#{bizwrk_prity_rank} ,</if>
+		     <if test="req_psn_syspayno     != null and req_psn_syspayno != ''">#{req_psn_syspayno} ,</if>
+		     <if test="req_psn_dept         != null and req_psn_dept != ''">#{req_psn_dept} ,</if>
+		     <if test="req_psn_dept_new_ymd != null and req_psn_dept_new_ymd != ''">#{req_psn_dept_new_ymd},</if>
+		     <if test="req_psn_mail_addr    != null and req_psn_mail_addr != ''">#{req_psn_mail_addr} ,</if>
+		     <if test="req_psn_tel          != null and req_psn_tel != ''">#{req_psn_tel} ,</if>
+		     <if test="charg_syspayno       != null and charg_syspayno != ''">#{charg_syspayno} ,</if>
+		     'CGO001' ,
+		     <if test="rmk                  != null and rmk != ''">#{rmk} ,</if>
+		     <if test="recv_ymd             != null and recv_ymd != ''">#{recv_ymd} ,</if>
+		     <if test="recv_time            != null and recv_time != ''">#{recv_time} ,</if>
+		     <if test="retrn_ymd            != null and retrn_ymd != ''">#{retrn_ymd} ,</if>
+		     <if test="retrn_time           != null and retrn_time != ''">#{retrn_time} ,</if>
+		     <if test="start_meter          != null and start_meter != ''">#{start_meter} ,</if>
+		     <if test="arriv_meter          != null and arriv_meter != ''">#{arriv_meter} ,</if>
+		     <if test="mvmnt_dist           != null and mvmnt_dist != ''">#{mvmnt_dist} ,</if>
+		     <if test="start_flow           != null and start_flow != ''">#{start_flow} ,</if>
+		     <if test="arriv_flow           != null and arriv_flow != ''">#{arriv_flow} ,</if>
+		     <if test="suply_flow           != null and suply_flow != ''">#{suply_flow} ,</if>
+		     <if test="biztrip_req_no       != null and biztrip_req_no != ''">#{biztrip_req_no} ,</if>
+		     <if test="biztrip_car_use_yn   != null and biztrip_car_use_yn != ''">#{biztrip_car_use_yn} ,</if>
+		     <if test="unslip_no            != null and unslip_no != ''">#{unslip_no} ,</if>
+		     <if test="regst_syspayno   != null and regst_syspayno != ''">#{regst_syspayno} ,</if>
+		     <if test="driv_psn_syspayno_1  != null and driv_psn_syspayno_1 != ''">#{driv_psn_syspayno_1} ,</if>
+		     <if test="driv_psn_nm_1        != null and driv_psn_nm_1 != ''">#{driv_psn_nm_1} ,</if>
+		     <if test="driv_psn_syspayno_2  != null and driv_psn_syspayno_2 != ''">#{driv_psn_syspayno_2} ,</if>  
+		     <if test="driv_psn_nm_2        != null and driv_psn_nm_2 != ''">#{driv_psn_nm_2} ,</if>
+		     <if test="charge_amount        != null and charge_amount != ''">#{charge_amount} ,</if>
+		     CURRENT 
+		     )
+	</insert>	
+	
+	<!-- 배차 수정 -->
+	<update id="updateCgs" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+		  UPDATE cgscarreq SET        /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCgs */  
+			      <if test="car_no               != null and car_no != ''">car_no=#{car_no} ,</if>
+			      <if test="destin               != null and destin != ''">destin=#{destin} ,</if>
+			      <if test="req_region_cd        != null and req_region_cd != ''">req_region_cd=#{req_region_cd} ,</if>
+			      <if test="driv_psn_syspayno    != null and driv_psn_syspayno != ''">driv_psn_syspayno=#{driv_psn_syspayno} ,</if>
+			      <if test="driv_psn_nm          != null and driv_psn_nm != ''">driv_psn_nm=#{driv_psn_nm} ,</if>
+			      <if test="onbrd_psn            != null and onbrd_psn != ''">onbrd_psn=#{onbrd_psn} ,</if>
+			      <if test="bsns_contnt          != null and bsns_contnt != ''">bsns_contnt=#{bsns_contnt} ,</if>
+			      <if test="bizwrk_prity_rank    != null and bizwrk_prity_rank != ''">bizwrk_prity_rank=#{bizwrk_prity_rank},</if>
+			      <if test="req_psn_syspayno     != null and req_psn_syspayno != ''">req_psn_syspayno=#{req_psn_syspayno} ,</if>
+			      <if test="req_psn_dept         != null and req_psn_dept != ''">req_psn_dept=#{req_psn_dept} ,</if>
+			      <if test="req_psn_dept_new_ymd != null and req_psn_dept_new_ymd != ''">req_psn_dept_new_ymd=#{req_psn_dept_new_ymd},</if>
+			      <if test="req_psn_mail_addr    != null and req_psn_mail_addr != ''">req_psn_mail_addr=#{req_psn_mail_addr} ,</if>
+			      <if test="req_psn_tel          != null and req_psn_tel != ''">req_psn_tel=#{req_psn_tel} ,</if>
+			      <if test="charg_syspayno       != null and charg_syspayno != ''">charg_syspayno=#{charg_syspayno} ,</if>
+			      <if test="req_state            != null and req_state != ''">req_state=#{req_state} ,</if>
+			      <if test="rmk                  != null and rmk != ''">rmk=#{rmk} ,</if>
+			      <if test="recv_ymd             != null and recv_ymd != ''">recv_ymd=#{recv_ymd} ,</if>
+			      <if test="recv_time            != null and recv_time != ''">recv_time=#{recv_time} ,</if>
+			      <if test="retrn_ymd            != null and retrn_ymd != ''">retrn_ymd=#{retrn_ymd} ,</if>
+			      <if test="retrn_time           != null and retrn_time != ''">retrn_time=#{retrn_time} ,</if>
+			      <if test="start_meter          != null and start_meter != ''">start_meter=#{start_meter} ,</if>
+			      <if test="arriv_meter          != null and arriv_meter != ''">arriv_meter=#{arriv_meter} ,</if>
+			      <if test="mvmnt_dist           != null and mvmnt_dist != ''">mvmnt_dist=#{mvmnt_dist} ,</if>
+			      <if test="start_flow           != null and start_flow != ''">start_flow=#{start_flow} ,</if>
+			      <if test="arriv_flow           != null and arriv_flow != ''">arriv_flow=#{arriv_flow} ,</if>
+			      <if test="suply_flow           != null and suply_flow != ''">suply_flow=#{suply_flow} ,</if>
+			      <if test="biztrip_req_no       != null and biztrip_req_no != ''">biztrip_req_no=#{biztrip_req_no} ,</if>
+			      <if test="biztrip_car_use_yn   != null and biztrip_car_use_yn != ''">biztrip_car_use_yn=#{biztrip_car_use_yn} ,</if>
+			      <if test="unslip_no            != null and unslip_no != ''">unslip_no=#{unslip_no} ,</if>
+			      <if test="updt_syspayno    	 != null and updt_syspayno != ''">updt_psn_syspayno=#{updt_syspayno} ,</if>
+			      <if test="driv_psn_syspayno_1  != null and driv_psn_syspayno_1 != ''">driv_psn_syspayno_1=#{driv_psn_syspayno_1} ,</if>
+			      <if test="driv_psn_nm_1        != null and driv_psn_nm_1 != ''">driv_psn_nm_1=#{driv_psn_nm_1} ,</if>
+			      <if test="driv_psn_syspayno_2  != null and driv_psn_syspayno_2 != ''">driv_psn_syspayno_2=#{driv_psn_syspayno_2},</if>
+			      <if test="driv_psn_nm_2        != null and driv_psn_nm_2 != ''">driv_psn_nm_2=#{driv_psn_nm_2},</if>
+			      <if test="charge_amount        != null and charge_amount != ''">charge_amount=#{charge_amount},</if>
+			      updt_daytm=CURRENT 
+			WHERE  use_orign_ymd=#{use_orign_ymd}
+			AND    use_orign_time=#{use_orign_time}
+			AND    use_cls_ymd=#{use_cls_ymd} 
+			AND    use_cls_time=#{use_cls_time}
+			AND    req_seq=#{req_seq}
+	</update>
+	
+	<delete id="deleteCgsCarUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+       DELETE FROM cgscarreq     /* QueryID : kr.re.kitech.biz.ccs.cgs.deleteCgsCarUse */
+	   WHERE  use_orign_ymd=#{use_orign_ymd}
+	   AND    use_orign_time=#{use_orign_time}
+	   AND    use_cls_ymd=#{use_cls_ymd}
+	   AND    use_cls_time=#{use_cls_time}
+	   AND    req_seq=#{req_seq}
+    </delete>
+	
+	<!-- 출장 확인 -->
+	<update id="updatBiz" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+			UPDATE cgscarreq SET biztrip_req_no =     /* QueryID : kr.re.kitech.biz.ccs.cgs.updatBiz */
+			(select max(h.req_no) 
+			  from ctrdom h, ctrdomcompn e  
+			  WHERE h.req_no = e.req_no
+			  AND e.biztrip_psn_syspayno = cgscarreq.driv_psn_syspayno 
+			  AND h.biztrip_start_ymd = cgscarreq.use_orign_ymd)
+			WHERE  use_orign_ymd >=#{use_orign_ymd}
+	</update>
+	
+	<!-- 중복체크 -->
+	<select id="dupCheckCarUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+		SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.dupCheckCarUse */
+		     trim(b.car_no) ||' : '|| b.carmdl_nm as car_no
+		    , a.use_orign_ymd AS use_orign_ymd
+		    , a.use_orign_time AS use_orign_time
+		    , a.use_cls_ymd AS use_cls_ymd
+		    , a.use_cls_time AS use_cls_time
+		FROM cgscarreq as a JOIN cgscar as b 
+		ON a.car_no = b.car_no
+		WHERE (#{use_orign_ymd} BETWEEN a.use_orign_ymd AND a.use_cls_ymd
+		OR #{use_cls_ymd} BETWEEN a.use_orign_ymd AND a.use_cls_ymd)
+		AND a.car_no = #{car_no} 
+		<![CDATA[
+		AND (((#{use_orign_ymd} >= a.use_orign_ymd AND #{use_orign_time} >= a.use_orign_time) OR (#{use_orign_ymd} > a.use_orign_ymd AND #{use_orign_time} <= a.use_orign_time)) 
+		AND ((#{use_orign_ymd} <= use_cls_ymd AND #{use_orign_time} <= use_cls_time) OR (#{use_orign_ymd} < use_cls_ymd AND #{use_orign_time} >= use_cls_time))
+		OR ((#{use_cls_ymd} >= a.use_orign_ymd AND #{use_cls_time} >= a.use_orign_time) OR (#{use_cls_ymd} > a.use_orign_ymd AND #{use_cls_time} <= a.use_orign_time)) 
+		AND ((#{use_cls_ymd} <= use_cls_ymd AND #{use_cls_time} <= use_cls_time) OR (#{use_cls_ymd} < use_cls_ymd AND #{use_cls_time} >= use_cls_time)))
+		AND a.req_state != 'CGO005'
+		]]>
+	</select>
+	
+	<!-- 중복체크2 -->
+	<select id="dupCheckCarUse2" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+		SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.dupCheckCarUse2 */
+		     trim(b.car_no) ||' : '|| b.carmdl_nm as car_no
+		    , a.use_orign_ymd AS use_orign_ymd
+		    , a.use_orign_time AS use_orign_time
+		    , a.use_cls_ymd AS use_cls_ymd
+		    , a.use_cls_time AS use_cls_time
+		FROM cgscarreq as a JOIN cgscar as b 
+		ON a.car_no = b.car_no
+		<![CDATA[
+		WHERE ((#{use_orign_ymd} <= a.use_orign_ymd AND #{use_orign_time} <= a.use_orign_time) OR (#{use_orign_ymd} < a.use_orign_ymd AND #{use_orign_time} >= a.use_orign_time)) 
+		AND ((#{use_cls_ymd} >= a.use_cls_ymd AND #{use_cls_time} >= use_cls_time) OR (#{use_cls_ymd} > a.use_cls_ymd AND #{use_cls_time} <= use_cls_time))
+		AND a.car_no = #{car_no}
+		AND a.req_state != 'CGO005'
+		]]>
+	</select>
+	
+	<select id="selectReqPsnEmail" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCarUseVo">
+		select email
+		from humbasicinfo 
+		where syspayno = #{req_psn_syspayno}
+	</select>
+	
+</mapper>

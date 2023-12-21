@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="부서 조회">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_dept">
+					<w2:keyInfo>
+						<w2:key id="dept_cd" name="부서코드" dataType="text"></w2:key>
+						<w2:key id="dept_new_ymd" name="부서신설일" dataType="text"></w2:key>
+						<w2:key id="dept_shape" name="부서레벨" dataType="text"></w2:key>
+						<w2:key id="full_info" name="부서정보여부" dataType="text" value="false"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_dept" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="dept_cd" name="부서코드" dataType="text"></w2:column>
+            			<w2:column id="dept_nm" name="부서명" dataType="text"></w2:column>
+            			<w2:column id="dept_eng_nm" name="부서영문명" dataType="text"></w2:column>
+            			<w2:column id="disp_seq" name="부서순번" dataType="text"></w2:column>
+            			<w2:column id="dept_shape" name="부서레벨" dataType="text"></w2:column>
+            			<w2:column id="dept_new_ymd" name="부서신설일" dataType="text"></w2:column>
+            			<w2:column id="divsn_dept" name="부서신설일" dataType="text"></w2:column>
+            			<w2:column id="divsn_dept_new_ymd" name="부서신설일" dataType="text"></w2:column>
+            			<w2:column id="divsn_dept_nm" name="부서신설일" dataType="text"></w2:column>
+            			<w2:column id="dept_typ" name="지역본부" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+            <xf:submission id="sbm_dept" ref='data:json,dma_dept' target='data:json,{"id":"dlt_dept","key":"deptInfoVoList"}'
+				action="/SvcCodhDeptInfoList.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler=""
+				customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="scwin.sbm_selectAppMapList_submitdone" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<xf:submission id="sbm_dept_in" ref='data:json,dma_dept' target='data:json,{"id":"dlt_dept","key":"deptInfoVoList"}'
+				action="/SvcCodhDeptInfoList.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler=""
+				customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+			scwin.onpageload = function() {
+				com.setEnterKeyEvent(dept_search, scwin.btn_search_onclick);
+				scwin.param = com.getParameter();
+				dma_dept.set("dept_cd", scwin.param.dept_cd);
+				com.execute(sbm_dept);
+			};
+			
+			scwin.btn_search_onclick = function() {
+				com.execute(sbm_dept_in);
+			};
+			
+			scwin.sbm_selectAppMapList_submitdone = function(e) {
+				trv_dept.spanAll(true);
+				const elData = e.responseJSON.elData;
+				const totalCnt = elData.totalCount;
+				if(totalCnt == 1){
+					com.closePopup(dlt_dept.getRowJSON(0));
+				}
+			};
+			
+			scwin.onpageunload = function() {
+				
+			};
+			
+			scwin.btn_confirm_onclick = function(e) {
+				scwin.setDeptCd(trv_dept.getSelectedIndex());
+			};
+			
+			/**
+			 * 그리드 더블클릭 이벤트
+			 */ 
+			scwin.trv_dept_oncelldblclick = function(row,col,colId) {
+				scwin.setDeptCd(row);
+			};
+			
+			/**
+			 * 선택한 행의 데이터 넘겨주기
+			 */
+			scwin.setDeptCd = function(num){
+				com.closePopup(dlt_dept.getRowJSON(num-1));
+			}
+			
+			/**
+			 * 닫기
+			 */
+			scwin.btn_close_onclick = function(e) {
+				com.closePopup();
+			};
+
+			scwin.trv_dept_ondblclick = function() {
+				scwin.setDeptCd(trv_dept.getSelectedIndex());
+			};
+	
+	scwin.btn_fold_onclick = function() {
+		trv_dept.spanAll(false);
+	};
+	
+	scwin.btn_expand_onclick = function() {
+		trv_dept.spanAll(true);
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+   		<xf:group style="" id="grp_search" class="searchSection">
+   			<xf:group id="" class="schbox">
+   				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+   					<w2:attributes>
+   						<w2:summary></w2:summary>
+   					</w2:attributes>
+   					<xf:group tagname="caption" text="조회조건"></xf:group>
+   					<xf:group tagname="colgroup">
+   						<xf:group tagname="col" style="width:120px;"></xf:group>
+   						<xf:group tagname="col" style="width:200px;"></xf:group>
+   						<xf:group tagname="col" style="width:60px;"></xf:group>
+   						<xf:group tagname="col" style=""></xf:group>
+   					</xf:group>
+   					<xf:group tagname="tr" style="">
+		
+   						<xf:group tagname="th" class="w2tb_th" style="text-align: left">
+   							<w2:attributes></w2:attributes>
+   							<w2:textbox tagname="span" style="" id="" label="부서명/부서코드"></w2:textbox>
+   						</xf:group>
+   						<xf:group tagname="td" id="dept_search" class="w2tb_td">
+   							<w2:attributes></w2:attributes>
+   							<xf:input adjustMaxLength="false" class="inp" id="dept_search_name" style="width: 150px; padding-left:5px" title="부서명" ref="data:dma_dept.dept_cd"></xf:input>
+   						</xf:group>
+   					</xf:group>
+   				</xf:group>
+   			</xf:group>
+   			<xf:group id="" class="schbtn">
+   				<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+   					<xf:label><![CDATA[조회]]></xf:label>
+   				</xf:trigger>
+   			</xf:group>
+   		</xf:group>
+    	<xf:group style="border: none;margin-top: 5px;" id="" class="searchSection">
+    		<w2:anchor class="ico_fold" ev:onclick="scwin.btn_fold_onclick" id="btn_fold" outerDiv="false" style="" tooltip="부서접기">
+				<xf:label><![CDATA[부서접기]]></xf:label>
+			</w2:anchor>
+			<w2:anchor class="ico_list" ev:onclick="scwin.btn_expand_onclick" id="btn_expand" outerDiv="false" style="" tooltip="부서펼치기">
+				<xf:label><![CDATA[부서펼치기]]></xf:label>
+			</w2:anchor>
+    	</xf:group>
+    	<xf:group style="" id="">
+   		
+    	<w2:treeview class="treev line_R mt10 " dataType="listed" ev:onlabelclick="scwin.trv_dept_onlabelclick" id="trv_dept" showTreeDepth="0" style="height:450px;"
+    			title="사용자 목록" toggleEvent="onclick" tooltipGroupClass="false" ev:ondblclick="scwin.trv_dept_ondblclick">
+    			<w2:itemset nodeset="data:dlt_dept">
+    				<w2:label ref="dept_nm"></w2:label>
+    				<w2:value ref="dept_cd"></w2:value>
+    				<w2:depth ref="dept_shape"></w2:depth>
+    			</w2:itemset>
+    		</w2:treeview>
+    	</xf:group>
+    	
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger style="" id="btn_confirm" type="button" class=" btn pro conf" ev:onclick="scwin.btn_confirm_onclick">
+    				<xf:label><![CDATA[확인]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

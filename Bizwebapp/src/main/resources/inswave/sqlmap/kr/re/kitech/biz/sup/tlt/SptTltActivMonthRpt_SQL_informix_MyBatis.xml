@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.tlt">
+  <select id="selectSptTltActivMonthRptList" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivMonthRptVo" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivMonthRptVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltActivMonthRptList */ 
+		  req_no,             -- 보고서번호
+        seq,                -- 일련번호  
+        that_month_div,     -- 당월구분      
+        that_month_goal,    -- 당월목표      
+        that_month_result,  -- 당월실적      
+        rmk                 -- 비고
+FROM    spttltactivrpt
+WHERE   req_no = #{req_no}
+ORDER BY req_no, seq
+  </select>
+	
+	<update id="mergeSptTltActivMonthRpt" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivMonthRptVo">
+		MERGE /* kr.re.kitech.biz.sup.tlt.mergeSptTltActivMonthRpt */
+		 INTO spttltactivrpt AS t1
+		USING dual AS t2 ON t1.req_no = #{req_no} AND t1.seq = #{seq}
+		 WHEN MATCHED  THEN
+		 UPDATE
+		    SET that_month_div   = #{that_month_div},
+	  			that_month_goal   = #{that_month_goal},
+	  			that_month_result   = #{that_month_result},
+	  			rmk   = #{rmk},
+	  			updt_syspayno   = #{updt_syspayno},
+	  			updt_daytm   = SYSDATE
+		 WHEN NOT MATCHED THEN
+		 INSERT (
+		 	req_no,
+		 	seq,
+		 	that_month_div,
+		 	that_month_goal,
+		 	that_month_result,
+		 	rmk,
+		 	regst_syspayno,
+		 	regst_daytm
+		 ) VALUES(
+		 	#{req_no},				/* req_no */
+		 	#{seq},					/* req_no */
+		 	#{that_month_div},		/* that_month_div */
+		 	#{that_month_goal},		/* that_month_goal */
+		 	#{that_month_result},	/* that_month_result */
+		 	#{rmk},					/* rmk */
+		 	#{regst_syspayno},		/* regst_syspayno */
+		 	SYSDATE					/* regst_daytm|now */
+		 )
+	</update>
+	
+	<delete id="deleteSptTltActivMonthRpt" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivMonthRptVo">
+DELETE /* QueryID : kr.re.kitech.biz.sup.tlt.deleteSptTltActivMonthRpt */ 
+FROM spttltactivrpt 
+WHERE req_no = #{req_no} 
+  </delete>
+  
+</mapper>

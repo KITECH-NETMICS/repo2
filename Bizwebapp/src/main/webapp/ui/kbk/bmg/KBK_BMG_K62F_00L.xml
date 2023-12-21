@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="전자정보">
+    	<w2:type>DEFAULT</w2:type>
+    	<w2:buildDate />
+    	<xf:model>
+    		<xf:instance>
+    			<data xmlns="" />
+    		</xf:instance>
+    		<w2:dataCollection baseNode="map">
+    			<w2:dataMap baseNode="map" id="dma_search" style="">
+    				<w2:keyInfo>
+    					<w2:key id="clsf_cd" name="구분코드" dataType="text"></w2:key>
+    				</w2:keyInfo>
+    			</w2:dataMap>
+    			<w2:dataList baseNode="list" repeatNode="map" id="dlt_outUrl" saveRemovedData="true">
+    				<w2:columnInfo>
+    					<w2:column id="subj_image" name="이미지" dataType="text"></w2:column>
+
+    					<w2:column id="subj" name="제목" dataType="text"></w2:column>
+
+    					<w2:column id="clsf_cd" name="전자구분코드" dataType="text"></w2:column>
+    					<w2:column id="clsf_nm" name="전자구분명" dataType="text"></w2:column>
+    					<w2:column id="info" name="id/pw" dataType="text"></w2:column>
+    					<w2:column id="url" name="URL" dataType="text"></w2:column>
+    					<w2:column id="url_rmk" name="설명" dataType="text"></w2:column>
+
+    					<w2:column id="regst_no" name="등록번호" dataType="text"></w2:column>
+    				</w2:columnInfo>
+    			</w2:dataList>
+    		</w2:dataCollection>
+    		<w2:workflowCollection></w2:workflowCollection>
+    		<xf:submission id="sbm_selectKbkOutUrlListSel" ref="data:json,dma_search" target="" action="SvcKBKBMGBOUR01.pwkjson"
+    			method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler=""
+    			mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+    		</xf:submission>
+    	</xf:model>
+    	<script src="/cm/js/biz/kbk.js" cache="false"></script>
+    	<script type="text/javascript" lazy="false"><![CDATA[
+	/*************************************************************************************************************
+	 *
+	 *	페이지 이벤트 함수
+	 *
+	 *************************************************************************************************************/
+	/*
+	 * 페이지 열기
+	 */
+	scwin.onpageload = function() {
+		chk_clsf.checkAll(true);
+		scwin.search(); //디폴트로 조회
+		
+		com.biz.checkRole({ serviceId : "K62F", roleCodes : com.getLoginInfo("roleCode") }, function(e) {
+			if(!e.isRoleYn){
+				btn_new.hide();
+			}
+		});
+	};
+
+	/*
+	 * 페이지 닫기
+	 */
+	scwin.onpageunload = function() {
+
+	};
+
+	/*************************************************************************************************************
+	 *
+	 *	사용자 정의 함수
+	 *
+	 *************************************************************************************************************/
+	/*
+	 * 조회
+	 */
+	scwin.search = function() {
+		com.execute(sbm_selectKbkOutUrlListSel, {
+			successCallback : function(e) {
+				var data = e.responseJSON.kbkOutUrlVoList;
+
+				for (var i = 0; i < data.length; i++) {
+					//데이터베이스
+					var path = data[i].attach_file_path_img;
+					var img = data[i].attach_file_img;
+					if (path)
+						data[i].subj_image = path.substr(87) + "/" + img;
+					else
+						data[i].subj_image = "";
+
+					//ID/PW
+					var id = data[i].id;
+					var pw = data[i].pw;
+					if (id)
+						data[i].info = id + " / " + pw;
+				}
+
+				dlt_outUrl.setJSON(data, false);
+			}
+		});
+	};
+	
+	/*
+	 * URL
+	 */
+	scwin.openUrl = function(url) {
+		var httpUrl = "";
+		
+		if(url.length < 1) {
+			return;
+		}
+		else if(url.length < 5) {
+			alert("URL 정보가 유효하지 않습니다.\n" + url);
+			return;
+		}
+		else if(url.substring(0, 4) != "http"){
+			httpUrl = "http://" + url;
+		}
+		else {
+			httpUrl = url;
+		}
+		
+		window.open(httpUrl, "", "width=1200, height=800, toolbar=yes, location=yes, scrollbars=yes, resizable=yes");
+	}
+
+	/*
+	 * 팝업
+	 */
+	scwin.openReg = function(regstNo, flag) {
+		var data = {
+			cmd : flag,
+			regst_no : regstNo
+		};
+		
+		//팝업 serviceId K62E
+   		biz.kbk.pop.open(biz.kbk.pop.TYPE.REG_OURL, data);
+	};
+
+	/*************************************************************************************************************
+	 *
+	 *	컴포넌트 이벤트 함수
+	 *
+	 *************************************************************************************************************/
+	/*
+	 * 구분
+	 */
+	scwin.chk_clsf_onviewchange = function(info) {
+		//전체
+		if (info.value === "ALL")
+			chk_clsf.checkAll(info.checked);
+		//나머지
+		else if (chk_clsf.getSelectedIndex().includes('0'))
+			chk_clsf.setSelectedIndex(0);
+	};
+
+	/*
+	 * 조회
+	 */
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+
+	/*
+	 * 신규
+	 */
+	scwin.btn_new_onclick = function(e) {
+		scwin.openReg("", "In");
+	};
+
+	/*
+	 * 그리드
+	 */
+	scwin.grd_outUrl_oncellclick = function(row, col, colId) {
+		if(colId === "subj")
+			scwin.openUrl(dlt_outUrl.getRowJSON(row).url);
+		else if(colId === "url_rmk")
+			scwin.openReg(dlt_outUrl.getRowJSON(row).regst_no, "Vw");
+	};
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="검색조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style=""></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select appearance="full" class="chkGroup" cols="" id="chk_clsf" ref="data:dma_search.clsf_cd" renderType="checkboxgroup" rows=""
+    								selectedindex="-1" style="" ev:onviewchange="scwin.chk_clsf_onviewchange">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[전체]]></xf:label>
+    										<xf:value><![CDATA[ALL]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[전자저널]]></xf:label>
+    										<xf:value><![CDATA[KSA001]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[규격특허]]></xf:label>
+    										<xf:value><![CDATA[KSA002]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[SCI(E)]]></xf:label>
+    										<xf:value><![CDATA[KSA003]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[Trial서비스]]></xf:label>
+    										<xf:value><![CDATA[KSA004]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[도서요약서비스]]></xf:label>
+    										<xf:value><![CDATA[KSA005]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[기타]]></xf:label>
+    										<xf:value><![CDATA[KSA006]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="margin-top:5px;">
+    			<xf:group class="le" id="">
+    			</xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:trigger class="btn" id="btn_new" style="" type="button" ev:onclick="scwin.btn_new_onclick">
+    					<xf:label><![CDATA[신규]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="40"
+    			dataList="data:dlt_outUrl" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_outUrl" visibleRowNum="20"
+    			class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" readOnly="true" ev:oncellclick="scwin.grd_outUrl_oncellclick">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="360" inputType="text" style="height:28px;" id="column9" value="데이터베이스" displayMode="label" colSpan="2"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column7" value="구분" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px;" id="column5" value="ID / PW" displayMode="label"></w2:column>
+    					<w2:column width="350" inputType="text" style="height:28px;" id="column3" value="설명" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="140" inputType="image" readOnly="true" style="height:28px;" id="subj_image" displayMode="label" fixColumnWidth="true" imageHeight="30" imageWidth="120"></w2:column>
+    					<w2:column width="220" inputType="link" style="height:28px" id="subj" value="" displayMode="label" readOnly="true" class="le"></w2:column>
+    					<w2:column width="150" inputType="text" readOnly="true" style="height:28px;" id="clsf_nm" class=""
+    						displayMode="label" value="">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="info" class="" escape="false"
+    						displayMode="label" value="">
+    					</w2:column>
+    					<w2:column width="350" inputType="link" readOnly="true" style="height:28px;" id="url_rmk" displayMode="label"
+    						escape="false" textAlign="left" class="le">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

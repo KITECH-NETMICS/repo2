@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="kr.re.kitech.biz.api.bpm">
+	
+	<!-- 감사, 지역담당자 조회 BPM API 제공 -->
+	<select id="findLocalAuthorsByRoleType" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo" resultType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+SELECT /* kr.re.kitech.biz.api.bpm.findLocalAuthorsByRoleType */
+      x0.syspayno
+    , SUBSTR(x0.syspayno, 3, 6) AS empno
+    , x2.empcode AS result
+    , x2.empname AS nm
+FROM humbasicinfo AS x1
+JOIN xodrdeptpurman AS x0 ON x1.dept_cd = x0.dept_cd AND x1.dept_new_ymd = x0.dept_new_ymd
+JOIN bpm:emptable AS x2 ON x2.empsn = x0.syspayno 
+WHERE x1.syspayno = #{syspayno}
+AND x0.role_type = #{roleType}
+AND NVL(SORT,'1') = '1'
+</select>
+
+<!-- 원본부 자산담당자 조회 BPM API 제공 -->
+<select id="findAssHqAuthors" resultType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+SELECT /* kr.re.kitech.biz.api.bpm."findAssHqAuthors" */
+     x0.syspayno, x2.empcode AS result
+FROM xodrdeptpurman AS x0
+JOIN bpm:parttable AS x1 ON x1.partcode = x0.dept_cd
+JOIN bpm:emptable AS x2 ON x2.empsn = x0.syspayno
+WHERE x0.role_type = 'CCL' 
+AND x0.dept_cd LIKE 'H100'
+</select>
+	
+<!-- 인사담당자 조회, BPM API 제공 -->
+<select id="findAuthorsByRoleCode" parameterType="java.lang.String" resultType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+SELECT /* kr.re.kitech.biz.api.bpm.findAuthorsByRoleCode */
+      empcode AS result 
+FROM bpm:roleusertable 
+WHERE rolecode = #{roleCode}
+</select>
+
+<!-- 기술료담당자 조회, BPM API 제공 -->
+<select id="findTecAuthorsByRoleCode" parameterType="java.lang.String" resultType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+SELECT /* kr.re.kitech.biz.api.bpm.findTecAuthorsByRoleCode */
+      x1.empsn AS syspayno
+    , x1.empcode AS result
+FROM bpm:roleusertable x0 
+JOIN bpm:emptable x1 ON x1.empcode = x0.empcode
+WHERE x0.rolecode = #{roleCode}
+AND x1.isdeleted = 0
+</select>
+
+<select id="selectSlipTypCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.api.bpm.selectSlipTypCnt */
+       COUNT(*) AS cnt
+  FROM fbasliptyph
+ WHERE slip_typ_cd = #{slip_typ_cd}
+</select>
+
+<!-- 결재 후처리 Process 호출 후 로그 저장 -->
+<insert id="insertLogCallApp" parameterType="kr.re.kitech.biz.api.server.vo.LogCallAppVo">
+INSERT /* kr.re.kitech.biz.api.bpm.insertLogCallApp */
+  INTO logcallapp (
+      req_no
+    , req_sn
+    , apr_state
+    , tmp1
+    , tmp2
+    , tmp3
+    , call_time
+) VALUES ( 
+    #{req_no}
+  , #{req_sn}
+  , #{apr_state}
+  , 'BpmPostService'
+  , #{tmp2}
+  , #{tmp3}
+  , SYSDATE
+  )
+</insert>
+</mapper>

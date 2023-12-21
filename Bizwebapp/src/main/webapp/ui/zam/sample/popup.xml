@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/css/sample.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="팝업(자료교환)-부모">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 팝업(자료교환)
+ 	 * 변경 이력 : 2022-01-01	문철주	최초작성
+ 	 ****************************************************/
+
+	/**
+	 * 도움말
+	 */
+	scwin.help = `
+팝업 또는 MDI새탭으로 열때 data객체를 파라미터로 주고 받는 샘플입니다.
+
+※ 팝업 표준은 레이어팝업(모달)이며, com.openPopup 함수 사용하며, 팝업 화면에 전달할 json객체를 세번째 인자로 전달
+
+※ 팝업 화면에서 파라미터를 얻기 위해서 com.getParameter 함수 사용
+
+※ 팝업 화면에서 창을 닫을때 com.closePopup 함수를 사용하며, 부모 화면의 콜백함수에 전달할 json객체를 파라미터로 전달
+
+※ 팝업 화면에서 창을 닫으면 부모화면에서 com.openPopup 시 정의한 콜백 함수가 수행되며, 리턴값이 콜백 함수의 파라미터로 전달됨
+	`;
+	
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+
+	};
+
+	/**
+	 *  팝업
+	 */
+	scwin.btn_pop_onclick = function() {
+		var data = { msg : ibx_send.getValue() };
+		var options = {
+			id : "wframePopModal",
+			popupName : "샘플 팝업",
+			width : 400, height: 250 
+//			,closeAction : "scwin.closeActionTest"
+//			, top : "0px", left : "0px"
+		};
+		com.openPopup("/ui/zam/sample/popupPop.xml", options, data, function(retObj) {
+			// 팝업 콜백
+			ibx_receive.setValue( retObj.retValue );
+		});
+	};
+	
+	/**
+	 * 팝업의 우상단 X 버튼으로 닫을때 처리
+	 */
+	scwin.closeActionTest = function(popupId) {
+		console.log("scwin.closeActionTest : " + popupId);
+		return true; // true 리턴시 팝업창이 닫힘
+	};
+	
+	/**
+	 *  레이어팝업(모달리스) - 비표준
+	 */
+	scwin.btn_pop2_onclick = function() {
+		var data = { msg : ibx_send.getValue() };
+		var options = {
+			id : "wframePopModeless",
+			popupName : "샘플 팝업",
+			modal : false,
+			width : 400, height: 250
+		};
+		com.openPopup("/ui/zam/sample/popupPop.xml", options, data, function(retObj) {
+			// 팝업 콜백
+			ibx_receive.setValue( retObj.retValue );
+		});
+	};
+
+	/**
+	 *  윈도우 팝업(모달리스) - 비표준
+	 */
+	scwin.btn_winPop_onclick = function(e) {
+		var data = { msg : ibx_send.getValue(), callbackFn : "scwin.callback" };
+		var options = {
+			id : "browserPopup",
+			popupName : "샘플 팝업",
+			type : "browserPopup",
+			modal : false,
+			width : 400, height: 250
+		};
+		com.openPopup("/ui/zam/sample/popupPop.xml", options, data);
+	};
+
+	/**
+	 *  윈도우 팝업 콜백
+	 */
+	scwin.callback = function(retObj){
+		ibx_receive.setValue( retObj.retValue );
+	};
+	
+	]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe><xf:group class="pageWrap" id="" style="">
+			
+			<xf:group adaptiveThreshold="" class="dfbox" id="" style="">
+				<w2:textbox class="df_tit" id="" label="자료교환" style="" tagname="h2"></w2:textbox>
+				<xf:group class="fr" id="" style="">
+					<xf:trigger ev:onclick="scwin.btn_pop_onclick" style="" id="btn_pop" type="button" class="btn_cm ">
+						<xf:label><![CDATA[팝업]]></xf:label>
+					</xf:trigger>
+					<xf:trigger ev:onclick="scwin.btn_pop2_onclick" style="" id="btn_pop2" type="button" class="btn_cm hide">
+						<xf:label><![CDATA[모달리스팝업(비표준)]]></xf:label>
+					</xf:trigger>
+					<xf:trigger ev:onclick="scwin.btn_winPop_onclick" style="" id="btn_winPop" type="button" class="btn_cm hide"
+						disabled="">
+						<xf:label><![CDATA[윈도우팝업(비표준)]]></xf:label>
+					</xf:trigger>
+
+
+				</xf:group>
+			</xf:group>
+			<xf:group class="tbbox" id="" style="">
+				<xf:group id="" class="tb_inner">
+					<xf:group adaptive="layout" adaptiveThreshold="600" tagname="table" style="" id="" class="w2tb tb">
+						<w2:attributes>
+							<w2:summary></w2:summary>
+						</w2:attributes>
+						<xf:group tagname="colgroup">
+							<xf:group tagname="col" style="width:140px;"></xf:group>
+							<xf:group tagname="col"></xf:group>
+						</xf:group>
+						<xf:group tagname="tr" style="">
+							<xf:group tagname="th" style="" class="w2tb_th ">
+								<w2:textbox ref="" tagname="p" style="" userData2="" id="" label="전송 Data" class=""></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" style="" class="w2tb_td">
+								<xf:group style="" id="" class="">
+									<xf:input disabled="" style="" id="ibx_send" placeholder=""></xf:input>
+
+
+
+
+
+
+
+
+
+								</xf:group>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox ref="" tagname="p" style="" userData2="" id="" label="수신 Data" class=""></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes>
+									<w2:colspan>1</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+								<xf:input style="" id="ibx_receive" placeholder="" class=""></xf:input>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+		</xf:group>
+
+	</body>
+</html>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.api.bpm">
+<!-- 내부기술지원 신청서 결재완료 또는 반려시 신청상태 업데이트 -->
+<update id="updateFspTechSuphApr" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE /* kr.re.kitech.biz.api.bpm.updateFspTechSuphApr */
+       fsptechsuph
+   SET req_state = #{aprState}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE req_no = #{reqNo}
+</update>
+
+<!-- 결재완료 후 파트너 기업 정보 변경신청서 조회 -->
+<select id="selectSptParBaseInfo" parameterType="java.lang.String" resultType="kr.re.kitech.biz.api.server.vo.biz.SptCustVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectSptParBaseInfo */
+        a.cust_no
+      , c.appont_no
+      , a.req_no
+FROM sptcustmentrchngh a
+JOIN sptparbaseinfo c ON a.cust_no=c.cust_no
+WHERE a.req_no= #{req_no}
+</select>
+
+<!-- 고객맨토 정보 및 고객업무담당자 삭제 -->
+<delete id="deleteSptCustMentrInfoApr" parameterType="kr.re.kitech.biz.api.server.vo.biz.SptCustVo">
+DELETE /* kr.re.kitech.biz.api.bpm.deleteSptCustMentrInfoApr */
+  FROM sptcustmentrinfo
+ WHERE cust_no = #{cust_no}
+   AND bizwrk_clsf = #{bizwrk_clsf} ;
+
+DELETE FROM sptcustcharg 
+ WHERE cust_no= #{cust_no}
+   AND bizwrk = #{bizwrk_clsf} ;
+</delete>
+
+<!-- 파트너 기업 정보 변경신청서멘토 조회 -->
+<select id="selectSptCustMentrChngDList" parameterType="kr.re.kitech.biz.api.server.vo.biz.SptCustVo" resultType="kr.re.kitech.biz.sup.cus.vo.SptCustMentrInfoVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectSptCustMentrChngDList */
+       a.chgn_syspayno AS syspayno
+     , c.dept_typ AS mngmt_region
+  FROM sptcustmentrchngd a
+  JOIN humbasicinfo b on a.chgn_syspayno=b.syspayno
+  JOIN xodhdeptinfo c on b.dept_cd=c.dept_cd and b.dept_new_ymd=c.dept_new_ymd
+WHERE a.req_no= #{req_no}
+  AND a.chng_clsf = #{chng_clsf}
+</select>
+
+<!-- 파트너기업 관리주체 수정 -->
+<update id="updateSptParBaseInfoRegion" parameterType="kr.re.kitech.biz.sup.cus.vo.SptCustMentrInfoVo">
+update /* kr.re.kitech.biz.api.bpm.updateSptParBaseInfoRegion */
+       sptparbaseinfo 
+   set region_centr= #{mngmt_region}
+ where cust_no= #{cust_no}
+</update>
+
+<!-- 파트너 기업 정보 변경신청서담당자 조회 -->
+<select id="selectSptCustChargEngDList" parameterType="kr.re.kitech.biz.api.server.vo.biz.SptCustVo" resultType="kr.re.kitech.biz.sup.cus.vo.SptCustChargVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectSptCustChargEngDList */
+       DISTINCT
+       chgn_nm        AS affair_respn_psn
+     , chgn_posi_nm   AS affair_respn_psn_posi
+     , chgn_mobile_no AS affair_respn_psn_mobile_no  
+     , chgn_email     AS affair_respn_psn_email 
+     , chgn_tel_no    AS affair_respn_psn_tel
+  FROM sptcustchargengd a
+ WHERE req_no= #{req_no}
+   AND chng_clsf = #{chng_clsf}
+</select>
+
+<!-- 성적서 테이블에서 총 페이지 수 구하기 -->
+<select id="selectSptRstBook" parameterType="java.lang.String" resultType="kr.re.kitech.biz.api.server.vo.biz.SptRstBookVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectSptRstBook */
+       blackacre_clsf, 
+       NVL(file_tot_page_num, 0) AS file_tot_page_num,
+       tech_supt_req_no,
+       seq,
+       rst_book_issu_fg,
+       req_no
+  FROM sptrstbook
+ WHERE req_no = #{req_no}
+</select>
+
+<!-- 성적서 수정/재발행일 경우 이전 문서번호 조회 -->
+<select id="selectSptRstBookMaxReq" parameterType="kr.re.kitech.biz.api.server.vo.biz.SptRstBookVo" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.api.bpm.selectSptRstBookMaxReq */
+       MAX(a.req_no ) AS req_no
+  FROM sptrstbook a
+ WHERE a.tech_supt_req_no = #{tech_supt_req_no}
+   AND a.seq = #{seq}
+   AND a.req_no != #{req_no}
+</select>
+
+<!-- 삭제대상 테이블에 데이터 입력 -->
+<insert id="insertJovConvDelList" parameterType="java.lang.String">
+insert /* kr.re.kitech.biz.api.bpm.insertJovConvDelList */
+  into evid:job_conv_del_list 
+select * from evid:job_conv where mis_pk = #{rqst_no} and file_cls != 'after'
+</insert>
+
+<!-- 삭제로직(job_conv 테이블) -->
+<delete id="deleteJobConv" parameterType="java.lang.String">
+delete /* kr.re.kitech.biz.api.bpm.deleteJobConv */
+    evid:job_conv where mis_pk = #{rqst_no} AND file_cls != 'after';
+    
+DELETE evid:ACT_PDF_FILE_ALL 
+WHERE RQST_NO = #{rqst_no}
+AND file_cls_cd != 'after';
+</delete>
+<select id="selectSpSumRstBookPdfFile" parameterType="kr.re.kitech.biz.api.server.vo.biz.SptRstBookVo" statementType="CALLABLE" >
+/* kr.re.kitech.biz.api.bpm.selectSpSumRstBookPdfFile */
+{ call evid:sp_sup_rstbook_pdf_file(#{req_no,mode=IN,jdbcType=VARCHAR}
+                                  , #{tot_page,mode=IN,jdbcType=VARCHAR}
+                                 )
+}
+</select>
+
+<!-- 기업부담금 입금상태 수정 -->
+<update id="updateSptTltDepstDetlsApr" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE /* kr.re.kitech.biz.api.bpm.updateSptTltDepstDetlsApr */
+      spttltdepstdetls
+SET    depst_state = 'RDF004'
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE req_no = #{reqNo}
+</update>
+</mapper>

@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="지재권변경신청">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+				       <w2:key id="input_ymd_st" name="input_ymd_st" dataType="text"></w2:key>
+				       <w2:key id="input_ymd_ed" name="input_ymd_ed" dataType="text"></w2:key>
+				       <w2:key id="invnt_krn_nm" name="invnt_krn_nm" dataType="text"></w2:key>
+				       <w2:key id="regst_syspayno" name="regst_syspayno" dataType="text"></w2:key>
+				       <w2:key id="skate_clsf" name="skate_clsf" dataType="text"></w2:key>
+				       <w2:key id="empno" name="empno" dataType="text"></w2:key>
+				       <w2:key id="nm" name="nm" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="req_no" name="req_no" dataType="text"></w2:column>
+				       <w2:column id="mngmt_no" name="mngmt_no" dataType="text"></w2:column>
+				       <w2:column id="invnt_krn_nm" name="invnt_krn_nm" dataType="text"></w2:column>
+				       <w2:column id="skate_clsf" name="skate_clsf" dataType="text"></w2:column>
+				       <w2:column id="nm" name="nm" dataType="text"></w2:column>
+				       <w2:column id="elecapp_docu_no" name="elecapp_docu_no" dataType="text"></w2:column>
+				       <w2:column id="input_ymd" name="input_ymd" dataType="text"></w2:column>
+				       <w2:column id="his_seq" name="his_seq" dataType="text"></w2:column>
+				       <w2:column id="acdt_unusual_item" name="acdt_unusual_item" dataType="text"></w2:column>
+				       <w2:column id="seq" name="seq" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>
+            
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+
+			<!-- 변경신청 조회 -->
+			<xf:submission id="sbm_svcpatappchnr01" 
+						   ref='data:json,dma_search' 
+						   target='data:json,{"id":"dlt_list","key":"patAppChangeVoList"}' 
+						   action="SvcPATAPPCHNR01.pwkjson" 
+						   ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+			scwin.onpageload = function() {
+								
+				com.biz.checkRole({
+				    serviceId: "I050",
+				    roleCodes: com.getLoginInfo('roleCode')
+				}, function(e) {
+				    if (!e.isRoleYn) {
+				
+				        const cn = com.getLoginInfo("cn");
+				        const sn = com.getLoginInfo("sn");
+				        const empno = com.getLoginInfo("empno");
+				
+				        tb_empno.setReadOnly(true);
+				        btn_search_syspayno.setDisabled(true); // 신청자 검색팝업
+				
+				        dma_search.set("empno" ,empno);
+				        dma_search.set("nm", cn);
+				        dma_search.set("regst_syspayno", sn);
+				
+				    }
+				});
+				
+				var today = com.getServerDateTime("yyyyMMdd");
+				var ymd = today.substring(0, 4);
+				
+				input_start_ymd.setValue(ymd + "0101");
+				input_end_ymd.setValue(today);
+				
+			};
+			
+			scwin.search = function() {
+			    com.execute(sbm_svcpatappchnr01, {
+			        successCallback: function(e) {
+			            tbx_result.setValue(dlt_list.getTotalRow());
+			            com.trimDataCollection(dlt_list);
+			        }
+			    });
+			};
+			
+			scwin.menu_move = function(param) {
+                let data = {};
+                if(param !== undefined) data = param;
+                com.openTabMenu("I042", data);
+            };
+            
+            scwin.btn_down_onclick = function(e){
+              var now = com.getServerDateTime("yyyyMMdd");
+              var name = '지재권변경신청_' + now + '.xlsx';
+              var option = {
+                fileName :name,
+                removeColumns: ""
+              };
+              com.downloadGridExcel(grid1,option);
+            };
+            
+            scwin.grid_click = function(row, col, colId) {
+			    if(colId === "his_seq"){
+			        const param = {
+			            app_req_no: dlt_list.getRowJSON(row).elecapp_docu_no,
+			            req_no: dlt_list.getRowJSON(row).req_no,
+			            mngmt_no: dlt_list.getRowJSON(row).mngmt_no,
+			            his_seq: dlt_list.getRowJSON(row).his_seq,
+			            skate_clsf: dlt_list.getRowJSON(row).skate_clsf
+			        };
+			        scwin.menu_move(param);
+			    }
+			};
+            
+
+
+			/**
+			 * 사용자 이름 입력 필드가 변경될 때 호출되는 함수
+			 * 입력 필드가 비어있으면 관련 데이터를 초기화합니다.
+			 * @event oneditkeyup
+			 *
+			 * @param {Object} info - 정보 객체, newValue 속성 포함
+			 * @param {Event} e - 이벤트 객체
+			 */
+			scwin.clearUserDataOnChange = function(info, e) {
+			
+			    const dataObj = $p.getComponentById($p.getComponentById(e.target.id).getUserData('userData1'));
+			    const columnListStr = $p.getComponentById(e.target.id).getUserData('userData2');
+			    const columnMappings = columnListStr.split(',').map(function(item) {
+			        var parts = item.trim().split(':');
+			        return { dataKey: parts[0].trim(), retKey: parts[1].trim() };
+			    });
+			    
+			    if (info.newValue === "") {
+			        columnMappings.forEach(function(mapping) {
+			            dataObj.set(mapping.dataKey, "");
+			        });
+			    }
+			
+			    if (e.keyCode == 13) {
+			        scwin.openUserSearchPopup(columnListStr, e);
+			    }
+			};
+			
+			/**
+			 * 사용자 검색 버튼 클릭 시 호출되는 함수
+			 * 사용자 검색 팝업을 엽니다.
+			 *
+			 * @param {Event} e - 이벤트 객체
+			 */
+			scwin.openUserSearchPopupOnClick = function(e) {
+			    const columnListStr = $p.getComponentById(e.target.id).getUserData('userData2');
+			    scwin.openUserSearchPopup(columnListStr, e);
+			};
+			
+			/**
+			 * 사용자 검색 팝업을 여는 함수입니다.
+			 * 활성화된 인풋 필드에 대한 사용자 검색을 수행합니다.
+			 *
+			 * @param {Object} dataObj - 데이터를 업데이트할 오브젝트
+			 * @param {Event} e - 이벤트 객체
+			 */
+			scwin.openUserSearchPopup = function(columnListStr, e) {
+			    const input = $p.getComponentById(e.target.id);
+			    const type = $p.getComponentById(e.target.id).getAttribute("type");
+			    const dataObj = $p.getComponentById($p.getComponentById(e.target.id).getUserData('userData1'));
+			    
+			    // 콤마로 구분하고, 콜론을 기준으로 키를 분리
+			    const columnMappings = columnListStr.split(',').map(function(item) {
+			        var parts = item.trim().split(':');
+			        return { dataKey: parts[0].trim(), retKey: parts[1].trim() };
+			    });
+			
+			    let searchData = {
+			        empno: type === "button" ? "" : input.getValue(),
+			        work_clsf: "HAG010"
+			    };
+			
+			    com.pop.open(com.pop.TYPE.HUM, searchData, function(ret) {
+			        columnMappings.forEach(function(mapping) {
+			            // ret 오브젝트에서 콜론 오른쪽 키에 해당하는 값을 가져옵니다.
+			            // 값이 없는 경우 공백으로 설정합니다.
+			            var value = ret.hasOwnProperty(mapping.retKey) ? ret[mapping.retKey] : "";
+			            dataObj.set(mapping.dataKey, value);
+			        });
+			    });
+			};
+
+			
+			scwin.onpageunload = function() {
+				
+			};
+		
+		]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<w2:wframe id="wfm_wframe1" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group class="pageWrap" id="" style="">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="" style="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:90px;" tagname="col"></xf:group>
+    						<xf:group style="width:250px;" tagname="col"></xf:group>
+    						<xf:group style="width:90px;" tagname="col"></xf:group>
+    						<xf:group style="width:300px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th"><w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes><w2:textbox id="" label="신청/관리번호" style="" tagname="span"></w2:textbox></xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="input_req_no" style="width: 204px;" ref="data:dma_search.req_no"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th"><w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes><w2:textbox id="" label="발명의명칭" style="" tagname="span"></w2:textbox></xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="input_invnt_nm" style="width: 216px;" ref="data:dma_search.invnt_krn_nm"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="신청자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group tagname="p">
+		    						<xf:group style="width: 100px;" id="" class="inpSch">
+		    							<xf:input adjustMaxLength="false" style="" id="tb_empno" class="inp" title="사용자명"
+		    								ref="data:dma_search.empno" userData1="dma_search" userData2="nm:nm, empno:empno, regst_syspayno:syspayno" ev:oneditkeyup="scwin.clearUserDataOnChange">
+		    							</xf:input>
+		    							<xf:trigger style="" id="btn_search_syspayno" type="button" class="btn" title="사용자 조회"
+		    								ev:onclick="scwin.openUserSearchPopupOnClick" userData1="dma_search" userData2="nm:nm, empno:empno, regst_syspayno:syspayno">
+		    								<xf:label><![CDATA[검색]]></xf:label>
+		    							</xf:trigger>
+		    						</xf:group>
+		    						<xf:input adjustMaxLength="false" style="width: 100px;" id="tb_nm" class="inp" title="사용자상세 "
+		    							ref="data:dma_search.nm" disabled="true">
+		    						</xf:input>
+		    					</xf:group>    							
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="신청일자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpcalWrap" id="" style="">
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    									footerDiv="false" id="input_start_ymd" placeholder="시작일" renderDiv="true" rightAlign="false" style="" ref="data:dma_search.input_ymd_st">
+    								</w2:inputCalendar>
+    								<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    									footerDiv="false" id="input_end_ymd" placeholder="종료일" renderDiv="true" rightAlign="false" style="" ref="data:dma_search.input_ymd_ed">
+    								</w2:inputCalendar>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="변경구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 appearance="full" class="radioGroup" cols="" id="radioSkateClsf" ref="data:dma_search.skate_clsf" renderType="radiogroup" rows=""
+    								selectedIndex="3" style="">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[발명자]]></xf:label>
+    										<xf:value><![CDATA[PAS010]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[출원인]]></xf:label>
+    										<xf:value><![CDATA[PAS020]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[연구과제]]></xf:label>
+    										<xf:value><![CDATA[PAS099]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[전체]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="" style="" type="button" ev:onclick="scwin.search">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="">
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:group class="btnarea" id="" style="">
+    					<xf:trigger class="btn" id="" style="" type="button" ev:onclick="scwin.menu_move">
+    						<xf:label><![CDATA[신규]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger class="btn icon down" id="" style="" type="button" ev:onclick="scwin.btn_down_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+			<w2:gridView id="grid1" class="grid" dataList="data:dlt_list" style="height: 75px;"
+			  ev:oncellclick="scwin.grid_click" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"  rowNumHeaderValue="순번" noResultMessage="조회 결과가 없습니다." rowStatusHeaderValue="상태" noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff" rowNumVisible="true" rowNumWidth="60" rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" summaryAuto="true" visibleRowNum="20" autoFit="allColumn">
+			  <w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+			  <w2:header id="header1">
+			    <w2:row id="row1">
+			      <w2:column width="50" inputType="text" displayMode="label" id="skate_clsf" value="변경구분"></w2:column>
+			      <w2:column width="45" inputType="text" displayMode="label" id="his_seq" value="변경차수"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="elecapp_docu_no" value="변경신청번호"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="req_no" value="신청번호"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="mngmt_no" value="관리번호"></w2:column>
+			      <w2:column width="250" inputType="text" displayMode="label" id="invnt_krn_nm" value="발명의명칭"></w2:column>
+			      <w2:column width="80" inputType="text" displayMode="label" id="nm" value="작성자"></w2:column>
+			      <w2:column width="80" inputType="text" displayMode="label" id="input_ymd" value="변경일"></w2:column>
+			      <w2:column width="300" inputType="text" displayMode="label" id="acdt_unusual_item" value="변경사유"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="apr_state" value="진행상태코드"></w2:column>
+			    </w2:row>
+			  </w2:header>
+			  <w2:gBody id="gBody1">
+			    <w2:row id="row2">
+			      <w2:column inputType="select" id="skate_clsf" width="100" readOnly="true" valueType="binary" visibleRowNum="10">
+			        <w2:choices>
+						<w2:item>
+							<w2:label>발명자</w2:label>
+							<w2:value>PAS010</w2:value>
+						</w2:item>
+						<w2:item>
+							<w2:label>출원인</w2:label>
+							<w2:value>PAS020</w2:value>
+						</w2:item>
+						<w2:item>
+							<w2:label>연구과제</w2:label>
+							<w2:value>PAS099</w2:value>
+						</w2:item>
+					</w2:choices>
+			      </w2:column>
+			      <w2:column inputType="link" id="his_seq" width="100" readOnly="true"></w2:column>
+			      <w2:column inputType="text" id="elecapp_docu_no" width="100" readOnly="true"></w2:column>
+			      <w2:column inputType="text" id="req_no" width="100" readOnly="true"></w2:column>
+			      <w2:column inputType="text" id="mngmt_no" width="100" readOnly="true"></w2:column>
+			      <w2:column inputType="text" id="invnt_krn_nm" width="100" readOnly="true" class="le"></w2:column>
+			      <w2:column inputType="text" id="nm" width="100" readOnly="true"></w2:column>
+			      <w2:column inputType="text" id="input_ymd" dataType="date" width="100" displayFormat="yyyy-MM-dd" readOnly="true"></w2:column>
+			      <w2:column inputType="text" id="acdt_unusual_item" width="100" readOnly="true" class="le"></w2:column>
+			      <w2:column inputType="text" id="apr_state" width="100" readOnly="true" hidden="true"></w2:column>
+			    </w2:row>
+			  </w2:gBody>
+			</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

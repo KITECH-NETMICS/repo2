@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_vertical_guides="" meta_horizontal_guides="" meta_programName="화면 타이틀">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        	<xf:submission id="sbm_deleteMyMenu" ref='' target='' action="MymenuListSave.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 화면 타이틀 영역
+ 	 * 변경 이력 : 2021-11-01	문철주	최초 작성
+ 	 ****************************************************/
+
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = async function() {
+		if ($p.parent().$p.isWFramePopup()) {
+			// 팝업이면 타이틀 숨김
+			grp_title.hide();
+		} else {
+			var param = $p.parent().com.getParameter() || {};
+			var menuObj = param.menuObj;
+			// 업무화면의 scwin.menuObj 에 셋팅 (업무화면에서 활용)
+			$p.parent().scwin.menuObj = menuObj;
+			// 타이틀
+			var title = menuObj[gcm.MENU_INFO.MENU_NM];
+			var prgId = menuObj[gcm.MENU_INFO.SERVICE_ID];
+			if (!com.isEmpty(prgId)) {
+				if (prgId.startsWith("WESEXP")) {
+					title += " ("+ prgId.substr(6) +")";
+				} else {
+					title += " ("+ prgId +")";
+				}
+			}
+			tbx_title.setValue(title);
+
+			if (com.isNotEmpty($p.top().wfm_side)) {
+				// 나의 메뉴 여부 확인
+				var arrTemp = $p.top().wfm_side.getWindow().dlt_myMenu.getMatchedIndex("menu_id", menuObj[gcm.MENU_INFO.SERVICE_ID]);
+				if (arrTemp.length > 0) {
+					btn_myMenu.addClass("on");
+				}
+				// 메뉴 네비게이션
+				spa_3rdMenu.setValue(menuObj[gcm.MENU_INFO.MENU_NM]);
+				var arrTemp = $p.top().wfm_side.getWindow().dlt_menu.getMatchedJSON(gcm.MENU_INFO.MENU_ID, menuObj[gcm.MENU_INFO.P_MENU_ID]);
+				if (arrTemp.length == 1) {
+					var menu2nd = arrTemp[0];
+					spa_2ndMenu.setValue(menu2nd[gcm.MENU_INFO.MENU_NM]);
+					if (menuObj[gcm.MENU_INFO.LEVEL] == 2) {
+						spa_1stMenu.hide();
+					} else {
+						var menu1st = $p.top().wfm_side.getWindow().dlt_menu.getMatchedJSON(gcm.MENU_INFO.MENU_ID, menu2nd[gcm.MENU_INFO.P_MENU_ID])[0];
+						spa_1stMenu.setValue(menu1st[gcm.MENU_INFO.MENU_NM]);
+					}
+				}
+			}
+			
+			// 도움말
+			if (com.isEmpty($p.parent().scwin.help)) {
+				btn_help.hide();
+			} 
+			if (com.isEmpty($p.top().wfm_side)) {
+				btn_myMenu.hide();
+				grp_menuDpeth.hide();
+			}
+		} 
+		// 화면 새로고침시 모 화면의 가변영역 높이 조정
+		if (gcm.win.isRefreshing) {
+			gcm.win.isRefreshing = false;
+			gcm.win.setFullHeight($p.parent().scwin);
+		}
+		// 업무 컨텐츠 영역의 scrollTop이 0이 아니면 0으로 셋팅
+		try {
+			if ($p.parent().$p.$(".sub_contents").scrollTop() > 0) {
+				$p.parent().$p.$(".sub_contents").scrollTop(0);
+			}
+		} catch(e) {
+			// ignore
+		}
+	};
+	
+	/**
+	 * 나의메뉴 클릭 이벤트
+	 */
+	scwin.btn_myMenu_onclick = function() {
+		if (btn_myMenu.hasClass("on")) {
+			// 삭제 처리
+			com.confirm(com.getMsg("message.xom.wq.051"/*{0} 메뉴를 나의 메뉴에서 삭제 하시겠습니까?*/, $p.parent().scwin.menuObj[gcm.MENU_INFO.MENU_NM]) , function(ret) {
+				if (ret) {
+					let dltMyMenu = $p.top().wfm_side.getWindow().dlt_myMenu;
+					let menuObj   = $p.parent().scwin.menuObj;
+					var myMenuObj = dltMyMenu.getMatchedJSON("service_id", menuObj[gcm.MENU_INFO.SERVICE_ID]);
+					if (com.isEmpty(myMenuObj)) {
+						com.warn("message.xom.wq.019"/*메뉴 정보가 없습니다.*/);
+						return;
+					}
+					myMenuObj[0]['rowStatus'] = "U";
+					myMenuObj[0]['deleteAt'] = 1;
+					com.execute(sbm_deleteMyMenu, {
+						  requestData : {
+							  mymenuVoList : [myMenuObj[0]]
+						  }
+						, successCallback : function(e) {
+							btn_myMenu.toggleClass("on");
+							// 나의메뉴 재조회
+							$p.top().wfm_side.getWindow().scwin.searchMyMenu();
+						}
+					});
+				}
+			});
+		} else {
+			// 나의메뉴 등록 팝업
+			var options = { 
+				  id : "myMenuPop"
+				, popupName : "나의메뉴 등록"
+				, width : 400, height: 400 
+			};
+			com.openPopup("/cm/xml/myMenuPop.xml", options, $p.parent().scwin.menuObj, function(retObj) {
+				btn_myMenu.toggleClass("on");
+				// 나의메뉴 재조회
+				$p.top().wfm_side.getWindow().scwin.searchMyMenu(retObj);
+			});
+		}
+	};
+	
+	/**
+	 * 새로고침 클릭 이벤트
+	 */
+	scwin.btn_refresh_onclick = function() {
+		if (com.isModified($p.parent().scwin.checkList)) {
+			$p.parent().com.confirm("message.xom.wq.018"/*저장하지 않은 변경사항이 있습니다. 계속하시겠습니까?*/, function(ret) {
+				if (ret) {
+					scwin.refresh();
+				}
+			});
+		} else {
+			scwin.refresh();
+		}
+	};
+	
+	/**
+	 * 화면 새로고침
+	 */
+	scwin.refresh = function() {
+		gcm.win.isRefreshing = true;
+		$p.parent().$p.reinitialize();
+	};
+	
+	/**
+	 * 도움말 팝업
+	 */
+	scwin.btn_help_onclick = function(e) {
+		var data = { content : $p.parent().scwin.help };
+		var options = {
+			id : "helpPop",
+			popupName : "도움말",
+			width : 800, height: 600 
+		};
+		com.openPopup("/cm/xml/helpPop.xml", options, data);
+	};
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group class="locationSection" id="grp_title" style="">
+    		<xf:group class="subject" id="" style="">
+    			<w2:textbox class="tit_page" id="tbx_title" label="화면타이틀" style="" tagname="h2"></w2:textbox><w2:anchor class="ico bookmark" id="btn_myMenu" outerDiv="false" style="" tooltip="즐겨찾기" ev:onclick="scwin.btn_myMenu_onclick">
+    				<xf:label><![CDATA[즐겨찾기]]></xf:label>
+    			</w2:anchor>
+    			<w2:anchor class="ico help" id="btn_help" outerDiv="false" style="" tooltip="도움말" ev:onclick="scwin.btn_help_onclick">
+    				<xf:label><![CDATA[도움말]]></xf:label>
+    			</w2:anchor>
+    			<w2:anchor class="ico refresh" id="btn_refresh" outerDiv="false" style="" tooltip="새로고침" ev:onclick="scwin.btn_refresh_onclick">
+    				<xf:label><![CDATA[새로고침]]></xf:label>
+    			</w2:anchor>
+    		</xf:group>
+    		<xf:group class="breadcrumb" id="grp_menuDpeth" style="">
+    			<w2:textbox class="ico home" id="" label="Home" style=""></w2:textbox>
+    			<w2:span id="spa_1stMenu" label="1Depth" style=""></w2:span>
+    			<w2:span id="spa_2ndMenu" label="2Depth" style=""></w2:span>
+    			<w2:span class="here" id="spa_3rdMenu" label="현재페이지" style=""></w2:span>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

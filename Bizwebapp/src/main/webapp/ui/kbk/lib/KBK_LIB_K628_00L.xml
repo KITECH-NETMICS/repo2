@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="도서구입신청" meta_vertical_guides="" meta_horizontal_guides="-199 -304">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_bookAprList">
+        			<w2:keyInfo>
+        				<w2:key id="req_psn_syspayno" name="신청자시스템개인번호" dataType="text"></w2:key>
+        				<w2:key id="prcs_state" name="진행상태" dataType="text"></w2:key>
+        				<w2:key id="book_pur_typ" name="구입구분" dataType="text"></w2:key>
+        				<w2:key id="book_nm" name="도서명" dataType="text"></w2:key>
+        				<w2:key id="book_pur_typ_nm" name="구입구분명" dataType="text"></w2:key>
+        				<w2:key id="prcs_state_nm" name="진행상태명" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_selectBookAprList" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="req_no" name="신청번호" dataType="text"></w2:column>
+        				<w2:column id="centr_cd" name="센터코드" dataType="text"></w2:column>
+        				<w2:column id="centr_nm" name="센터명" dataType="text"></w2:column>
+        				<w2:column id="ymd" name="신청일자" dataType="text"></w2:column>
+        				<w2:column id="book_pur_typ" name="신청종류" dataType="text"></w2:column>
+        				<w2:column id="book_pur_typ_nm" name="신청종류명" dataType="text"></w2:column>
+        				<w2:column id="book_info_url" name="도서주소" dataType="text"></w2:column>
+        				<w2:column id="req_qty" name="신청권수" dataType="text"></w2:column>
+        				<w2:column id="tot_expns" name="합계" dataType="text"></w2:column>
+        				<w2:column id="book_nm" name="도서명" dataType="text"></w2:column>
+        				<w2:column id="prcs_state" name="진행상태" dataType="text"></w2:column>
+        				<w2:column id="req_psn_syspayno" name="신청자시스템개인번호" dataType="text"></w2:column>
+        				<w2:column id="apr_state" name="결재상태" dataType="text"></w2:column>
+        				<w2:column id="apr_state_nm" name="결재상태명" dataType="text"></w2:column>
+        				<w2:column id="prcs_state_nm" name="진행상태명" dataType="text"></w2:column>
+        				<w2:column id="req_psn_syspaynm" name="신청자" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectBookAprList" ref="data:json,dma_bookAprList" target=""
+        		action="SvcKBKLIBPURL01.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace=""
+        		errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror=""
+        		abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+ 	/*--------------------------------------------------------------------------------------------
+		
+		전역변수
+	
+	---------------------------------------------------------------------------------------------*/
+	scwin.currentDate = com.getServerDateTime("yyyyMMdd");
+	/*--------------------------------------------------------------------------------------------
+
+		페이지 이벤트 함수	
+	
+	---------------------------------------------------------------------------------------------*/
+	/*
+		페이지 열기
+	*/       
+	scwin.onpageload = function() {
+		let codeOptions = 	[{ code: "BEH", compID : "sbxOrigntxtCopyTyp" 	}
+							,{ code: "BED", compID : "sbxPrcsState" 		}];
+		com.setCmnCd(codeOptions, function() {
+			scwin.init();
+		});
+	};
+	
+	/*
+		페이지 닫기
+	*/
+	scwin.onpageunload = function() { };
+	
+	/*--------------------------------------------------------------------------------------------
+
+		사용자 정의 함수
+	
+	---------------------------------------------------------------------------------------------*/
+	/*
+		초기세팅
+	*/
+	scwin.init = function() {
+		com.setEnterKeyEvent(grp_btn, scwin.search);
+	};
+	
+	/*
+		리스트 조회	
+	*/
+	scwin.search = function() {
+		let bookNm = "";
+		if (inpPaperNm.getValue().trim() != "") {
+			bookNm = "%" + inpPaperNm.getValue() + "%";
+		}
+		dma_bookAprList.set("req_psn_syspayno", com.getLoginInfo('sn'));
+		com.execute(sbm_selectBookAprList, {
+			successCallback : function(e) {
+				dlt_selectBookAprList.setJSON(e.responseJSON.libBookPurListSrcVoList, false);
+				tbx_cnt.setValue(dlt_selectBookAprList.getRowCount());
+			}
+		});
+	};
+	
+	/*
+		신청화면 연결
+	*/
+	scwin.openDetail = function(data) {
+		//com.openTabUrl("도서구입 신청서", "/ui/kbk/lib/KBK_LIB_K628_02D.xml", 1, data);
+		com.openTabMenu("K621", data, function(ret){
+			if(ret){
+				scwin.search();	
+			}
+		});
+	};
+	
+	/*--------------------------------------------------------------------------------------------
+
+		컴포넌트 이벤트 함수
+	
+	---------------------------------------------------------------------------------------------*/        
+	/*
+		조회 버튼
+	*/
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	/*
+		신규 버튼
+	*/
+	scwin.btn_new_onclick = function(e) {
+		scwin.openDetail();
+	};
+	
+	/*
+		상세보기
+	*/
+	scwin.gridBookPurchaseReq_oncellclick = function(row,col,colId) {
+		if(colId == "req_no"){
+			var data = { req_no : dlt_selectBookAprList.getCellData(row, "req_no"),
+			             cmd : "Vw"		
+			           }; 
+			           
+			var apr_state =  dlt_selectBookAprList.getCellData(row, "apr_state");
+			if (apr_state == "XAD100"){
+				com.openTabMenu("K620", data, function(ret){
+					if(ret){
+						scwin.search();	
+					}
+				});
+			}else{
+				scwin.openDetail(data);
+			}
+		}
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="검색조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:160px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width: 340px"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="구입구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="inpcalWrap" id="" style=""></xf:group>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbxOrigntxtCopyTyp" ref="data:dma_bookAprList.book_pur_typ"
+    								style="width:120px;" submenuSize="auto" title="구입구분" visibleRowNum="10" chooseOptionLabel="- 전체 -">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="도서명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="inpPaperNm" style="width:300px;" title="도서명"
+    								ref="data:dma_bookAprList.book_nm">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="진행상태" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbxPrcsState" ref="data:dma_bookAprList.prcs_state"
+    								style="width:120px;" submenuSize="auto" title="진행상태" visibleRowNum="10" chooseOptionLabel="- 전체 -">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="grp_btn" class="schbtn">
+    				<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="margin-top:10px;">
+    			<xf:group class="le" id="">
+    				<xf:group class="result" id="" style="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_cnt" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:group class="btnarea" id="" style="">
+    					<xf:trigger class="btn " ev:onclick="scwin.btn_new_onclick" id="btn_new" style="" type="button">
+    						<xf:label><![CDATA[신규]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="30"
+    			dataList="data:dlt_selectBookAprList" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn"
+    			id="gridBookPurchaseReq" visibleRowNum="24" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true"
+    			ev:oncellclick="scwin.gridBookPurchaseReq_oncellclick">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column9" value="센터" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column7" value="등록번호" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column5" value="신청일자" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column3" value="구입구분" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:28px;" id="column20" value="도서명" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column29" value="신청권수" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column27" value="합계" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column25" value="결재상태" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column30" value="처리상태" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="centr_nm" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="link" readOnly="true" style="height:28px;" id="req_no" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="ymd" class="" escape="false"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="book_pur_typ_nm" displayMode="label"
+    						escape="false">
+    					</w2:column>
+    					<w2:column width="300" inputType="text" readOnly="true" style="height:28px;" id="book_nm" displayMode="label"
+    						class="le">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="req_qty" displayMode="label" readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="tot_expns" displayMode="label" readOnly="true" class="ri" dataType="number" displayFormat="#,###">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="apr_state_nm" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="prcs_state_nm" value="" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

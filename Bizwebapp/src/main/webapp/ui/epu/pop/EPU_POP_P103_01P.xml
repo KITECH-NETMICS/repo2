@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="견적서">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_eval" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="pur_req_no" name="구매요구번호" dataType="text"></w2:column>
+            			<w2:column id="odr" name="순번" dataType="text"></w2:column>
+            			<w2:column id="rcmd_vend" name="업체명" dataType="text"></w2:column>
+            			<w2:column id="rcmd_amt" name="추정금액" dataType="text"></w2:column>
+            			<w2:column id="unusual_item" name="특이사항" dataType="text"></w2:column>
+            			<w2:column id="attach_file_no" name="첨부파일번호" dataType="text"></w2:column>
+            			<w2:column id="validAttachNo" name="첨부파일" dataType="text"></w2:column>
+            			<w2:column id="cud_type" name="cud 타입" dataType="text"></w2:column>
+            			<w2:column id="apr_state" name="결재상태" dataType="text"></w2:column>
+            			<w2:column id="mgr_name" name="담당자" dataType="text"></w2:column>
+            			<w2:column id="mgr_phone" name="연락처" dataType="text"></w2:column>
+            			<w2:column id="mgr_email" name="이메일" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="pur_req_no" name="구매요구번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+             <!-- 조회 -->
+            <xf:submission id="sbm_selectGrid" ref="data:json,dma_search" target='' 
+            	action="SvcEPUREQPOPR02.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 저장 -->
+            <xf:submission id="sbm_saveEval" ref='data:json,{"action":"modified", "id":"dlt_eval", "key":"evalList"}' target='' 
+            	action="SvcEPUREQPOPM02.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 견적서
+ 	 * 변경 이력 : 2022-12-02	이영희	최초 작성
+ 	 * 서비스 아이디 : P103
+ 	 ****************************************************/
+ 	 scwin.saveFlag = false;
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */           
+	scwin.onpageload = function() {
+		// 첨부파일 컴포넌트 초기화
+		com.file.init();
+		
+		dma_search.set("pur_req_no", com.getParameter("pur_req_no"));
+		if(com.getParameter("req_clsf") == "H"){ // 결재스냅샷에서 호출
+			scwin.req_clsf = "H";
+			btn_save.hide();
+		}
+		
+		// 조회
+		scwin.search();		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */ 
+	scwin.search = function(){
+		com.execute(sbm_selectGrid, {
+			successCallback : function(e){
+				dlt_eval.setJSON(e.responseJSON.purReqEvalVoList);
+				for(var i=0; i<dlt_eval.getRowCount(); i++){
+					var unusualItemStr = dlt_eval.getCellData(i, "unusual_item");
+					var firstIndex = unusualItemStr.indexOf("/",1);
+					var secondIndex = unusualItemStr.indexOf("/",firstIndex+1);
+					var mgrName = unusualItemStr.substring(1,firstIndex);
+					var mgrPhone = unusualItemStr.substring(firstIndex+1,secondIndex);
+					var mgrEmail = unusualItemStr.substring(secondIndex+1, unusualItemStr.length);
+					
+					dlt_eval.setCellData(i, "mgr_name", mgrName);
+					dlt_eval.setCellData(i, "mgr_phone", mgrPhone);
+					dlt_eval.setCellData(i, "mgr_email", mgrEmail);
+					
+					if(unusualItemStr.substring(0,1) == "/"){
+						grd_eval.setColumnVisible(2, true);//담당자 (컬럼 보이기)
+						grd_eval.setColumnVisible(3, true);//연락처
+						grd_eval.setColumnVisible(4, true);//이메일
+						grd_eval.setColumnVisible(5, false);//특이사항 (컬럼 숨기기)
+					}else { 
+						grd_eval.setColumnVisible(2, false);//담당자
+						grd_eval.setColumnVisible(3, false);//연락처
+						grd_eval.setColumnVisible(4, false);//이메일
+						grd_eval.setColumnVisible(5, true);//특이사항
+					}
+				}
+				if(dlt_eval.getRowCount() == 0){
+					btn_plus.trigger("click");
+				}else{
+					grd_eval.setFocusedCell(0,0);
+				}
+			}
+		});
+	};
+	
+	/**
+	 * 첨부파일 셋팅
+	 */ 
+	scwin.setAttachFile = function(row){
+		var attachFileNo = dlt_eval.getCellData(row, "attach_file_no");
+		var aprState = dlt_eval.getCellData(row, "apr_state");
+		
+		var vMode = "view";
+		if(aprState < "XAD020"){
+			vMode = (scwin.req_clsf == "H")? "view":"edit";
+		}else if(aprState >= "XAD020"){
+			btn_save.hide();
+		}
+		
+		if(attachFileNo != ""){
+			com.file.create(upload_A.getID(), {fileKey: attachFileNo, mode: vMode});
+		}else{
+			if(!scwin.saveFlag){
+				com.file.create(upload_A.getID(), {fileKey: "P103", mode: vMode});
+			}
+		}
+	};
+	
+	/**
+	 * 닫기 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_close_onclick = function(e) {
+		if(scwin.saveFlag){
+			com.closePopup({saveFlag : true});
+		}else{
+			com.closePopup();
+		}
+	};
+	
+	/**
+	 * 저장 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_save_onclick = function(e) {
+		if(dlt_eval.getRowCount() < 1){
+			alert("최소 한 건 이상의 특이사항 정보가 필요 합니다.");
+			return;
+		}
+		   
+		com.confirm("message.xom.wq.017"/*저장 하시겠습니까?*/, function(ret){
+			if(ret){
+				com.file.transport( function(attachObj){
+					for(var i=0; i<dlt_eval.getRowCount(); i++){
+						var unusualItemStr;
+						if(grd_eval.getColumnVisible(2)){
+							if(dlt_eval.getCellData(i, "mgr_name").trim() == ""){
+								alert("담당자 성명은 필수로 입력해야 합니다.");
+								return false;
+							}else if(dlt_eval.getCellData(i, "mgr_phone").trim() == "" 
+							&& dlt_eval.getCellData(i, "mgr_email").trim() == ""){
+								alert("연락처나 이메일중 하나는 필수로 입력해야 합니다.");
+								return false;
+							}
+							unusualItemStr = "/" + dlt_eval.getCellData(i, "mgr_name")
+												+ "/" + dlt_eval.getCellData(i, "mgr_phone")
+												+ "/" + dlt_eval.getCellData(i, "mgr_email");
+							dlt_eval.setCellData(i, "unusual_item", unusualItemStr); 
+						}
+						dlt_eval.setCellData(i, "attach_file_no", attachObj.upload_A);
+						dlt_eval.setCellData(i, "validAttachNo", attachObj.upload_A);
+					}			
+					
+					com.execute(sbm_saveEval, {
+						successCallback : function(e) { // 성공 콜백
+							com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function(){
+								// 조회
+								scwin.search();
+								
+								scwin.saveFlag = true;
+							});
+						}
+					});
+				});	
+			}
+		});
+	};
+	
+	/**
+	 * (+) 버튼 클릭 이벤트
+	 */
+	scwin.btn_plus_onclick = function(e) {
+		if(dlt_eval.getRowCount() == 0) {
+			grd_eval.setColumnVisible(2, true);//담당자
+			grd_eval.setColumnVisible(3, true);//연락처
+			grd_eval.setColumnVisible(4, true);//이메일
+			grd_eval.setColumnVisible(5, false);//특이사항
+		}
+		var row = com.addRow(grd_eval);
+		dlt_eval.setCellData(row, "cud_type", "C");
+		dlt_eval.setCellData(row, "pur_req_no", dma_search.get("pur_req_no"));
+	};
+	
+	/**
+	 * (-) 버튼 클릭 이벤트
+	 */
+	scwin.btn_minus_onclick = function(e) {
+		var row = grd_eval.getFocusedRowIndex();
+		if(row < 0){
+			alert('삭제할 견적서 정보를 선택하셔야 합니다.');
+			return;
+		}
+		
+		var rowCnt = dlt_eval.getRowCount();
+		if(rowCnt == 1){
+			if(com.file.action.getTotalFileCount(upload_A.getID()) > 1){
+				alert("후속조치내역의 첨부파일을 먼저 삭제한 후 데이터를 삭제할 수 있습니다.");
+				return;
+			}	
+		}
+		
+		dlt_eval.setCellData(row, "cud_type", "D");
+		dlt_eval.removeRow(row);
+	};
+	
+	/**
+	 * grid row index change 이벤트
+	 */	
+	scwin.grd_eval_onrowindexchange = function(row,oldRow) {
+		scwin.setAttachFile(row);
+	};
+
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group class="titleSection pt0" id="" style="">
+    		<xf:group class="le" id="">
+    			<w2:textbox class="tit_tbl" id="" label="견적서" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    		<xf:group class="btnarea" id="" style="">
+    			<xf:trigger class="bt_plus" id="btn_plus" style="" type="button" ev:onclick="scwin.btn_plus_onclick">
+    				<xf:label><![CDATA[추가]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger class="bt_minus" id="btn_minus" style="" type="button" ev:onclick="scwin.btn_minus_onclick">
+    				<xf:label><![CDATA[삭제]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_eval" defaultCellHeight="28" evenRowBackgroundColor="#f7faff" id="grd_eval"
+    		noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    		rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="35" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    		scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    		summaryAuto="true" visibleRowNum="5" ev:onrowindexchange="scwin.grd_eval_onrowindexchange" editModeEvent="onclick">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="업체명" width="220"></w2:column>
+    				<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="추정금액&lt;br/&gt;(부가세포함)" width="120"></w2:column>
+    				<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="담당자" hidden="true"
+    					width="120">
+    				</w2:column>
+    				<w2:column displayMode="label" id="column21" inputType="text" style="height:28px;" value="연락처" hidden="true"
+    					width="120">
+    				</w2:column>
+    				<w2:column displayMode="label" id="column22" inputType="text" style="height:28px;" value="이메일" hidden="true"
+    					width="160">
+    				</w2:column>
+    				<w2:column displayMode="label" id="column23" inputType="text" style="height:28px;"  value="특이사항(담당자/전화/기타)" width="300">
+    				</w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column displayMode="label" escape="false" id="rcmd_vend" inputType="text" style="height:28px;"
+    					width="220" class="le">
+    				</w2:column>
+    				<w2:column displayMode="label" escape="false" id="rcmd_amt" inputType="text" style="height:28px;"
+    					width="120" class="ri" dataType="number" displayFormat="#,###">
+    				</w2:column>
+    				<w2:column displayMode="label" id="mgr_name" inputType="text" style="height:28px;" width="110" hidden="true" class="le"></w2:column>
+    				<w2:column displayMode="label" id="mgr_phone" inputType="text" style="height:28px;" width="120" hidden="true" class="le"></w2:column>
+    				<w2:column displayMode="label" id="mgr_email" inputType="text" style="height:28px;" width="130" hidden="true"  class="le"></w2:column>
+    				<w2:column displayMode="label" id="unusual_item" inputType="text" style="height:28px;"  width="300" class="le"></w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    		<w2:attributes>
+    			<w2:summary></w2:summary>
+    		</w2:attributes>
+    		<xf:group tagname="caption" text="용도설명서 상세 정보 입력"></xf:group>
+    		<xf:group tagname="colgroup">
+    			<xf:group style="width:140px;" tagname="col"></xf:group>
+    			<xf:group style="" tagname="col"></xf:group>
+    			<xf:group style="width:140px;" tagname="col"></xf:group>
+    			<xf:group style="" tagname="col"></xf:group>
+    		</xf:group>
+    		<xf:group tagname="tr" style="">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="첨부자료" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes>
+    					<w2:colspan>3</w2:colspan>
+    					<w2:rowspan>1</w2:rowspan>
+    				</w2:attributes>
+    				<xf:group style="height:125px;">
+    					<xf:group class="full" id="upload_A" style="height:100%;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger style="" id="btn_save" type="button" class=" btn pro conf" ev:onclick="scwin.btn_save_onclick">
+    				<xf:label><![CDATA[저장]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

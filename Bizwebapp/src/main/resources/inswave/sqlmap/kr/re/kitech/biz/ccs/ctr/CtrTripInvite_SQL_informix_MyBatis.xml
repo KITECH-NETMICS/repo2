@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.ctr">
+<!-- 외부강의신고 목록 조회 -->	
+<select id="selectCtrCvnTripReqList" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrCvnTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.ctr.selectCtrCvnTripReqList */
+        x0.req_no
+      , x0.act_clsf
+      , x0.trip_req_no  
+      , x0.trip_cd  
+      , x0.report_cd
+      , x0.attend_cd
+      , x0.activity_cd
+      , x0.activity_dtl
+      , x0.syspayno
+      , x0.write_syspayno
+      , x0.req_tel_no
+      , x0.invite_org_nm
+      , x0.invite_ceo_nm
+      , x0.invite_dept_nm
+      , x0.invite_tel_no
+      , x0.invite_cause
+      , x0.subject
+      , x0.region
+      , x0.st_daytm
+      , x0.ed_daytm
+      , x0.econo_gain_clsf
+      , x0.reward_amt
+      , x0.traffic_amt
+      , x0.stay_amt
+      , x0.food_amt
+      , x0.attach_file_no
+      , x0.req_daytm
+      , CASE WHEN x0.act_clsf = 'CLA003' THEN TO_CHAR(x0.st_daytm, '%Y-%m-%d %H:%M') ELSE SUBSTR(x0.start_ymd, 1, 4)||'-'||SUBSTR(x0.start_ymd, 5, 2)||'-'||SUBSTR(x0.start_ymd, 7, 2) END AS start_ymd
+      , CASE WHEN x0.act_clsf = 'CLA003' THEN TO_CHAR(x0.ed_daytm, '%Y-%m-%d %H:%M') ELSE SUBSTR(x0.cls_ymd, 1, 4)||'-'||SUBSTR(x0.cls_ymd, 5, 2)||'-'||SUBSTR(x0.cls_ymd, 7, 2) END AS cls_ymd
+      , x0.attnce_clsf
+      , x0.period_minute || (CASE WHEN x0.act_clsf = 'CLA003' THEN '분' ELSE '시간' END) AS period_minute
+      , DENSE_RANK() OVER (PARTITION BY x0.yyyymm, x0.syspayno ORDER BY x0.req_daytm ) ||' 회/ '|| ROUND( SUM( x0.period_minute/60) OVER ( PARTITION BY x0.yyyymm, x0.syspayno ORDER BY x0.req_daytm),2) || '시간' AS acc_mon
+      , DENSE_RANK() OVER (PARTITION BY x0.yyyymm[1,4], x0.syspayno ORDER BY x0.req_daytm ) ||' 회/ '|| ROUND( SUM( x0.period_minute/60) OVER ( PARTITION BY x0.yyyymm[1,4], x0.syspayno ORDER BY x0.req_daytm),2) || '시간' AS acc_year
+      , x1.nm AS req_psn_nm
+      , x1.empno
+      , x2.dept_nm
+      , x3.posi_nm
+      , NVL( fun_xodxcommst_cd_nm(x1.duty_cd, 0), '') AS duty_nm
+      , x6.cd_nm AS activity_cd_nm
+      , x7.apr_state
+      , x9.nm AS wrt_psn_nm
+  FROM ctrcvn AS x0
+  JOIN humbasicinfo AS x1 ON x1.syspayno = x0.syspayno
+  JOIN xodhdeptinfo AS x2 ON x2.dept_cd = x1.dept_cd AND x2.dept_new_ymd = x1.dept_new_ymd
+  JOIN xodhposiinfo AS x3 ON x3.posi_cd = x1.posi_cd
+  JOIN xodxcommst AS x6 ON x6.cd = x0.activity_cd
+  JOIN xomxintfatab AS x7 ON x7.req_no = x0.req_no
+  JOIN humbasicinfo AS x9 ON x9.syspayno = x0.write_syspayno
+  JOIN xodxcommst AS xa ON xa.cd = x0.trip_cd
+ WHERE 1=1
+  <if test='req_no != null and req_no !=""'> AND x0.req_no = #{req_no} </if>
+  <if test='syspayno != null and syspayno !=""'> AND (x0.syspayno = #{syspayno} OR x0.write_syspayno = #{syspayno} ) </if>
+  <if test='report_cd != null and report_cd !=""'> AND x0.report_cd = #{report_cd} </if>
+  <if test='act_clsf != null and act_clsf !=""'> AND x0.act_clsf = #{act_clsf} </if>
+  <if test='activity_cd != null and activity_cd !=""'> AND x0.activity_cd = #{activity_cd} </if>
+  <if test='apr_state != null and apr_state !=""'> AND x7.apr_state = #{apr_state} </if>
+  <if test='st_daytm != null and st_daytm !=""'> AND x0.yyyymm >= #{st_daytm} </if>
+  <if test='ed_daytm != null and ed_daytm !=""'> AND x0.yyyymm  <![CDATA[ <= ]]> #{ed_daytm} </if>
+  <if test='st_req_daytm != null and st_req_daytm !=""'> AND TO_CHAR(x0.req_daytm, '%Y%m%d') >= #{st_req_daytm} </if>
+  <if test='ed_req_daytm != null and ed_req_daytm !=""'> AND TO_CHAR(x0.req_daytm, '%Y%m%d') <![CDATA[ <= ]]> #{ed_req_daytm} </if>
+  ORDER BY x0.yyyymm, x0.syspayno, x0.req_daytm
+</select>
+
+<!-- 외부강의저장 -->
+<update id="updateCtrCvn" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo">
+MERGE INTO CtrCvn AS x0   /* QueryID : kr.re.kitech.biz.ccs.ctr.updateCtrCvn */
+USING DUAL AS x1 ON ( x0.req_no = #{req_no} )
+WHEN MATCHED THEN
+    UPDATE 
+       SET x0.req_daytm = CURRENT
+        <if test='trip_req_no     != null '>   , x0.trip_req_no = #{trip_req_no} </if>
+        <if test='yyyymm          != null '> , x0.yyyymm = #{yyyymm} </if>
+        <if test='act_clsf          != null '> , x0.act_clsf = #{act_clsf} </if>
+        <if test='trip_cd         != null '> , x0.trip_cd = #{trip_cd} </if>
+        <if test='report_cd       != null '> , x0.report_cd = #{report_cd} </if>
+        <if test='act_shape       != null '> , x0.act_shape = #{act_shape} </if>
+        <if test='activity_cd     != null '> , x0.activity_cd = #{activity_cd} </if>
+        <if test='activity_dtl    != null '> , x0.activity_dtl = #{activity_dtl} </if>
+        <if test='req_tel_no      != null '> , x0.req_tel_no = #{req_tel_no} </if>
+        <if test='org_cd  != null '> , x0.org_cd = #{org_cd} </if>
+        <if test='invite_org_nm   != null '> , x0.invite_org_nm = #{invite_org_nm} </if>
+        <if test='invite_ceo_nm   != null '> , x0.invite_ceo_nm = #{invite_ceo_nm} </if>
+        <if test='invite_dept_nm  != null '> , x0.invite_dept_nm = #{invite_dept_nm} </if>
+        <if test='invite_tel_no   != null '> , x0.invite_tel_no = #{invite_tel_no} </if>
+        <if test='invite_cause    != null '> , x0.invite_cause = #{invite_cause} </if>
+        <if test='subject         != null '> , x0.subject = #{subject} </if>
+        <if test='region          != null '> , x0.region = #{region} </if>
+        <if test='econo_gain_clsf != null '> , x0.econo_gain_clsf = #{econo_gain_clsf} </if>
+        <if test='reward_amt      != null '> , x0.reward_amt = #{reward_amt} </if>
+        <if test='traffic_amt     != null '> , x0.traffic_amt = #{traffic_amt} </if>
+        <if test='stay_amt        != null '> , x0.stay_amt = #{stay_amt} </if>
+        <if test='food_amt        != null '> , x0.food_amt = #{food_amt} </if>
+        <if test='cost_yn     != null '> , x0.cost_yn = #{cost_yn} </if>
+        <if test='attach_file_no  != null '> , x0.attach_file_no = #{attach_file_no} </if>
+        <if test='attnce_clsf  != null '> , x0.attnce_clsf = #{attnce_clsf} </if>
+        <if test='period_minute   != null '> , x0.period_minute = #{period_minute} </if>
+        <if test='st_daytm        != null '> , x0.st_daytm = to_date(#{st_daytm}, '%Y%m%d %H%M') </if>
+        <if test='ed_daytm        != null '> , x0.ed_daytm =  to_date(#{ed_daytm}, '%Y%m%d %H%M') </if>
+        <if test='start_ymd      != null'> , x0.start_ymd = #{start_ymd} </if>
+        <if test='cls_ymd        != null'> , x0.cls_ymd = #{cls_ymd} </if>
+        <if test='sms_cnt         != null '> , x0.sms_cnt = #{sms_cnt} </if>
+        <if test='companion_cd != null '> , x0.companion_cd = #{companion_cd} </if>
+        <if test='companion_rs != null '> , x0.companion_rs = #{companion_rs} </if>
+        <if test='note != null '> , x0.note = #{note}</if>
+        <if test='rmk != null '> , x0.rmk = #{rmk}</if>
+        , x0.updt_syspayno = #{updt_syspayno}
+        , x0.updt_daytm = SYSDATE
+WHEN NOT MATCHED THEN
+    INSERT( 
+          req_no
+          <if test='trip_req_no    != null'> , trip_req_no </if>
+          <if test='yyyymm         != null'> , yyyymm </if>
+          <if test='act_clsf          != null '> , act_clsf </if>
+          <if test='trip_cd        != null'> , trip_cd </if>
+          <if test='report_cd      != null'> , report_cd </if>
+          <if test='act_shape      != null'> , act_shape </if>
+          <if test='activity_cd    != null'> , activity_cd </if>
+          <if test='activity_dtl   != null'> , activity_dtl </if>
+          <if test='syspayno       != null'> , syspayno </if>
+          <if test='write_syspayno != null'>, write_syspayno </if>
+          <if test='req_tel_no     != null'> , req_tel_no </if>
+          <if test='org_cd  != null '> , org_cd </if>
+          <if test='invite_org_nm  != null'> , invite_org_nm </if>
+          <if test='invite_ceo_nm  != null'> , invite_ceo_nm </if>
+          <if test='invite_dept_nm != null'> , invite_dept_nm </if>
+          <if test='invite_tel_no  != null'> , invite_tel_no </if>
+          <if test='invite_cause   != null'> , invite_cause </if>
+          <if test='subject        != null'> , subject </if>
+          <if test='region         != null'> , region </if>
+          <if test='econo_gain_clsf != null '> , econo_gain_clsf </if>
+          <if test='reward_amt     != null'> , reward_amt </if>
+          <if test='traffic_amt    != null'> , traffic_amt </if>
+          <if test='stay_amt       != null'> , stay_amt </if>
+          <if test='food_amt       != null'> , food_amt </if>
+          <if test='cost_yn     != null '> , cost_yn </if>
+          <if test='attnce_clsf  != null '> , attnce_clsf </if>
+          <if test='period_minute  != null'> , period_minute </if>
+          <if test='st_daytm       != null'> , st_daytm </if>
+          <if test='ed_daytm       != null'> , ed_daytm </if>
+          <if test='start_ymd      != null'> , start_ymd </if>
+          <if test='cls_ymd        != null'> , cls_ymd </if>
+          <if test='attach_file_no != null'> , attach_file_no </if>
+          <if test='sms_cnt        != null'> ,sms_cnt </if>
+          <if test='companion_cd  != null'> , companion_cd </if>
+          <if test='companion_rs   != null'> ,companion_rs </if>
+          <if test='note   != null'> , note </if>
+          <if test='rmk   != null'> , rmk </if>
+          , req_daytm
+          , regst_syspayno
+          , regst_daytm
+    )VALUES( 
+          #{req_no}
+          <if test='trip_req_no     != null'> ,#{trip_req_no}</if>
+          <if test='yyyymm          != null'> ,#{yyyymm}</if>
+          <if test='act_clsf          != null '> , #{act_clsf} </if>
+          <if test='trip_cd         != null'> ,#{trip_cd}</if>
+          <if test='report_cd       != null'> ,#{report_cd}</if>
+          <if test='act_shape       != null'> ,#{act_shape}</if>
+          <if test='activity_cd     != null'> ,#{activity_cd}</if>
+          <if test='activity_dtl    != null'> ,#{activity_dtl}</if>
+          <if test='syspayno        != null'> ,#{syspayno}</if>
+          <if test='write_syspayno  != null'> ,#{write_syspayno}</if>
+          <if test='req_tel_no      != null'> ,#{req_tel_no}</if>
+          <if test='org_cd  != null '> , #{org_cd} </if>
+          <if test='invite_org_nm   != null'> ,#{invite_org_nm}</if>
+          <if test='invite_ceo_nm   != null'> ,#{invite_ceo_nm}</if>
+          <if test='invite_dept_nm  != null'> ,#{invite_dept_nm}</if>
+          <if test='invite_tel_no   != null'> ,#{invite_tel_no}</if>
+          <if test='invite_cause    != null'> ,#{invite_cause}</if>
+          <if test='subject         != null'> ,#{subject}</if>
+          <if test='region          != null'>  ,#{region}</if>
+          <if test='econo_gain_clsf != null '> , #{econo_gain_clsf} </if>
+          <if test='reward_amt      != null'> ,#{reward_amt}</if>
+          <if test='traffic_amt     != null'> ,#{traffic_amt}</if>
+          <if test='stay_amt        != null'> ,#{stay_amt}</if>
+          <if test='food_amt        != null'> ,#{food_amt}</if>
+          <if test='cost_yn     != null '> , #{cost_yn} </if>
+          <if test='attnce_clsf  != null '> , #{attnce_clsf} </if>
+          <if test='period_minute   != null'> ,#{period_minute}</if>
+          <if test='st_daytm        != null'> , to_date(#{st_daytm}, '%Y%m%d %H%M') </if>
+          <if test='ed_daytm        != null'> , to_date(#{ed_daytm}, '%Y%m%d %H%M')</if>          
+          <if test='start_ymd       != null'> ,#{start_ymd} </if>
+          <if test='cls_ymd         != null'> ,#{cls_ymd} </if>
+          <if test='attach_file_no  != null'> ,#{attach_file_no}</if>
+          <if test='sms_cnt         != null'> ,#{sms_cnt}</if>
+          <if test='companion_cd  != null'> , #{companion_cd}</if>
+          <if test='companion_rs   != null'> , #{companion_rs}</if>
+          <if test='note  != null'> , #{note}</if>
+          <if test='rmk   != null'> , #{rmk} </if>
+          , SYSDATE
+          , #{regst_syspayno}
+          , SYSDATE
+       )
+</update>	
+	
+<delete id="deleteCtrCvn" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrCvnTripSrcVo">
+DELETE FROM ctrcvn   /* QueryID : kr.re.kitech.biz.ccs.ctr.deleteCtrCvn */ 
+ WHERE req_no = #{req_no}
+</delete>    
+
+<!-- 외부강의 신고조회 -->    
+<select id="selectCvnTripReq" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrCvnTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo">
+SELECT FIRST 1 /* QueryID : kr.re.kitech.biz.ccs.ctr.selectCvnTripReq */
+       x0.req_no
+     , x0.act_clsf
+     , x0.act_shape
+     , x0.trip_req_no
+     , x0.yyyymm
+     , x0.trip_cd
+     , x0.report_cd
+     , x0.attnce_clsf
+     , x0.activity_cd
+     , x0.activity_dtl
+     , x0.syspayno
+     , x0.write_syspayno
+     , x0.req_tel_no
+     , x0.org_cd
+     , x0.invite_org_nm
+     , x0.invite_ceo_nm
+     , x0.invite_dept_nm
+     , x0.invite_tel_no
+     , x0.invite_cause
+     , x0.subject
+     , x0.region
+     , CASE WHEN x0.act_clsf = 'CLA003' THEN to_char(x0.st_daytm, '%Y%m%d%H%M') ELSE x0.start_ymd END AS st_daytm
+     , CASE WHEN x0.act_clsf = 'CLA003' THEN to_char(x0.ed_daytm, '%Y%m%d%H%M') ELSE x0.cls_ymd END AS ed_daytm
+     , x0.period_minute
+     , x0.econo_gain_clsf
+     , x0.reward_amt
+     , x0.traffic_amt
+     , x0.stay_amt
+     , x0.food_amt
+     , TRIM(x0.attach_file_no) AS attach_file_no
+     , x0.req_daytm
+     , x1.empno
+     , x1.nm AS req_psn_nm
+     , fun_posi_nm(x1.posi_cd) AS posi_nm
+     , CASE WHEN TRIM(x1.duty_cd) = '' THEN '' ELSE fun_xodxcommst_cd_nm(x1.duty_cd, 0) END AS duty_nm
+     , x.dept_nm
+     , fun_dept_nm(x.divsn_dept, x.divsn_dept_new_ymd) AS divsn_nm
+     , x2.apr_state
+     , x3.mngmt_item_3 AS apr_state_nm
+     , DECODE(x0.trip_cd, 'CTR010', c1.biztrip_goal, 'CTR020', c2.biztrip_goal, 'CTR030', c3.biztrip_goal, '') AS trip_goal
+     , DECODE(x0.trip_cd, 'CTR010', c1.biztrip_region, 'CTR020', c2.biztrip_land, 'CTR030', (SELECT cd_nm FROM xodxcommst WHERE cd = c3.biztrip_region), '') AS trip_region
+     , DECODE(x0.trip_cd, 'CTR010', SUBSTR(TO_DATE(c1.biztrip_start_ymd, '%Y%m%d'),0,10) || ' ~ ' || SUBSTR(TO_DATE(c1.biztrip_cls_ymd, '%Y%m%d'),0,10)
+                        , 'CTR020', SUBSTR(TO_DATE(c2.biztrip_ymd, '%Y%m%d'),0,10) ||' '|| c2.start_time ||'~'|| c2.arriv_time
+                        , 'CTR030', SUBSTR(TO_DATE(c3.biztrip_start_ymd, '%Y%m%d'),0,10) || ' ~ ' || SUBSTR(TO_DATE(c3.biztrip_cls_ymd, '%Y%m%d'),0,10), '') AS trip_days
+     , x0.companion_cd -- 반려사유
+     , x0.companion_rs
+     , x0.note
+     , x0.sms_cnt
+     , x0.rmk
+  FROM ctrcvn AS x0
+  JOIN humbasicinfo AS x1 ON x1.syspayno = x0.syspayno
+  JOIN xodhdeptinfo x ON x1.dept_cd = x.dept_cd AND x1.dept_new_ymd = x.dept_new_ymd
+  JOIN xomxintfatab AS x2 ON x2.req_no = x0.req_no
+  JOIN xodxcommst AS x3 ON x3.cd = x2.apr_state
+  LEFT JOIN ctrdom AS c1 ON c1.req_no = x0.trip_req_no
+  LEFT JOIN ctrlocal AS c2 ON c2.req_no = x0.trip_req_no
+  LEFT JOIN ctrover AS c3 ON c3.req_no = x0.trip_req_no
+ WHERE 1=1
+ <if test='req_no != null and req_no !=""'> AND x0.req_no = #{req_no} </if>
+ <if test='req_no == null or req_no ==""'>  
+    AND x0.syspayno = #{syspayno} 
+    AND x0.act_clsf = #{act_clsf} 
+    AND x2.apr_state IN ('XAD005', 'XAD010', 'XAD013', 'XAD015') 
+ </if>
+ ORDER BY x0.req_no DESC
+</select>
+
+<!-- 작성중 문서가 없을 경우 외부강의신고 최초조회 -->
+<select id="selectCvnTripNoReq" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrCvnTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo">
+SELECT  /* QueryID : kr.re.kitech.biz.ccs.ctr.selectCvnTripNoReq */
+      z.syspayno
+    , z.syspayno AS write_syspayno
+    , z.empno
+    , z.ext_no AS req_tel_no
+    , z.nm AS req_psn_nm
+    , fun_posi_nm(z.posi_cd) AS posi_nm
+    , CASE WHEN TRIM(z.duty_cd) = '' THEN '' ELSE fun_xodxcommst_cd_nm(z.duty_cd,0) END AS duty_nm
+    , x.dept_nm
+    , fun_dept_nm(x.divsn_dept, x.divsn_dept_new_ymd) AS divsn_nm
+  FROM humbasicinfo AS z 
+  JOIN xodhdeptinfo x ON z.dept_cd = x.dept_cd AND z.dept_new_ymd = x.dept_new_ymd  
+ WHERE z.syspayno = #{syspayno}
+ 
+</select>
+	
+	<select id="selectCtrUpdateList" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo">
+		SELECT   /* QueryID : kr.re.kitech.biz.ccs.ctr.selectCtrUpdateList */
+		      x1.req_no
+		    , x1.regst_syspayno
+		    , x1.modify_item
+		    , x1.modify_cause
+		    , x1.modify_daytm
+		FROM ctrcvnmodlog AS x1
+		WHERE x1.req_no = #{req_no}
+    </select>
+    
+    <select id="selectCtrUpdateUpd" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo">
+		INSERT INTO  /* QueryID : kr.re.kitech.biz.ccs.ctr.selectCtrUpdateUpd */
+			ctrcvnmodlog( 
+						 req_no
+					    <if test="regst_syspayno != null and regst_syspayno != ''">, regst_syspayno</if>
+					    <if test="modify_item    != null and modify_item    != ''">, modify_item</if>
+					    <if test="modify_cause   != null and modify_cause   != ''">, modify_cause</if>
+					    ) 
+				VALUES (
+					   #{req_no}
+					   <if test="write_syspayno != null and  write_syspayno != ''">,#{write_syspayno}</if>
+					   <if test="modify_item    != null and  modify_item    != ''">,#{modify_item}</if>
+					   <if test="modify_cause   != null and  modify_cause   != ''">,#{modify_cause}</if>
+					   )
+    </select>
+	
+    <select id="selectListCountCtrTripInvite" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo" resultType="long">
+         SELECT    /* QueryID : kr.re.kitech.biz.ccs.ctr.selectListCountCtrTripInvite */
+             COUNT(*) totcnt  		                  
+         FROM CTRCVN
+         WHERE  1=1    		
+
+    </select>
+  
+<!-- 외부강의신고 월간현황(팝업) 조회 -->  
+<select id="selectCtrMonthList" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrCvnTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CvnTripReqMonthVo">
+SELECT  /* kr.re.kitech.biz.ccs.ctr.selectCtrMonthList */
+       ROW_NUMBER() OVER (ORDER BY x0.req_no) AS row_num
+     , x0.st_daytm || ' ~ ' || x0.ed_daytm AS period_date
+     , x0.attnce_clsf
+     , x0.period_minute
+     , '' AS invite_org_nm
+     , x0.econo_gain_clsf
+     , x0.reward_amt
+  FROM ctrcvn AS x0 
+  JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+ WHERE x1.apr_state >= 'XAD020'
+   AND 'CLA003'= #{act_clsf}
+   AND x0.syspayno = #{syspayno}
+   AND ( x0.st_daytm BETWEEN MDY(MONTH(TODAY),1, YEAR(TODAY)) AND LAST_DAY(TODAY) OR 
+         x0.ed_daytm BETWEEN MDY(MONTH(TODAY),1, YEAR(TODAY)) AND LAST_DAY(TODAY) )  
+UNION
+SELECT ROW_NUMBER() OVER (ORDER BY x0.req_no) AS row_num
+     , SUBSTR(x0.start_ymd, 1, 4)||'-'|| SUBSTR(x0.start_ymd, 5,2)||'-'|| SUBSTR(x0.start_ymd, 7, 2) ||'~'
+        || SUBSTR(x0.cls_ymd, 1, 4)||'-'|| SUBSTR(x0.cls_ymd, 5,2)||'-'|| SUBSTR(x0.cls_ymd, 7, 2) AS period_date
+     , x0.attnce_clsf
+     , x0.period_minute
+     , x0.invite_org_nm
+     , x0.econo_gain_clsf
+     , x0.reward_amt
+  FROM ctrcvn AS x0 
+  JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+ WHERE x1.apr_state >= 'XAD020'
+   AND 'CLA004' = #{act_clsf} 
+   AND #{activity_cd} IN ('CCF001','CCF002','CCF003','CCF004')
+   AND x0.syspayno = #{syspayno}
+   AND x0.act_clsf = #{act_clsf}
+  <if test='req_no != null and req_no != ""'> AND x0.req_no != #{req_no} </if>
+   AND ( x0.start_ymd BETWEEN YEAR(TODAY)||'0101' AND YEAR(TODAY)||'1231' OR 
+         x0.cls_ymd BETWEEN YEAR(TODAY)||'0101' AND YEAR(TODAY)||'1231')
+</select>
+
+<!-- 외부강의 반려시 변경항목 로그 저장 -->
+<insert id="insertCtrCvnModLog" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo">
+INSERT /* kr.re.kitech.biz.ccs.ctr.insertCtrCvnModLog */
+  INTO ctrcvnmodlog(
+       req_no
+     , regst_syspayno
+     , modify_item
+     , modify_cause) 
+VALUES (
+      #{req_no}
+    , #{regst_syspayno}
+    , #{modify_item}
+    , #{modify_cause}
+    )
+</insert>
+<!-- 외부강의,기타활동(법령에 근거하지 않은 위원회등의 정보지원활동) 월간 누적횟수 -->
+<select id="selectOutlecAccMonCnt" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrCvnTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrTripInviteVo">
+SELECT FIRST 1 /* kr.re.kitech.biz.ccs.ctr.selectOutlecAccMonCnt */
+       x0.yyyymm
+     , x0.syspayno
+     , DENSE_RANK() OVER (PARTITION BY x0.yyyymm, x0.syspayno ORDER BY x0.req_daytm ) AS acc_mon_count
+     , CASE WHEN x0.act_clsf = 'CLA003' THEN ROUND( SUM( x0.period_minute/60) OVER ( PARTITION BY x0.yyyymm, x0.syspayno ORDER BY x0.req_daytm),2)
+            ELSE SUM(x0.period_minute) OVER ( PARTITION BY x0.yyyymm, x0.syspayno ORDER BY x0.req_daytm) END AS acc_mon_hour
+  FROM ctrcvn AS x0 
+  JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+  JOIN humbasicinfo AS x2 ON x2.syspayno = x0.syspayno
+ WHERE #{act_clsf} IN ( 'CLA003','CLA004') /* 외부강의, 기타활동 */ 
+   AND x0.syspayno = #{syspayno}
+   AND (x0.act_clsf = #{act_clsf} OR x0.activity_cd = #{activity_cd})
+   AND x0.yyyymm[1,6] = #{yyyymm} 
+   AND (x1.apr_state >= 'XAD020' 
+      <if test='req_no != null and req_no != ""'> OR x0.req_no = #{req_no} </if> )
+ ORDER BY x0.req_daytm DESC
+</select>
+</mapper>

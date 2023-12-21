@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/css/sample.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_vertical_guides="" meta_horizontal_guides="113" meta_programName="메일발송 샘플">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_mail">
+            		<w2:keyInfo>
+            			<w2:key id="subject" name="제목" dataType="text"></w2:key>
+            			<w2:key id="content" name="내용" dataType="text"></w2:key>
+            			<w2:key id="fromAddr" name="보낸사람주소" dataType="text"></w2:key>
+            			<w2:key id="toAddr" name="받는사람" dataType="text"></w2:key>
+            			<w2:key id="ccAddr" name="참조" dataType="text"></w2:key>
+            			<w2:key id="bccAddr" name="숨은참조" dataType="text"></w2:key>
+            			<w2:key id="savesent" name="편지함저장여부" dataType="text"></w2:key>
+            			<w2:key id="onesend" name="일괄발송여부" dataType="text"></w2:key>
+            			<w2:key id="logging" name="로그저장여부" dataType="text"></w2:key>
+            			<w2:key id="business" name="업무구분" dataType="text"></w2:key>
+            			<w2:key id="templatePath" name="템플릿경로" dataType="text"></w2:key>
+<!--            			<w2:key id="templateVars" name="메일템플릿 Vo" dataType="dma_mail_datas"></w2:key>-->
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dma_mail_datas" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="toAddr" name="받는사람" dataType="text"></w2:column>
+<!--            			<w2:column id="subjectVar" name="제목변수" dataType="dma_subject"></w2:column>-->
+<!--            			<w2:column id="contentVar" name="내용변수" dataType="dma_content"></w2:column>-->
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_subject">
+            		<w2:keyInfo>
+						<!-- 동적 파라미터-->
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_content">
+            		<w2:keyInfo>
+						<!-- 동적 파라미터-->
+            		</w2:keyInfo>
+            	</w2:dataMap>            	
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+		        
+			scwin.onpageload = function() {
+				
+			};
+			
+			scwin.onpageunload = function() {
+				
+			};
+
+			/**
+			 * 플랜 텍스트 일괄 발송 테스트
+			 */
+			scwin.btn_onesend_onclick = function() {
+				com.mail.sendMessage({
+					subject: '플랜 텍스트 일괄 발송 테스트',
+					content: '구매조달 시스템 관련 메일 내용입니다.',
+					fromAddr: '시스템 <eipadmin@kitech.re.kr>',
+					toAddr: 'eipparkji@kitech.re.kr, eipparkbm@kitech.re.kr',
+					savesent: true,	// 보낸편지함 저장 여부 (default: true)
+					onesend: true,	// 일괄발송 | 개별발송 (default: true)
+					logging: true,	// 로그 저장 여부 (default: true)
+					business: 'EPU',
+				});
+			};
+			
+			/**
+			 * 플랜 텍스트 개별 발송 테스트'
+			 */			
+			scwin.btn_send_onclick = function() {
+				com.mail.sendMessage({
+					subject: '플랜 텍스트 개별 발송 테스트',
+					content: '총무보안 시스템 관련 메일 내용입니다.',
+					toAddr: 'eipparkji@kitech.re.kr, eipparkbm@kitech.re.kr',
+					savesent: true,	// 보낸편지함 저장 여부 (default: true)
+					onesend: false,	// 일괄발송 | 개별발송 (default: true)
+					logging: true,	// 로그 저장 여부 (default: true)
+					business: 'CCS',
+				});
+			};
+
+			/**
+			 * 템플릿 일괄 발송 테스트
+			 */
+			scwin.btn_onesend_t_onclick = function() {
+				// 발송 사전준비 데이터 시작(예시)
+				// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+				var templateVars = [];
+				templateVars.push({
+					toAddr: ['eipparkji@kitech.re.kr', 'eipparkbm@kitech.re.kr'],	// 수신자 설정
+					contentVar: {
+						"@message@": "템플릿 변수에 치환될 메시지",			
+					},
+				});
+				// 발송 사전준비 데이터 끝(예시)
+				
+				com.mail.sendMessage({
+					subject: '템플릿 일괄 발송 테스트',
+					content: '내용',
+					fromAddr: '메일 시스템 <eipadmin@kitech.re.kr>',
+					toAddr: 'abc@kitech.re.kr, def@kitech.re.kr',	// 개별 발송의 경우 무시됨
+					savesent: true,	// 보낸편지함 저장 여부 (default: true)
+					onesend: true,	// 일괄발송 | 개별발송 (default: true)
+					logging: true,	// 로그 저장 여부 (default: true)
+					business: 'CCS',
+					templatePath: 'ccs/CwsNoticeMissTagMail',
+					templateVars: templateVars,
+				});
+			};
+
+			/**
+			 * 템플릿 개별 발송 테스트
+			 */
+			scwin.btn_send_t_onclick = function(){
+				// 발송 사전준비 데이터 시작(예시)
+				// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+				var dataList = [{
+					toAddress: "eipparkji@kitech.re.kr",
+					reqTitle: "게시판에 글쓰기가 안됩니다.",
+					reqDate: "2021년2월15일",
+					reqContntTxt: "게시판에 !!@!#!$!$% 이런 글씨를 썼는데 안되네요",
+					rejectDate: "2021년3월30일",
+					actnPlanTxt: "명확히 알 수 없으므로 반려 처리합니다.",
+					actorName: "결재PL1",
+					actorDept: "전자결재1",					
+				}, {
+					toAddress: "eipparkbm@kitech.re.kr",
+					reqTitle: "방명록에 글쓰기가 안됩니다.",
+					reqDate: "2021년2월15일",
+					reqContntTxt: "방명록이 막혀있어요",
+					rejectDate: "2021년3월30일",
+					actnPlanTxt: "기분이 나쁘니까 반려합니다.",
+					actorName: "결재PL2",
+					actorDept: "전자결재2",							
+				}];
+				 
+				// 템플릿 변수 설정
+				var templateVars = [];
+				dataList.forEach(function(data, index){
+					templateVars.push({
+						toAddr: data.toAddress,
+						subjectVar: {
+							"@index@": index.toString(),	
+						},
+						contentVar: {
+							"@reqTitle@": data.reqTitle,
+							"@reqDate@": data.reqDate,
+							"@reqContntTxt@": data.reqContntTxt,
+							"@rejectDate@": data.rejectDate,
+							"@@actnPlanTxt@": data.actnPlanTxt,
+							"@actorName@": data.actorName,
+							"@actorDept@": data.actorDept,					
+						},				
+					});
+				});
+				// 발송 사전준비 데이터 끝(예시)
+				debugger;
+				com.mail.sendMessage( {
+					subject: '@index@ 템플릿 개별 발송 테스트',
+					content: '내용',
+					fromAddr: '메일 시스템 ',
+					toAddr: 'eipparkji@kitech.re.kr, eipparkbm@kitech.re.kr',
+					// ccAddr: '참조',
+					// bccAddr: '숨은참조',
+					savesent: true,	// 보낸편지함 저장 여부 (default: true)
+					onesend: false,	// 일괄발송 | 개별발송 (default: true)
+					logging: true,	// 로그 저장 여부 (default: true)
+					business: 'CCS',
+					templatePath: 'com/DemandReject',
+					templateVars: templateVars,
+				});
+			};
+			
+			
+			/**
+			 * SMS 메시지 발송 이벤트 핸들러
+			 * @date 2022. 04. 12
+			 * @see kr.re.kitech.biz.xom.base.enums.Messages
+			 * @see kr.re.kitech.biz.xom.base.enums.Business
+			 */ 
+			scwin.btn_send_sms_onclick = function(){
+				
+				// 단건 메시지 발송
+				com.msg.sendMessage({
+					messages: 'SMS_MSG',				// 공통업무
+					business: 'XOM',					// SMS 메시지 발송					
+					subject: 'SMS 메시지 발송 테스트 제목',	// SMS 의 경우 제목 무시 됨
+					msgBody: 'SMS 메시지 발송 테스트 본문',
+					
+					sendName: '한국생산기술연구원',
+					sendPhone: '0415898114',
+					sendSyspayno: '99999999',
+
+					destName: '박정일',
+					destPhone: '01092546288',
+					destSyspayno: '99999995',
+					
+					logging: true,	// 로그 저장 여부 (default: true)
+					businessYn: 'Y'
+				});			
+			};
+			
+			/**
+			 * LMS 메시지 발송 이벤트 핸들러
+			 * @date 2022. 04. 12
+			 */ 			
+			scwin.btn_send_lms_onclick = function(){
+				// 발송 사전준비 데이터 시작(예시)
+				// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+				var dataList = [{
+					destName: '박정일',
+					destPhone: '01092546288',
+					destSyspayno: '99999995',
+					subject: '법인카드 한도 대폭 증액',
+				}, {
+					destName: '박병목',
+					destPhone: '01030511942',
+					destSyspayno: '99997994',
+					subject: '법인카드 한도 소폭 증액',					
+				}];
+				
+				// 템플릿 변수 구성
+				var templateVars = [];
+				dataList.forEach(function(data, index){
+					templateVars.push({
+						destName: data.destName,
+						destPhone: data.destPhone,
+						destSyspayno: data.destSyspayno,
+						subject: data.subject,		
+					});
+				});	
+
+				// 메시지 발송
+				com.msg.sendMessage({
+					templateCode: 'bizp_2019121423321030063559493',	// 템플릿: 법인카드증액한도
+					templateVars: templateVars,					
+					messages: 'LMS_MSG',				// LMS 메시지 발송
+					business: 'FIN',					// 재무 업무					
+					subject: 'LMS 메시지 발송 테스트 제목',	// 제목 템플릿변수 내의 제목으로 대체
+					msgBody: 'LMS 메시지 발송 테스트 본문',	// 내용 템플릿변수 바인딩된 내용으로 대체
+					logging: true,						// 로그 저장 여부 (default: true)
+					businessYn: 'Y',
+				});						
+			};
+
+			/**
+			 * 알림톡 메시지 발송 이벤트 핸들러
+			 * @date 2022. 04. 12
+			 */ 			
+			scwin.btn_send_at_onclick = function(){
+				// 발송 사전준비 데이터 시작(예시)
+				// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+				var dataList = [{
+					destName: '박정일',
+					destPhone: '01092546288',
+					destSyspayno: '99999995',
+					nickName: "James",		
+				}, {
+					destName: '박병목',
+					destPhone: '01030511942',
+					destSyspayno: '99997994',
+					nickName: "Jack",							
+				}];
+				
+				// 템플릿 변수 구성
+				var templateVars = [];
+				dataList.forEach(function(data, index){
+					templateVars.push({
+						destName: data.destName,
+						destPhone: data.destPhone,
+						destSyspayno: data.destSyspayno,
+						contentVar: {
+							"성명": data.nickName,				
+						},				
+					});
+				});
+
+				// 메시지 발송
+				com.msg.sendMessage({
+					messages: 'AT_MSG',				// LMS 메시지 발송
+					business: 'FIN',				// 재무 업무					
+					logging: true,					// 로그 저장 여부 (default: true)
+					businessYn: 'Y',
+					templateCode: 'bizp_2019121500241118033664447',	// 템플릿: 방화벽 오픈 신청
+					templateVars: templateVars,
+				});	
+			};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+		
+		<xf:group class="pageWrap" id="" style="">
+	   	
+	   		<xf:group id="grpMail" style="display: inline-block;width: 49%;padding: 10px 20px;border: 1px solid gray;" >
+		   		<xf:group style="margin-top:20px;" id="" class="dfbox">
+					<w2:textbox tagname="h2" style="" id="" label="메일 발송 예제" class="df_tit"></w2:textbox>
+					<xf:group id="" class="fr"></xf:group>
+				</xf:group><xf:group tagname="ol" id="">
+		    		<xf:group tagname="li" id="">플랜 텍스트 일괄 발송 테스트</xf:group>
+		    		<xf:group tagname="li" id="" text="aaa">플랜 텍스트 개별 발송 테스트</xf:group>
+		    		<xf:group tagname="li" id="">템플릿 일괄 발송 테스트: 논리적으로 수신자별 개별 템플릿 변수들이 설정되어서는 안된다.</xf:group>
+		    		<xf:group tagname="li" id="">템플릿 개별 발송 테스트</xf:group>
+		    	</xf:group><xf:group style="margin-top:20px;" id="" class="dfbox">
+					<w2:textbox tagname="h2" style="" id="" label="메일 API 가이드" class="df_tit"></w2:textbox>
+					<xf:group id="" class="fr"></xf:group>    	
+				</xf:group><xf:group sytle="height:50px;" id="">
+			   		<w2:anchor outerDiv="false" style="width: 100px;height: 23px;" id="" href="/cm/html/mail/index.html" target="_blank">
+			   			<xf:label><![CDATA[메일발송 템플릿 개발자 가이드 바로가기]]></xf:label>
+			   		</w2:anchor>    
+		   		</xf:group><xf:group style="margin-top:20px;" id="" class="dfbox">
+					<w2:textbox tagname="h2" style="" id="" label="메일 발송 테스트" class="df_tit"></w2:textbox>
+					<xf:group id="" class="fr"></xf:group>    
+				</xf:group><xf:group id="">
+				    <xf:trigger ev:onclick="scwin.btn_onesend_onclick" style="margin-right:20px;" id="btn_send_onesend" type="button" class="btn_cm">
+			    		<xf:label><![CDATA[일괄 메일발송]]></xf:label>
+			    	</xf:trigger><xf:trigger ev:onclick="scwin.btn_send_onclick" style="margin-right:20px;" id="btn_send" type="button" class="btn_cm">
+			    		<xf:label><![CDATA[개별 메일발송]]></xf:label>
+			    	</xf:trigger><xf:trigger ev:onclick="scwin.btn_onesend_t_onclick" style="margin-right:20px;" id="btn_send_onesend_template" type="button" class="btn_cm">
+			    		<xf:label><![CDATA[일괄 메일발송(템플릿)]]></xf:label>
+			    	</xf:trigger><xf:trigger ev:onclick="scwin.btn_send_t_onclick" style="margin-right:20px;" id="btn_send_template" type="button" class="btn_cm">
+			    		<xf:label><![CDATA[개별 메일발송(템플릿)]]></xf:label>
+			    	</xf:trigger>
+			   	</xf:group>
+		   	</xf:group>
+		   	
+	   		<xf:group id="grpMessage" style="display: inline-block;padding: 10px 20px;margin-left: 2%;width: 49%;border: 1px solid gray;" >
+		   		<xf:group style="margin-top:20px;" id="" class="dfbox">
+					<w2:textbox tagname="h2" style="" id="" label="메시지 발송 예제" class="df_tit"></w2:textbox>
+					<xf:group id="" class="fr"></xf:group>
+				</xf:group><xf:group tagname="ol" id="">
+		    		<xf:group tagname="li" id="">SMS 메시지 발송</xf:group>
+		    		<xf:group tagname="li" id="">LMS 메시지 발송</xf:group>
+		    		<xf:group tagname="li" id="">MMS 메시지 발송</xf:group>
+		    		<xf:group tagname="li" id="">AT 메시지 발송</xf:group>
+		    	</xf:group><xf:group style="margin-top:20px;" id="" class="dfbox">
+					<w2:textbox tagname="h2" style="" id="" label="메시지 API 가이드" class="df_tit"></w2:textbox>
+					<xf:group id="" class="fr"></xf:group>    	
+				</xf:group><xf:group sytle="height:50px;" id="">
+			   		<w2:anchor outerDiv="false" style="width: 100px;height: 23px;" id="" href="/cm/html/message/index.html" target="_blank">
+			   			<xf:label><![CDATA[메시지발송 템플릿 개발자 가이드 바로가기]]></xf:label>
+			   		</w2:anchor>    
+		   		</xf:group><xf:group style="margin-top:20px;" id="" class="dfbox">
+					<w2:textbox tagname="h2" style="" id="" label="메시지 발송 테스트" class="df_tit"></w2:textbox>
+					<xf:group id="" class="fr"></xf:group>    
+				</xf:group><xf:group id="">
+				    <xf:trigger ev:onclick="scwin.btn_send_sms_onclick" style="margin-right:20px;" id="btn_send_sms" type="button" class="btn_cm">
+			    		<xf:label><![CDATA[단문 메시지 발송]]></xf:label>
+			    	</xf:trigger><xf:trigger ev:onclick="scwin.btn_send_lms_onclick" style="margin-right:20px;" id="btn_send_lms" type="button" class="btn_cm">
+			    		<xf:label><![CDATA[장문 메시지 발송]]></xf:label>
+			    	</xf:trigger><xf:trigger ev:onclick="scwin.btn_send_at_onclick" style="margin-right:20px;" id="btn_send_at" type="button" class="btn_cm">
+			    		<xf:label><![CDATA[알림톡 발송]]></xf:label>
+			    	</xf:trigger>
+			   	</xf:group>
+		   	</xf:group>		   	
+	   	</xf:group>
+   	</body>
+</html>

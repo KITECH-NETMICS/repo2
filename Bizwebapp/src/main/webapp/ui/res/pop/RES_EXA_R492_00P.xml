@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="통합이지바로RCMS이월연구비정보">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="accnt_no" name="accnt_no" dataType="text"></w2:key>
+        				<w2:key id="prj_no" name="prj_no" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="bmname" name="bmname" dataType="text"></w2:column>
+        				<w2:column id="bfyrcrovamt" name="bfyrcrovamt" dataType="text"></w2:column>
+        				<w2:column id="plcsamt" name="plcsamt" dataType="text"></w2:column>
+        				<w2:column id="plthamt" name="plthamt" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataMap baseNode="map" id="dma_info">
+        			<w2:keyInfo>
+        				<w2:key id="crmt_use_apv_lim_amt" name="crmt_use_apv_lim_amt" dataType="text"></w2:key>
+        				<w2:key id="crmt_exec_amt" name="crmt_exec_amt" dataType="text"></w2:key>
+        				<w2:key id="crmt_bal" name="crmt_bal" dataType="text"></w2:key>
+        				<w2:key id="use_apv_cash_lim_amt" name="use_apv_cash_lim_amt" dataType="text"></w2:key>
+        				<w2:key id="exctn_exec_amt" name="exctn_exec_amt" dataType="text"></w2:key>
+        				<w2:key id="apv_bal" name="apv_bal" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataMap baseNode="map" id="dma_param">
+        			<w2:keyInfo>
+        				<w2:key id="accnt_no" name="accnt_no" dataType="text"></w2:key>
+        				<w2:key id="prj_no" name="prj_no" dataType="text"></w2:key>
+        				<w2:key id="card_use_ex" name="card_use_ex" dataType="text"></w2:key>
+        				<w2:key id="save_clsf" name="save_clsf" dataType="text"></w2:key>
+        				<w2:key id="apprv_req" name="apprv_req" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectRCMSCryOvrMoneyList" ref="data:json,dma_search" target="" action="SvcRESEXARESR01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_selectEzbaroCryOvrMoneyList" ref="data:json,dma_search" target="" action="SvcRESEXARESR02.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script src="/cm/js/biz/res.js" cache="false" />           
+        <script type="text/javascript" lazy="false"><![CDATA[
+ 
+    /****************************************************
+ 	 * 화면 설명 : 통합이지바로RCMS이월연구비정보
+ 	 * 변경 이력 : 2023-10-16	김상미	최초 작성
+ 	 * 서비스아이디 : R492
+ 	 ****************************************************/  
+ 	
+ 	scwin.data = {};
+ 	
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */         
+	scwin.onpageload = function() {
+		var param = com.getParameter();
+		scwin.initPage(param);	
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+     * 화면 초기화
+     */	
+	scwin.initPage = function(param) {
+		dma_param.setJSON(param);	
+		
+		dma_search.set("accnt_no", dma_param.get("accnt_no"));
+		dma_search.set("prj_no", dma_param.get("prj_no"));
+
+		if (dma_param.get("card_use_ex") == "FAJ007") {
+			grp_rcms_message.hide();
+			tbx_crmt_use_apv_lim_amt.hide();
+			tbx_use_apv_cash_lim_amt.hide();
+			tbx_bfyrcrovamt.show("");
+			tbx_plcs_plth_sum_amt.show("");
+			scwin.searchEzbaro();
+		} else if (dma_param.get("card_use_ex") == "FAJ005") {
+			grd_ezbaro.hide();
+			grp_rcms_message.show("");	
+			tbx_crmt_use_apv_lim_amt.show("");
+			tbx_use_apv_cash_lim_amt.show("");	
+			tbx_bfyrcrovamt.hide();
+			tbx_plcs_plth_sum_amt.hide();			
+			scwin.searchRCMS();			
+		}	
+	};
+	
+	/**
+     * 통합이지바로 연구비 정보 조회실행
+     */		
+	scwin.searchEzbaro = function() {
+		com.execute(sbm_selectEzbaroCryOvrMoneyList, {
+			successCallback : function(e) {
+				console.log(e.responseJSON);
+				dlt_list.setJSON(e.responseJSON.resExaCryOvrMoneyInfoVoList);
+				
+				tbx_bfyrcrovamt.setValue(parseInt(grd_ezbaro.getFooterData("sumbfyrcrovamt")));
+				var plcs_plth_sum_amt = parseInt(grd_ezbaro.getFooterData("sumplcsamt")) + parseInt(grd_ezbaro.getFooterData("sumplthamt"));
+				tbx_plcs_plth_sum_amt.setValue(plcs_plth_sum_amt);
+										
+			}
+		});			
+	};
+		
+	/**
+     * RCMS 연구비 정보 조회실행
+     */		
+	scwin.searchRCMS = function() {
+		com.execute(sbm_selectRCMSCryOvrMoneyList, {
+			successCallback : function(e) {
+				console.log(e.responseJSON);
+				dma_info.setJSON(e.responseJSON.elData);	
+									
+			}
+		});			
+	};
+	
+	/**
+	 * 닫기 버튼 클릭 이벤트
+	 */		
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)			
+	};
+	
+	scwin.btn_select_onclick = function(e) {
+		var data = {};
+		
+		if (dma_param.get("card_use_ex") == "FAJ007") {
+			data.rcms_cry_ove_money = grd_ezbaro.getFooterData("sumbfyrcrovamt");
+		} else if (dma_param.get("card_use_ex") == "FAJ005") {
+			data.rcms_cry_ove_money = dma_info.get("crmt_use_apv_lim_amt");
+		}
+		com.closePopup(data); // 팝업 닫으면서 데이터 리턴				
+	};
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pop_contents" id="" style="">
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_list" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_ezbaro" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult_2" rowMouseOverColor="#e7f0fb"
+    			rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태"
+    			rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    			selectedRowColor="#fbf2cd" style="height:310px;" visibleRowNum="8">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="비목명" width="200" colSpan=""
+    						rowSpan="2">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="이월금" width="100" colSpan=""
+    						rowSpan="2">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" sortable="true" style="height:28px;" value="협약예산"
+    						width="200" colSpan="2" rowSpan="">
+    					</w2:column>
+    				</w2:row>
+    				<w2:row style="" id="row4">
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column26" value="현금" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column25" value="현물" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" id="bmname" inputType="text" readOnly="true" style="height:28px;" width="200"></w2:column>
+    					<w2:column displayMode="label" id="bfyrcrovamt" inputType="text" readOnly="true" style="height:28px;" value=""
+    						width="100" dataType="number" displayFormat="#,###" textAlign="right">
+    					</w2:column>
+    					<w2:column displayMode="label" id="plcsamt" inputType="text" readOnly="true" style="height:28px;" width="100" dataType="number" displayFormat="#,###" textAlign="right"></w2:column>
+    					<w2:column displayMode="label" id="plthamt" inputType="text" readOnly="true" style="height:28px;" width="100" dataType="number" displayFormat="#,###" textAlign="right"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    			<w2:footer style="" id="footer2">
+    				<w2:row style="" id="row5">
+    					<w2:column width="200" inputType="text" style="height:28px;" id="column32" value="합계" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="expression" style="height:28px;" id="sumbfyrcrovamt" value="" displayMode="label" dataType="number" expression="sum('bfyrcrovamt')" displayFormat="#,###" textAlign="right"></w2:column>
+    					<w2:column width="100" inputType="expression" style="height:28px;" id="sumplcsamt" value="" displayMode="label" dataType="number" expression="sum('plcsamt')" displayFormat="#,###" textAlign="right"></w2:column>
+    					<w2:column width="100" inputType="expression" style="height:28px;" id="sumplthamt" value="" displayMode="label" dataType="number" expression="sum('plthamt')" displayFormat="#,###" textAlign="right"></w2:column>
+    				</w2:row>
+    			</w2:footer>
+    		</w2:gridView>
+    		<xf:group tagname="table" style="width:100%;" id="" class="w2tb tbl">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group tagname="col" style="width:25.00%"></xf:group>
+    				<xf:group tagname="col" style="width:25.00%"></xf:group>
+    				<xf:group tagname="col" style="width:25.00%"></xf:group>
+    				<xf:group tagname="col" style="width:25.00%"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="이월금 승인한도" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td ri">
+    					<w2:textbox class="txt" id="tbx_crmt_use_apv_lim_amt" label="0" style="" tagname="span"
+    						displayFormat="###,###,###,###,###" dataType="number" ref="data:dma_info.crmt_use_apv_lim_amt">
+    					</w2:textbox>
+    					<w2:textbox class="txt" dataType="number" displayFormat="###,###,###,###,###" id="tbx_bfyrcrovamt" label="0" style=""
+    						tagname="span">
+    					</w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="당해연도 승인한도" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td ri">
+    					<w2:textbox class="txt" id="tbx_use_apv_cash_lim_amt" label="0" style="" tagname="span" dataType="number"
+    						displayFormat="###,###,###,###,###" ref="data:dma_info.use_apv_cash_lim_amt">
+    					</w2:textbox>
+    					<w2:textbox class="txt" dataType="number" displayFormat="###,###,###,###,###" id="tbx_plcs_plth_sum_amt" label="0" style=""
+    						tagname="span">
+    					</w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="이월금 이체완료" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td ri">
+    					<w2:textbox class="txt" id="tbx_crmt_exec_amt" label="0" style="" tagname="span" dataType="number" displayFormat="###,###,###,###,###" ref="data:dma_info.crmt_exec_amt"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="당해연도 이체완료" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td ri">
+    					<w2:textbox class="txt" id="tbx_exctn_exec_amt" label="0" style="" tagname="span" displayFormat="###,###,###,###,###" ref="data:dma_info.exctn_exec_amt"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="이월금 사용잔액" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td ri">
+    					<w2:textbox class="txt" id="tbx_crmt_bal" label="0" style="" tagname="span" dataType="number" ref="data:dma_info.crmt_bal"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="당해연도 사용잔액" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td ri">
+    					<w2:textbox class="txt" id="tbx_apv_bal" label="0" style="" tagname="span" dataType="number" displayFormat="###,###,###,###,###" ref="data:dma_info.apv_bal"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="helparea" id="" style="">
+    			<xf:group id="grp_rcms_message" style="" tagname="ul">
+    				<xf:group id="" style="" tagname="li">
+    					<w2:textbox class="blue" id="" label="RCMS과제의 세부예산 정보는 내려오지 않기에 RCMS를 통하여 확인하여 주시기 바랍니다." style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="btnGroup" id="" style="">
+    			<xf:group class="le" id="" style=""></xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class=" btn pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="btn_select" style="" type="button" ev:onclick="scwin.btn_select_onclick">
+    					<xf:label><![CDATA[확인]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

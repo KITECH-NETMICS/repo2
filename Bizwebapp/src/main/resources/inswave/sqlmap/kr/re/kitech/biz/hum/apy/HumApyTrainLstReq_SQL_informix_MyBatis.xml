@@ -1,0 +1,769 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+  <select id="selectHumApyEduc01" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyTrainLstReqVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyTrainLstReqVo">
+		SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyEduc01 */ 
+			 DISTINCT a.req_no --신청번호
+			 , a.req_ymd -- 신청일
+			 , a.educ_amt --신청 교육비
+			 , d.apr_state --결제상태
+			 , fun_xodxcommst_cd_nm(d.apr_state, 0) AS apr_state_nm
+			 , a.rpt_req_no  --보고신청번호
+			 , a.rpt_req_ymd --보고 신청일
+			 , a.rpt_educ_amt --보고신청금액
+			 , fun_xodxcommst_cd_nm(f.apr_state, 0) AS rpt_apr_state_nm
+			 , TRIM((SUBSTR(a.start_ymd, 1, 4)||'-'||SUBSTR(a.start_ymd, 5, 2)||'-'||SUBSTR(a.start_ymd, 7, 2)||'~'||SUBSTR(a.cls_ymd, 1, 4)||'-'||SUBSTR(a.cls_ymd, 5, 2)||'-'||SUBSTR(a.cls_ymd, 7, 2))) AS ymd --교육기간
+			 , b.empno    --개인번호
+			 , TRIM(b.nm) AS nm  --신청자성명
+			 , b.syspayno
+			 , b.dept_cd   --부서코드
+			 , b.dept_nm  --부서명
+			 , b.posi_cd   --직급코드
+			 , b.posi_nm   --직급명
+			 , a.educ_typ
+			 , fun_xodxcommst_cd_nm(a.educ_typ, 0) AS educ_typ_nm
+			 , a.educ_cd   --교육구분코드
+			 , TRIM(c.cd_nm) ||' <![CDATA[ > ]]> '|| TRIM(c.mngmt_item_2) AS educ_cd_nm  --교육구분코드명
+			 , a.educ_nm  --교육명
+			 , a.educ_agncy--교육기관
+			 , fun_period_day(a.cls_ymd, a.start_ymd , 'D') AS period_ymd -- 교육일수
+			 , a.educ_time --교육시간
+			 , TRIM(CASE WHEN NVL(h.syspayno,'') = '' THEN '참석자정보없음'
+			   ELSE CASE WHEN NVL(h.cnt,0) = 0 THEN fun_emp_nm(h.syspayno)
+			        ELSE fun_emp_nm(h.syspayno)||' 외 '||NVL(h.cnt,0)||'명' END
+			  END) AS pacp_cnt_info -- 참석자정보
+			 , a.accnt_no  --계정번호
+			 , a.expns_cd || '('|| g.expns_cd_nm ||')' AS expns_cd --비용코드
+			 , a.accnt_cd --회계코드
+			 , a.start_ymd
+			    FROM humapyeduc a -- 교육훈련신청
+			  JOIN v_humbasicinfo b ON a.syspayno = b.syspayno
+			 LEFT JOIN xodxcommst c ON a.educ_cd = c.cd 
+			  JOIN xomxintfatab d ON d.req_no = a.req_no AND d.state_inform_flag = '1'
+			 LEFT JOIN xomxintfatab f ON f.req_no = a.rpt_req_no AND f.state_inform_flag = '1' -- 교육훈련결과보고
+			 LEFT JOIN xodfexpns g ON a.expns_cd = g.expns_cd
+			 LEFT JOIN (SELECT req_no, MIN(syspayno) AS syspayno, ROUND(count(*)-1) AS cnt
+			  FROM humapyeducpacp -- 교육훈련 신청 참여자
+			  GROUP BY req_no 
+			) h ON h.req_no = a.req_no
+			    WHERE  1=1
+			    <if test="syspayno != null and syspayno != ''">
+			    	AND a.syspayno = #{syspayno}
+			    </if>
+			    <if test="req_no != null and req_no != ''">
+			    	 AND a.req_no LIKE '%'||#{req_no}||'%'
+			    </if>
+			     <if test="rpt_req_no != null and rpt_req_no != ''">
+			    	AND a.rpt_req_no LIKE '%'||#{rpt_req_no}||'%' 
+			    </if>
+			     <if test="req_ymd_from != null and req_ymd_from != ''">
+			    	AND a.req_ymd <![CDATA[ >= ]]> #{req_ymd_from} 
+			    </if>
+			     <if test="req_ymd_to != null and req_ymd_to != ''">
+			    	AND a.req_ymd <![CDATA[ <= ]]> #{req_ymd_to}
+			    </if>
+			     <if test="rpt_req_ymd_from != null and rpt_req_ymd_from != ''">
+			    	AND a.rpt_req_ymd <![CDATA[ >= ]]> #{rpt_req_ymd_from}
+			    </if>
+			     <if test="rpt_req_ymd_to != null and rpt_req_ymd_to != ''">
+			    	AND a.rpt_req_ymd <![CDATA[ <= ]]> #{rpt_req_ymd_to}
+			    </if>
+			     <if test="start_ymd_from != null and start_ymd_from != ''">
+			    	AND a.start_ymd <![CDATA[ >= ]]> #{start_ymd_from}
+			    </if>
+			     <if test="cls_ymd_to != null and cls_ymd_to != ''">
+			    	AND a.cls_ymd <![CDATA[ <= ]]> #{cls_ymd_to}
+			    </if>
+			     <if test="apr_state != null and apr_state != ''">
+			    	AND d.apr_state = #{apr_state}
+			    </if>
+			     <if test="apr_state_rpt != null and apr_state_rpt != ''">
+			    	AND f.apr_state = #{apr_state_rpt}
+			    </if>
+			     <if test="educ_typ != null and educ_typ != ''">
+			    	AND  a.educ_typ = #{educ_typ}
+			    </if>
+			     <if test="dept_cd != null and dept_cd != ''">
+			    	AND  a.dept_cd = #{dept_cd}
+			    </if>
+			     <if test="educ_nm != null and educ_nm != ''">
+			    	AND a.educ_nm LIKE '%'||#{educ_nm}||'%'
+			    </if>
+			    UNION ALL
+			    SELECT
+			   '' AS req_no
+			 , '' AS req_ymd
+			 , 0 AS educ_amt
+			 , '' AS apr_state
+			 , '' AS apr_state_nm
+			 , '' AS rpt_req_no
+			 , '' AS rpt_req_ymd
+			 , 0 AS rpt_educ_amt
+			 , '' AS rpt_apr_state_nm
+			, TRIM(SUBSTR(a.educ_ymd, 1, 4)||'-'||SUBSTR(a.educ_ymd, 5, 2)||'-'||SUBSTR(a.educ_ymd, 7, 2))||'~'||TRIM(SUBSTR(a.educ_ymd, 1, 4)||'-'||SUBSTR(a.educ_ymd, 5, 2)||'-'||SUBSTR(a.educ_ymd, 7, 2)) AS ymd --교육기간
+			 , substr(a.educ_psn_syspayno,3,8) AS empno
+			 , TRIM(educ_psn_nm) AS nm
+			 , a.educ_psn_syspayno AS syspayno
+			 , b.dept_cd
+			 , b.dept_nm
+			 , b.posi_cd
+			 , b.posi_nm
+			 , '' AS educ_typ
+			 , TRIM(c.cd_nm) AS educ_typ_nm
+			 , a.educ_knd AS educ_cd
+			 , TRIM(c.cd_nm) AS educ_cd_nm
+			 , c.cd_nm AS educ_nm
+			 , '총무보안실' AS educ_agncy
+			 , '1' AS period_ymd
+			 , a.complt_time AS educ_time
+			 , TRIM(educ_psn_nm) AS pacp_cnt_info
+			 , '' AS accnt_no
+			 , '' AS expns_cd
+			 , '' AS accnt_cd
+			 , a.educ_ymd AS start_ymd
+			    FROM csfsecrtedu a
+			 JOIN v_humbasicinfo b ON a.educ_psn_syspayno = b.syspayno
+			 JOIN xodxcommst c ON a.educ_knd = c.cd
+			 JOIN xodhdeptinfo d ON a.dept_cd = d.dept_cd AND a.dept_new_ymd = d.dept_new_ymd
+			    WHERE 1=1  
+			    	<if test="syspayno != null and syspayno != ''">
+			    		AND a.educ_psn_syspayno = #{syspayno}
+			    	</if>
+			    	<if test="acp_syspayno != null and acp_syspayno != ''">
+			    		AND a.educ_psn_syspayno = #{acp_syspayno}
+			    	</if>
+			    	<if test="dept_cd != null and dept_cd != ''">
+			    		AND b.dept_cd = #{dept_cd}
+			    	</if>
+			    	<if test="req_ymd_from != null and req_ymd_from != ''">
+			    		AND a.educ_ymd  <![CDATA[ >= ]]> #{req_ymd_from}
+			    	</if>
+			    	<if test="req_ymd_to != null and req_ymd_to != ''">
+			    		AND a.educ_ymd  <![CDATA[ <= ]]> #{req_ymd_to} 
+			    	</if>
+			    	<if test="rpt_req_ymd_from != null and rpt_req_ymd_from != ''">
+			    		AND a.educ_ymd  <![CDATA[ >= ]]> #{rpt_req_ymd_from}
+			    	</if>
+			    	<if test="rpt_req_ymd_to != null and rpt_req_ymd_to != ''">
+			    		AND a.educ_ymd  <![CDATA[ <= ]]> #{rpt_req_ymd_to}
+			    	</if>
+			    	<if test="start_ymd_from != null and start_ymd_from != ''">
+			    		AND a.educ_ymd  <![CDATA[ >= ]]> #{start_ymd_from}
+			    	</if>
+			    	<if test="cls_ymd_to != null and cls_ymd_to != ''">
+			    		AND a.educ_ymd  <![CDATA[ <= ]]> #{cls_ymd_to}
+			    	</if>
+			    	<if test="req_no != null and req_no != ''">
+			    		AND a.rmk LIKE '%'|| #{req_no} ||'%' 
+			    	</if>
+			    	<if test="educ_nm != null and educ_nm != ''">
+			    		AND c.cd_nm LIKE '%'||#{educ_nm}||'%' 
+			    	</if>
+			ORDER BY syspayno, req_no, start_ymd DESC
+		  </select>
+		  
+		  <select id="selectHumApyEduc05" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyTrainLstReqVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyTrainLstReqVo">
+		  	SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyEduc05 */ 
+				   a.req_no --신청번호
+				 , a.req_ymd -- 신청일
+				 , i.educ_amt --신청 교육비
+				 , d.apr_state --결제상태
+				 , t1.cd_nm AS apr_state_nm
+				 , a.rpt_req_no  --보고신청번호
+				 , a.rpt_req_ymd --보고 신청일
+				 , i.rpt_educ_amt --보고신청금액
+				 , t2.cd_nm AS rpt_apr_state_nm
+				 , TRIM((SUBSTR(a.start_ymd, 1, 4)||'-'||SUBSTR(a.start_ymd, 5, 2)||'-'||SUBSTR(a.start_ymd, 7, 2)||'~'||SUBSTR(a.cls_ymd, 1, 4)||'-'||SUBSTR(a.cls_ymd, 5, 2)||'-'||SUBSTR(a.cls_ymd, 7, 2))) AS ymd --교육기간
+				 , k.empno    --개인번호
+				 , k.syspayno
+				 , TRIM(k.nm) AS nm  --성명
+				 , k.dept_cd   --부서코드
+				 , k.dept_nm  --부서명
+				 , k.posi_cd   --직급코드
+				 , k.posi_nm   --직급명
+				 , a.educ_typ
+				 , TRIM(t3.cd_nm) AS educ_typ_nm
+				 , a.educ_cd   --교육구분코드
+				 , TRIM(c.cd_nm) ||' <![CDATA[ > ]]> '|| TRIM(c.mngmt_item_2) AS educ_cd_nm  --교육구분코드명
+				 , a.educ_nm  --교육명
+				 , a.educ_agncy--교육기관
+				 , TO_CHAR((TO_DATE(a.cls_ymd,'%Y%m%d') - TO_DATE(a.start_ymd,'%Y%m%d'))::INTERVAL DAY(5) TO DAY::CHAR(6)::INT8 + 1) AS period_ymd -- 교육일수
+				 , i.educ_time --교육시간
+				 , TRIM(CASE WHEN NVL(h.syspayno,'') = '' THEN '참석자정보없음' ELSE CASE WHEN NVL(h.cnt,0) = 0 THEN TRIM(t4.nm) ELSE TRIM(t4.nm)||' 외 '||NVL(h.cnt,0)||'명' END END) AS pacp_cnt_info -- 참석자정보
+				 , a.accnt_no  --계정번호
+				 , a.expns_cd || '('|| g.expns_cd_nm ||')' AS expns_cd --비용코드
+				 , a.accnt_cd--회계코드
+				 , a.start_ymd
+				FROM humapyeduc a -- 교육훈련신청
+				JOIN v_humbasicinfo b ON a.syspayno = b.syspayno
+				LEFT JOIN xodxcommst c ON a.educ_cd = c.cd 
+				JOIN xomxintfatab d ON d.req_no = a.req_no AND d.state_inform_flag = '1'
+				LEFT JOIN xomxintfatab f ON f.req_no = a.rpt_req_no AND f.state_inform_flag = '1' -- 교육훈련결과보고
+				LEFT JOIN xodfexpns g ON a.expns_cd = g.expns_cd
+				LEFT JOIN (SELECT req_no, MIN(syspayno) AS syspayno, ROUND(count(*)-1) AS cnt
+				       FROM humapyeducpacp -- 교육훈련 신청 참여자
+				      GROUP BY req_no) h ON h.req_no = a.req_no
+				JOIN humapyeducpacp i ON i.req_no = a.req_no
+						<if test="acp_syspayno != null and acp_syspayno != ''">
+			    			AND  i.syspayno = #{acp_syspayno}
+			    		</if> 
+						 <if test="dept_cd != null and dept_cd != ''">
+			    			AND i.dept_cd = #{dept_cd}
+			    		 </if>
+				JOIN v_humbasicinfo k ON k.syspayno = i.syspayno
+				LEFT JOIN xodxcommst t1 ON t1.cd =  d.apr_state
+				LEFT JOIN xodxcommst t2 ON t2.cd =  f.apr_state
+				LEFT JOIN xodxcommst t3 ON t3.cd =  a.educ_typ
+				LEFT JOIN v_humbasicinfo t4 ON t4.syspayno = h.syspayno
+				WHERE 1=1 
+					<if test="syspayno != null and syspayno != ''">
+			    		AND i.syspayno = #{syspayno} 
+			    	</if>
+			    	<if test="req_no != null and req_no != ''">
+			    		AND a.req_no LIKE '%'||#{req_no}||'%'
+			    	</if>
+			    	 <if test="rpt_req_no != null and rpt_req_no != ''">
+			    		AND a.rpt_req_no LIKE '%'||#{rpt_req_no}||'%' 
+			         </if>
+			         <if test="req_ymd_from != null and req_ymd_from != ''">
+				    	AND a.req_ymd <![CDATA[ >= ]]> #{req_ymd_from} 
+				    </if>
+				    <if test="req_ymd_to != null and req_ymd_to != ''">
+				    	AND a.req_ymd <![CDATA[ <= ]]> #{req_ymd_to}
+				    </if>
+				    <if test="rpt_req_ymd_from != null and rpt_req_ymd_from != ''">
+			    		AND  a.rpt_req_ymd <![CDATA[ >= ]]> #{rpt_req_ymd_from}
+			    	</if>
+			    	<if test="rpt_req_ymd_to != null and rpt_req_ymd_to != ''">
+			    		AND  a.rpt_req_ymd <![CDATA[ <= ]]> #{rpt_req_ymd_to}
+			    	</if>
+			    	<if test="start_ymd_from != null and start_ymd_from != ''">
+			    		AND a.start_ymd <![CDATA[ >= ]]> #{start_ymd_from}
+			    	</if>
+			    	<if test="cls_ymd_to != null and cls_ymd_to != ''">
+			    		AND a.cls_ymd <![CDATA[ <= ]]> #{cls_ymd_to}
+			    	</if>
+			    	<if test="apr_state != null and apr_state != ''">
+			    		AND d.apr_state = #{apr_state} 
+			    	</if>
+			    	<if test="apr_state_rpt != null and apr_state_rpt != ''">
+			    		AND f.apr_state = #{apr_state_rpt}
+			    	</if>
+			    	<if test="educ_typ != null and educ_typ != ''">
+			    		AND a.educ_typ = #{educ_typ}
+			    	</if>
+			    	<if test="educ_nm != null and educ_nm != ''">
+			    		AND a.educ_nm LIKE '%'||#{educ_nm}||'%'
+			    	</if>
+				UNION ALL
+				SELECT
+				   '' AS req_no
+				 , '' AS req_ymd
+				 , 0 AS educ_amt
+				 , '' AS apr_state
+				 , '' AS apr_state_nm
+				 , '' AS rpt_req_no
+				 , '' AS rpt_req_ymd
+				 , 0 AS rpt_educ_amt
+				 , '' AS rpt_apr_state_nm
+				 , TRIM(SUBSTR(a.educ_ymd, 1, 4)||'-'||SUBSTR(a.educ_ymd, 5, 2)||'-'||SUBSTR(a.educ_ymd, 7, 2))||'~'||TRIM(SUBSTR(a.educ_ymd, 1, 4)||'-'||SUBSTR(a.educ_ymd, 5, 2)||'-'||SUBSTR(a.educ_ymd, 7, 2)) AS ymd --교육기간
+				 , SUBSTR(a.educ_psn_syspayno,3,8) AS empno
+				 , a.educ_psn_syspayno AS syspayno
+				 , TRIM(educ_psn_nm) AS nm
+				 , b.dept_cd
+				 , b.dept_nm
+				 , b.posi_cd
+				 , b.posi_nm
+				 , '' AS educ_typ
+				 , TRIM(c.cd_nm) AS educ_typ_nm
+				 , a.educ_knd AS educ_cd
+				 , TRIM(c.cd_nm) AS educ_cd_nm
+				 , c.cd_nm AS educ_nm
+				 , '총무보안실' AS educ_agncy
+				 , '1' AS period_ymd
+				 , a.complt_time AS educ_time
+				 , TRIM(educ_psn_nm) AS pacp_cnt_info
+				 , '' AS accnt_no
+				 , '' AS expns_cd
+				 , '' AS accnt_cd
+				 , a.educ_ymd AS start_ymd
+				FROM csfsecrtedu a
+				JOIN v_humbasicinfo b ON a.educ_psn_syspayno = b.syspayno
+				JOIN xodxcommst c ON a.educ_knd = c.cd
+				JOIN xodhdeptinfo d ON a.dept_cd = d.dept_cd AND a.dept_new_ymd = d.dept_new_ymd
+				WHERE 1=1
+					<if test="syspayno != null and syspayno != ''">
+			    		AND a.educ_psn_syspayno = #{syspayno} 
+			    	</if>
+			    	<if test="acp_syspayno != null and acp_syspayno != ''">
+			    		AND a.educ_psn_syspayno = #{acp_syspayno}
+			    	</if>
+			    	<if test="dept_cd != null and dept_cd != ''">
+			    		AND b.dept_cd = #{dept_cd}
+			    	</if>
+			    	<if test="req_ymd_from != null and req_ymd_from != ''">
+			    		AND a.educ_ymd  <![CDATA[ >= ]]> #{req_ymd_from}
+			    	</if>
+			    	<if test="req_ymd_to != null and req_ymd_to != ''">
+			    		AND a.educ_ymd  <![CDATA[ <= ]]> #{req_ymd_to}
+			    	</if>
+			    	<if test="rpt_req_ymd_from != null and rpt_req_ymd_from != ''">
+			    		AND a.educ_ymd  <![CDATA[ >= ]]> #{rpt_req_ymd_from}
+			    	</if>
+			    	<if test="rpt_req_ymd_to != null and rpt_req_ymd_to != ''">
+			    		AND a.educ_ymd  <![CDATA[ <= ]]> #{rpt_req_ymd_to}
+			    	</if>
+			    	<if test="start_ymd_from != null and start_ymd_from != ''">
+			    		AND a.educ_ymd  <![CDATA[ >= ]]> #{start_ymd_from}
+			    	</if>
+			    	<if test="cls_ymd_to != null and cls_ymd_to != ''">
+			    		AND a.educ_ymd  <![CDATA[ <= ]]> #{cls_ymd_to}
+			    	</if>
+			    	<if test="req_no != null and req_no != ''">
+			    		AND a.rmk LIKE '%'|| #{req_no} ||'%'
+			    	</if>
+			    	<if test="educ_nm != null and educ_nm != ''">
+			    		AND c.cd_nm LIKE '%'||#{educ_nm}||'%' 
+			    	</if>
+				ORDER BY syspayno, start_ymd DESC
+		  
+		  </select>
+		  
+		  <select id="selectHumApyEduc" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+			SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyEduc */ 
+					 syspayno FROM humapyeduc WHERE req_no = #{req_no}
+			</select>
+		  
+		   <select id="selectApyTrainBasicInfo02" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+				SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectApyTrainBasicInfo02 */ 
+				  b.nm,   --성명
+				  b.empno,  --개인번호
+				  fun_dept_nm(b.dept_cd, b.dept_new_ymd) dept_nm,  --부서
+				  b.dept_cd,
+				  b.posi_cd,
+				  b.job_cd,
+				  fun_posi_nm(b.posi_cd) posi_nm,  --직급
+				  b.syspayno,
+				  a.req_ymd,  --신청일
+				  fun_xodxcommst_cd_nm(e.apr_state,0) cd_nm,  --결재상태
+				  e.apr_state,  --결재상태 코드
+				  a.educ_cd,  --교육종류
+				  a.duty_educ_complt,  --의무교육이수
+				  fun_xodxcommst_cd_nm(a.duty_educ_complt,0) duty_educ_complt_nm, --의무교육이수명
+				  a.oversea_open_yn, --해외개최
+				  a.educ_nm,  --교육명
+				  g.mngmt_item_2,  --교육 그룹명
+				  g.mngmt_item_1,  --교육 그룹코드
+				  a.educ_typ,
+				  fun_xodxcommst_cd_nm(a.educ_typ,0) educ_typ_nm, --교육유형 명
+				  g.cd_nm educ_cd_nm,
+				  a.educ_agncy,  --교육기관
+				  a.educ_amt,  --교육비
+				  a.accnt_no,  --계정번호
+				  a.accnt_cd,  --회계코드
+				  a.expns_cd,  --비용코드
+				  a.start_ymd,  --교육기간 시작일
+				  a.cls_ymd,  --교육기간 시작일
+				  a.educ_time,  --교육시간
+				  a.educ_contnt,  --주요교육내용
+				  a.attach_file_no, --첨부파일 
+				  a.rpt_req_no,    --보고신청번호
+				  a.rpt_educ_amt , --보고교육비
+				  a.rpt_req_ymd,  --보고신청일
+				  a.cust_satis_chart, -- 고객만족도
+				  a.othr_emp_rcmd, --타직원권장
+				  a.add_educ_need, --추가교육필요
+				  a.rpt_educ_contnt, --보고교육내용
+				  a.rpt_attach_file_no, --결과보고첨부파일번호
+				  i.accnt_no_nm,
+				  j.expns_cd_nm,
+				  a.ctrl_no,
+				  a.req_no, 
+				 k.apr_state rpt_apr_state,
+				 fun_xodxcommst_cd_nm(k.apr_state,0) rpt_apr_state_nm,  --결재상태
+				 accnt_rspns,
+				 bugt_ctrl_psn,
+				 fun_emp_nm(bugt_ctrl_psn) as bugt_ctrl_psn_nm,
+				 biztrip_req_no,
+				a.is_online
+				 FROM 
+				  humapyeduc a, --교육훈련신청
+				  humbasicinfo b, --인사기본정보 
+				  xomxintfatab e, --결재
+				  xodxcommst g, --공통코드(교육종류)
+				 OUTER resbgacctm i,
+				 OUTER xodfexpns j,
+				 OUTER xomxintfatab k 
+				 WHERE
+				  a.req_no = #{req_no}
+				  AND a.syspayno = b.syspayno
+				  AND a.req_no = e.req_no
+				  AND a.educ_cd = g.cd
+				  AND e.state_inform_flag = '1'
+				  AND NVL(a.accnt_no,'') = NVL(i.accnt_no,'')
+				  AND NVL(a.expns_cd,'') = NVL(j.expns_cd,'')
+				  AND a.rpt_req_no = k.req_no
+				  AND k.state_inform_flag = '1'
+			</select>
+			
+			<select id="selectApyTrainBasicInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+				SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectApyTrainBasicInfo */ 
+				 a.nm,
+				 a.empno,
+				 a.dept_new_ymd,
+				 a.dept_cd,
+				 a.posi_cd,
+				 a.job_cd,
+				 b.dept_nm,
+				 c.posi_nm,
+				 a.entr_ymd,
+				 a.resid_no,
+				 a.syspayno
+				FROM
+				 humbasicinfo a,
+				 xodhdeptinfo b,
+				 xodhposiinfo c
+				WHERE
+				 a.dept_cd = b.dept_cd
+				 AND a.dept_new_ymd = b.dept_new_ymd
+				 AND a.posi_cd = c.posi_cd
+				 AND a.syspayno = #{syspayno}
+			</select>
+			
+			<select id="selectHumApyEducpacp" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyEduCpacpVo">
+				SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyEducpacp */ 
+				 a.syspayno,
+				 a.req_no,
+				 a.dept_cd,
+				 a.dept_new_ymd,
+				 fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm,
+				 fun_emp_nm(a.syspayno) AS nm,
+				 fun_emp_no(a.syspayno) AS empno,
+				 a.posi_cd,
+				 fun_posi_nm(a.posi_cd) AS posi_nm,
+				 a.job_cd,
+				 a.educ_amt,
+				 a.start_ymd,
+				 a.cls_ymd,
+				 TRIM(TO_CHAR(TO_date(a.start_ymd,'%Y%m%d'),'%Y-%m-%d') || '~' || TO_CHAR(TO_date(a.cls_ymd,'%Y%m%d'),'%Y-%m-%d')) AS educ_ymd,
+				 a.educ_time,
+				 a.educ_contnt,
+				 a.rpt_educ_amt,
+				 a.attend_yn
+				,CASE WHEN  t.sumamt <![CDATA[ > ]]> 500000 THEN '초과' ELSE '' END AS sumamtstr
+				FROM humapyeducpacp a
+				LEFT JOIN (
+				SELECT SUM(educ_amt) AS sumamt, amt_year, t10.syspayno, t11.nm, t11.empno
+				 FROM ( SELECT t1.educ_amt, SUBSTR(t1.cls_ymd,0,4) AS amt_year , t1.syspayno 
+				              FROM humapyeducpacp t1
+				              INNER JOIN humapyeduc t2 ON t2.req_no = t1.req_no
+				              INNER JOIN (SELECT accnt_no FROM resbgacctm WHERE accnt_clsf IN ('FAK003', 'FAK004')) t3 ON t3.accnt_no = t2.accnt_no              
+				              WHERE SUBSTR(t1.cls_ymd,0,4) = TO_CHAR(CURRENT, '%Y')
+				              AND t2.educ_typ = 'HDY010'
+				              AND t2.educ_cd IN ('HDZ040','HDZ041')
+				                ) t10
+				INNER JOIN humbasicinfo t11 ON t10.syspayno = t11.syspayno
+				GROUP BY t10.amt_year, t10.syspayno, t11.nm, t11.empno
+				) t ON a.syspayno = t.syspayno
+				WHERE
+				 a.req_no = #{req_no}
+		 </select>
+		 
+		 <select id="selectEduAmt" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+			SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectEduAmt */ 
+					 SUM(educ_amt) AS sumamt
+					 , amt_year
+					 , t10.syspayno
+					 , t11.nm
+					 , t11.empno
+			 FROM ( SELECT t1.educ_amt, SUBSTR(t1.cls_ymd,0,4) AS amt_year , t1.syspayno 
+			              FROM humapyeducpacp t1
+			              INNER JOIN humapyeduc t2 ON t2.req_no = t1.req_no
+			              INNER JOIN (SELECT accnt_no FROM resbgacctm WHERE accnt_clsf IN ('FAK003', 'FAK004')) t3 ON t3.accnt_no = t2.accnt_no
+			              INNER JOIN xomxintfatab t4 ON t4.req_no = t1.req_no AND t4.apr_state = 'XAD100'
+			              WHERE t1.syspayno IN (#{syspaynos})
+			              AND SUBSTR(t1.cls_ymd,0,4) = #{cls_ymd}
+			              AND t2.educ_typ = 'HDY010'
+			              AND t2.educ_cd IN ('HDZ040','HDZ041')) t10
+			INNER JOIN humbasicinfo t11 ON t10.syspayno = t11.syspayno
+			GROUP BY t10.amt_year, t10.syspayno, t11.nm, t11.empno
+		</select>
+		
+		 <insert id="insertHumApyEducSI01" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+				INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyEducSI01 */ 
+						 INTO humapyeduc 
+				(
+				  req_no   , --신청번호          
+				   req_ymd  , --신청일            
+				   syspayno  , --시스템개인번호    
+				   dept_cd  , --부서코드          
+				   dept_new_ymd  , --부서신설일        
+				   educ_cd  , --교육코드   
+				   educ_typ,       
+				   duty_educ_complt , --의무교육이수      
+				   educ_nm  , --교육명            
+				   educ_agncy  , --교육기관          
+				   oversea_open_yn , --해외개최여부      
+				   educ_amt  , --교육금액          
+				   accnt_no  , --계정번호          
+				   expns_cd  , --비용코드 
+				   accnt_cd  ,         
+				   start_ymd  , --시작일            
+				   cls_ymd  , --종료일            
+				   educ_time  , --교육시간          
+				   educ_contnt  , --교육내용          
+				   attach_file_no  , --첨부파일번호      
+				   regst_syspayno  , --등록시스템개인번호
+				   regst_daytm,   --등록일시
+				   is_online /*교육형태(온.오프라인) */
+				)VALUES(
+				 #{req_no}  , --신청번호          
+				  #{req_ymd}  , --신청일            
+				  #{syspayno}  , --시스템개인번호    
+				  #{dept_cd}  , --부서코드          
+				  #{dept_new_ymd}  , --부서신설일        
+				  #{educ_cd}  , --교육코드   
+				  #{educ_typ}  , --교육타입       
+				  #{duty_educ_complt}  , --의무교육이수      
+				  #{educ_nm}  , --교육명            
+				  #{educ_agncy}  , --교육기관          
+				  #{oversea_open_yn}  , --해외개최여부      
+				  #{educ_amt}  , --교육금액          
+				  #{accnt_no}  , --계정번호          
+				  #{expns_cd}  , --비용코드     
+				  #{accnt_cd}  , --회계코드     
+				  #{start_ymd}  , --시작일            
+				  #{cls_ymd}  , --종료일            
+				  #{educ_time}  , --교육시간          
+				  #{educ_contnt}  , --교육내용          
+				  #{attach_file_no}  , --첨부파일번호      
+				  #{regst_syspayno}  , --등록시스템개인번호
+				  CURRENT,   --등록일시
+				  #{is_online}   /*교육형태(온.오프라인) */
+				)
+		 </insert>
+		 
+		 <select id="selectHumApyEduCpacpSS02" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo" resultType="int">
+			select /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyEduCpacpSS02 */ 
+				 count(*) cnt from humapyeducpacp  
+			where req_no = #{req_no}
+			  and syspayno  = #{syspayno}
+		 </select>
+		 
+		  <insert id="insertHumApyEduCpacpSI01" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+			INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyEduCpacpSI01 */ 
+					 INTO humapyeducpacp(
+			 req_no   , --신청번호          
+			   syspayno  , --시스템개인번호    
+			   dept_cd  , --부서코드          
+			   dept_new_ymd  , --부서신설일 
+			   posi_cd  , --직급코드          
+			   duty_cd  , --직책코드   
+			   job_cd   , --직무코드     
+			   educ_amt  , --교육금액       
+			   rpt_educ_amt  , --신청금액   
+			   start_ymd  , --시작일            
+			   cls_ymd  , --종료일    
+			   educ_time  , --교육시간          
+			   educ_contnt  , --교육내용          
+			   attend_yn  , --참석여부
+			   regst_syspayno  , --등록시스템개인번호  
+			   regst_daytm   --등록일시                 
+			)VALUES(
+			  #{req_no}  , --신청번호          
+			   #{syspayno}  , --시스템개인번호    
+			   #{dept_cd}  , --부서코드          
+			   #{dept_new_ymd}  , --부서신설일 
+			   #{posi_cd}  , --직급코드          
+			   #{duty_cd}  , --직책코드   
+			   #{job_cd}  , --직무코드     
+			   #{educ_amt}  , --교육금액     
+			   #{rpt_educ_amt}  , --신청금액     
+			   #{start_ymd}  , --시작일            
+			   #{cls_ymd}  , --종료일    
+			   #{educ_time}  , --교육시간          
+			   #{educ_contnt}  , --교육내용          
+			   #{attend_yn}  , --참석여부
+			   #{regst_syspayno}  , --등록시스템개인번호  
+			   current  --등록일시 
+			)
+		</insert>
+		
+		<update id="updateHumApyEduCpacpSU01" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+			UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyEduCpacpSU01 */ 
+					 humapyeducpacp SET  
+			   updt_syspayno = #{updt_syspayno} , --등록시스템개인번호  
+			   updt_daytm = CURRENT   --등록일시      
+			   <if test="educ_amt != null and educ_amt != ''">
+				 , educ_amt  = #{educ_amt}
+			</if>
+			   <if test="start_ymd != null and start_ymd != ''">
+				 , start_ymd = #{start_ymd}
+			</if>
+			   <if test="cls_ymd != null and cls_ymd != ''">
+				 , cls_ymd = #{cls_ymd}
+			</if>
+			   <if test="educ_time != null and educ_time != ''">
+				 , educ_time = #{educ_time}
+			</if>
+			   <if test="educ_contnt != null and educ_contnt != ''">
+				 , educ_contnt = #{educ_contnt}
+			</if>
+			   <if test="rpt_req_no != null and rpt_req_no != ''">
+				 , rpt_req_no = #{rpt_req_no}
+			</if>
+			   <if test="rpt_educ_amt != null and rpt_educ_amt != ''">
+				 , rpt_educ_amt = #{rpt_educ_amt}
+			</if> 
+			   <if test="rpt_educ_contnt != null and rpt_educ_contnt != ''">
+				 , rpt_educ_contnt = #{rpt_educ_contnt}
+			</if>     
+			   <if test="attend_yn != null and attend_yn != ''">
+				 , attend_yn = #{attend_yn}
+			</if>     
+			WHERE
+			    1=1
+			        <if test="req_no != null and req_no != ''">
+				 AND req_no = #{req_no}
+			</if>     
+			        <if test="syspayno != null and syspayno != ''">
+				 AND syspayno  = #{syspayno}
+			</if>
+		</update>
+		
+		<update id="updateHumApyEducSI01" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+			UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyEducSI01 */ 
+					 humapyeduc SET
+			    educ_cd   = #{educ_cd}, --교육코드          
+			   duty_educ_complt  = #{duty_educ_complt}, --의무교육이수      
+			   educ_nm   = #{educ_nm}, --교육명            
+			   educ_agncy   = #{educ_agncy}, --교육기관          
+			   oversea_open_yn  = #{oversea_open_yn}, --해외개최여부      
+			   educ_amt   = #{educ_amt}, --교육금액          
+			   accnt_no   = #{accnt_no}, --계정번호
+			   accnt_cd   = #{accnt_cd}, -- 회계코드       
+			   expns_cd   = #{expns_cd}, --비용코드  
+			   educ_typ = #{educ_typ},        
+			   start_ymd   = #{start_ymd}, --시작일            
+			   cls_ymd   = #{cls_ymd}, --종료일            
+			   educ_time   = #{educ_time}, --교육시간          
+			   educ_contnt   = #{educ_contnt}, --교육내용          
+			   attach_file_no   = #{attach_file_no}, --첨부파일번호    
+			   updt_syspayno  = #{updt_syspayno},  --수정시스템개인번호
+			   updt_daytm = SYSDATE, --수정일시     
+			   is_online   = #{is_online} /*교육형태(온.오프라인) */
+			WHERE req_no = #{req_no}
+		</update>
+		
+		<delete id="deleteHumApyEduc" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+			DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyEduc */ 
+					 FROM humapyeduc WHERE req_no = #{req_no}
+		</delete>
+		
+		<delete id="deleteHumApyEduCpacp" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+			DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyEduCpacp */ 
+					 FROM humapyeducpacp  
+			WHERE req_no = #{req_no}
+			AND syspayno IN 
+			<foreach item="item" index="index" collection="syspayno.split(',')" open="(" separator="," close=")">${item}</foreach>
+		</delete>
+		
+		 <update id="updateHumApyEduc" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEducVo">
+			UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyEduc */ 
+					 humapyeduc SET    
+			   educ_amt   = #{educ_amt}, --교육금액          
+			   updt_syspayno  = #{updt_syspayno},  --수정시스템개인번호
+			   updt_daytm = current --수정일시     
+			WHERE
+			    req_no = #{req_no}
+		 </update>
+		 
+		  <select id="selectHumApyEduCpacpSS03" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduCpacpVo" resultType="int">
+			SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyEduCpacpSS03 */ 
+					 count(*) AS cnt 
+			FROM humapyeducpacp  
+			WHERE req_no = #{req_no}
+			AND syspayno = (select syspayno from humbasicinfo where empno = #{empno})
+		 </select>
+		 
+		  <insert id="insertHumApyEduCpacpSI02" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduCpacpVo">
+			INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyEduCpacpSI02 */ 
+					 INTO humapyeducpacp(
+			 req_no,  --신청번호
+			 syspayno,  --시스템개인번호
+			 dept_cd,  --부서코드
+			 dept_new_ymd, --부서신설일
+			 posi_cd,  --직급코드
+			 duty_cd,  --직책코드
+			 job_cd,  --직무코드
+			 educ_amt,  --교육금액
+			 rpt_educ_amt, --신청금액
+			 start_ymd,  --시작일
+			 cls_ymd,  --종료일
+			 educ_time,  --교육시간
+			 attend_yn, -- 참석여부
+			 educ_contnt, --교육내용
+			 regst_syspayno, --등록시스템개인번호
+			 regst_daytm --등록일시
+			)VALUES(
+			  #{req_no}, --신청번호
+			  (select syspayno from humbasicinfo where empno = #{empno}), --시스템개인번호
+			  (select dept_cd from humbasicinfo where empno = #{empno}), --부서코드
+			  (select dept_new_ymd from humbasicinfo where empno = #{empno}), --부서신설일
+			  (select posi_cd from humbasicinfo where empno = #{empno}), --직급코드
+			  (select duty_cd from humbasicinfo where empno = #{empno}), --직책코드
+			  (select job_cd from humbasicinfo where empno = #{empno}), --직무코드
+			  #{educ_amt}, --교육금액
+			  #{rpt_educ_amt}, --신청금액
+			  #{start_ymd}, --시작일
+			  #{cls_ymd}, --종료일
+			  #{educ_time}, --교육시간
+			  'Y',
+			  #{educ_contnt}, --교육내용
+			  #{regst_syspayno}, --등록시스템개인번호
+			  current  --등록일시 
+			)
+		</insert>
+		
+	<update id="updateHumApyEduCpacpSU02" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduCpacpVo">
+			UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyEduCpacpSU02 */ 
+					 humapyeducpacp SET  
+			 updt_syspayno = #{updt_syspayno} , --등록시스템개인번호  
+			 updt_daytm = CURRENT   --등록일시      
+			  <if test="educ_amt != null and educ_amt != ''">
+				 , educ_amt  = #{educ_amt}
+			</if>
+			  <if test="start_ymd != null and start_ymd != ''">
+				 , start_ymd = #{start_ymd}
+			</if>
+			  <if test="cls_ymd != null and cls_ymd != ''">
+				 , cls_ymd = #{cls_ymd}
+			</if>
+			  <if test="educ_time != null and educ_time != ''">
+				 , educ_time = #{educ_time}
+			</if>
+			  <if test="educ_contnt != null and educ_contnt != ''">
+				 , educ_contnt = #{educ_contnt}
+			</if>
+			  <if test="rpt_req_no != null and rpt_req_no != ''">
+				 , rpt_req_no = #{rpt_req_no}
+			</if>
+			  <if test="rpt_educ_amt != null and rpt_educ_amt != ''">
+				 , rpt_educ_amt = #{rpt_educ_amt}
+			</if> 
+			  <if test="rpt_educ_contnt != null and rpt_educ_contnt != ''">
+				 , rpt_educ_contnt = #{rpt_educ_contnt}
+			</if>     
+			WHERE req_no = #{req_no}
+			AND syspayno = (select syspayno from humbasicinfo where empno = #{empno})
+	</update>
+			  
+	<update id="updateHumApyEducSU05" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduCpacpVo">
+		UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyEducSU05 */ 
+				 humapyeduc 
+		SET educ_amt = (SELECT SUM(NVL(educ_amt,0)) FROM humapyeducpacp WHERE req_no = humapyeduc.req_no)
+		WHERE req_no = #{req_no}
+  	</update>
+</mapper>

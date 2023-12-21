@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="개인연차조회 팝업">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+					<w2:keyInfo>
+						<w2:key id="anal_yr" name="연도" dataType="text"></w2:key>
+						<w2:key id="syspayno" name="사번" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataMap baseNode="map" id="dma_cgsAnal">
+					<w2:keyInfo>
+						<w2:key id="anal_yr" name="연도" dataType="text"></w2:key>
+						<w2:key id="syspayno" name="개인번호" dataType="text"></w2:key>
+						<w2:key id="remidr_anal_qty" name="잔여연차일수" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty00" name="저축연차00" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty01" name="저축연차01" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty02" name="저축연차02" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty03" name="저축연차03" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty04" name="저축연차04" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty05" name="저축연차05" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty06" name="저축연차06" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty07" name="저축연차07" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty08" name="저축연차08" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty09" name="저축연차09" dataType="text"></w2:key>
+						<w2:key id="remidr_save_qty10" name="저축연차10" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataMap baseNode="map" id="dma_cgsInfo" style="">
+					<w2:keyInfo>
+						<w2:key dataType="text" id="req_no" name="신청번호"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr00" name="저축연차00"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr01" name="저축연차01"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr02" name="저축연차02"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr03" name="저축연차03"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr04" name="저축연차04"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr05" name="저축연차05"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr06" name="저축연차06"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr07" name="저축연차07"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr08" name="저축연차08"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr09" name="저축연차09"></w2:key>
+						<w2:key dataType="text" id="save_anal_yr10" name="저축연차10"></w2:key>
+						<w2:key id="cud_type" name="cud타입" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_analCnt" ref='data:json,dma_search' target='data:json,dma_cgsAnal' action="/SvcCCSCGSVACR05.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+				ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<xf:submission id="sbm_saveData" ref='data:json,dma_cgsInfo' target='' action="/SvcCCSCGSVACU02.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+				ev:submiterror="" abortTrigger="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+	 /****************************************************
+	 * 화면 설명 : 개인연차조회 팝업
+	 * 변경 이력 : 2022-09-02 이영희 최초생성
+	 ****************************************************/     
+	/**
+	 * 페이지 로딩 이벤트
+	 */         
+	scwin.onpageload = function() {
+		var param = com.getParameter();
+
+		var year = com.getServerDateTime("yyyy");		
+		dma_search.set("anal_yr", year);
+		dma_search.set("syspayno", param.sysPayNo);
+		
+		dma_cgsInfo.set("req_no", param.reqNo);
+		dma_cgsInfo.set("cud_type", param.cud_type);
+		
+		if(param.aprState >= "XAD020"){
+			btn_confim.setDisabled(true);
+		}
+       	
+       	applCnt.setValue(param.iptHolidayDays); //신청일수 
+       	befApplCnt.setValue(param.txtBeforeRemain);//신청전잔여
+       	afterApplCnt.setValue(param.txtAfterRemain);//신청후잔여
+       	
+       	use_qty00.setValue(param.anal_yr00); //당해연차
+       	use_qty01.setValue(param.anal_yr01); //저축1년
+       	use_qty02.setValue(param.anal_yr02); //저축2년
+       	use_qty03.setValue(param.anal_yr03); //저축3년
+       	use_qty04.setValue(param.anal_yr04); //저축4년
+       	use_qty05.setValue(param.anal_yr05); //저축5년
+       	use_qty06.setValue(param.anal_yr06); //저축6년
+       	use_qty07.setValue(param.anal_yr07); //저축7년
+       	use_qty08.setValue(param.anal_yr08); //저축8년
+       	use_qty09.setValue(param.anal_yr09); //저축9년
+        use_qty10.setValue(param.anal_yr10); //저축10년
+       	
+       	anal_yr00.setValue(year + '년');
+       	anal_yr01.setValue(year - 1  + '년');
+       	anal_yr02.setValue(year - 2 + '년');
+       	anal_yr03.setValue(year - 3 + '년');
+       	anal_yr04.setValue(year - 4 + '년');
+       	anal_yr05.setValue(year - 5 + '년');
+       	anal_yr06.setValue(year - 6 + '년');
+       	anal_yr07.setValue(year - 7 + '년');
+       	anal_yr08.setValue(year - 8 + '년');
+       	anal_yr09.setValue(year - 9 + '년');
+       	anal_yr10.setValue(year - 10 + '년');       	
+       	
+       	// 현재 적용연차 구하기
+       	scwin.sumUseCnt();
+       	
+        	
+		/** 잔여 연차일수 조회 */		
+		com.execute(sbm_analCnt, {
+			successCallback : function(e) {
+				if (applCnt.getValue() != sumApplCnt.getValue()) {
+					if(cgsInfo.get("cud_type") == "C"){
+						scwin.initUseSet();  
+					}	
+				}
+			}
+		});
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	scwin.initUseSet = function() {
+		var calc_applcnt = applCnt.getValue(); //신청연차
+		for ( var i = 10; i >= 0 ; i --) {
+				var remidr_save_qty = 0; //잔여연차
+				var use_qty = 0; // 사용연차	
+				var document_use_id =  ( i == 9 ) ? use_qty09
+							  : ( i == 8 ) ? use_qty08
+							  : ( i == 7 ) ? use_qty07
+							  : ( i == 6 ) ? use_qty06
+							  : ( i == 5 ) ? use_qty05
+							  : ( i == 4 ) ? use_qty04
+							  : ( i == 3 ) ? use_qty03
+							  : ( i == 2 ) ? use_qty02
+							  : ( i == 1 ) ? use_qty01
+							  : use_qty00;
+				
+				if (i == 10){
+					remidr_save_qty = dma_cgsAnal.get("remidr_save_qty10");
+					
+					if(remidr_save_qty <= 0 ) {
+						use_qty10.setValue(0);
+					} else if(calc_applcnt > 0 ){
+					    use_qty = (remidr_save_qty - calc_applcnt) <= 0 ?  Math.floor(remidr_save_qty) : calc_applcnt ;
+						use_qty10.setValue(use_qty);
+					} else {
+						use_qty10.setValue(0);
+					}
+					calc_applcnt = calc_applcnt - use_qty;
+				} else {
+					remidr_save_qty = dma_cgsAnal.get("remidr_save_qty0"+i);
+					if(remidr_save_qty <= 0 ) {
+						document_use_id.setValue(0);
+					} else if(calc_applcnt > 0 ){
+					    use_qty = (remidr_save_qty - calc_applcnt) <= 0 ?  Math.floor(remidr_save_qty) : calc_applcnt ;
+						document_use_id.setValue(use_qty);
+					} else {
+						document_use_id.setValue(0);
+					}
+					calc_applcnt = calc_applcnt - use_qty;
+				}					
+		} // for end
+	};	
+	
+	/**
+	 * 사용연차 변경 이벤트
+	 */
+	scwin.use_qty_onviewchange = function(info) {		
+		scwin.sumUseCnt();
+	};
+	
+	/**
+	 * 현재 적용연차 구하기
+	 */  
+	scwin.sumUseCnt = function(){
+		sumApplCnt.setValue( Number(use_qty00.getValue()) + Number(use_qty01.getValue()) + Number(use_qty02.getValue()) + Number(use_qty03.getValue())
+       										 + Number(use_qty04.getValue()) + Number(use_qty05.getValue()) + Number(use_qty06.getValue()) + Number(use_qty07.getValue())
+       										 + Number(use_qty08.getValue()) + Number(use_qty09.getValue()) + Number(use_qty10.getValue()) );
+	}	
+	
+	/**
+	 * 저장 전 체크
+	 */  
+	scwin.preSave = function() {
+		if (Number(sumApplCnt.getValue()) != Number(applCnt.getValue())){
+			alert('사용연차 일수를 확인 해 주세요.');
+			return false;
+		}
+		
+		if (Number(remidr_qty00.getValue()) < Number(use_qty00.getValue())){
+			alert(anal_yr00.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty01.getValue()) < Number(use_qty01.getValue())){
+			alert(anal_yr01.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty02.getValue()) < Number(use_qty02.getValue())){
+			alert(anal_yr02.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty03.getValue()) < Number(use_qty03.getValue())){
+			alert(anal_yr03.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty04.getValue()) < Number(use_qty04.getValue())){
+			alert(anal_yr04.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty05.getValue()) < Number(use_qty05.getValue())){
+			alert(anal_yr05.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty06.getValue()) < Number(use_qty06.getValue())){
+			alert(anal_yr06.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty07.getValue()) < Number(use_qty07.getValue())){
+			alert(anal_yr07.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty08.getValue()) < Number(use_qty08.getValue())){
+			alert(anal_yr08.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty09.getValue()) < Number(use_qty09.getValue())){
+			alert(anal_yr09.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		if (Number(remidr_qty10.getValue()) < Number(use_qty10.getValue())){
+			alert(anal_yr10.getValue() + '잔여연차를 확인해주세요.');
+			return false;
+		}
+		return true;
+ 	};
+ 	
+ 	/**
+	 * 적용버튼 클릭 이벤트
+	 */ 
+	scwin.btn_confim_onclick = function(e) {
+		if(!scwin.preSave()) return;		
+		
+		if(dma_cgsInfo.get("cud_type") == "U"){
+			com.execute(sbm_saveData, {
+				successCallback : function(e){
+					com.closePopup(dma_cgsInfo.getJSON());
+				}
+			});
+		}else{
+			com.closePopup(dma_cgsInfo.getJSON());
+		}
+	};
+	
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group id="" class="pop_contents">
+			<xf:group class="titleSection pt0" id="" style="">
+				<xf:group class="le" id="">
+					<w2:textbox class="tit_tbl" id="" label="연차조회" style="" tagname="h3"></w2:textbox>
+					<w2:textbox label="현재적용연차 :" style="" tagname="span" class="ml20"></w2:textbox>
+					<w2:textbox class="" dataType="" displayFormat="" displayFormatter="" for="" id="sumApplCnt" localeRef="" ref="" style="" tagname="span" label="0">
+					</w2:textbox>
+				</xf:group>
+			</xf:group>
+			<xf:group class="w2tb tbl" id="" style="" tagname="table">
+				<w2:attributes>
+					<w2:summary></w2:summary>
+				</w2:attributes>
+				<xf:group tagname="caption"></xf:group>
+				<xf:group tagname="colgroup">
+					<xf:group style="width:12%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+					<xf:group style="width:8%;" tagname="col"></xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th li" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="년도" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="anal_yr00" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:textbox id="anal_yr01" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="anal_yr02" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:textbox id="anal_yr03" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:textbox id="anal_yr04" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="anal_yr05" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:textbox id="anal_yr06" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="anal_yr07" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:textbox id="anal_yr08" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="anal_yr09" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="th">
+						<w2:textbox id="anal_yr10" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th li" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="잔여연차" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="remidr_qty00" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty00" class="" dataType="number"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:textbox id="remidr_qty01" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty01" class=""></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="remidr_qty02" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty02" class=""></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:textbox id="remidr_qty03" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty03"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:textbox id="remidr_qty04" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty04"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="remidr_qty05" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty05"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:textbox id="remidr_qty06" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty06"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="remidr_qty07" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty07"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:textbox id="remidr_qty08" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty08"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="remidr_qty09" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty09"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:textbox id="remidr_qty10" label="000" style="" tagname="span" ref="data:dma_cgsAnal.remidr_save_qty10"></w2:textbox>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr" style="">
+					<xf:group class="w2tb_th li" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="사용연차" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:spinner buttonSize="30" id="use_qty00"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr00">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:spinner buttonSize="30" id="use_qty01" inputReadOnly="false"
+							min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr01">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:spinner buttonSize="30" id="use_qty02"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr02">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:spinner buttonSize="30" id="use_qty03"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr03">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:spinner buttonSize="30" id="use_qty04"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr04">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:spinner buttonSize="30" id="use_qty05"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr05">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:spinner buttonSize="30" id="use_qty06"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr06">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:spinner buttonSize="30" id="use_qty07"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr07">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:spinner buttonSize="30" id="use_qty08"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr08">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:spinner buttonSize="30" id="use_qty09"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr09">
+						</w2:spinner>
+					</xf:group>
+					<xf:group class="w2tb_td ri" style="" tagname="td">
+						<w2:spinner buttonSize="30" id="use_qty10"
+							inputReadOnly="false" min="0" skin="type1" style="position: relative;width: 60px;height: 22px;" ev:onviewchange="scwin.use_qty_onviewchange" ref="data:dma_cgsInfo.save_anal_yr10">
+						</w2:spinner>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr" style="">
+					<xf:group class="w2tb_th li" style="" tagname="td">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="신청전 잔여연차" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" style="" tagname="td">
+						<w2:attributes>
+							<w2:colspan>2</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<w2:textbox id="befApplCnt" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th ce" style="" tagname="td">
+						<w2:textbox id="" label="신청연차" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td ce" style="" tagname="td">
+						<w2:textbox id="applCnt" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th li" style="" tagname="td">
+						<w2:attributes>
+							<w2:colspan>2</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<w2:textbox id="" label="신청후 잔여연차" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="td" class="w2tb_td li">
+						<w2:attributes>
+							<w2:colspan>5</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<w2:textbox id="afterApplCnt" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group style="" id="" class="btnGroup">
+				<xf:group style="" id="" class="le"></xf:group>
+				<xf:group id="" class="ri">
+					<xf:trigger style="" id="btn_confim" type="button" class=" btn pro conf" ev:onclick="scwin.btn_confim_onclick">
+						<xf:label><![CDATA[적용]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class=" btn pro" id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+						<xf:label><![CDATA[닫기]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

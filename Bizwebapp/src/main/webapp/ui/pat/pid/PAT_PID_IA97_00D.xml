@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="IDS제출" meta_vertical_guides="" meta_horizontal_guides="">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <!-- IDS제출 단건 조회 -->
+			<xf:submission id="sbm_svcpatpidpatsr01"
+			         ref='data:json,dma_search'
+			         target='data:json,{"id":"dma_result","key":"patPidResCrtVo"}'
+			         action="SvcPATPIDPATSR01.pwkjson"
+			         ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+			
+			<!-- IDS 제출보고 검토 등록 (주발명자) -->
+			<xf:submission id="sbm_svcpatpidpatsu01"
+			         ref='data:json,dma_update'
+			         target=''
+			         action="SvcPATPIDPATSU01.pwkjson"
+			         ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+			         
+            <w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="ids_id" name="ids_id" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				
+				<w2:dataMap baseNode="map" id="dma_result">
+				  <w2:keyInfo>
+				       <w2:key id="rcpt_wri_nm" name="rcpt_wri_nm" dataType="text"></w2:key>
+				       <w2:key id="rcpt_daytm" name="rcpt_daytm" dataType="text"></w2:key>
+				       <w2:key id="rcpt_charg_psn_nm" name="rcpt_charg_psn_nm" dataType="text"></w2:key>
+				       <w2:key id="rcpt_psn_nm" name="rcpt_psn_nm" dataType="text"></w2:key>
+				       <w2:key id="rcpt_ids_date" name="rcpt_ids_date" dataType="text"></w2:key>
+				       <w2:key id="rcpt_comment" name="rcpt_comment" dataType="text"></w2:key>
+				       <w2:key id="rcpt_attach_file" name="rcpt_attach_file" dataType="text"></w2:key>
+				       <w2:key id="job_state_cd" name="job_state_cd" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				
+				<w2:dataMap baseNode="map" id="dma_update">
+				  <w2:keyInfo>
+				       <w2:key id="job_state_cd" name="job_state_cd" dataType="text"></w2:key>
+				       <w2:key id="eval_psn_syspayno" name="eval_psn_syspayno" dataType="text"></w2:key>
+				       <w2:key id="eval_daytm" name="eval_daytm" dataType="text"></w2:key>
+				       <w2:key id="eval_res_clsf" name="승인구분" dataType="text"></w2:key>
+				       <w2:key id="eval_service_scr" name="서비스 품질" dataType="text"></w2:key>
+				       <w2:key id="eval_result_scr" name="결과 만족도" dataType="text"></w2:key>
+				       <w2:key id="eval_comment" name="eval_comment" dataType="text"></w2:key>
+				       <w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+				       <w2:key id="mngmt_no" name="mngmt_no" dataType="text"></w2:key>
+				       <w2:key id="next_state_cd" name="next_state_cd" dataType="text"></w2:key>
+				       <w2:key id="syspayno" name="syspayno" dataType="text"></w2:key>
+				       <w2:key id="ref_key" name="ref_key" dataType="text"></w2:key>
+				       <w2:key id="updt_syspayno" name="updt_syspayno" dataType="text"></w2:key>
+				       <w2:key id="todo_auth" name="todo_auth" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+			scwin.GLOBAL_VARS = {
+				p_param: com.getParameter(),
+				revParam: {}
+			};
+			scwin.onpageload = function() {
+			
+				// 첨부파일 컴포넌트 초기화
+                com.file.init();			
+				
+				// 조회
+				WFRAME_PATBIBLIOGRAPHY.getWindow().scwin.selectBibliography(scwin.GLOBAL_VARS.p_param.mngmt_no);
+				scwin.search();
+				
+			};
+			
+			scwin.onpageunload = function() {
+				
+			};
+			
+			/*
+		     * 조회
+		     */
+			scwin.search = function(){
+				dma_search.set("ids_id", scwin.GLOBAL_VARS.p_param.ref_no);
+				com.execute(sbm_svcpatpidpatsr01, {
+					successCallback : function(e){
+						com.trimDataCollection(dma_result);
+						const fileNum = dma_result.get("rcpt_attach_file");
+						com.file.create(upload_A.getID(), {fileKey: fileNum ? fileNum : com.getLoginInfo('serviceId'), mode: 'view', target:"IPMS"});
+						eval_psn_syspaynm.setValue(com.getLoginInfo('cn'));
+						eval_daytm.setValue(com.getServerDateTime("yyyyMMdd"));
+					}
+				});
+			};
+			
+			scwin.validSaveData = function() {
+			
+				if(!com.validateData(dma_update,  [
+					{ id : "eval_res_clsf", mandatory : true },
+					{ id : "eval_result_scr", mandatory : true },
+					{ id : "eval_service_scr", mandatory : true },					
+				], false)) return;
+				
+				return true;
+								
+			};
+			
+			scwin.save = function() {
+				if (scwin.validSaveData()) {
+					com.confirm("message.xom.wq.017"/*저장 하시겠습니까?*/, function(ret) {
+						if(ret){
+							const sn = com.getLoginInfo('sn');
+						
+							dma_update.set("ids_id", scwin.GLOBAL_VARS.p_param.ref_no);
+							dma_update.set("req_no", scwin.GLOBAL_VARS.p_param.req_no);
+							dma_update.set("mngmt_no", scwin.GLOBAL_VARS.p_param.mngmt_no);
+							dma_update.set("job_state_cd", "P3119");
+							dma_update.set("eval_psn_syspayno", sn);
+							dma_update.set("updt_syspayno", sn);
+							dma_update.set("curr_state_cd", dma_update.get("job_state_cd"));
+							dma_update.set("next_state_cd", "P3119");
+							dma_update.set("todo_auth", "0");
+							dma_update.set("syspayno", sn);
+							dma_update.set("ref_key", scwin.GLOBAL_VARS.p_param.ref_no);
+							
+							com.execute(sbm_svcpatpidpatsu01, {
+								successCallback : function(e) {
+									com.alert("저장되었습니다.");
+									try {
+									    $p.parent().scwin.trigger_list_onclick();
+									} catch (error) {
+									    console.error("Error occurred:", error);
+									}
+									// $p.parent().scwin.trigger_list_onclick();
+								}
+							});
+						}
+					});
+				}
+			};
+			
+		
+	
+		]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pageWrap" id="" style="">
+    		<w2:wframe id="WFRAME_PATBIBLIOGRAPHY" src="/ui/pat/pcm/PAT_PCM_IF99_00D.xml"></w2:wframe>
+    		<xf:group class="titleSection" id="" style="">
+    			<w2:textbox class="tit_tbl" id="" label="보고내용" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:220px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:220px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="작성자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox ref="data:dma_result.rcpt_wri_nm" class="txt" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="입력일시" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox ref="data:dma_result.rcpt_daytm" class="txt" tagname="span"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="담당 변리사" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox ref="data:dma_result.rcpt_charg_psn_nm" class="txt" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="실무 담당자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox ref="data:dma_result.rcpt_psn_nm" class="txt" tagname="span"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="제출일" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<w2:textbox ref="data:dma_result.rcpt_ids_date" class="txt" tagname="span"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th"><w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes><w2:textbox id="" label="내용" style="" tagname="span"></w2:textbox></xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<w2:span ref="data:dma_result.rcpt_comment" class="multiline" escape="false" id=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="첨부" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:group id="upload_A" class="full" style="height:150px;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<w2:textbox class="tit_tbl" id="" label="검토 내용" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:220px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:220px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="확인자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox class="txt" id="eval_psn_syspaynm" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="확인일시" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox ref="data:dma_update.eval_daytm" class="txt" id="eval_daytm" tagname="span"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="승인구분" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:select1 ref="data:dma_update.eval_res_clsf" appearance="full" class="radioGroup" cols="" id="eval_res_clsf" renderType="radiogroup" rows=""
+    						selectedIndex="-1">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[승인]]></xf:label>
+    								<xf:value>0</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[미승인]]></xf:label>
+    								<xf:value>1</xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="결과만족도" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>1</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:select1 id="eval_result_scr" class="radioGroup block" ref="data:dma_update.eval_result_scr" appearance="full" renderType="radiogroup" rows=""
+    						selectedIndex="-1" >
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐⭐⭐⭐⭐]]></xf:label>
+    								<xf:value>5</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐⭐⭐⭐]]></xf:label>
+    								<xf:value>4</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐⭐⭐]]></xf:label>
+    								<xf:value>3</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐⭐]]></xf:label>
+    								<xf:value>2</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐]]></xf:label>
+    								<xf:value>1</xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes></w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="서비스 품질" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 id="eval_service_scr" class="radioGroup block" ref="data:dma_update.eval_service_scr"
+    					 appearance="full" renderType="radiogroup" rows="" selectedIndex="-1">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐⭐⭐⭐⭐]]></xf:label>
+    								<xf:value>5</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐⭐⭐⭐]]></xf:label>
+    								<xf:value>4</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐⭐⭐]]></xf:label>
+    								<xf:value>3</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐⭐]]></xf:label>
+    								<xf:value>2</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[⭐]]></xf:label>
+    								<xf:value>1</xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th"><w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes><w2:textbox id="" label="평가내용" style="" tagname="span"></w2:textbox></xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:textarea id="eval_comment" ref="data:dma_update.eval_comment" maxlength="133" style="height:80px;" title=""></xf:textarea>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="btnGroup" id="" style="">
+    			<xf:group class="le" id="" style=""></xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class=" btn pro conf" id="" style="" type="button" ev:onclick="scwin.save">
+    					<xf:label><![CDATA[확인]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ass.eqip">
+<!-- 연구시설장비비 집행요청 저장 -->
+<insert id="insertAssResEquipFeeReq" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo">
+INSERT INTO assresequipfeereq( /* kr.re.kitech.biz.ass.eqip.insertAssResEquipFeeReq */
+         req_no
+       , intgr_mngmt_unit
+       , accnt_no
+       , accnt_rspns
+       <if test='aset_no != null and aset_no != ""'> , aset_no </if>
+       , expns_cd
+       <if test='req_region != null and req_region != ""'> , req_region </if>
+       , req_amt
+       , req_ymd
+       , req_psn
+       , rmk
+       <if test='enfrc_ncsst != null and enfrc_ncsst != ""'> , enfrc_ncsst </if>
+       <if test='enfrc_use != null and enfrc_use != ""'> , enfrc_use </if>
+       <if test='attach_file_no != null and attach_file_no != ""'> , attach_file_no </if>
+       , enfrc_chk
+       , enfrc_chk2
+       , regst_syspayno
+       , regst_daytm
+  ) VALUES(
+         #{req_no} 
+       , #{intgr_mngmt_unit} 
+       , #{accnt_no}
+       , #{accnt_rspns} 
+       <if test='aset_no != null and aset_no != ""'>, #{aset_no} </if>
+       , #{expns_cd}
+       <if test='req_region != null and req_region != ""'>, #{req_region} </if>
+       , #{req_amt}
+       , #{req_ymd}
+       , #{req_psn} 
+       , #{rmk}
+       <if test='enfrc_ncsst != null and enfrc_ncsst != ""'>, #{enfrc_ncsst} </if>
+       <if test='enfrc_use != null and enfrc_use != ""'>, #{enfrc_use} </if>
+       <if test='attach_file_no != null and attach_file_no != ""'>, #{attach_file_no} </if>
+       , #{enfrc_chk} 
+       , #{enfrc_chk2}
+       , #{regst_syspayno} 
+       , CURRENT
+   )
+</insert>
+<!-- 연구시설장비비 집행요청 삭제-->
+<delete id="deleteAssResEquipFeeReq" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo">
+/* kr.re.kitech.biz.ass.eqip.deleteAssResEquipFeeReq */
+DELETE assresequipfeereq 
+WHERE req_no = #{req_no}
+</delete>
+<!-- 연구시설장비비 집행요청 수정 -->
+<update id="updateAssResEquipFeeReq" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo">
+UPDATE assresequipfeereq  /* kr.re.kitech.biz.ass.eqip.updateAssResEquipFeeReq */
+   SET intgr_mngmt_unit = #{intgr_mngmt_unit}
+      <if test='accnt_no != null and accnt_no != ""'> , accnt_no = #{accnt_no} </if>
+      <if test='accnt_rspns != null and accnt_rspns != ""'> , accnt_rspns = #{accnt_rspns} </if>
+      <if test='aset_no != null and aset_no != ""'> , aset_no = #{aset_no} </if>
+      <if test='expns_cd != null and expns_cd != ""'> , expns_cd = #{expns_cd} </if>
+      <if test='req_region != null and req_region != ""'> , req_region = #{req_region} </if>
+      <if test='req_amt != null and req_amt != 0'> , req_amt = #{req_amt} </if>
+      <if test='rmk != null and rmk != ""'> , rmk = #{rmk} </if>
+      <if test='enfrc_ncsst != null and enfrc_ncsst != ""'> , enfrc_ncsst = #{enfrc_ncsst} </if>
+      <if test='enfrc_use != null and enfrc_use != ""'> , enfrc_use = #{enfrc_use} </if>
+      <if test='attach_file_no != null and attach_file_no != ""'> , attach_file_no = #{attach_file_no} </if>      
+      , enfrc_chk = #{enfrc_chk}
+      , enfrc_chk2 = #{enfrc_chk2}
+      <if test='rvew_ymd != null and rvew_ymd != ""'> , rvew_ymd = #{rvew_ymd} </if>
+      <if test='rvew_rst_cd != null and rvew_rst_cd != ""'> , rvew_rst_cd = #{rvew_rst_cd} </if>
+      <if test='appr_amt != null and appr_amt != ""'> , appr_amt = #{appr_amt} </if>
+      <if test='rmk_2 != null and rmk_2 != ""'> , rmk_2 = #{rmk_2} </if>
+      <if test='rst_attach_file_no != null and rst_attach_file_no != ""'> , rst_attach_file_no = #{rst_attach_file_no} </if>
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm = CURRENT
+ WHERE req_no = #{req_no}
+</update>
+<select id="selectAssResEquipFeeReq" resultType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo">
+/* QueryID : kr.re.kitech.biz.ass.eqip.selectAssResEquipFeeReq 연구장비시설집행요청 단건 조회 */ 
+SELECT a.req_no
+     , a.intgr_mngmt_unit
+     , fun_xodxcommst_cd_nm(a.intgr_mngmt_unit, 0) AS intgr_mngmt_unit_nm
+     , a.accnt_no
+     , a.accnt_rspns
+     , b.nm AS accnt_rspns_nm
+     , b.empno AS accnt_rspns_empno
+     , r.accnt_no_nm
+     , a.enfrc_ncsst   -- 연구시설장비비 집행의 필요성
+     , a.enfrc_use  -- 해당 연구시설장비의 활용성
+     , a.aset_no
+     , a.expns_cd
+     , CASE WHEN a.expns_cd = '431' THEN '이전/설치'
+     		WHEN a.expns_cd = '262' THEN '임차/사용'
+     		ELSE '유지/보수' END AS expns_cd_nm
+     , a.req_amt
+     , a.req_region
+     , fun_xodxcommst_cd_nm(a.req_region, 0) AS req_region_nm
+     , a.req_psn
+     , a.req_ymd
+     , a.rmk
+     , h.empno
+     , h.nm
+     , a.attach_file_no
+     , a.enfrc_chk
+     , a.enfrc_chk2
+     , a.rvew_sbj  -- 심의명
+     , a.rvew_rst_cd
+     , a.appr_amt
+     , a.rvew_ymd
+     , a.rmk_2   -- 비고(특이사항)
+     , a.rst_attach_file_no
+     , c.intro_amt
+     , c.intro_ymd
+     , c.aset_nm as aset_kor_nm
+     , d.aset_eng_nm
+     , d.ntis_reg_no
+     , d.posi_addr
+     , TRIM(e.nm ||'('||e.empno ||')' ) AS user_nm
+     , TRIM(h2.nm ||'('||h2.empno||')' ) AS depthed_nm
+     , g.apr_state
+  FROM assresequipfeereq a
+  JOIN xomxintfatab g ON a.req_no = g.req_no
+  JOIN humbasicinfo b ON a.accnt_rspns = b.syspayno
+  JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+  JOIN humbasicinfo h ON a.req_psn = h.syspayno
+  JOIN assmastrh c ON a.aset_no = c.aset_no
+  JOIN assmastrtech d ON a.aset_no = d.aset_no
+  JOIN assmastrb f ON a.aset_no = f.aset_no
+  JOIN humbasicinfo e ON e.syspayno = f.user_syspayno
+  JOIN xodhdeptinfo x ON e.dept_cd = x.dept_cd AND e.dept_new_ymd = x.dept_new_ymd
+  LEFT JOIN humbasicinfo h2 ON x.depthed = h2.syspayno
+ WHERE a.req_no = #{req_no}
+</select>
+<!-- 연구시설장비비집행요청 목록조회 -->
+<select id="selectAssResEquipFeeReqList" resultType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo">
+/* XDA : kitech.ass.eqip.xda.AssResEquipFeeReqMS01 연구시설장비비 집행요청 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.ass.eqip.selectAssResEquipFeeReqList */ 
+		 a.req_no
+     , a.intgr_mngmt_unit
+     , a.accnt_no
+     , a.accnt_rspns
+     , b.nm AS accnt_rspns_nm
+     , b.empno AS accnt_rspns_empno
+     , b.sci_tech_regst_no
+     , r.accnt_no_nm
+     , a.expns_cd
+     , a.req_amt
+     , a.req_region
+     , a.req_psn
+     , a.req_ymd
+     , a.aset_no
+     , h.empno
+     , h.nm
+     , a.rvew_sbj  -- 심의명
+     , a.rvew_rst_cd
+     , a.appr_amt
+     , a.rvew_ymd
+     , d.aset_nm
+     , c.ntis_reg_no
+     , e.apr_state
+     , TRIM(h3.nm ||'('||h3.empno||')' ) AS user_nm
+     , TRIM(h2.nm ||'('||h2.empno||')' ) AS depthed_nm   
+     , ass.intro_ymd
+     , ass.intro_amt
+  FROM assresequipfeereq a
+  JOIN humbasicinfo b ON a.accnt_rspns = b.syspayno
+  JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+  JOIN humbasicinfo h ON a.req_psn = h.syspayno
+  JOIN assmastrb d ON a.aset_no = d.aset_no
+  JOIN assmastrh ass ON ass.aset_no = a.aset_no
+  JOIN assmastrtech c ON a.aset_no = c.aset_no
+  JOIN xomxintfatab e ON a.req_no = e.req_no
+  JOIN humbasicinfo h2 ON d.user_syspayno = h2.syspayno
+  JOIN xodhdeptinfo x ON h2.dept_cd = x.dept_cd AND h2.dept_new_ymd = x.dept_new_ymd
+  LEFT JOIN humbasicinfo h3 ON x.depthed = h3.syspayno
+ WHERE a.req_ymd LIKE #{req_yr}||'%'
+<if test="accnt_rspns != null and accnt_rspns != ''">
+AND r.accnt_rspns = #{accnt_rspns} OR a.accnt_rspns = #{accnt_rspns}
+</if>
+<if test="accnt_no != null and accnt_no != ''">
+AND a.accnt_no = #{accnt_no}
+</if>
+<if test="intgr_mngmt_unit != null and intgr_mngmt_unit != '' and intgr_mngmt_unit != 'all'">
+AND a.intgr_mngmt_unit = #{intgr_mngmt_unit}
+</if>
+ORDER BY a.req_no
+</select>
+<!-- 제우스장비번호 검색(내부장비) -->
+<select id="selectNtisRegNoList" resultType="kr.re.kitech.biz.ass.eqip.vo.NtisRegNoVo" parameterType="kr.re.kitech.biz.ass.eqip.vo.AssSearchVo">
+SELECT DISTINCT /* kr.re.kitech.biz.ass.eqip.selectNtisRegNoList */
+       t1.aset_no  /*자산번호*/
+     , t1.aset_nm  /*자산명*/
+     , t3.ntis_reg_no  /* zeus 장비번호*/
+     , h.nm   /*연구책임자 성명*/
+     , h.empno   /*연구책임자 개인번호*/
+     , t3.aset_eng_nm
+     , t1.intro_amt
+     , t1.intro_ymd
+     , t3.posi_addr
+     , t3.posi_addr_detls
+     , TRIM(h2.nm ||'('||h2.empno||')' ) AS user_nm  
+    , CASE WHEN r2.bsns_cd_inout IN ('RHA001', 'RHA002') THEN <![CDATA['R&D']]> ELSE <![CDATA[ '비R&D']]> END AS finnc /* 재원구분 */
+  FROM assmastrh t1
+  JOIN assmastrtech t3 ON t1.aset_no = t3.aset_no
+  JOIN assaccnt t4 ON t1.aset_no = t4.aset_no
+  JOIN resbgacctm r ON t4.accnt_no = r.accnt_no 
+  JOIN resinpmast r2 ON r.prj_no = r2.prj_no
+  JOIN humbasicinfo h ON r.accnt_rspns = h.syspayno
+  JOIN assmastrb t5 ON t5.aset_no = t1.aset_no
+  JOIN humbasicinfo h2 ON h2.syspayno = t5.user_syspayno
+  WHERE t3.ntis_reg_yn = 'Y'
+ <if test='syspayno != null and syspayno !=""'> AND r.accnt_rspns = #{syspayno} </if>
+ <if test='aset_no != null and aset_no !=""'> AND t1.aset_no LIKE #{aset_no}||'%' </if>
+ <if test='aset_nm != null and aset_nm !=""'> AND t1.aset_nm LIKE '%'||#{aset_nm}||'%' </if>
+  AND  r2.bsns_cd_inout IN ('RHA001', 'RHA002')
+  AND NVL(t3.ntis_reg_no, '') != ''
+  ORDER BY t1.aset_no DESC
+</select>
+<!-- 연구관리통합관리비 보유계정여부 검색 -->
+<select id="selectResEquipFeeAccnt" resultType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo">
+SELECT a.accnt_no ,
+        'P'||a.relat_no AS relat_no, 
+        a.accnt_cd, 
+        accnt_no||'(P'||a.relat_no||')' as accnt_no_p,
+        b.nm,
+        b.syspayno,
+        a.bugt_yr
+FROM bblbugtactrsltetc a JOIN humbasicinfo b
+ON a.relat_no = b.empno
+WHERE a.accnt_no = 'FF210001'
+AND a.bugt_yr = #{bugt_yr}
+AND b.syspayno = #{syspayno} 
+</select>
+
+<!-- 연구시설장비비 집행요청 수정 -->
+<update id="updateResEquipFeeMgt" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE resequipfeemgt  /* kr.re.kitech.biz.ass.eqip.updateResEquipFeeMgt */
+   SET add_lmt_amt = req_amt
+      , updt_syspayno = #{syspayno}
+      , updt_daytm = CURRENT
+ WHERE req_no = #{reqNo}
+</update>
+
+<!-- 연구관리통합관리비 한도금액 조회 -->
+<select id="selectResEquipFeeMgt" resultType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+SELECT /* kr.re.kitech.biz.ass.eqip.selectResEquipFeeMgt */
+		intgr_mngmt_unit						/* 통합관리단위 */
+		, relat_no								/* 통합게정개인번호 */
+		, accnt_no								/* 계정번호 */
+		, NVL(add_lmt_amt, req_amt) AS impt_amt	/* 승인한도금액 */
+FROM resequipfeemgt
+WHERE req_no = #{reqNo}
+</select>
+
+<!-- 연구관리통합관리비 기타예실 한도금액 추가 -->
+<update id="updateBblBugtActRsltEtc" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo">
+UPDATE bblbugtactrsltetc	/* kr.re.kitech.biz.ass.eqip.updateBblBugtActRsltEtc */
+   SET impt_amt = #{impt_amt}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+WHERE accnt_no = #{accnt_no}
+  AND (accnt_no != 'FF210001' OR relat_no = #{relat_no})
+</update>
+
+<select id="selectResbgacctm" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipLimitAmtVo" resultType="kr.re.kitech.biz.ass.eqip.vo.ResEquipLimitAmtVo">
+	SELECT a.accnt_no, a.accnt_rspns
+	  FROM resbgacctm a
+	  JOIN (SELECT divsn_dept
+	          FROM humbasicinfo x
+	          JOIN xodhdeptinfo y ON x.dept_cd = y.dept_cd AND x.dept_new_ymd = y.dept_new_ymd
+	         WHERE x.syspayno = #{syspayno}
+	       ) b ON a.mngmt_dept = b.divsn_dept
+	 WHERE a.accnt_no LIKE 'FF21%'
+	   AND a.accnt_no NOT IN ('FF210001', 'FF210002')
+</select>
+
+<!-- 연구장비 통합관리비 한도금액 조회 -->
+<select id="selectResEquipLimtAmt" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipLimitAmtVo" resultType="kr.re.kitech.biz.ass.eqip.vo.ResEquipLimitAmtVo">
+SELECT 	/* QueryID : kr.re.kitech.biz.ass.eqip.selectResEquipLimtAmt */
+       CAST(#{req_no} AS CHAR(12)) AS req_no
+     , CAST(#{intgr_mngmt_unit} AS CHAR(6)) AS intgr_mngmt_unit
+     , CAST(#{accnt_no} AS CHAR(8)) AS intgr_accnt_no
+     , CAST(#{relat_no} AS CHAR(6)) AS relat_no 
+     , e.distr_rt
+     , e.req_amt
+     , e.req_rt
+     , CASE WHEN NVL(b.impt_amt, 0) <![CDATA[>]]> 0 THEN NVL(b.impt_amt, 0) ELSE TO_NUMBER(a.mngmt_item_1) END AS accm_lmt_amt -- 한도금액
+     , NVL(c.accm_amt, 0) AS accm_totl_amt -- 적립총액
+     , NVL(d.enfrc_amt, 0) AS enfrc_amt
+     , (CASE WHEN NVL(b.impt_amt, 0) <![CDATA[>]]> 0 THEN NVL(b.impt_amt, 0) ELSE TO_NUMBER(a.mngmt_item_1) END) - NVL(c.accm_amt, 0) + NVL(d.enfrc_amt, 0) AS accm_ramt_amt
+ FROM xodxcommst a
+ LEFT JOIN ( SELECT DECODE(accnt_no, 'FF210001', 'RDK001', 'FF210002', 'RDK003', 'RDK002') AS intgr_mngmt_unit
+                  , SUM(NVL(impt_amt, 0)) AS impt_amt
+               FROM bblbugtactrsltetc
+              WHERE bugt_yr = TO_CHAR(CURRENT, '%Y')
+                AND accnt_no = #{accnt_no}
+                AND relat_no = #{relat_no}
+              GROUP BY 1
+      ) b ON a.cd = b.intgr_mngmt_unit
+  LEFT JOIN ( SELECT intgr_mngmt_unit
+                   , SUM(req_amt) AS accm_amt
+                FROM resequipfeemgt 
+               WHERE intgr_accnt_no = #{accnt_no}
+                 AND req_no <![CDATA[<>]]> #{req_no}
+                 AND relat_no = #{relat_no}
+               GROUP BY intgr_mngmt_unit
+    ) c ON a.cd = c.intgr_mngmt_unit
+  LEFT JOIN ( SELECT DECODE(accnt_no, 'FF210001', 'RDK001', 'FF210002', 'RDK003', 'RDK002') AS intgr_mngmt_unit
+                   , SUM(unslip_amt) AS enfrc_amt
+                FROM fspslipd 
+               WHERE accnt_no = #{accnt_no}
+                 AND (accnt_no != 'FF210001' OR ramt_mngmt_1 = #{relat_no})
+                 AND base_debit_cr = '1'
+               GROUP BY 1
+    ) d ON a.cd = d.intgr_mngmt_unit 
+  LEFT JOIN resequipfeemgt e ON e.req_no = #{req_no} AND a.cd = e.intgr_mngmt_unit
+ WHERE a.cd_clsf ='RDK'
+   AND a.use_ex = 'Y'
+   AND a.cd = #{intgr_mngmt_unit}
+</select>
+
+<!-- 연구관리 사업신청 연구장비통합관리 저장 -->
+<update id="mergeResEquipFeeMgt" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipLimitAmtVo">
+MERGE /* kr.re.kitech.biz.ass.eqip.mergeResEquipFeeMgt */
+  INTO resequipfeemgt AS a
+USING dual AS b ON 1=1 AND a.req_no = #{req_no} AND a.intgr_mngmt_unit = #{intgr_mngmt_unit}
+WHEN MATCHED THEN
+ UPDATE
+    SET req_amt = #{req_amt}
+      , req_rt = #{req_rt}
+      , req_amt_sum = #{req_amt_sum}
+      , distr_rt = #{distr_rt}
+      , accm_lmt_amt = #{accm_lmt_amt}
+      , accm_totl_amt = #{accm_totl_amt}
+      , intgr_accnt_no = #{intgr_accnt_no}
+      , relat_no = #{relat_no}
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm = CURRENT
+WHEN NOT MATCHED THEN
+ INSERT (
+         req_no
+       , intgr_mngmt_unit
+       , req_amt
+       , req_rt
+       , req_amt_sum
+       , distr_rt
+       , accm_lmt_amt
+       , accm_totl_amt
+       , intgr_accnt_no
+       , relat_no
+       , req_ymd
+       , regst_syspayno
+       , regst_daytm
+      )
+ VALUES (
+        #{req_no}
+      , #{intgr_mngmt_unit}
+      , #{req_amt}
+      , #{req_rt}
+      , #{req_amt_sum}
+      , #{distr_rt}
+      , #{accm_lmt_amt}
+      , #{accm_totl_amt}
+      , #{intgr_accnt_no}
+      , #{relat_no}
+      , TO_CHAR(CURRENT, '%Y%m%d')
+      , #{regst_syspayno}
+      , CURRENT
+    )
+</update>
+
+<!-- 사업신청 연구장비통합관리 삭제 -->
+<delete id="deleteResEquipFeeMgt" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.ass.eqip.deleteResEquipFeeMgt */
+ FROM resequipfeemgt
+WHERE req_no = #{req_no}
+</delete>
+
+<!-- 통합관리계정 변경이력 목록 조회 -->
+<select id="selectResBgAcctmHis" resultType="kr.re.kitech.biz.ass.eqip.vo.ResBgAcctmHisVo" parameterType="kr.re.kitech.biz.ass.eqip.vo.AssEquipSrcVo">
+SELECT DECODE(a.accnt_no, 'FF210001', 'RDK001', 'FF210002', 'RDK003', 'RDK002') AS intgr_mngmt_unit
+     , 'P'||NVL(b.relat_no, SUBSTR(a.accnt_no, 3, 6)) AS mngmt_no
+     , NVL(b.relat_no, SUBSTR(a.accnt_no, 3, 6)) AS relat_no
+     , a.accnt_no
+     , c.empno AS accnt_rspns_empno
+     , c.nm AS accnt_rspns_nm
+     , c.syspayno AS accnt_rspns
+     , a.accnt_no_nm
+     , NVL(e.accnt_state, a.accnt_state) AS accnt_state
+     , TRIM(DECODE(NVL(e.mngmt_dept, ''), '', a.mngmt_dept, e.mngmt_dept)) AS mngmt_dept
+     , TO_NUMBER(d.mngmt_item_1) + NVL(b.impt_amt, 0) AS accm_lmt_amt
+     , e.seq
+     , TO_CHAR(a.regst_daytm, '%Y%m%d') AS regst_ymd -- 등록일자
+     , e.chng_ymd -- 변경일자
+     , g.nm AS chng_psn
+     , e.attach_file_no
+     , h.syspayno AS bugt_ctrl_psn
+     , h.empno AS bugt_empno
+     , h.nm AS bugt_nm
+  FROM resbgacctm a
+  LEFT JOIN bblbugtactrsltetc b ON a.accnt_no = b.accnt_no AND b.bugt_yr = TO_CHAR(CURRENT, '%Y')
+  JOIN humbasicinfo c ON c.empno = DECODE(a.accnt_no, 'FF210001', b.relat_no, SUBSTR(a.accnt_rspns, 3, 6))
+  JOIN xodxcommst d ON d.cd_clsf ='RDK' AND d.cd = DECODE(a.accnt_no, 'FF210001', 'RDK001', 'FF210002', 'RDK003', 'RDK002')
+  LEFT JOIN resbgacctmhis e ON a.accnt_no = e.accnt_no AND e.relat_no = DECODE(a.accnt_no, 'FF210001', b.relat_no, SUBSTR(a.accnt_no, 3, 6))
+  LEFT JOIN xodrresman f ON c.dept_cd = f.dept_cd AND c.dept_new_ymd = f.dept_new_ymd
+  LEFT JOIN humbasicinfo g ON e.regst_syspayno = g.syspayno
+  LEFT JOIN humbasicinfo h ON h.syspayno = DECODE(a.accnt_no, 'FF210001', f.syspayno, e.bugt_ctrl_psn)
+ WHERE NVL(e.chng_ymd, TO_CHAR(CURRENT, '%Y%m%d')) BETWEEN #{from_ymd} AND #{to_ymd}
+  <if test='intgr_mngmt_unit != null and intgr_mngmt_unit !=""'> AND DECODE(a.accnt_no, 'FF210001', 'RDK001', 'FF210002', 'RDK003', 'RDK002') = #{intgr_mngmt_unit} </if>
+  <if test='accnt_no != null and accnt_no !=""'> AND a.accnt_no = #{accnt_no} </if>
+   AND a.accnt_no LIKE 'FF21%'
+  <if test='max_seq_yn != null and max_seq_yn =="Y"'> AND NVL(e.seq, 0) = (SELECT NVL(MAX(seq), 0) FROM resbgacctmhis WHERE accnt_no = e.accnt_no AND relat_no = e.relat_no) </if>
+ ORDER BY a.accnt_no, a.accnt_rspns, e.seq
+</select>
+
+<!-- 계정번호 변경 이력 저장 -->
+<update id="mergeResBgAcctmHis" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResBgAcctmHisVo">
+<selectKey keyProperty="seq" resultType="int" order="BEFORE">
+        SELECT NVL(MAX(seq), 0) FROM resbgacctmhis WHERE accnt_no = #{accnt_no}
+</selectKey>
+
+MERGE /* kr.re.kitech.biz.ass.eqip.mergeResBgAcctmHis */
+  INTO resbgacctmhis a
+USING dual b ON 1=1 AND a.accnt_no =#{accnt_no} AND a.accnt_rspns = #{accnt_rspns} AND a.bugt_ctrl_psn = #{bugt_ctrl_psn}
+WHEN MATCHED THEN
+ UPDATE
+    SET a.accnt_no_nm = #{accnt_no_nm}
+      , chng_ymd = TO_CHAR(CURRENT, '%Y%m%d')
+    <if test='attach_file_no != null'> , attach_file_no = #{attach_file_no} </if>
+    <if test='rmk != null'> , rmk = #{rmk} </if>
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm = SYSDATE
+
+WHEN NOT MATCHED THEN
+INSERT(
+        a.accnt_no
+      , a.seq
+      , a.relat_no
+      , a.intgr_mngmt_unit
+      , a.accnt_rspns
+      , a.bugt_ctrl_psn
+     <if test='accnt_clsf != null'> , a.accnt_clsf </if>
+     <if test='accnt_state != null'> , a.accnt_state </if>
+     <if test='accnt_no_nm != null'> , a.accnt_no_nm </if>
+     <if test='fin_bsns_clsf != null'> , a.fin_bsns_clsf </if>
+     <if test='start_ymd != null'> , a.start_ymd </if>
+     <if test='cls_ymd != null'> , a.cls_ymd </if>
+     <if test='ctrl_lmt_rt != null'> , a.ctrl_lmt_rt </if>
+     <if test='itm_solve_base != null'> , a.itm_solve_base </if>
+     <if test='tax_cd != null'> , a.tax_cd </if>
+     <if test='pbs_ex != null'> , a.pbs_ex </if>
+     <if test='card_use_ex != null'> , a.card_use_ex </if>
+     <if test='mngmt_dept != null'> , a.mngmt_dept </if>
+     <if test='fomat_unit != null'> , a.fomat_unit </if>
+     <if test='accnt_grp != null'> , a.accnt_grp </if>
+     <if test='usg_clsf != null'> , a.usg_clsf </if>
+     <if test='rmk != null'> , a.rmk </if>
+      , a.chng_ymd
+      , a.regst_syspayno
+      , a.regst_daytm
+ ) VALUES (
+        #{accnt_no}
+      , #{seq} +1
+      , #{relat_no}
+      , #{intgr_mngmt_unit}
+      , #{accnt_rspns}
+      , #{bugt_ctrl_psn}
+     <if test='accnt_clsf != null'> , #{accnt_clsf} </if>
+     <if test='accnt_state != null'> , #{accnt_state} </if>
+     <if test='accnt_no_nm != null'> , #{accnt_no_nm} </if>
+     <if test='fin_bsns_clsf != null'> , #{fin_bsns_clsf} </if>
+     <if test='start_ymd != null'> , #{start_ymd} </if>
+     <if test='cls_ymd != null'> , #{cls_ymd} </if>
+     <if test='ctrl_lmt_rt != null'> , #{ctrl_lmt_rt} </if>
+     <if test='itm_solve_base != null'> , #{itm_solve_base} </if>
+     <if test='tax_cd != null'> , #{tax_cd} </if>
+     <if test='pbs_ex != null'> , #{pbs_ex} </if>
+     <if test='card_use_ex != null'> , #{card_use_ex} </if>
+     <if test='mngmt_dept != null'> , #{mngmt_dept} </if>
+     <if test='fomat_unit != null'> , #{fomat_unit} </if>
+     <if test='accnt_grp != null'> , #{accnt_grp} </if>
+     <if test='usg_clsf != null'> , #{usg_clsf} </if>
+     <if test='rmk != null'> , #{rmk} </if>
+      , TO_CHAR(CURRENT, '%Y%m%d')
+      , #{regst_syspayno}
+      , SYSDATE
+  )
+</update>
+
+<!-- 통합계정변경이력 수정 후 계정마스터 수정 -->
+<update id="updateResBgAcctmPsn" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResBgAcctmHisVo">
+-- 자산관리 통합계정변경이력 수정 후 호출 (2021.11.11.)
+-- 2022.02.04. bugt_ctrl_psn 추가
+UPDATE /* kr.re.kitech.biz.ass.eqip.updateResBgAcctmPsn */
+       resbgacctm
+  SET accnt_rspns = #{accnt_rspns}
+    , bugt_ctrl_psn = #{bugt_ctrl_psn}
+    , mngmt_dept = #{mngmt_dept}
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = SYSDATE
+WHERE accnt_no = #{accnt_no}
+</update>
+</mapper>

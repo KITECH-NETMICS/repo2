@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="원인행위조회">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+			</w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/*
+     *  날짜 설정
+     */
+	var now = new Date();
+	var defalutday = gcm.date.formatDateTime(now, "yyyyMMddHHmm"); // yyyyMMddHHmm
+	var ymd = gcm.date.formatDateTime(now); // yyyyMMdd 
+	var yearMm = ymd.substr(0, 6); // yyyyMM
+	var inp_syspayno = "";
+        
+	scwin.onpageload = function() {
+		com.setEnterKeyEvent(grp_accnt_no_rspns, scwin.btn_search_hum_onclick);
+		com.setEnterKeyEvent(grp_accnt_no, scwin.btn_accnt_no_onclick);
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/*
+     *  사원번호 변경 이벤트
+     */
+	scwin.ibx_search_hum_onchange = function(info) {
+		if (this.getValue() == "") {
+			tb_nm.setValue("");
+			inp_syspayno = "";
+		}
+	};
+	
+	/*
+     *  사원검색 검색 버튼 클릭 이벤트
+     */
+	scwin.btn_search_hum_onclick = function(e) {
+		scwin.selectHumBtn(inp_empno.getValue());
+	};
+	
+	/*
+     *  직원검색 팝업 호출
+     */
+	scwin.selectHumBtn = function(empNo) {
+		var data = {
+			empno : empNo,
+			work_clsf : "HAG010",
+			ref_yn : (empNo == "")? "Y" : "N"
+		};
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			if (ret) {
+				inp_empno.setValue(ret.empno);
+				tb_nm.setValue(ret.nm);
+				inp_syspayno = ret.syspayno;
+			}
+		});
+	};
+	
+	/*
+     *  계정번호 변경 이벤트
+     */
+	scwin.ibx_accnt_no_onchange = function(info) {
+		if (this.getValue() == "") {
+			ibx_accnt_no_nm.setValue("");
+		}
+	};
+	
+	/*
+     *  계정번호 검색 버튼 클릭 이벤트
+     */
+	scwin.btn_accnt_no_onclick = function(e) {
+		var data = {
+			accnt_no : ibx_accnt_no.getValue(),
+			ref_yn : (ibx_accnt_no.getValue() == "")? "Y" : "N"
+		};
+		
+		com.pop.open(com.pop.TYPE.ACNNO, data, function(ret){
+			ibx_accnt_no.setValue(ret.accnt_no);
+			ibx_accnt_no_nm.setValue(ret.accnt_no_nm);
+		});
+	};
+	
+	scwin.btn_search_onclick = function(e) {
+		var ReqPsnEmpno = inp_empno.getValue().trim();
+		var ReqPsn = inp_syspayno;
+		var AccntNo = ibx_accnt_no.getValue().trim();
+		
+		if(ReqPsn.trim() == "") {
+			alert("계정책임자를 입력 해주세요.");
+			return;
+		}
+		
+		var node = "&accnt_no=" + AccntNo + "&req_psn=" + ReqPsn + "&req_psn_empno=" + ReqPsnEmpno;
+		var reportObj = {
+			ozrCode : "F318", // /kitech/fin/fin/leg/FinCauseDetlsSel.ozr
+			param : node
+		};
+		
+		com.oz.setOzWframe(wfm_ozReport, reportObj);
+	};
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="grp_search">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="조회조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:250px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:350px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="계정책임자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpSch" id="grp_accnt_no_rspns" style="width: 120px;">
+    								<xf:input adjustMaxLength="false" class="inp" ev:onchange="scwin.ibx_search_hum_onchange" id="inp_empno"
+    									maxlength="8" style="vertical-align:middle;" title="계정책임자">
+    								</xf:input>
+    								<xf:trigger class="btn" ev:onclick="scwin.btn_search_hum_onclick" id="btn_accnt_rspns" style=""
+    									title="계정번호 조회" type="button">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" disabled="true" id="tb_nm" style="width:90px;"
+    								title="계정책임자">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="계정번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpSch" id="grp_accnt_no" style="width: 120px;">
+    								<xf:input adjustMaxLength="false" allowChar="0-9A-Za-z" class="inp"
+    									ev:onchange="scwin.ibx_accnt_no_onchange" id="ibx_accnt_no" maxlength="8" style="vertical-align:middle;" title="계정번호">
+    								</xf:input>
+    								<xf:trigger class="btn" ev:onclick="scwin.btn_accnt_no_onclick" id="btn_trigger1" style=""
+    									title="계정번호 조회" type="button">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" disabled="true" id="ibx_accnt_no_nm" style="width:200px;"
+    								title="계정명">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>1</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_trigger2" style="" type="button">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" style="width: 102%;height: 75%;">
+    			<w2:wframe style="" id="wfm_ozReport"></w2:wframe>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

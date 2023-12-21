@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="메시지이력관리">
+    	<w2:type>DEFAULT</w2:type>
+    	<w2:buildDate />
+    	<xf:model>
+    		<xf:instance>
+    			<data xmlns="" />
+    		</xf:instance>
+    		<w2:dataCollection baseNode="map">
+    			<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+					  	<w2:key id="syspayno" name="syspayno" dataType="text"></w2:key>
+					  	<w2:key id="emp_no" name="emp_no" dataType="text"></w2:key>
+					  	<w2:key id="dept_cd" name="dept_cd" dataType="text"></w2:key>
+					  	<w2:key id="dept_nm" name="dept_nm" dataType="text"></w2:key>
+					  	<w2:key id="divsn_dept" name="divsn_dept" dataType="text"></w2:key>
+					  	<w2:key id="divsn_dept_nm" name="divsn_dept_nm" dataType="text"></w2:key>
+						<w2:key id="msg_type" name="msg_type" dataType="text"></w2:key>
+						<w2:key id="subject" name="subject" dataType="text"></w2:key>
+						<w2:key id="msg_body" name="msg_body" dataType="text"></w2:key>
+						<w2:key id="time" name="time" dataType="text"></w2:key>
+						<w2:key id="start_ymd" name="start_ymd" dataType="text"></w2:key>
+						<w2:key id="close_ymd" name="close_ymd" dataType="text"></w2:key>
+						<w2:key id="sys" name="sys" dataType="text"></w2:key>
+						<w2:key id="nm" name="nm" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+   				<w2:dataList baseNode="list" repeatNode="map" id="dlt_msglist" saveRemovedData="true">
+	   				<w2:columnInfo>
+						<w2:column id="seq_no" name="seq_no" dataType="text"></w2:column>
+						<w2:column id="nm" name="nm" dataType="text"></w2:column>
+						<w2:column id="empno" name="empno" dataType="text"></w2:column>
+						<w2:column id="syspayno" name="syspayno" dataType="text"></w2:column>
+						<w2:column id="is_success" name="is_success" dataType="text"></w2:column>
+						<w2:column id="cmid" name="cmid" dataType="text"></w2:column>
+						<w2:column id="msg_type" name="msg_type" dataType="text"></w2:column>
+						<w2:column id="dest_phone" name="dest_phone" dataType="text"></w2:column>
+						<w2:column id="dest_name" name="dest_name" dataType="text"></w2:column>
+						<w2:column id="dest_syspayno" name="dest_syspayno" dataType="text"></w2:column>
+						<w2:column id="send_time" name="send_time" dataType="text"></w2:column>
+						<w2:column id="send_phone" name="send_phone" dataType="text"></w2:column>
+						<w2:column id="send_name" name="send_name" dataType="text"></w2:column>
+						<w2:column id="send_syspayno" name="send_syspayno" dataType="text"></w2:column>
+						<w2:column id="business_yn" name="business_yn" dataType="text"></w2:column>
+						<w2:column id="subject" name="subject" dataType="text"></w2:column>
+						<w2:column id="msg_body" name="msg_body" dataType="text"></w2:column>
+						<w2:column id="template_code" name="template_code" dataType="text"></w2:column>
+						<w2:column id="re_type" name="re_type" dataType="text"></w2:column>
+	   				</w2:columnInfo>
+	   			</w2:dataList>
+    			
+    		</w2:dataCollection>
+    		<w2:workflowCollection></w2:workflowCollection>
+    		<xf:submission id="sbm_selectMessageList" ref='data:json,dma_search'
+    			target='data:json,{"id":"dlt_msglist","key":"MsgSendLogVoList"}' action="SvcCOMSMSMSGMR01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    	</xf:model>
+    	<script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		var sn = com.getLoginInfo('sn');
+		var empno = com.getLoginInfo('empno');
+		dma_search.set("emp_no", empno);
+		var today = gcm.date.getServerDateTime();
+		dma_search.set("close_ymd", today);
+		dma_search.set("start_ymd", today);
+		dma_search.set("time", "time");
+		
+		com.checkPeriod(start_ymd, cls_ymd);
+		
+		scwin.selectHumBtn();
+		//scwin.search();
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	scwin.search = function() {
+		// 목록 조회
+		com.execute(sbm_selectMessageList, {
+			successCallback : function(e) {
+				tbx_result.setValue(dlt_msglist.getTotalRow());
+			}
+		});
+	};
+	
+	scwin.btn_search_onclick = function() {
+		scwin.search();
+	};
+	
+	
+	scwin.btn_down_excel_onclick = function() {
+		if (dlt_outwork.getTotalRow() > 6000)
+		{
+			com.alert("6000건 이상");
+		} else {
+			var now = com.getServerDateTime("yyyyMMdd");
+			var name = '재택근무신청서_' + now + '.xlsx';
+			
+			var option = {
+				    fileName : name
+			};
+			com.downloadGridExcel(grd, option);
+		}
+	};
+	
+	scwin.selectHumBtn = function(data) {
+		// 버튼(img)으로 팝업함수 바로 호출 처음 변수에 아무것도 넣지 않으면 최초 서브미션도 실행 안함. 
+		data == "img" ? data = { empno : ""} : data = { empno : tb_empno.getValue(), nm : tb_empno.getValue(), work_clsf : "HAG010" };
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			dma_search.set("emp_no", ret.empno);
+			dma_search.set("nm", ret.nm);
+			dma_search.set("syspayno", ret.syspayno);
+			dma_search.set("dept_cd", ret.dept_cd);
+			dma_search.set("dept_nm", ret.dept_nm);
+			
+			if (com.getLoginInfo("uid").substring(0, 3) === 'eip') {
+				tb_divsn_dept.setValue("");
+				tb_divsn_dept_nm.setValue("");
+			}
+			else {
+				dma_search.set("divsn_dept", ret.divsn_dept);
+				dma_search.set("divsn_dept_nm", ret.divsn_dept_nm);
+			}
+		});
+	};
+	
+	scwin.tb_empno_onkeypress = function(e) {
+		if(event.keyCode == 13){
+			scwin.selectHumBtn();
+		}
+	};
+	
+	scwin.btn_search_hum_onclick = function(e) {
+		scwin.selectHumBtn("img");
+	};
+	
+	// 근무자 빈값일경우 이름, 시스템사번 데이터셋 초기화
+	scwin.tb_empno_onchange = function(info) {
+		if(info.newValue == "") {	
+			dma_search.set("nm", "");
+			dma_search.set("syspayno", "");
+		}
+	};
+	
+	scwin.grd_outwork_oncellclick = function(row, col, colId) {
+		if(colId === "msg_body") {
+			msgBoxWrap.show();
+			msgBoxContent.setValue(dlt_msglist.getCellData(row, "msg_body"));
+		}
+	};
+	
+	]]></script>
+   	<style><![CDATA[
+   		.data-w-comsmss00100d .font_red { 
+   			color : red;
+   		}
+   		
+   		.data-w-comsmss00100d .txt_sys {
+			display: inline-block;   		
+   		}
+   		.data-w-comsmss00100d .font_bold { font-weight : bold; }
+   		.data-w-comsmss00100d .fs12 { font-size : 12px;}
+   		.data-w-comsmss00100d .df_tit{padding:0 0 0 15px;font-size:12px;line-height:24px;font-weight:bold;background:url(/cm/images/sample/bg_df_tit_ico.png) no-repeat 0 7px}
+   		.data-w-comsmss00100d .searchSection{display: flex;min-height: 60px;}
+   		.data-w-comsmss00100d .btn-box{display: flex;align-items: flex-end;justify-content: center;}
+   		.data-w-comsmss00100d .btn.search{margin:5px 2px}
+   		.data-w-comsmss00100d .schbox{display:flex;flex-wrap: wrap;width:100% !important}
+   		.data-w-comsmss00100d .schboxDiv{display: flex;align-items: center;margin: 5px 0 5px 0;}
+   		.data-w-comsmss00100d .schboxDiv .label{font-weight: bold;font-size: 12px;height: 100%;display: inline-flex;align-items: center;text-align: right;margin-right: 5px;min-width: 60px;justify-content: flex-end;border: 0;}
+   	]]></style>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap data-w-comsmss00100d">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+
+    				<!-- 검색기간 -->
+    				<xf:group tagname="div" style="" class="schboxDiv">
+    					<w2:textbox tagname="p" class="label" label="검색기간"></w2:textbox>
+    					<xf:group tagname="p" id="" class="">
+    						<w2:inputCalendar footerDiv="false" rightAlign="false" focusOnDateSelect="false" style="" id="start_ymd"
+    							class="inpcal" renderDiv="true" calendarValueType="yearMonthDate" title="시작일" ref="data:dma_search.start_ymd">
+    						</w2:inputCalendar>
+    						<w2:textbox tagname="span" style="" id="" label="~" class="dash"></w2:textbox>
+    						<w2:inputCalendar footerDiv="false" rightAlign="false" focusOnDateSelect="false" style="" id="cls_ymd"
+    							class="inpcal" renderDiv="true" calendarValueType="yearMonthDate" title="종료일" ref="data:dma_search.close_ymd">
+    						</w2:inputCalendar>
+    					</xf:group>
+    				</xf:group>
+    				<!-- 검색기간 -->
+
+    				<!-- 알림유형 -->
+    				<xf:group tagname="div" style="" class="schboxDiv">
+    					<w2:textbox tagname="p" class="label" label="유형"></w2:textbox>
+    					<xf:group tagname="p" style="" class="">
+    						<xf:select1 ref="data:dma_search.msg_type" submenuSize="auto" appearance="minimal"
+    							disabledClass="w2selectbox_disabled" chooseOption="true" disabled="false" style="width:120px;" allOption="" id="selb_apr_state"
+    							visibleRowNum="10" class="sel" direction="auto" title="유형" chooseOptionLabel="-전체-">
+    							<xf:choices>
+    								<xf:item>
+    									<xf:label><![CDATA[SMS]]></xf:label>
+    									<xf:value>0</xf:value>
+    								</xf:item>
+    								<xf:item>
+    									<xf:label><![CDATA[MMS]]></xf:label>
+    									<xf:value>5</xf:value>
+    								</xf:item>
+    								<xf:item>
+    									<xf:label><![CDATA[알림톡]]></xf:label>
+    									<xf:value>6</xf:value>
+    								</xf:item>
+    							</xf:choices>
+    						</xf:select1>
+    					</xf:group>
+    				</xf:group>
+    				<!-- 알림유형 -->
+
+    				<!-- 제목검색 -->
+    				<xf:group tagname="div" style="" class="schboxDiv">
+    					<w2:textbox tagname="p" class="label" id="" label="제목"></w2:textbox>
+    					<xf:group tagname="p" style="" class="">
+    						<xf:input adjustMaxLength="false" style="width: 100px;" class="" title="제목검색" ref="data:dma_search.subject"></xf:input>
+    					</xf:group>
+    				</xf:group>
+    				<!-- 제목검색 -->
+
+    				<!-- 내용검색 -->
+    				<xf:group tagname="div" style="" class="schboxDiv">
+    					<w2:textbox tagname="p" class="label" label="내용"></w2:textbox>
+    					<xf:group tagname="p" style="" class="">
+    						<xf:input adjustMaxLength="false" style="width: 100px;" class="" title="내용검색" ref="data:dma_search.msg_body"></xf:input>
+    					</xf:group>
+    				</xf:group>
+    				<!-- 내용검색 -->
+
+    				<!-- 발신자 -->
+    				<xf:group tagname="div" style="" class="schboxDiv">
+    					<w2:textbox tagname="p" class="label" label="발신자"></w2:textbox>
+    					<xf:group tagname="p" style="" class="">
+    						<xf:group style="width: 120px;" id="" class="inpSch">
+    							<xf:input adjustMaxLength="false" style="" id="tb_empno" class="inp" title="발신자명"
+    								ev:onkeypress="scwin.tb_empno_onkeypress" ref="data:dma_search.emp_no" ev:onchange="scwin.tb_empno_onchange">
+    							</xf:input>
+    							<xf:trigger style="" id="btn_search_syspayno" type="button" class="btn" title="발신자 조회"
+    								ev:onclick="scwin.btn_search_hum_onclick">
+    								<xf:label><![CDATA[검색]]></xf:label>
+    							</xf:trigger>
+    						</xf:group>
+    						<xf:input adjustMaxLength="false" style="width: 150px;" id="tb_nm" class="inp" title="발신자 상세 "
+    							ref="data:dma_search.nm" disabled="true">
+    						</xf:input>
+    					</xf:group>
+    				</xf:group>
+    				<!-- 발신자 -->
+
+    			</xf:group>
+
+
+    			<!-- 버튼박스 -->
+    			<xf:group class="btn-box">
+
+    				<!-- 조회버튼 -->
+    				<xf:group tagname="div">
+    					<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+    						<xf:label><![CDATA[조회]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    				<!-- 조회버튼 -->
+
+    			</xf:group>
+    			<!-- 버튼박스 -->
+
+
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<xf:group class="le" id="" style="">
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_msglist" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd" visibleRowNum="20"
+    			class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_outwork_oncellclick" fixedRow="0"
+    			filterFocusMode="outfocus" sortEvent="onclick" sortable="true">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="60" inputType="text" style="height:28px;" id="column28" value="발신자" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px;" id="column7" value="사번" displayMode="label"></w2:column>
+    					<w2:column width="60" inputType="text" style="height:28px;" id="column5" value="발송" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column3" value="받는번호" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px;" id="column20" value="받는이름" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column29" value="제목" displayMode="label"></w2:column>
+    					<w2:column width="250" inputType="text" style="height:28px;" id="column27" value="내용" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px;" id="column25" value="보낸시간" displayMode="label"></w2:column>
+    					<w2:column width="30" inputType="text" style="height:28px;" id="column21" value="유형" displayMode="label"></w2:column>
+    					<w2:column width="30" inputType="text" style="height:28px;" id="column22" value="유형" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column inputType="text" id="nm" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" id="empno" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" id="is_success" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" id="dest_phone" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" id="dest_name" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" id="subject" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" id="msg_body" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" id="send_time" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" id="msg_type" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column inputType="text" id="business_yn" displayMode="label" readOnly="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    	<w2:floatingLayer title="메시지 내용" id="msgBoxWrap"
+    		style="display: none;width: 60%;height: 500px;position: absolute;left: 10%;top: 15%;z-index: 9999;">
+    		<xf:textarea id="msgBoxContent" style="width: 100%;height: 455px;margin: 5px 0;"></xf:textarea>
+    	</w2:floatingLayer>
+    </body>
+</html>

@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.pts">
+  <select id="selectPatPtsReeInvSS01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo" resultType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.ree.xda.PatPtsReeInvSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.pts.selectPatPtsReeInvSS01 */ 
+      spec.spec_id ref_id
+        , res.specres_id
+        , res.spec_sn
+        , spec.req_no
+        , spec.mngmt_no
+        , spec.job_state_cd
+        , pst.state_desc AS job_state_nm_detail
+        , fn_state_desc(spec.job_state_cd) job_state_nm
+        , spec.req_psn_syspayno
+        , fun_emp_nm(spec.req_psn_syspayno) req_psn_nm
+        , to_char(spec.req_daytm, '%Y%m%d') req_daytm
+        , spec.req_patofic_cd
+        , pof.patofic_nm AS req_patofic_nm
+        , spec.hope_patofic_charg_id
+        , fn_ofic_user_nm(spec.hope_patofic_charg_id) hope_patofic_charg_nm
+        , spec.req_due_date
+        , spec.req_comment::char(3000) req_comment
+        , spec.req_attach_file_no
+        , spec.rcpt_wri_id
+        , spec.rcpt_psn_id
+        , spec.rcpt_adm_id
+        , fn_ofic_user_nm(spec.rcpt_wri_id) rcpt_wri_nm
+        , fn_ofic_user_nm(spec.rcpt_psn_id) rcpt_psn_nm
+        , fn_ofic_user_nm(spec.rcpt_adm_id) rcpt_adm_nm
+        , to_char(spec.rcpt_daytm, '%Y%m%d') rcpt_daytm
+        , spec.rcpt_charg_psn_id
+        , fn_ofic_user_nm(spec.rcpt_charg_psn_id) charg_psn_nm
+        , spec.rcpt_patofic_mng_no
+        , res.rpt_wri_id
+        , res.rpt_psn_id
+        , res.rpt_charg_psn_id
+        , res.rpt_adm_id
+        , fn_ofic_user_nm(res.rpt_wri_id) rpt_wri_nm
+        , fn_ofic_user_nm(res.rpt_psn_id) rpt_psn_nm
+        , fn_ofic_user_nm(res.rpt_charg_psn_id) rpt_charg_psn_nm
+        , fn_ofic_user_nm(res.rpt_adm_id) rpt_adm_nm
+        , to_char(res.rpt_daytm, '%Y%m%d') rpt_daytm
+        , res.rpt_comment::char(3000) rpt_comment
+        , res.rpt_attach_file
+        , res.rpt_spec_attach_file
+        , res.eval_clsf
+        , case res.eval_clsf when '0' then '완료/평가'
+                              when '1' then '보완요청' end eval_clsf_nm
+        , res.eval_psn_syspayno
+        , case res.eval_clsf when '0' then fun_emp_nm(res.eval_psn_syspayno)
+                              when '1' then fun_emp_nm(res.rereq_psn_syspayno) end eval_psn_syspaynm
+        , case res.eval_clsf when '0' then to_char(res.eval_daytm, '%Y%m%d')
+                              when '1' then to_char(res.rereq_daytm, '%Y%m%d') end eval_daytm
+        , res.rereq_comment::char(3000) rereq_comment
+        , res.eval_result_scr
+        , res.eval_service_scr
+        , res.eval_comment::char(3000) eval_comment
+    FROM   patspec spec
+        LEFT JOIN patspecres res ON res.spec_id = spec.spec_id
+        AND    res.spec_sn = (SELECT MIN(spec_sn) FROM patspecres WHERE spec_id = spec.spec_id)
+        LEFT JOIN patstatecode pst ON pst.state_cd = spec.job_state_cd
+        LEFT JOIN patoffice pof ON pof.patofic_cd = spec.req_patofic_cd
+    WHERE  spec.spec_id = #{spec_id}
+    </select>
+  <update id="updatePatPtsReeInvSU01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.ree.xda.PatPtsReeInvSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pts.updatePatPtsReeInvSU01 */ 
+      patspecres
+    SET eval_psn_syspayno  = #{eval_psn_syspayno}
+      , eval_daytm         = CURRENT
+      , eval_result_scr    = #{eval_result_scr}
+      , eval_service_scr   = #{eval_service_scr}
+      , eval_comment       = #{eval_comment}
+      , eval_clsf          = #{eval_clsf}
+      , updt_syspayno      = #{updt_syspayno}
+      , updt_daytm         = CURRENT
+  WHERE specres_id         = #{specres_id}
+    </update>
+  <update id="updatePatPtsReeInvSU02" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.ree.xda.PatPtsReeInvSU02 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pts.updatePatPtsReeInvSU02 */ 
+      patspecres
+    SET rereq_psn_syspayno = #{psn_syspayno}
+      , rereq_daytm        = to_date(#{rereq_daytm}, '%Y%m%d')
+      , rereq_comment      = #{rereq_comment}
+      , rereq_attach_file  = #{rereq_attach_file}
+      , eval_clsf          = #{eval_clsf}
+      , updt_syspayno      = #{psn_syspayno}
+      , updt_daytm         = current
+  WHERE specres_id          = #{specres_id}
+    </update>
+  <insert id="insertPatPtsRecSI01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.rec.xda.PatPtsRecSI01 */
+  INSERT /* QueryID : kr.re.kitech.biz.pat.pts.insertPatPtsRecSI01 */ 
+      INTO patapp (app_id
+                      , req_no
+                      , mngmt_no
+                      , job_state_cd
+                      , regst_syspayno
+                      , regst_daytm)
+  VALUES (#{app_id}
+          , #{req_no}
+          , #{mngmt_no}
+          , 'P0500'
+          , #{regst_syspayno}
+          , CURRENT)
+    </insert>
+  <select id="selectPatPtsRecInvSS02" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo" resultType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.rec.xda.PatPtsRecInvSS02 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.pts.selectPatPtsRecInvSS02 */ 
+      spec.spec_id ref_id
+      , res.specres_id
+      , res.spec_sn
+      , spec.req_no
+      , spec.mngmt_no
+      , spec.job_state_cd
+      , pst.state_desc AS job_state_nm_detail
+      , fn_state_desc(spec.job_state_cd) job_state_nm
+      , spec.req_psn_syspayno
+      , fun_emp_nm(spec.req_psn_syspayno) req_psn_nm
+      , to_char(spec.req_daytm, '%Y%m%d') req_daytm
+      , spec.req_patofic_cd
+      , pof.patofic_nm AS patofic_nm
+      , spec.hope_patofic_charg_id
+      , fn_ofic_user_nm(spec.hope_patofic_charg_id) hope_patofic_charg_nm
+      , spec.req_due_date
+      , spec.req_comment
+      , spec.req_attach_file_no
+      , spec.rcpt_wri_id
+      , spec.rcpt_psn_id
+      , spec.rcpt_adm_id
+      , fn_ofic_user_nm(spec.rcpt_wri_id) rcpt_wri_nm
+      , fn_ofic_user_nm(spec.rcpt_psn_id) rcpt_psn_nm
+      , fn_ofic_user_nm(spec.rcpt_adm_id) rcpt_adm_nm
+      , to_char(spec.rcpt_daytm, '%Y%m%d') rcpt_daytm
+      , spec.rcpt_charg_psn_id
+      , fn_ofic_user_nm(spec.rcpt_charg_psn_id) charg_psn_nm
+      , spec.rcpt_patofic_mng_no
+      , res.rpt_wri_id
+      , res.rpt_charg_psn_id
+      , res.rpt_psn_id
+      , res.rpt_adm_id
+      , fn_ofic_user_nm(res.rpt_wri_id) rpt_wri_nm
+      , fn_ofic_user_nm(res.rpt_charg_psn_id) rpt_charg_psn_nm
+      , fn_ofic_user_nm(res.rpt_psn_id) rpt_psn_nm
+      , fn_ofic_user_nm(res.rpt_psn_id) rpt_adm_nm
+      , to_char(res.rpt_daytm, '%Y%m%d') rpt_daytm
+      , res.rpt_comment
+      , res.rpt_attach_file
+      , res.rpt_spec_attach_file
+      , res.rereq_psn_syspayno
+      , fun_emp_nm(res.rereq_psn_syspayno) rereq_psn_nm
+      , to_char(res.rereq_daytm, '%Y%m%d') rereq_daytm
+      , res.rereq_comment
+      , res.rercpt_wri_id
+      , res.rercpt_psn_id
+      , fn_ofic_user_nm(res.rercpt_wri_id) rercpt_wri_nm
+      , fn_ofic_user_nm(res.rercpt_psn_id) rercpt_psn_nm
+      , to_char(res.rercpt_daytm, '%Y%m%d') rercpt_daytm
+      , res.eval_psn_syspayno
+      , fun_emp_nm(res.eval_psn_syspayno) eval_psn_nm
+      , res.eval_service_scr
+      , res.eval_result_scr
+      , res.eval_comment
+      , ress.rereq_psn_syspayno re_rereq_psn_syspayno
+      , fun_emp_nm(ress.rereq_psn_syspayno) re_rereq_psn_nm
+      , to_char(ress.rereq_daytm, '%Y%m%d') re_rereq_daytm
+      , ress.rereq_comment AS re_rereq_comment
+      , ress.rercpt_wri_id re_rercpt_wri_id
+      , ress.rercpt_psn_id re_rercpt_psn_id
+      , fn_ofic_user_nm(ress.rercpt_wri_id) re_rercpt_wri_nm
+      , fn_ofic_user_nm(ress.rercpt_psn_id) re_rercpt_psn_nm
+      , to_char(ress.rercpt_daytm, '%Y%m%d') re_rercpt_daytm
+      , ress.eval_clsf re_eval_clsf
+      , case ress.eval_clsf when '0' then '완료/평가'
+                            when '1' then '보완요청' end re_eval_clsf_nm
+      , case res.eval_clsf when '0' then fun_emp_nm(res.eval_psn_syspayno)
+                            when '1' then fun_emp_nm(res.rereq_psn_syspayno) end eval_psn_syspaynm
+      , case res.eval_clsf when '0' then to_char(res.eval_daytm, '%Y%m%d')
+                            when '1' then to_char(res.rereq_daytm, '%Y%m%d') end eval_daytm
+      , res.eval_clsf
+      , case res.eval_clsf when '0' then '완료/평가'
+                            when '1' then '보완요청' end eval_clsf_nm
+      , fun_emp_nm(ress.rereq_psn_syspayno) re_rereq_psn_syspaynm
+  FROM   patspec spec
+        LEFT OUTER JOIN patspecres res ON res.spec_id = spec.spec_id
+          AND  res.spec_sn = (SELECT max(spec_sn) FROM patspecres WHERE spec_id = #{spec_id})
+        LEFT JOIN patspecres ress ON ress.spec_id = spec.spec_id 
+        AND  ress.spec_sn = res.spec_sn - 1
+        LEFT JOIN patstatecode pst ON pst.state_cd = spec.job_state_cd
+        LEFT JOIN patoffice pof ON pof.patofic_cd = spec.req_patofic_cd
+  WHERE spec.spec_id = #{spec_id}
+    </select>
+  <select id="selectPatPtsRecInvSS01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo" resultType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.rec.xda.PatPtsRecInvSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.pts.selectPatPtsRecInvSS01 */ 
+      spec.spec_id ref_id
+      , res.specres_id
+      , res.spec_sn
+      , spec.req_no
+      , spec.mngmt_no
+      , spec.job_state_cd
+      , pst.state_desc AS job_state_nm_detail
+      , fn_state_desc(spec.job_state_cd) job_state_nm
+      , spec.req_psn_syspayno
+      , fun_emp_nm(spec.req_psn_syspayno) req_psn_nm
+      , to_char(spec.req_daytm, '%Y%m%d') req_daytm
+      , spec.req_patofic_cd
+      , pof.patofic_nm AS patofic_nm
+      , spec.hope_patofic_charg_id
+      , fn_ofic_user_nm(spec.hope_patofic_charg_id) hope_patofic_charg_nm
+      , spec.req_due_date
+      , spec.req_comment
+      , spec.req_attach_file_no
+      , spec.rcpt_wri_id
+      , spec.rcpt_psn_id
+      , spec.rcpt_adm_id
+      , fn_ofic_user_nm(spec.rcpt_wri_id) rcpt_wri_nm
+      , fn_ofic_user_nm(spec.rcpt_psn_id) rcpt_psn_nm
+      , fn_ofic_user_nm(spec.rcpt_adm_id) rcpt_adm_nm
+      , to_char(spec.rcpt_daytm, '%Y%m%d') rcpt_daytm
+      , spec.rcpt_charg_psn_id
+      , fn_ofic_user_nm(spec.rcpt_charg_psn_id) charg_psn_nm
+      , spec.rcpt_patofic_mng_no
+      , res.rpt_wri_id
+      , res.rpt_charg_psn_id
+      , res.rpt_psn_id
+      , res.rpt_adm_id
+      , fn_ofic_user_nm(res.rpt_wri_id) rpt_wri_nm
+      , fn_ofic_user_nm(res.rpt_charg_psn_id) rpt_charg_psn_nm
+      , fn_ofic_user_nm(res.rpt_psn_id) rpt_psn_nm
+      , fn_ofic_user_nm(res.rpt_psn_id) rpt_adm_nm
+      , to_char(res.rpt_daytm, '%Y%m%d') rpt_daytm
+      , res.rpt_comment
+      , res.rpt_attach_file
+      , res.rpt_spec_attach_file
+      , res.rereq_psn_syspayno
+      , fun_emp_nm(res.rereq_psn_syspayno) rereq_psn_nm
+      , to_char(res.rereq_daytm, '%Y%m%d') rereq_daytm
+      , res.rereq_comment
+      , res.rereq_attach_file
+      , res.rercpt_wri_id
+      , res.rercpt_psn_id
+      , fn_ofic_user_nm(res.rercpt_wri_id) rercpt_wri_nm
+      , fn_ofic_user_nm(res.rercpt_psn_id) rercpt_psn_nm
+      , to_char(res.rercpt_daytm, '%Y%m%d') rercpt_daytm
+      , res.eval_psn_syspayno
+      , fun_emp_nm(res.eval_psn_syspayno) eval_psn_nm
+      , res.eval_service_scr
+      , res.eval_result_scr
+      , res.eval_comment
+      , ress.rereq_psn_syspayno re_rereq_psn_syspayno
+      , fun_emp_nm(ress.rereq_psn_syspayno) re_rereq_psn_nm
+      , to_char(ress.rereq_daytm, '%Y%m%d') re_rereq_daytm
+      , ress.rereq_comment AS re_rereq_comment
+      , ress.rereq_attach_file AS re_rereq_attach_file
+      , ress.rercpt_wri_id re_rercpt_wri_id
+      , ress.rercpt_psn_id re_rercpt_psn_id
+      , fn_ofic_user_nm(ress.rercpt_wri_id) re_rercpt_wri_nm
+      , fn_ofic_user_nm(ress.rercpt_psn_id) re_rercpt_psn_nm
+      , to_char(ress.rercpt_daytm, '%Y%m%d') re_rercpt_daytm
+      , ress.eval_clsf re_eval_clsf
+      , case ress.eval_clsf when '0' then '완료/평가'
+                            when '1' then '보완요청' end re_eval_clsf_nm
+      , case res.eval_clsf when '0' then fun_emp_nm(res.eval_psn_syspayno)
+                            when '1' then fun_emp_nm(res.rereq_psn_syspayno) end eval_psn_syspaynm
+      , case res.eval_clsf when '0' then to_char(res.eval_daytm, '%Y%m%d')
+                            when '1' then to_char(res.rereq_daytm, '%Y%m%d') end eval_daytm
+      , res.eval_clsf
+      , case res.eval_clsf when '0' then '완료/평가'
+                            when '1' then '보완요청' end eval_clsf_nm
+      , fun_emp_nm(ress.rereq_psn_syspayno) re_rereq_psn_syspaynm
+  FROM   patspec spec
+        LEFT JOIN patspecres res ON res.spec_id = spec.spec_id
+        LEFT JOIN patspecres ress ON ress.spec_id = spec.spec_id
+        AND    ress.spec_sn = (SELECT spec_sn-1 FROM patspecres WHERE specres_id = (SELECT specres_id FROM patspecres WHERE spec_id = #{spec_id} AND spec_sn = #{spec_sn}))
+        LEFT JOIN patstatecode pst ON pst.state_cd = spec.job_state_cd
+        LEFT JOIN patoffice pof ON pof.patofic_cd = spec.req_patofic_cd
+      WHERE res.specres_id = (SELECT specres_id FROM patspecres WHERE spec_id = #{spec_id} AND spec_sn = #{spec_sn})
+    </select>
+  <update id="updatePatPtsMasterSU01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.xda.PatPtsMasterSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pts.updatePatPtsMasterSU01 */ 
+      patmastr
+    SET state         = #{state}
+      , updt_syspayno = #{psn_syspayno}
+      , updt_daytm    = current
+  WHERE req_no        = #{req_no}
+    AND mngmt_no      = #{mngmt_no}
+    </update>
+  <update id="updatePatPtsSpcSU01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.xda.PatPtsSpcSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pts.updatePatPtsSpcSU01 */ 
+      patspec
+    SET job_state_cd  = #{state}
+      , updt_syspayno = #{psn_syspayno}
+      , updt_daytm    = current
+  WHERE spec_id = #{spec_id}
+    </update>
+  <update id="updatePatPtsSpcSU02" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.xda.PatPtsSpcSU02 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pts.updatePatPtsSpcSU02 */ 
+      patspec
+    SET job_state_cd  = #{job_state_cd}
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm    = CURRENT
+      , fnsh_daytm    = CURRENT
+  WHERE spec_id = #{spec_id}
+    </update>
+  <select id="selectPatPtsRecCntSS01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo" resultType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.rec.xda.PatPtsRecCntSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.pts.selectPatPtsRecCntSS01 */ 
+        CASE NVL(psr.spec_sn, '') WHEN '' THEN '의뢰'
+                                    ELSE  '보완요청(' || psr.spec_sn - 1 ||')' END AS spec_sn_nm
+        , NVL(psr.spec_sn, 0) spec_sn_cd
+    FROM patspec psc
+  LEFT JOIN patspecres psr ON psr.spec_id = psc.spec_id
+  WHERE psc.spec_id = #{spec_id}
+  ORDER BY 2
+    </select>
+  <select id="selectPatPtsReqInvSS01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo" resultType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.req.xda.PatPtsReqInvSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.pts.selectPatPtsReqInvSS01 */ 
+      psc.spec_id
+        , psc.mngmt_no
+        , fn_state_desc(psc.job_state_cd)  job_state_nm
+        , psc.job_state_cd
+        , pst.state_desc AS job_state_nm_dtl
+        , psc.req_psn_syspayno
+        , fun_emp_nm(psc.req_psn_syspayno)  req_psn_nm
+        , TO_CHAR(psc.req_daytm, '%Y%m%d') req_daytm
+        , psc.req_patofic_cd
+        , pof.patofic_nm AS req_patofic_nm
+        , fn_ofic_user_nm(psc.hope_patofic_charg_id) hope_patofic_charg_nm
+        , psc.hope_patofic_charg_id
+        , psc.req_due_date
+        , psc.req_comment
+        , trim(psc.req_attach_file_no) req_attach_file_no
+        , mst.dom_oversea_clsf
+        , ptmst.hope_patofic_cd AS patofic_cd
+        , ptmst.hope_patofic_nm AS patofic_nm
+        , ptmst.hope_patofic_charg_id AS patofic_charg_id
+        , ptmst.hope_patofic_charg_nm AS patofic_charg_nm
+    FROM PATMASTR mst
+  INNER JOIN patappmastr ptmst ON mst.req_no = ptmst.req_no
+  INNER JOIN PATSPEC psc ON psc.req_no = mst.req_no AND psc.mngmt_no = mst.mngmt_no
+  LEFT JOIN patstatecode pst ON pst.state_cd = psc.job_state_cd
+  LEFT JOIN patoffice pof ON pof.patofic_cd = psc.req_patofic_cd
+  LEFT JOIN patoffice pof2 ON pof2.patofic_cd = mst.patofic_cd
+  WHERE 1=1
+    AND psc.spec_id = #{spec_id}
+    </select>
+  <insert id="insertPatPtsReqSI01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.req.xda.PatPtsReqSI01 */
+  INSERT /* QueryID : kr.re.kitech.biz.pat.pts.insertPatPtsReqSI01 */ 
+      INTO PATSPEC (spec_id
+                      , req_no
+                      , mngmt_no
+                      , job_state_cd
+                      , req_psn_syspayno
+                      , req_daytm
+                      , req_patofic_cd
+                      , hope_patofic_charg_id
+                      , req_due_date
+                      , req_comment
+                      , req_attach_file_no
+                      , regst_syspayno
+                      , regst_daytm)
+  VALUES (#{spec_id}
+        , #{req_no}
+        , #{mngmt_no}
+        , 'P0411'
+        , #{req_psn_syspayno}
+        , CURRENT
+        , #{req_patofic_cd}
+        , #{hope_patofic_charg_id}
+        , #{req_due_date}
+        , #{req_comment}
+        , #{req_attach_file_no}
+        , #{psn_syspayno}
+        , CURRENT)
+    </insert>
+  <update id="updatePatPtsMasterSU02" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.xda.PatPtsMasterSU02 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pts.updatePatPtsMasterSU02 */ 
+      patmastr
+    SET state         = #{state}
+      , patofic_cd    = #{patofic_cd}
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm    = current
+  WHERE req_no        = #{req_no}
+    AND mngmt_no      = #{mngmt_no}
+    </update>
+  <update id="updatePatPtsReqSU01" parameterType="kr.re.kitech.biz.pat.pts.vo.PatPtsReeInvVo">
+  /* XDA : kitech.pat.pts.req.xda.PatPtsReqSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pts.updatePatPtsReqSU01 */ 
+      patspec
+    SET job_state_cd = #{job_state_cd}
+      , req_psn_syspayno = #{req_psn_syspayno}
+      , req_daytm = CURRENT
+      , req_patofic_cd = #{req_patofic_cd}
+      , hope_patofic_charg_id = #{hope_patofic_charg_id}
+      , req_due_date = #{req_due_date}
+      , req_comment = #{req_comment}
+      , req_attach_file_no = #{req_attach_file_no}
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm = CURRENT
+  WHERE spec_id = #{spec_id}
+    </update>
+</mapper>

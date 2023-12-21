@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.xom.core">
+
+    <insert id="insertAttach" parameterType="kr.re.kitech.biz.xom.core.vo.AttachVo">	
+        INSERT INTO XOMXCOMATTACHFILE   /* QueryID : kr.re.kitech.biz.xom.core.insertAttach */
+        ( 
+            ATTACH_FILE_NO
+            , SEQ
+            <if test="file_nm         != null"> , FILE_NM          </if>
+            <if test="extens_nm       != null"> , EXTENS_NM        </if>
+            <if test="file_size       != null"> , FILE_SIZE        </if>
+            <if test="path            != null"> , PATH             </if>
+            <if test="etc             != null"> , ETC              </if>
+            <if test="biz_tname       != null"> , BIZ_TNAME        </if>
+            <if test="biz_cname       != null"> , BIZ_CNAME        </if>
+            <if test="biz_knames      != null"> , BIZ_KNAMES       </if>
+            <if test="biz_kvalues     != null"> , BIZ_KVALUES      </if>
+            <if test="comm_yn         != null"> , COMM_YN          </if>
+            <if test="regst_syspayno  != null"> , REGST_SYS_PSN_NO   </if>
+        )
+        VALUES  
+        ( 
+            #{attach_file_no}
+            , #{seq}
+            <if test="file_nm         != null"> , #{file_nm}          </if>
+            <if test="extens_nm       != null"> , #{extens_nm}        </if>
+            <if test="file_size       != null"> , #{file_size}        </if>
+            <if test="path            != null"> , #{path}             </if>
+            <if test="etc             != null"> , #{etc}              </if>
+            <if test="biz_tname       != null"> , #{biz_tname}        </if>
+            <if test="biz_cname       != null"> , #{biz_cname}        </if>
+            <if test="biz_knames      != null"> , #{biz_knames}       </if>
+            <if test="biz_kvalues     != null"> , #{biz_kvalues}      </if>
+            <if test="regst_syspayno  != null"> , #{regst_syspayno}   </if> 
+        )          
+    </insert>	
+	
+    <update id="updateAttach" parameterType="kr.re.kitech.biz.xom.core.vo.AttachVo">
+        UPDATE XOMXCOMATTACHFILE    /* QueryID : kr.re.kitech.biz.xom.core.updateAttach */      
+      	  SET  
+               ATTACH_FILE_NO   = #{attach_file_no}  
+         	,  SEQ              = #{seq}
+            <if test="file_nm         != null"> , FILE_NM          = #{file_nm}          </if>
+            <if test="extens_nm       != null"> , EXTENS_NM        = #{extens_nm}        </if>
+            <if test="file_size       != null"> , FILE_SIZE        = #{file_size}        </if>
+            <if test="path            != null"> , PATH             = #{path}             </if>
+            <if test="etc             != null"> , ETC              = #{etc}              </if>
+            <if test="biz_tname       != null"> , BIZ_TNAME        = #{biz_tname}        </if>
+            <if test="biz_cname       != null"> , BIZ_CNAME        = #{biz_cname}        </if>
+            <if test="biz_knames      != null"> , BIZ_KNAMES       = #{biz_knames}       </if>
+            <if test="biz_kvalues     != null"> , BIZ_KVALUES      = #{biz_kvalues}      </if>
+        WHERE ATTACH_FILE_NO   = #{attach_file_no}  
+         AND SEQ               = #{seq}             
+    </update>
+    
+    <update id="updateAttachForValid" parameterType="java.util.List">
+    	/* QueryID : kr.re.kitech.biz.xom.core.updateAttachForValid */
+        UPDATE XOMXCOMATTACHFILE      
+      	  SET COMM_YN          = 'Y'
+        WHERE attach_file_no IN <foreach collection="list" item="item" open="(" separator="," close=")"> #{item} </foreach>
+    </update>
+	
+    <delete id="deleteAttach" parameterType="kr.re.kitech.biz.xom.core.vo.AttachVo">
+        DELETE FROM XOMXCOMATTACHFILE   /* QueryID : kr.re.kitech.biz.xom.core.deleteAttach */ 
+        WHERE ATTACH_FILE_NO   = #{attach_file_no}                    AND SEQ              = #{seq}
+    </delete>
+	
+    <select id="selectAttach" parameterType="kr.re.kitech.biz.xom.core.vo.AttachVo" resultType="kr.re.kitech.biz.xom.core.vo.AttachVo">	
+        SELECT     /* QueryID : kr.re.kitech.biz.xom.core.selectAttach */
+			   attach_file_no ,
+		       seq ,
+		       file_nm ,
+		       extens_nm ,
+		       file_nm||'.'||extens_nm AS orgFile,
+		       file_size ,
+		       path ,
+		       path||attach_file_no||seq AS attachFullPath,
+		       regst_sys_psn_no AS regst_syspayno,
+		       regst_daytm ,
+		       comm_yn,
+		       etc 
+        FROM xomxcomattachfile 
+        WHERE attach_file_no  = #{attach_file_no}  
+         AND seq              = #{seq}
+    </select>
+	
+    <select id="selectListAttach" parameterType="java.lang.String" resultType="kr.re.kitech.biz.xom.core.vo.AttachVo">
+		SELECT /* QueryID : kr.re.kitech.biz.xom.core.selectListAttach */
+			   attach_file_no ,
+		       seq ,
+		       file_nm ,
+		       extens_nm ,
+		       file_nm||'.'||extens_nm AS orgFile,
+		       file_size ,
+		       path ,
+		       path||attach_file_no||seq AS attachFullPath, 
+		       regst_sys_psn_no AS regst_syspayno,
+		       regst_daytm ,
+		       comm_yn,
+		       etc 
+		FROM xomxcomattachfile
+		WHERE attach_file_no = #{attach_file_no}
+    </select>
+
+	
+    <select id="selectListCountAttach" parameterType="kr.re.kitech.biz.xom.core.vo.AttachVo" resultType="long">
+         SELECT    /* QueryID : kr.re.kitech.biz.xom.core.selectListCountAttach */
+             COUNT(*) totcnt  		                  
+         FROM XOMXCOMATTACHFILE
+         WHERE  1=1    		
+            <if test="attach_file_no != null and attach_file_no != ''">
+                 AND ATTACH_FILE_NO like '%' || #{attach_file_no} || '%'
+            </if>
+    </select>
+
+
+    <select id="selectMaxSeq" parameterType="kr.re.kitech.biz.xom.core.vo.AttachVo" resultType="kr.re.kitech.biz.xom.core.vo.AttachVo">
+	    SELECT attach_file_no, CASE WHEN 10 > (CAST(MAX(seq) AS INTEGER) +1) THEN '0' ELSE '' END || (CAST(MAX(seq) AS INTEGER) +1) AS seq
+		FROM xomxcomattachfile
+		WHERE attach_file_no = #{attach_file_no}
+		GROUP BY 1				
+    </select>
+
+	<select id="selectEpuAttach" parameterType="kr.re.kitech.biz.xom.core.vo.AttachVo" resultType="kr.re.kitech.biz.xom.core.vo.AttachVo">
+		SELECT
+		          attach_file_no
+		        , seq
+		        , file_nm
+		        , extens_nm
+		        , file_nm || '.' || extens_nm as orgFile
+		        , file_size
+		        , file_path AS attachFullPath
+		        , regst_daytm
+		FROM epucomattachfile 
+		WHERE attach_file_no = #{attach_file_no}
+	    AND seq = #{seq}
+	</select>
+
+</mapper>

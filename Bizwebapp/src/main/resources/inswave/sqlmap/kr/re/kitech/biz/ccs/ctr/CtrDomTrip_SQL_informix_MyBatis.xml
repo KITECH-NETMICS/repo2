@@ -1,0 +1,982 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ccs.ctr">
+<!-- 출장신청 정보 조회 -->
+<select id="selectCtrDom" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomTripVo" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrDom */
+       a.req_no /* 신청번호 */
+     , a.req_psn_syspayno /* 신청자 */
+     , b.nm AS req_psn_nm
+     , b.empno AS req_psn_empno
+     , a.req_psn_dept_cd
+     , a.req_psn_dept_new_ymd
+     , c.dept_nm AS req_dept_nm
+     , c.fomat_unit
+     , a.req_ymd
+     , a.biztrip_region /* 출장지역 */
+     , a.biztrip_goal /* 출장목적*/
+     , a.biztrip_goal_clsf  /* 출장목적코드 */
+     , d.cd_nm AS biztrip_goal_clsf_nm
+     , a.car_req_no /* 차량신청번호*/
+     , a.biztrip_start_ymd /* 출장시작일자*/
+     , a.biztrip_cls_ymd /* 출장종료일자*/
+     , a.biztrip_nght /* 출장밤*/
+     , a.biztrip_day /* 출장낮*/
+     , a.car_use_yn
+     , a.notebook_out /* 노트북반출여부*/
+     , a.usb_out  /* USB 반출여부*/
+     , a.is_internal_region  /* 원내출장여부*/
+     , CASE WHEN TRIM(a.no_trvel_expns) = '' THEN 'N' ELSE a.no_trvel_expns END AS no_trvel_expns
+     , a.depart_base
+     , TRIM(a.attach_file_no) AS attach_file_no
+     , NVL(a.fare_fee, 0) AS fare_fee
+     , a.fare_fee_rmk
+     , NVL(a.ymd_fee, 0) AS ymd_fee
+     , a.ymd_fee_rmk
+     , NVL(a.card_meal, 0) AS card_meal
+     , NVL(a.lodg_fee, 0) AS lodg_fee
+     , a.lodg_fee_rmk
+     , CASE WHEN NVL(a.lodg_fee, 0)  = 0 THEN 'Y' ELSE '' END AS lodg_fee_chk
+     , NVL( a.meal_fee, 0) AS meal_fee
+     , a.meal_fee_rmk
+     , NVL( a.tot_expns, 0) AS tot_expns 
+     , NVL( a.tot_expns, 0) AS cu_tot_expns
+     , a.tot_expns_rmk
+     , TRIM(a.biztrip_way) AS biztrip_way
+     , x.apr_state
+     , 'U' AS cud_type
+  FROM ctrdom a 
+  JOIN humbasicinfo b ON a.req_psn_syspayno = b.syspayno
+  JOIN xodhdeptinfo c ON b.dept_cd = c.dept_cd AND b.dept_new_ymd = c.dept_new_ymd
+  JOIN xodxcommst d ON a.biztrip_goal_clsf = d.cd
+  LEFT JOIN xomxintfatab x ON a.req_no = x.req_no
+ WHERE a.req_no = #{req_no}
+</select>
+
+<!-- 기업현장출장시 방문처 조회 -->
+<select id="selectSptCtrBizTripVendList" resultType="kr.re.kitech.biz.ccs.ctr.vo.SptCtrBizTripVendVo" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectSptCtrBizTripVendList */
+       t1.req_no,
+       DECODE(t2.cust_no, NULL, t1.cust_no, t2.cust_no) AS cust_no,
+       DECODE(t2.cust_no, NULL, t1.cmpy_nm_krchar, t2.cmpy_nm_krchar)    AS cmpy_nm_krchar,
+       DECODE(t2.cust_no, NULL, t1.bsns_psn_regst_no, t2.bsns_psn_regst_no) AS bsns_psn_regst_no,
+       DECODE(t2.cust_no, NULL, t1.reprs_psn, t2.reprs_psn)     AS reprs_psn,
+       DECODE(t2.cust_no, NULL, t1.cmpy_addr, t2.cmpy_addr) AS cmpy_addr,
+       t1.cunsl_rcpt_no
+  FROM sptctrbiztripvend t1
+  LEFT JOIN sptcustbaseinfo t2 ON t1.cust_no = t2.cust_no
+ WHERE t1.req_no = #{req_no}
+</select>
+
+<!-- 국내출장 동반자 조회 -->
+<select id="selectCtrDomCompnList" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomCompnVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrDomCompnList */
+      a.req_no 
+     , a.req_seq
+     , a.biztrip_psn_clsf
+     , fun_xodxcommst_cd_nm(a.biztrip_psn_clsf, 0) AS biztrip_psn_clsf_nm
+     , a.biztrip_psn_syspayno
+     , b.empno AS biztrip_psn_empno
+     , b.posi_cd
+     , fun_posi_nm(b.posi_cd) AS posi_nm
+     , b.commute_cd
+     , a.biztrip_psn_nm
+     , a.biztrip_psn_dept_cd
+     , a.biztrip_psn_dept_new_ymd
+     , a.biztrip_dept_nm
+     , a.posi_clsf
+     , fun_xodxcommst_cd_nm(a.posi_clsf, 0) AS posi_clsf_nm
+     , a.agent_psn_syspayno
+     , fun_humbasicinfo_cd_nm(agent_psn_syspayno, 0) AS agent_nm
+     , fun_humbasicinfo_cd_nm(agent_psn_syspayno, 1) AS agent_empno
+     , b.email
+FROM ctrdomcompn a
+LEFT JOIN humbasicinfo b ON a.biztrip_psn_syspayno = b.syspayno
+WHERE a.req_no = #{req_no}
+ORDER BY a.biztrip_psn_clsf, a.req_seq
+</select>
+
+<!-- 국내출장  출장경로 조회-->
+<select id="selectCtrDomPathList" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomPathVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrDomPathList */
+      a.req_no
+    , a.odr
+    , a.start_region
+    , a.arriv_region
+    , a.rmk
+    , b.cd_nm AS start_region_nm   
+    , c.cd_nm AS arriv_region_nm  
+    , c.mngmt_no_1 AS lodg_fee_max
+  <if test='req_no != null and req_no.substring(0,3) == "C86"'>, CASE WHEN INSTR(a.rmk,'(') <![CDATA[ > ]]> 0 THEN TO_NUMBER(SUBSTR(a.rmk, 1, INSTR(a.rmk,'(')-1)) ELSE 0 END AS biztrip_fee </if>
+FROM ctrdompath a
+JOIN xodxcommst b ON a.start_region = b.cd AND b.cd_clsf ='FAU'
+JOIN xodxcommst c ON a.arriv_region = c.cd AND c.cd_clsf ='FAU'
+WHERE a.req_no = #{req_no}
+ORDER BY a.odr
+</select>
+
+<!-- 국내출장 경로 운임비 조회 -->
+<select id="selectCtrDomPathTripFee" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomPathVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrDomPathTripFee */
+       biztrip_fee
+     , <![CDATA[ TRIM(TO_CHAR(biztrip_fee, '<<<,<<<') || '(' || b.cd_nm || '→' || c.cd_nm || ')') ]]> AS rmk
+  FROM( SELECT NVL(CASE WHEN sb.start_region IN ('FAU001','FAU095') AND  sb.arriv_region IN ('FAU001','FAU095') THEN MIN(sa.biztrip_fee) /* 천안 아산 구간*/
+                    ELSE MAX(sa.biztrip_fee) END, 0) AS biztrip_fee
+        FROM (
+               SELECT (CASE WHEN #{posi_clsf} NOT IN ('FBG030', 'FBG090') AND spcial_fee >0 AND spcial_fee > public_fee THEN spcial_fee ELSE public_fee END) AS biztrip_fee
+                 FROM ctrfarefee
+                WHERE is_active
+                  AND start_cd = #{start_region}  -- 출발지
+                  AND arriv_cd = #{arriv_region}   -- 도착지
+                UNION
+               SELECT a.biztrip_fee
+                 FROM ctrbiztripfare AS a 
+                 JOIN xodxcommst b ON b.cd_clsf = 'FAT' AND b.mngmt_item_2 = #{start_region} AND a.start_region = b.cd
+                WHERE a.biztrip_expns_clsf = 'FAR001' -- 운임
+                  AND a.biztrip_clsf = 'FCA001'         -- 국내 
+                  AND a.grd_clsf = #{posi_clsf}        -- 출장직급 
+                  AND a.arriv_region = #{arriv_region}     -- 도착지
+                UNION
+               SELECT (CASE WHEN #{posi_clsf} NOT IN ('FBG030', 'FBG090') AND 0 <![CDATA[ < ]]> spcial_fee AND spcial_fee > public_fee THEN spcial_fee ELSE public_fee END) AS biztrip_fee
+                 FROM ctrfarefee
+                WHERE is_active
+                  AND start_cd = #{arriv_region}  -- 출발지 반대 (도착지)
+                  AND arriv_cd = #{start_region}   -- 도착지 반대 (출발지)
+                UNION
+               SELECT a.biztrip_fee
+                 FROM ctrbiztripfare AS a 
+                 JOIN xodxcommst b ON b.cd_clsf = 'FAT' AND b.mngmt_item_2 = #{arriv_region} AND a.start_region = b.cd
+                WHERE a.biztrip_expns_clsf = 'FAR001' -- 운임
+                  AND a.biztrip_clsf = 'FCA001'       -- 국내 
+                  AND a.grd_clsf = #{posi_clsf}       -- 출장직급  
+                  AND a.arriv_region = #{start_region}-- 도착지 반대 (출발지)
+            ) sa
+        JOIN (SELECT CAST(#{start_region} AS CHAR(6)) AS start_region
+                   , CAST(#{arriv_region} AS CHAR(6)) AS arriv_region
+                FROM dual
+             )sb ON 1=1
+      GROUP BY sb.start_region, sb.arriv_region
+     )a
+  JOIN xodxcommst b ON b.cd_clsf = 'FAU' AND b.cd = #{start_region}
+  JOIN xodxcommst c ON c.cd_clsf = 'FAU' AND c.cd = #{arriv_region}
+</select>
+
+<!-- 국내출장 활동내역 조회 -->
+<select id="selectCtrDomSchedList" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomSchedVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrDomSchedList */
+       req_no
+     , ord
+     , start_ymd 
+     , cls_ymd
+     , major_intrv_psn /*주요면담자 */
+     , major_intrv_tel /* 면담자연락처 */
+     , agncy_nm /*방문기관*/
+     , actn_detls /* 활동내역*/
+     , rmk    
+FROM ctrdomsched
+WHERE req_no = #{req_no}
+ORDER BY ord
+</select>
+
+<!-- 국내출장 계정내역 조회 -->
+<select id="selectCtrDomAccntList" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomAccntVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrDomAccntList */
+        a.req_no
+      , a.req_seq
+      , a.accnt_no
+      , a.accnt_respn_psn_syspayno
+      , h.nm AS accnt_rspns_nm
+      , h.empno AS accnt_rspns_empno
+      , a.accnt_cd
+      , a.expns_cd
+      , a.tot_expns
+      , a.tot_expns AS cu_tot_expns
+      , a.rmk
+      , a.bugt_ctrl_no
+      , a.bugt_ctrl_way
+      , b.prj_no
+      , b.accnt_state
+      , b.bugt_ctrl_psn
+      , c.nm AS bugt_ctrl_psn_nm
+      , b.accnt_no_nm
+      , b.mngmt_clsf
+      , b.card_use_ex
+      , fun_xodxcommst_cd_nm(b.tax_cd, 0) AS tax_cd_nm
+      , 'U' AS cud_type
+  FROM ctrdomaccnt a 
+  JOIN resbgacctm b ON b.accnt_no = a.accnt_no
+  JOIN humbasicinfo h ON b.accnt_rspns = h.syspayno
+  JOIN humbasicinfo c ON b.bugt_ctrl_psn = c.syspayno  
+ WHERE a.req_no = #{req_no}
+</select>
+
+<!--휴무일 내역 조회 -->
+<select id="selectCtrBizTripRstList" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrBizTripRstVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrBizTripRstList */
+       a.ymd AS biztrip_day
+     , a.day AS weekday
+     , a.day_no
+     , a.off_yn
+     , CASE WHEN a.off_rmk != '' THEN a.off_rmk || '(공휴일)'
+           WHEN a.day_no = 0 THEN '휴일'
+           WHEN a.day_no = 6 THEN '휴무일'
+           ELSE '' END AS day_clsf
+     , NVL(b.rest_cd, 'CTD030') AS rest_cd
+     , NVL(b.detls_scheads, '') AS detls_scheads
+     , NVL(b.rmk, '') AS rmk
+     , NVL(b.holiday_alt_day, '') AS holiday_alt_day
+     , a.off_rmk
+     , b.biztrip_syspayno AS biztrip_syspayno
+     , c.nm AS biztrip_nm
+     , c.empno AS biztrip_empno
+  FROM xomdtmst a
+  LEFT JOIN ctrbiztriprst b ON b.biztrip_day = a.ymd AND b.req_no = #{req_no}
+  LEFT JOIN humbasicinfo AS c ON b.biztrip_syspayno = c.syspayno
+ WHERE a.ymd BETWEEN #{from_ymd} AND #{to_ymd}
+   AND (a.day_no IN ('0', '6') OR a.off_rmk != '')
+ ORDER BY biztrip_syspayno,biztrip_day
+</select>
+
+<!-- 대체휴일 가능일 조회 -->
+<select id="selectXomDtMst" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo" resultType="kr.re.kitech.biz.com.vo.XomDtMstVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectXomDtMst */
+      ymd
+  FROM xomdtmst 
+ WHERE LEFT(ymd,6) = LEFT(#{from_ymd},6)
+   AND ymd <![CDATA[< ]]> #{from_ymd}
+   AND off_rmk = ''
+   AND day_no NOT IN ('0', '6')
+ UNION ALL
+SELECT ymd 
+  FROM (
+    SELECT FIRST 6 ymd
+    FROM xomdtmst 
+    WHERE ymd BETWEEN TO_CHAR(TO_DATE(#{to_ymd},'%Y%m%d') + 1 units day ,'%Y%m%d') 
+                  AND TO_CHAR(TO_DATE(#{to_ymd},'%Y%m%d') + 20 units day ,'%Y%m%d') 
+    AND off_rmk = ''
+    AND day_no NOT IN ('0', '6')
+      )
+ORDER BY 1
+</select>
+
+<!-- 기타경비 조회 -->
+<select id="selectCtrBizTripFee" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomFeeVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrBizTripFee */
+      b.mngmt_no_1 AS lodg_fee /* 숙박비 */
+    , MAX(DECODE(a.biztrip_expns_clsf, 'FAR002', TRUNC(a.biztrip_fee), 0)) AS ymd_fee  /* 일비*/
+    , MAX(DECODE(a.biztrip_expns_clsf, 'FAR004', TRUNC(a.biztrip_fee), 0)) AS meal_fee /* 식비*/
+  FROM ctrbiztripfare a
+  JOIN xodxcommst b ON cd = #{start_region} /* 최종출발지 */
+ WHERE a.biztrip_daycnt = 1
+   AND a.region_clsf = 'N'
+   AND a.start_region = 'N'
+   AND a.arriv_region = 'N'
+   AND a.biztrip_clsf = 'FCA001'
+   AND a.grd_clsf = #{posi_clsf} /* 출장자직급구분 */
+GROUP BY 1
+</select>
+
+<!-- 국내출장 입력 -->
+<insert id="insertCtrDom" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomTripVo">
+INSERT /* QueryID : kr.re.kitech.biz.ccs.ctr.insertCtrDom */
+  INTO ctrdom (
+               req_no
+             , req_psn_syspayno
+             , req_psn_dept_cd
+             , req_psn_dept_new_ymd
+             , req_ymd
+    <if test="is_internal_region   != null"> , is_internal_region    </if>
+    <if test="biztrip_region       != null"> , biztrip_region        </if>
+    <if test="biztrip_goal_clsf    != null"> , biztrip_goal_clsf     </if>
+    <if test="biztrip_goal         != null"> , biztrip_goal          </if>
+    <if test="start_region         != null"> , start_region          </if>
+    <if test="arriv_region         != null"> , arriv_region          </if>
+    <if test="biztrip_start_ymd    != null"> , biztrip_start_ymd     </if>
+    <if test="biztrip_cls_ymd      != null"> , biztrip_cls_ymd       </if>
+    <if test="biztrip_nght         != null"> , biztrip_nght          </if>
+    <if test="biztrip_day          != null"> , biztrip_day           </if>
+    <if test="card_meal            != null"> , card_meal             </if>
+    <if test="notebook_out         != null"> , notebook_out          </if>
+    <if test="usb_out              != null"> , usb_out               </if>
+    <if test="slip_prcs_state      != null"> , slip_prcs_state       </if>
+    <if test="biztrip_way          != null"> , biztrip_way           </if>
+    <if test="car_use_yn           != null"> , car_use_yn            </if>
+    <if test="fare_fee             != null"> , fare_fee              </if>
+    <if test="fare_fee_rmk         != null"> , fare_fee_rmk          </if>
+    <if test="lodg_fee             != null"> , lodg_fee              </if>
+    <if test="lodg_fee_rmk         != null"> , lodg_fee_rmk          </if>
+    <if test="ymd_fee              != null"> , ymd_fee               </if>
+    <if test="ymd_fee_rmk          != null"> , ymd_fee_rmk           </if>
+    <if test="meal_fee             != null"> , meal_fee              </if>
+    <if test="meal_fee_rmk         != null"> , meal_fee_rmk          </if>
+    <if test="tot_expns            != null"> , tot_expns             </if>
+    <if test="tot_expns_rmk        != null"> , tot_expns_rmk         </if>  
+    <if test="attach_file_no       != null"> , attach_file_no        </if>
+    <if test="no_trvel_expns       != null"> , no_trvel_expns        </if>
+    <if test="depart_base          != null"> , depart_base           </if>
+            , regst_psn_syspayno
+            , regst_daytm
+  )VALUES  (
+             #{req_no}
+           , #{req_psn_syspayno}
+           , #{req_psn_dept_cd}
+           , #{req_psn_dept_new_ymd}
+           , #{req_ymd}
+            <if test="is_internal_region   != null"> , #{is_internal_region}    </if>
+            <if test="biztrip_region       != null"> , #{biztrip_region}        </if>
+            <if test="biztrip_goal_clsf    != null"> , #{biztrip_goal_clsf}     </if>
+            <if test="biztrip_goal         != null"> , #{biztrip_goal}          </if>
+            <if test="start_region         != null"> , #{start_region}          </if>
+            <if test="arriv_region         != null"> , #{arriv_region}          </if>
+            <if test="biztrip_start_ymd    != null"> , #{biztrip_start_ymd}     </if>
+            <if test="biztrip_cls_ymd      != null"> , #{biztrip_cls_ymd}       </if>
+            <if test="biztrip_nght         != null"> , #{biztrip_nght}          </if>
+            <if test="biztrip_day          != null"> , #{biztrip_day}           </if>
+            <if test="card_meal            != null"> , #{card_meal}             </if>
+            <if test="notebook_out         != null"> , #{notebook_out}          </if>
+            <if test="usb_out              != null"> , #{usb_out}               </if>
+            <if test="slip_prcs_state      != null"> , #{slip_prcs_state}       </if>
+            <if test="biztrip_way          != null"> , #{biztrip_way}           </if>
+            <if test="car_use_yn           != null"> , #{car_use_yn}            </if>
+            <if test="fare_fee             != null"> , #{fare_fee}              </if>
+            <if test="fare_fee_rmk         != null"> , #{fare_fee_rmk}          </if>
+            <if test="lodg_fee             != null"> , #{lodg_fee}              </if>
+            <if test="lodg_fee_rmk         != null"> , #{lodg_fee_rmk}          </if>
+            <if test="ymd_fee              != null"> , #{ymd_fee}               </if>
+            <if test="ymd_fee_rmk          != null"> , #{ymd_fee_rmk}           </if>
+            <if test="meal_fee             != null"> , #{meal_fee}              </if>
+            <if test="meal_fee_rmk         != null"> , #{meal_fee_rmk}          </if>
+            <if test="tot_expns            != null"> , #{tot_expns}             </if>
+            <if test="tot_expns_rmk        != null"> , #{tot_expns_rmk}         </if>
+            <if test="attach_file_no       != null"> , #{attach_file_no}        </if>
+            <if test="no_trvel_expns       != null"> , #{no_trvel_expns}        </if>
+            <if test="depart_base          != null"> , #{depart_base}           </if>
+            , #{regst_syspayno}
+            , SYSDATE
+       )
+</insert>
+
+<!-- 국내출장 수정 -->
+<update id="updateCtrDom" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomTripVo">
+/* 2017.12.05. 국내출장실비정산개발로 컬럼추가(no_trvel_expns, depart_base) */
+UPDATE ctrdom /* kr.re.kitech.biz.ccs.ctr.updateCtrDom */
+   SET is_internal_region =#{is_internal_region}
+     , biztrip_region =#{biztrip_region}
+     , biztrip_goal_clsf =#{biztrip_goal_clsf}
+     , biztrip_goal =#{biztrip_goal}
+     , biztrip_start_ymd =#{biztrip_start_ymd}
+     , biztrip_cls_ymd =#{biztrip_cls_ymd}
+     , biztrip_nght =#{biztrip_nght}
+     , biztrip_day =#{biztrip_day}
+     , start_region =#{start_region}
+     , arriv_region =#{arriv_region}
+     , card_meal =#{card_meal}
+     , notebook_out =#{notebook_out}
+     , usb_out =#{usb_out}
+   <if test="slip_prcs_state != null">, slip_prcs_state = #{slip_prcs_state} </if>
+     , biztrip_way = #{biztrip_way}
+     , car_use_yn =#{car_use_yn}
+     , fare_fee =#{fare_fee}
+     , fare_fee_rmk =#{fare_fee_rmk}
+     , lodg_fee =#{lodg_fee}
+     , lodg_fee_rmk =#{lodg_fee_rmk}
+     , ymd_fee =#{ymd_fee}
+     , ymd_fee_rmk =#{ymd_fee_rmk}
+     , meal_fee =#{meal_fee}
+     , meal_fee_rmk =#{meal_fee_rmk}
+     , tot_expns =#{tot_expns}
+     , biztrip_way =#{biztrip_way}
+     <if test='attach_file_no != null'>, attach_file_no =#{attach_file_no} </if>
+     <if test='no_trvel_expns != null'>, no_trvel_expns =#{no_trvel_expns} </if>
+     , depart_base =#{depart_base}
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+
+<!-- 국내출장 삭제 -->
+<delete id="deleteCtrDom" parameterType="java.lang.String">
+DELETE  /* kr.re.kitech.biz.ccs.ctr.deleteCtrDom */
+  FROM ctrdom
+  WHERE req_no = #{req_no}
+</delete>
+
+<!-- 국내출장 동반자 삭제 -->
+<delete id="deleteCtrDomCompn" parameterType="java.lang.String">
+DELETE  /* kr.re.kitech.biz.ccs.ctr.deleteCtrDomCompn */
+  FROM ctrdomcompn
+ WHERE req_no = #{req_no}
+</delete>
+
+<!-- 출장동반자 저장 -->
+<insert id="insertCtrDomCompn" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomCompnVo">
+INSERT /* kr.re.kitech.biz.ccs.ctr.insertCtrDomCompn */
+  INTO ctrdomcompn (
+     req_no 
+    ,req_seq     
+    ,biztrip_psn_clsf
+    ,biztrip_psn_syspayno
+    ,biztrip_psn_resid_no
+    ,biztrip_psn_nm
+    ,biztrip_psn_dept_cd
+    ,biztrip_psn_dept_new_ymd
+    ,biztrip_dept_nm
+    ,biztrip_nght
+    ,biztrip_day
+    ,posi_clsf
+    ,agent_psn_syspayno
+    ,regst_psn_syspayno
+    ,regst_daytm
+)
+VALUES(
+     #{req_no}
+    ,#{req_seq}
+    ,#{biztrip_psn_clsf}
+    ,#{biztrip_psn_syspayno}
+    , '' /* 외부자일 경우에만 주민번호 필요, 현재는 외부자는 입력못하게 되어있음 2022.06.28. */
+    ,#{biztrip_psn_nm}
+    ,#{biztrip_psn_dept_cd}
+    ,#{biztrip_psn_dept_new_ymd}
+    ,#{biztrip_dept_nm}
+    ,#{biztrip_nght}
+    ,#{biztrip_day}
+    ,#{posi_clsf}
+    ,#{agent_psn_syspayno}
+    ,#{regst_syspayno}
+    ,SYSDATE
+)
+</insert>
+<delete id="deleteCtrDomSched" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.ccs.ctr.deleteCtrDomSched */
+  FROM ctrdomsched
+ WHERE req_no = #{req_no}
+</delete>
+<insert id="insertCtrDomSched" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomSchedVo">
+INSERT /* kr.re.kitech.biz.ccs.ctr.insertCtrDomSched */
+   INTO  ctrdomsched (          
+    req_no
+  , ord
+  , start_ymd
+  , cls_ymd 
+  , major_intrv_psn
+  , major_intrv_tel
+  , agncy_nm
+  , actn_detls
+  , rmk 
+  , regst_psn_syspayno 
+  , regst_daytm
+) VALUES (
+    #{req_no}
+  , #{ord}
+  , #{start_ymd}
+  , #{cls_ymd }
+  , #{major_intrv_psn}
+  , #{major_intrv_tel}
+  , #{agncy_nm}
+  , #{actn_detls}
+  , #{rmk }
+  , #{regst_syspayno }
+  , sysdate
+)
+</insert>
+
+<!-- 출장경로삭제 -->
+<delete id="deleteCtrDomPath" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.ccs.ctr.deleteCtrDomPath */
+  FROM ctrdompath
+WHERE req_no = #{req_no}
+</delete>
+
+<!-- 출장경로 저장 -->
+<insert id="insertCtrDomPath" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomPathVo">
+INSERT /* kr.re.kitech.biz.ccs.ctr.insertCtrDomPath */
+   INTO ctrdompath (
+      req_no
+    , odr
+    , start_region
+    , arriv_region
+    , lodg_yn
+    , rmk
+    , regst_syspayno
+    , regst_daytm
+) VALUES ( #{req_no}
+         , #{odr}
+         , #{start_region}
+         , #{arriv_region}
+         , #{lodg_yn}
+         , #{rmk}
+         , #{regst_syspayno}
+         , CURRENT
+         )
+</insert>
+
+<!-- 계정내역 삭제 -->
+<delete id="deleteCtrDomAccnt" parameterType="java.util.HashMap">
+DELETE /* kr.re.kitech.biz.ccs.ctr.deleteCtrDomAccnt */
+  FROM ctrdomaccnt
+ WHERE req_no = #{req_no}
+<if test='req_seq != null and req_seq !=""'> AND req_seq = #{req_seq} </if>
+</delete>
+
+<!-- 국내출장 계정내역 저장 -->
+<insert id="insertCtrDomAccnt" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomAccntVo">
+<selectKey keyProperty="req_seq" resultType="int" order="BEFORE">
+        SELECT NVL(MAX(req_seq), 0) + 1 FROM ctrdomaccnt WHERE req_no = #{req_no} 
+</selectKey>
+INSERT /* kr.re.kitech.biz.ccs.ctr.insertCtrDomAccnt */
+   INTO  ctrdomaccnt
+(          req_no
+          ,req_seq
+          ,accnt_no
+          ,accnt_respn_psn_syspayno
+          <if test='accnt_rspns_dept_cd != null'> ,accnt_rspns_dept_cd </if>
+          <if test='accnt_rspns_dept_new_ymd != null'> ,accnt_rspns_dept_new_ymd </if>
+          ,accnt_cd
+          ,expns_cd
+          ,tot_expns
+          <if test='rmk != null'> ,rmk </if>
+          ,regst_psn_syspayno
+          ,regst_daytm
+)
+VALUES(
+       #{req_no}
+     , #{req_seq}
+     , #{accnt_no}
+     , #{accnt_respn_psn_syspayno}
+     <if test='accnt_rspns_dept_cd != null'> , #{accnt_rspns_dept_cd} </if>
+     <if test='accnt_rspns_dept_new_ymd != null'> , #{accnt_rspns_dept_new_ymd} </if>
+     , #{accnt_cd}
+     , #{expns_cd}
+     , #{tot_expns}
+     <if test='rmk != null'>, #{rmk} </if>
+     , #{regst_syspayno}
+     , sysdate)
+</insert>
+
+<!-- 국내출장 계정내역 수정 -->
+<update id="updateCtrDomAccnt" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+UPDATE ctrdomaccnt /* kr.re.kitech.biz.ccs.ctr.updateCtrDomAccnt */
+   SET accnt_no = #{accnt_no} 
+     , accnt_respn_psn_syspayno = #{accnt_respn_psn_syspayno}
+    <if test='accnt_rspns_dept_cd != null'> , accnt_rspns_dept_cd = #{accnt_rspns_dept_cd} </if>
+    <if test='accnt_rspns_dept_new_ymd != null'> , accnt_rspns_dept_new_ymd = #{accnt_rspns_dept_new_ymd} </if>
+     , accnt_cd = #{accnt_cd}
+     , expns_cd = #{expns_cd}
+     , tot_expns = #{tot_expns}
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = sysdate
+ WHERE req_no = #{req_no}
+   AND req_seq = #{req_seq}
+</update>
+
+<!-- 통제번호 업데이트 -->
+<update id="updateCtrDomAccntCtrlNo" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+UPDATE ctrdomaccnt /* kr.re.kitech.biz.ccs.ctr.updateCtrDomAccntCtrlNo */
+   SET <if test='bugt_ctrl_way !=null'> bugt_ctrl_way = #{bugt_ctrl_way}, </if>
+       <if test='ctrl_no  !=null'> bugt_ctrl_no  = #{ctrl_no}, </if>
+       updt_psn_syspayno = #{updt_syspayno},
+       updt_daytm = sysdate
+ WHERE req_no = #{req_no}
+   AND req_seq = #{req_seq}
+</update>
+
+<!-- 기업현장출장일 경우 방문처 삭제 -->
+<delete id="deleteSptCtrBiztripVend" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.ccs.ctr.deleteSptCtrBiztripVend */
+  FROM  sptctrbiztripvend
+ WHERE  req_no = #{req_no}
+</delete>
+
+<!-- 기업현장출장일 경우 방문처 저장 -->
+<insert id="insertSptCtrBiztripVend" parameterType="kr.re.kitech.biz.ccs.ctr.vo.SptCtrBizTripVendVo">
+INSERT /* kr.re.kitech.biz.ccs.ctr.insertSptCtrBiztripVend */
+   INTO sptctrbiztripvend(  req_no,
+                                seq,
+                                cust_no,
+                                cmpy_nm_krchar,
+                                bsns_psn_regst_no,
+                                reprs_psn,
+                                cmpy_addr,
+                                cunsl_rcpt_no,
+                                regst_syspayno,
+                                regst_daytm)
+VALUES( #{req_no},
+        #{seq},
+        #{cust_no},
+        #{cmpy_nm_krchar},
+        #{bsns_psn_regst_no},
+        #{reprs_psn},
+        #{cmpy_addr},
+        #{cunsl_rcpt_no},
+        #{regst_syspayno},
+        CURRENT
+        )
+</insert>
+
+<!-- 기존 대체휴가원 삭제 -->
+
+
+<!-- 기존 출장 휴일 관리 항목 삭제 -->
+<delete id="deleteCtrBiztripRst" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.ccs.ctr.deleteCtrBiztripRst */
+  FROM ctrbiztriprst 
+ WHERE req_no = #{req_no}
+</delete>
+
+<!-- 휴일/휴무일 관리 등록 -->
+<insert id="insertCtrBiztripRst" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrBizTripRstVo">
+INSERT /* kr.re.kitech.biz.ccs.ctr.insertCtrBiztripRst */
+   INTO ctrbiztriprst
+    ( req_no
+    , biztrip_day
+    , biztrip_syspayno
+    , day_clsf
+    , rest_cd
+    , detls_scheads
+  <if test='rmk != null'>, rmk </if>
+    , holiday_alt_day
+    , regst_syspayno
+    , regst_daytm)
+VALUES(#{req_no}
+     , #{biztrip_day}
+     , #{biztrip_syspayno}
+     , #{day_clsf}
+     , #{rest_cd}
+     , #{detls_scheads}
+  <if test='rmk != null'>, #{rmk} </if>
+     , #{holiday_alt_day}
+     , #{regst_syspayno}
+     , SYSDATE)
+</insert>
+
+<!-- 국내출장 정산서 작성건수 -->
+<select id="selectCtrDomAdCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrDomAdCnt */
+         COUNT(*) cnt
+FROM ctrdom x0 
+JOIN ctrdomad x1 ON x0.req_no = x1.biztrip_req_no
+WHERE x0.req_no = #{req_no}
+</select>
+
+<!-- 학술대회 삭제 -->
+<delete id="deleteResConfPoolReq" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.ccs.ctr.deleteResConfPoolReq */
+ FROM resconfpoolreq
+WHERE req_no = #{req_no}
+</delete>
+
+<!-- 기간중복검증 -->
+<select id="selectPeriodDup" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CheckSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.PeriodDupVo">
+-- 국내출장 /* kr.re.kitech.biz.ccs.ctr.selectPeriodDup */
+SELECT '국내출장' AS gbn
+     , req_no
+     , biztrip_psn_syspayno
+     , SUBSTR(biztrip_psn_syspayno, 3,6) AS biztrip_psn_empno
+     , biztrip_psn_nm
+     , arriv_region_nm AS biztrip_region
+     , biztrip_start_ymd
+     , biztrip_cls_ymd
+     , req_state AS rmk
+FROM ( SELECT
+          x1.req_no
+        , x0.biztrip_psn_syspayno
+        , x0.biztrip_psn_nm
+        , fun_xodxcommst_cd_nm(x1.arriv_region, 0) AS arriv_region_nm
+        , DECODE( TRIM(NVL(x3.truth_orign_ymd, '')), '', x1.biztrip_start_ymd, x3.truth_orign_ymd) AS biztrip_start_ymd
+        , DECODE( TRIM(NVL(x3.truth_cls_ymd, '')), '', x1.biztrip_cls_ymd, x3.truth_cls_ymd) AS biztrip_cls_ymd
+        , fun_xodxcommst_cd_nm(x2.apr_state, 0) AS req_state
+        , x4.chng_clsf
+    FROM CtrDomCompn AS x0
+    JOIN CtrDom AS x1 ON x1.req_no = x0.req_no
+    JOIN XomxIntfaTab AS x2 ON x2.req_no = x0.req_no AND x2.apr_state >= 'XAD020'
+    LEFT JOIN CtrDomRep AS x3 ON x3.biztrip_req_no = x1.req_no
+    LEFT JOIN CtrDomRepCompn AS x4 ON x4.req_no = x3.rep_req_no AND x4.biztrip_psn_syspayno = x0.biztrip_psn_syspayno
+    LEFT JOIN CtrDomAd AS x5 ON x5.biztrip_req_no = x1.req_no
+    WHERE (x5.adjst_resn IS NULL OR x5.adjst_resn != 'FBQ020') -- 정산한건이 아니거나 정산으로 출장취소한 경우 제외
+    AND (x4.chng_clsf IS NULL OR x4.chng_clsf != '1')
+    AND x0.biztrip_psn_syspayno IN 
+        <foreach collection ='psnList' index ='index' item='item' open='(' close=')' separator=','>
+			#{item.biztrip_psn_syspayno}
+		</foreach>
+    AND x0.req_no != #{req_no}
+)
+WHERE biztrip_start_ymd <![CDATA[ <= ]]> #{biztrip_cls_ymd}
+AND biztrip_cls_ymd >= #{biztrip_start_ymd}
+UNION
+-- 해외출장
+SELECT '해외출장' AS gbn
+     , req_no
+     , biztrip_psn_syspayno
+     , SUBSTR(biztrip_psn_syspayno, 3,6) AS biztrip_psn_empno
+     , biztrip_psn_nm
+     , biztrip_region
+     , biztrip_start_ymd
+     , biztrip_cls_ymd
+     , req_state AS rmk
+FROM ( SELECT
+          x1.req_no
+        , x0.biztrip_psn_syspayno
+        , x0.biztrip_psn_nm
+        , fun_xodxcommst_cd_nm(x1.biztrip_region, 0) AS biztrip_region
+        , DECODE( TRIM(NVL(x3.truth_orign_ymd, '')), '', x1.biztrip_start_ymd, x3.truth_orign_ymd) AS biztrip_start_ymd
+        , DECODE( TRIM(NVL(x3.truth_cls_ymd, '')), '', x1.biztrip_cls_ymd, x3.truth_cls_ymd) AS biztrip_cls_ymd
+        , fun_xodxcommst_cd_nm(x2.apr_state, 0) AS req_state
+        , x4.chng_clsf
+    FROM CtrOverCompn AS x0
+    JOIN CtrOver AS x1 ON x1.req_no = x0.req_no
+    JOIN XomxIntfaTab AS x2 ON x2.req_no = x0.req_no AND x2.apr_state >= 'XAD020'
+    LEFT JOIN CtrOverRep AS x3 ON x3.biztrip_req_no = x1.req_no
+    LEFT JOIN CtrOverRepCompn AS x4 ON x4.req_no = x3.rep_req_no AND x4.biztrip_psn_syspayno = x0.biztrip_psn_syspayno
+    LEFT JOIN CtrOverAd AS x5 ON x5.biztrip_req_no = x1.req_no
+    WHERE (x5.adjst_resn IS NULL OR x5.adjst_resn != 'FBQ020') -- 정산한건이 아니거나 정산으로 출장취소한 경우 제외
+    AND (x4.chng_clsf IS NULL OR x4.chng_clsf != '1')
+    AND x0.biztrip_psn_syspayno IN 
+        <foreach collection ='psnList' index ='index' item='item' open='(' close=')' separator=','>
+			#{item.biztrip_psn_syspayno}
+		</foreach>
+    AND x0.req_no != #{req_no}
+)
+WHERE biztrip_start_ymd <![CDATA[ <= ]]> #{biztrip_cls_ymd}
+AND biztrip_cls_ymd >= #{biztrip_start_ymd}
+UNION
+-- 근거리출장
+SELECT
+      '근거리출장' AS gbn
+    , x0.req_no
+    , x2.biztrip_psn_syspayno
+    , SUBSTR(x2.biztrip_psn_syspayno, 3,6) AS biztrip_psn_empno
+    , fun_humbasicinfo_cd_nm(x2.biztrip_psn_syspayno, 0) AS biztrip_psn_nm
+    , x0.biztrip_land AS biztrip_region
+    , x0.biztrip_ymd AS biztrip_start_ymd
+    , x0.biztrip_ymd AS biztrip_cls_ymd
+    , fun_xodxcommst_cd_nm(x1.apr_state, 0) AS rmk
+FROM ctrlocal AS x0
+INNER JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no AND x1.apr_state >= 'XAD020'
+INNER JOIN ctrlocalcompn AS X2 ON x2.req_no = x0.req_no 
+WHERE x2.biztrip_psn_syspayno IN 
+        <foreach collection ='psnList' index ='index' item='item' open='(' close=')' separator=','>
+			#{item.biztrip_psn_syspayno}
+		</foreach>
+AND x0.req_no != #{req_no}
+AND x0.biztrip_ymd BETWEEN #{biztrip_start_ymd} AND #{biztrip_cls_ymd}
+<if test='start_time != null and start_time != ""'> AND x0.arriv_time > #{start_time} </if>
+<if test='arriv_time != null and arriv_time != ""'> AND x0.start_time <![CDATA[ < ]]> #{arriv_time} </if>
+UNION
+SELECT
+      '휴가' AS gbn
+    , DECODE(x0.ctr_req_no,'none',x0.req_no, x0.ctr_req_no)  AS req_no
+    , x0.req_psn_syspayno AS biztrip_psn_syspayno
+    , SUBSTR(x0.req_psn_syspayno, 3,6) AS biztrip_psn_empno
+    , fun_humbasicinfo_cd_nm(x0.req_psn_syspayno, 0) AS biztrip_psn_nm
+    , '' AS biztrip_region
+    , x0.holiday_start_ymd AS biztrip_start_ymd
+    , x0.holiday_cls_ymd AS biztrip_cls_ymd
+    , fun_xodxcommst_cd_nm(x1.apr_state, 0) AS rmk
+FROM cgslapp AS x0
+INNER JOIN xomxintfatab AS x1 ON (x1.req_no = x0.req_no OR  x1.req_no = x0.ctr_req_no )
+AND x1.apr_state >= 'XAD020'
+WHERE x0.req_psn_syspayno IN 
+        <foreach collection ='psnList' index ='index' item='item' open='(' close=')' separator=','>
+			#{item.biztrip_psn_syspayno}
+		</foreach>
+AND x0.holiday_clsf NOT IN ('HBI019', 'HBI080')
+AND x0.ctr_req_no != #{req_no}
+AND (x0.holiday_start_ymd BETWEEN #{biztrip_start_ymd} AND #{biztrip_cls_ymd} OR x0.holiday_cls_ymd BETWEEN #{biztrip_start_ymd} AND #{biztrip_cls_ymd})
+<if test='start_time != null and start_time != ""'> AND x0.holiday_cls_hour > REPLACE(#{start_time},':','')::INT/100 </if>
+<if test='arriv_time != null and arriv_time != ""'> AND x0.holiday_start_hour <![CDATA[ < ]]> REPLACE(#{arriv_time},':','')::INT/100 </if>
+</select>
+
+<!-- 복명서 작성여부조회 -->
+<select id="selectValidRep" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CheckSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.PeriodDupVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectValidRep */
+       a.req_no 
+     , substr(b.biztrip_psn_syspayno, 3, 8) AS biztrip_psn_empno
+     , b.biztrip_psn_nm 
+     , a.biztrip_region
+     , a.biztrip_start_ymd 
+     , a.biztrip_cls_ymd 
+     , '복명서 미작성' AS gbn
+FROM ctrdom a
+JOIN ctrdomcompn b ON a.req_no = b.req_no
+JOIN xomxintfatab d ON a.req_no = d.req_no
+LEFT JOIN ctrdomrep c ON a.req_no = c.biztrip_req_no
+LEFT JOIN ctrdomad e ON a.req_no = e.biztrip_req_no
+WHERE a.req_ymd >= '20120105'  -- 규정시작일 
+AND a.biztrip_nght > 0  --당일출장제외 
+AND a.biztrip_cls_ymd <![CDATA[ < ]]> TO_CHAR(CURRENT - 14 UNITS DAY, '%Y%m%d') -- 출장종료 후 14일 초과한 건 : 오늘 > 출장종료 + 14 
+AND b.biztrip_psn_syspayno IN 
+        <foreach collection ='psnList' index ='index' item='item' open='(' close=')' separator=','>
+			#{item.biztrip_psn_syspayno}
+		</foreach>
+AND d.apr_state = 'XAD100'
+AND c.rep_req_no IS NULL
+AND (e.adjst_resn != 'FBQ020' OR e.adjst_resn IS NULL)
+</select>
+
+<!-- 타업종사 등록여부확인 -->
+<select id="selectOtherWork" resultType="kr.re.kitech.biz.ccs.ctr.vo.PeriodDupVo" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CheckSrcVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectOtherWork */
+       a.empno AS biztrip_psn_empno
+     , a.nm AS biztrip_psn_nm 
+     , NVL( b.othr_charg_yn, 'N') AS rmk
+FROM humbasicinfo a
+LEFT JOIN ( 
+    SELECT b.syspayno, CASE WHEN count(*) > 0 THEN 'Y' ELSE 'N' END AS othr_charg_yn 
+    FROM  humapyotwork b  
+    JOIN xomxintfatab c ON c.req_no = b.req_no 
+    WHERE c.apr_state = 'XAD100'
+    AND (#{biztrip_start_ymd} BETWEEN b.start_ymd AND b.cls_ymd OR #{biztrip_cls_ymd} BETWEEN b.start_ymd AND b.cls_ymd ) 
+    GROUP BY 1
+) b ON b.syspayno = a.syspayno
+WHERE a.syspayno IN 
+        <foreach collection ='psnList' index ='index' item='item' open='(' close=')' separator=','>
+            #{item.biztrip_psn_syspayno}
+        </foreach>
+AND   NVL( b.othr_charg_yn, 'N') = 'N'
+</select>
+
+<!-- 과제 미참여 연구원 조회 -->
+<select id="selectAccntMember" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CheckSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.NoJoinPsnVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectAccntMember */
+      a.accnt_no
+    , a.start_ymd
+    , a.cls_ymd
+    , DECODE(TRIM(NVL(b.syspayno, '')), '', '비참여연구원', '참여연구원') AS attnce_nm
+    , NVL(b.attnce_prd_orign_ymd, '') AS attnce_prd_orign_ymd
+    , CASE WHEN NVL(b.sec_attnce_prd_cls_ymd,'') > NVL(b.attnce_prd_cls_ymd, '') THEN NVL(b.sec_attnce_prd_cls_ymd,'') 
+           ELSE NVL(b.attnce_prd_cls_ymd, '') END AS attnce_prd_cls_ymd
+    , NVL(h.nm, '외부인') AS biztrip_psn_nm
+    , CASE WHEN #{biztrip_cls_ymd} >= NVL(b.attnce_prd_orign_ymd,'') AND #{biztrip_cls_ymd} <![CDATA[ <= ]]> NVL(b.attnce_prd_cls_ymd,'') THEN '적합' 
+           WHEN #{biztrip_cls_ymd} >= NVL(b.sec_attnce_prd_orign_ymd,'') AND #{biztrip_cls_ymd} <![CDATA[ <= ]]> NVL(b.sec_attnce_prd_cls_ymd,'') THEN '적합' 
+           ELSE '부적합' END man_yn    
+ FROM resbgacctm a
+ LEFT JOIN humbasicinfo h ON h.syspayno IN 
+        <foreach collection ='psnList' index ='index' item='item' open='(' close=')' separator=','>
+           #{item.biztrip_psn_syspayno}
+        </foreach>
+ LEFT JOIN resinppare b ON a.prj_no = b.prj_no AND h.syspayno = b.syspayno 
+WHERE a.accnt_no = #{accnt_no}
+</select>
+
+<!-- (구)국내출장 지급내역 조회 -->
+<select id="selectCtrDomPayList" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomPayVo" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo">
+SELECT /*  kr.re.kitech.biz.ccs.ctr.selectCtrDomPayList */
+       x0.req_no
+     , x0.pay_seq
+     , x0.biztrip_psn_syspayno
+     , h.nm AS biztrip_psn_nm
+     , h.empno AS biztrip_psn_empno
+     , fun_posi_nm(h.posi_cd) AS posi_nm
+     , x0.tot_expns
+     , x0.bankaccnt_no
+     , x0.bank_cd
+     , x0.depstr
+     , TRIM(CASE WHEN h.empno IS NOT NULL THEN 'in' ELSE 'out' END) AS pay_clsf
+  FROM ctrdompay AS x0
+  JOIN humbasicinfo h ON x0.biztrip_psn_syspayno = h.syspayno
+ WHERE x0.req_no = #{req_no}
+</select>
+
+<!-- 출장자 중에 이공계인턴쉽이 있는경우 (posi_cd = 353010) 월중 출장비 지급내역 -->
+<select id="selectCtrDomPayPosi" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrTripSrcVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomPayVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrDomPayPosi */
+      'in' AS pay_clsf
+     , nm AS biztrip_psn_nm
+     , empno AS biztrip_psn_empno
+     , posi_nm
+     , SUM(amt) AS tot_expns
+  FROM (
+      SELECT c.nm, c.empno, fun_posi_nm(c.posi_cd) posi_nm, SUM(d.adjst_amt) amt
+        FROM ctrdom a 
+        JOIN ctrdomad b ON a.req_no = b.biztrip_req_no
+        JOIN ctrdomadpay d ON b.req_no = d.req_no
+        JOIN humbasicinfo c ON d.pay_psn_syspayno =  c.syspayno
+       WHERE a.biztrip_start_ymd LIKE SUBSTR(#{from_ymd}, 1, 6) ||'%'
+        <choose>
+           <when test='biztrip_psn_syspayno != null and biztrip_psn_syspayno != ""'> AND d.pay_psn_syspayno = #{biztrip_psn_syspayno} </when>
+           <otherwise>
+             AND d.pay_psn_syspayno IN (SELECT biztrip_psn_syspayno 
+                                          FROM ctrdomcompn a
+                                          JOIN humbasicinfo b ON a.biztrip_psn_syspayno = b.syspayno
+                                         WHERE a.req_no = #{req_no}
+                                           AND b.posi_cd ='353010'
+                                        )
+           </otherwise>  
+        </choose>
+       GROUP BY 1,2,3
+      
+       UNION
+      
+      SELECT c.nm, c.empno, fun_posi_nm(c.posi_cd) posi_nm, sum(b.pay_amt) amt 
+        FROM ctrlocal a 
+        JOIN ctrlocalcompn b ON a.req_no = b.req_no
+        JOIN humbasicinfo c ON b.biztrip_psn_syspayno =  c.syspayno
+       WHERE a.biztrip_ymd LIKE SUBSTR(#{from_ymd}, 1, 6) ||'%'
+         AND a.car_use_yn = 'FDO001'
+         <choose>
+           <when test='biztrip_psn_syspayno != null and biztrip_psn_syspayno != ""'> AND b.biztrip_psn_syspayno = #{biztrip_psn_syspayno} </when>
+           <otherwise>
+             AND b.biztrip_psn_syspayno 
+                             IN (SELECT biztrip_psn_syspayno 
+                                   FROM ctrdomcompn a
+                                   JOIN humbasicinfo b ON a.biztrip_psn_syspayno = b.syspayno
+                                  WHERE a.req_no = #{req_no}
+                                    AND b.posi_cd ='353010'
+                                )
+           </otherwise>  
+        </choose>
+       GROUP BY 1,2,3
+     ) 
+GROUP BY nm, empno, posi_nm
+</select>
+
+<!-- 표준근무제 휴일 시간외근무신청 유무 체크 -->
+<select id="selectStdWrkTimeChk" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CheckSrcVo" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectStdWrkTimeChk */
+          MAX(case WHEN a.off_yn = 'Y' AND b.req_no IS NULL THEN 't' ELSE 'f' END) AS is_not_valid     
+ FROM xomdtmst a
+ LEFT JOIN humslmmovrwksub b ON b.work_ymd = a.ymd AND b.syspayno = #{biztrip_psn_syspayno}
+ LEFT JOIN xomxintfatab c ON c.req_no = b.req_no AND c.apr_state >= 'XAD020'
+ WHERE a.ymd BETWEEN #{biztrip_start_ymd} AND #{biztrip_cls_ymd}
+</select>
+
+<select id="selectPoolConfNm" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectPoolConfNm */
+        NVL(CASE WHEN NVL(t1.cnt, 0) > 1 THEN t3.conf_nm || '외 ' || NVL(t1.cnt, 0) - 1 || '건' ELSE  t3.conf_nm END,'') AS pool_conf_nm
+FROM (SELECT COUNT(*) AS cnt, req_no, min(odr) AS odr FROM resconfpoolreq WHERE req_no = #{req_no} GROUP BY req_no) t1
+LEFT JOIN resconfpoolreq t2 ON t2.req_no = t1.req_no AND t2.odr = t1.odr
+LEFT JOIN resconfpoolmaster t3 ON t3.rcpt_no = t2.rcpt_no
+</select>
+
+<!-- 항공마일리지 변경여부 조회 -->
+<select id="selectCtrAirMileUseCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrAirMileUseCnt */
+         COUNT(DISTINCT syspayno) AS total
+FROM ctrairmileuse a
+WHERE air_cd_chang_yn = 'N'
+AND a.req_no = #{req_no}
+</select>
+
+<!-- 결재 후 담당자 저장 -->
+<update id="updateCtrDomPostApr" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrDomTripVo">
+/* 결재 후 담당자 저장 */
+UPDATE ctrdom /* kr.re.kitech.biz.ccs.ctr.updateCtrDomPostApr */
+   SET biztrip_start_ymd =#{biztrip_start_ymd}
+     , biztrip_cls_ymd =#{biztrip_cls_ymd}
+     , biztrip_nght =#{biztrip_nght}
+     , biztrip_day =#{biztrip_day}
+     , biztrip_goal_clsf =#{biztrip_goal_clsf}
+     , biztrip_goal =#{biztrip_goal}
+     , biztrip_region =#{biztrip_region}
+     , is_internal_region =#{is_internal_region}
+     , notebook_out =#{notebook_out}
+     , usb_out =#{usb_out}
+     , biztrip_way = #{biztrip_way}
+     , car_use_yn =#{car_use_yn}
+     , biztrip_way =#{biztrip_way}
+     <if test='attach_file_no != null'>, attach_file_no =#{attach_file_no} </if>
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+</mapper>

@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.brw">
+<select id="selectKbkBrwRetrnMnt" parameterType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo" resultType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo">
+SELECT /* kr.re.kitech.biz.kbk.brw.selectKbkBrwRetrnMnt */
+       a.centr_cd
+     , fun_xodxcommst_cd_nm(a.centr_cd, 0) centr_nm
+     , a.loan_no
+     , a.loan_psn_syspayno
+     , fun_humbasicinfo_cd_nm(a.loan_psn_syspayno, 1) as loan_psn_empno
+     , a.loan_book_no
+     , b.book_nm as loan_book_nm
+     , a.loan_ymd
+     , a.retrn_schdl_ymd
+     , a.retrn_ymd
+     , a.resv_psn_syspayno
+     , fun_humbasicinfo_cd_nm(a.resv_psn_syspayno, 0) as resv_psn_nm
+     , fun_humbasicinfo_cd_nm(a.resv_psn_syspayno, 11) as resv_psn_email
+     , a.renwl_ymd
+     , a.out_loan_psn_nm
+     , CASE WHEN a.loan_psn_syspayno = '9999999'
+            THEN a.out_loan_psn_nm 
+            ELSE  fun_humbasicinfo_cd_nm(a.loan_psn_syspayno, 0) 
+       END AS loan_psn_nm
+  FROM kbkbookloan a 
+  LEFT JOIN kbkbook b ON a.loan_book_no = b.regst_no
+ WHERE a.retrn_ymd = ''
+  <if test="loan_psn_syspayno != null and loan_psn_syspayno != ''"> AND a.loan_psn_syspayno = #{loan_psn_syspayno} </if>
+  <if test="loan_book_no != null and loan_book_no != ''"> AND a.loan_book_no = #{loan_book_no} </if>
+ ORDER BY a.loan_no DESC
+</select>
+<update id="updateKbkBookLoanRetrn" parameterType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo">
+UPDATE  /* kr.re.kitech.biz.kbk.brw.updateKbkBookLoanRetrn */
+      kbkbookloan
+   SET valid_yn = #{valid_yn}
+     <if test="retrn_psn_syspayno != null and retrn_psn_syspayno != ''"> , retrn_psn_syspayno = #{retrn_psn_syspayno} </if>
+     <if test="retrn_ymd != null and retrn_ymd != ''"> , retrn_ymd = #{retrn_ymd} </if>
+     <if test="renwl_clsf != null and renwl_clsf != ''"> , renwl_clsf = #{renwl_clsf} </if>
+     <if test="renwl_ymd != null and renwl_ymd != ''"> , renwl_ymd = #{renwl_ymd} </if>
+     <if test="retrn_schdl_ymd != null and retrn_schdl_ymd != ''"> , retrn_schdl_ymd = #{retrn_schdl_ymd} </if>
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE loan_no = #{loan_no}
+</update>
+<select id="selectKbkLoanList" parameterType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo" resultType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo">
+SELECT /* kr.re.kitech.biz.kbk.brw.selectKbkLoanList */
+       loan_no
+     , loan_book_no
+     , book_nm AS loan_book_nm
+     , loan_ymd
+     , retrn_schdl_ymd
+     , retrn_ymd
+     , loan_clsf
+     , resv_psn_syspayno
+     , loan_psn_nm
+FROM (SELECT a.loan_no
+           , a.loan_book_no
+           , b.book_nm
+           , a.loan_ymd
+           , a.retrn_schdl_ymd
+           , a.retrn_ymd
+           , fun_xodxcommst_cd_nm(a.loan_clsf, 0) AS loan_clsf
+           , fun_humbasicinfo_cd_nm(a.resv_psn_syspayno, 0) AS resv_psn_syspayno
+           , c.nm AS loan_psn_nm
+      FROM kbkbookloan a 
+      JOIN kbkbook b ON a.loan_book_no = b.regst_no
+      LEFT JOIN humbasicinfo c ON a.loan_psn_syspayno = c.syspayno
+      WHERE a.loan_ymd BETWEEN #{loan_fr_ymd} AND #{loan_to_ymd}
+       <if test='loan_psn_syspayno != null and loan_psn_syspayno !=""'> AND a.loan_psn_syspayno = #{loan_psn_syspayno} </if>
+       <if test='centr_cd != null and centr_cd !=""'> AND a.centr_cd = #{centr_cd} </if>
+       <if test='loan_book_no != null and loan_book_no != ""'> AND a.loan_book_no LIKE '%' || #{loan_book_no} || '%' </if>
+      <choose>
+          <when test='resv_yn == "Y"'> AND a.resv_psn_syspayno <![CDATA[<>]]> '' </when>
+          <when test='resv_yn == "N"'> AND a.resv_psn_syspayno = '' </when>
+      </choose>
+     <choose>
+          <when test='retrn_yn == "Y"'>
+              AND a.retrn_schdl_ymd <![CDATA[>=]]> TO_CHAR(CURRENT, "%Y%m%d")
+              AND retrn_ymd = ''
+          </when>
+          <when test='retrn_yn == "N"'>
+              AND a.retrn_schdl_ymd <![CDATA[<]]> TO_CHAR(CURRENT, "%Y%m%d")
+              AND retrn_ymd = ''
+          </when>
+      </choose>
+      UNION
+      SELECT a.loan_no
+           , a.loan_book_no
+           , b.rptp_nm
+           , a.loan_ymd
+           , a.retrn_schdl_ymd
+           , a.retrn_ymd
+           , fun_xodxcommst_cd_nm(a.loan_clsf, 0) AS loan_clsf
+           , fun_humbasicinfo_cd_nm(a.resv_psn_syspayno, 0) AS resv_psn_syspayno
+           , c.nm AS loan_psn_nm
+        FROM kbkbookloan a 
+        JOIN kbkreschrptp b ON a.loan_book_no = b.regst_no
+        LEFT JOIN humbasicinfo c ON a.loan_psn_syspayno = c.syspayno
+       WHERE a.loan_ymd BETWEEN #{loan_fr_ymd} AND #{loan_to_ymd}
+       <if test='loan_psn_syspayno != null and loan_psn_syspayno !=""'> AND a.loan_psn_syspayno = #{loan_psn_syspayno} </if>
+       <if test='centr_cd != null and centr_cd !=""'> AND a.centr_cd = #{centr_cd} </if>
+       <if test='loan_book_no != null and loan_book_no != ""'> AND a.loan_book_no LIKE '%' || #{loan_book_no} || '%' </if>
+      <choose>
+          <when test='resv_yn == "Y"'> AND a.resv_psn_syspayno <![CDATA[<>]]> '' </when>
+          <when test='resv_yn == "N"'> AND a.resv_psn_syspayno = '' </when>
+      </choose>
+      <choose>
+          <when test='retrn_yn == "Y"'>
+              AND a.retrn_schdl_ymd <![CDATA[>=]]> TO_CHAR(CURRENT, "%Y%m%d")
+              AND retrn_ymd = ''
+          </when>
+          <when test='retrn_yn == "N"'>
+              AND a.retrn_schdl_ymd <![CDATA[<]]> TO_CHAR(CURRENT, "%Y%m%d")
+              AND retrn_ymd = ''
+          </when>
+      </choose>
+)
+</select>
+<select id="selectKbkBrwMailList" parameterType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo" resultType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo">
+SELECT /* kr.re.kitech.biz.kbk.brw.selectKbkBrwMailList */
+      TRIM(h1.nm) AS loan_psn_nm
+     , h1.email AS loan_psn_email
+     , h2.email AS resv_psn_email
+     , a.loan_no
+     , a.loan_book_no
+     , CASE WHEN b.book_nm IS NOT NULL
+            THEN b.book_nm
+            ELSE c.rptp_nm
+       END AS loan_book_nm
+     , a.loan_ymd
+     , a.retrn_schdl_ymd
+     , a.retrn_ymd
+     , CASE WHEN DECODE(a.retrn_schdl_ymd, '', '99999999', a.retrn_schdl_ymd) <![CDATA[<]]> TO_CHAR(CURRENT, '%Y%m%d')
+            THEN '연체'
+            ELSE '미연체'
+       END AS retrn_yn
+     , x.cd_nm AS loan_clsf
+     , TRIM(h2.nm) AS resv_psn_nm
+     , CASE WHEN a.resv_psn_syspayno != ''
+            THEN '예약'
+            ELSE '미예약'
+       END AS resv_yn
+     , dx.cd_nm AS centr_nm
+  FROM kbkbookloan AS a
+  LEFT JOIN kbkbook AS b ON b.regst_no = a.loan_book_no
+  LEFT JOIN kbkreschrptp AS c ON c.regst_no = a.loan_book_no
+  LEFT JOIN humbasicinfo AS h1 ON h1.syspayno = a.loan_psn_syspayno
+  LEFT JOIN humbasicinfo AS h2 ON h2.syspayno = a.resv_psn_syspayno
+  LEFT JOIN xodxcommst AS x ON x.cd = a.loan_clsf
+  LEFT JOIN xodhdeptinfo AS d1 ON d1.dept_cd = h1.dept_cd AND d1.dept_new_ymd = h1.dept_new_ymd
+  LEFT JOIN xodxcommst AS dx ON dx.cd = d1.dept_typ
+ WHERE a.valid_yn = '0'
+  <if test='loan_ymd != null and loan_ymd != ""'> AND a.loan_ymd LIKE #{loan_ymd} || '%' </if>
+  <if test='loan_psn_syspayno != null and loan_psn_syspayno != ""'> AND a.loan_psn_syspayno = #{loan_psn_syspayno} </if>
+  <choose>
+      <when test='resv_yn == "Y"'> AND a.resv_psn_syspayno != '' </when>
+      <when test='resv_yn == "N"'> AND a.resv_psn_syspayno = '' </when>
+  </choose>
+  <choose>
+      <when test='retrn_yn == "Y"'>
+          AND a.retrn_schdl_ymd <![CDATA[<]]> TO_CHAR(CURRENT, '%Y%m%d')
+          AND retrn_ymd = ''                      
+      </when>
+      <when test='retrn_yn == "N"'>
+          AND a.retrn_schdl_ymd <![CDATA[>=]]> TO_CHAR(CURRENT, '%Y%m%d')
+          AND retrn_ymd = ''
+      </when>
+  </choose>
+  <if test='centr_cd != null and centr_cd != ""'> AND a.centr_cd = #{centr_cd} </if>
+  <if test='dept_typ != null and dept_typ != ""'> AND d1.dept_typ = #{dept_typ} </if>
+</select>
+
+<!-- 도서대출 팝업 조회 -->
+<select id="selectKbkBookLoan" resultType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvAccntBookVo">
+SELECT /* kr.re.kitech.biz.kbk.brw.selectKbkBookLoan */
+      a.regst_no AS loan_book_no
+    , a.centr_cd
+    , a.centr_nm
+    , a.auth_nm
+    , a.book_nm AS loan_book_nm
+    , a.clsfsgn
+    , a.publ_yr
+    , a.publ_vend
+    , b.loan_no
+    , b.loan_ymd
+    , b.retrn_schdl_ymd
+    , TRIM(b.renwl_ymd) AS renwl_ymd
+    , b.cycle_item
+    , b.loan_clsf
+    , b.loan_psn_syspayno
+    , DECODE(b.loan_psn_syspayno, '99999999', '2', '1') AS psn_clsf
+    , c.nm AS loan_psn_nm
+    , c.empno AS loan_psn_empno
+    , b.resv_psn_syspayno
+    , fun_humbasicinfo_cd_nm(b.resv_psn_syspayno, 0) AS resv_psn_nm
+    , TRIM(b.resv_ymd) AS resv_ymd
+    , b.out_loan_psn_ogan
+    , b.out_loan_psn_nm
+    , b.out_loan_psn_tel
+    , b.out_loan_psn_email 
+    , CASE WHEN b.loan_no IS NULL THEN 'C' ELSE 'U' END AS cud_type
+  FROM (
+       SELECT regst_no,
+              centr_cd,
+              fun_xodxcommst_cd_nm(centr_cd, 0) AS centr_nm,
+              auth_nm,
+              book_nm,
+              clsfsgn,
+              publ_yr,
+              publ_vend
+         FROM kbkbook
+        WHERE regst_no = #{regst_no}
+        UNION
+       SELECT regst_no,
+              centr_cd,
+              fun_xodxcommst_cd_nm(centr_cd, 0) AS centr_cd_nm,       
+              resch_respn_psn AS auth_nm,
+              rptp_nm AS book_nm,
+              '' AS clsfsgn,
+              publ_yr,
+              '' AS publ_vend
+         FROM kbkreschrptp
+        WHERE regst_no = #{regst_no}
+  ) a
+  LEFT JOIN kbkbookloan b ON a.regst_no = b.loan_book_no AND b.valid_yn = 0 AND retrn_ymd = ''
+  LEFT JOIN humbasicinfo c ON b.loan_psn_syspayno = c.syspayno
+</select>
+
+<!-- 대출정보 신규등록시 기존 대출정보 수정 -->
+<update id="updateKbkBookLoanValidYn" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.kbk.brw.updateKbkBookLoanValidYn */
+        kbkbookloan 
+   SET valid_yn = '1'
+ WHERE loan_book_no = #{loan_book_no}
+</update>
+
+<!-- 대출정보 등록 -->
+<insert id="insertKbkBookLoan" parameterType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo">
+INSERT /* kr.re.kitech.biz.kbk.brw.insertKbkBookLoan */
+  INTO kbkbookloan(
+        loan_no
+      , loan_yr
+      , loan_book_no
+      , centr_cd
+      , loan_psn_syspayno      
+      , loan_ymd
+      , loan_clsf
+     <if test='resv_psn_syspayno != null'> , resv_psn_syspayno </if>    
+     <if test='renwl_ymd != null'> , renwl_ymd </if>
+     <if test='cycle_item != null'> , cycle_item </if>
+     <if test='out_loan_psn_ogan != null'> , out_loan_psn_ogan </if>
+     <if test='out_loan_psn_nm != null'> , out_loan_psn_nm  </if>
+     <if test='out_loan_psn_tel != null'> , out_loan_psn_tel </if>
+     <if test='out_loan_psn_email != null'> , out_loan_psn_email </if>
+      , valid_yn
+      , retrn_ymd
+     <if test='retrn_schdl_ymd != null'> , retrn_schdl_ymd </if>
+      , regst_psn_syspayno
+      , regst_daytm
+  ) VALUES (
+       (SELECT NVL(MAX(loan_no), SUBSTR('${loan_ymd}', 3, 2) ||'000000')+1 FROM kbkbookloan WHERE loan_no LIKE SUBSTR('${loan_ymd}', 3, 2) ||'%')
+      , SUBSTR(#{loan_ymd}, 1, 4)
+      , #{loan_book_no}
+      , #{centr_cd}
+      , #{loan_psn_syspayno}
+      , #{loan_ymd}
+      , #{loan_clsf}
+     <if test='resv_psn_syspayno != null'> , #{resv_psn_syspayno} </if>
+     <if test='renwl_ymd != null'> , #{renwl_ymd} </if>
+     <if test='cycle_item != null'> , #{cycle_item} </if>
+     <if test='out_loan_psn_ogan != null'> , #{out_loan_psn_ogan} </if>
+     <if test='out_loan_psn_nm != null'> , #{out_loan_psn_nm}  </if>
+     <if test='out_loan_psn_tel != null'> , #{out_loan_psn_tel} </if>
+     <if test='out_loan_psn_email != null'> , #{out_loan_psn_email} </if>
+      , 0
+      , ''
+     <if test='retrn_schdl_ymd != null'> , #{retrn_schdl_ymd} </if>
+      , #{regst_syspayno}
+      , SYSDATE
+  )
+</insert>
+
+<!-- 도서대출 팝업 수정 -->
+<update id="updateKbkBookLoan" parameterType="kr.re.kitech.biz.kbk.brw.vo.KbkBookLoanVo">
+UPDATE /* kr.re.kitech.biz.kbk.brw.updateKbkBookLoan */
+       kbkbookloan
+   SET centr_cd= #{centr_cd}
+     , loan_yr= #{loan_yr}
+     , loan_book_no= #{loan_book_no}
+     , loan_psn_syspayno= #{loan_psn_syspayno}
+     , loan_ymd= #{loan_ymd}
+     , loan_clsf= #{loan_clsf}
+     <if test='retrn_schdl_ymd != null'> , retrn_schdl_ymd = #{retrn_schdl_ymd} </if>
+     <if test='retrn_ymd != null'> , retrn_ymd = #{retrn_ymd} </if>
+     <if test='renwl_ymd != null'> , renwl_ymd = #{renwl_ymd} </if>
+     <if test='cycle_item != null'> , cycle_item = #{cycle_item} </if>
+     <if test='out_loan_psn_ogan != null'> , out_loan_psn_ogan = #{out_loan_psn_ogan} </if>
+     <if test='out_loan_psn_nm != null'> , out_loan_psn_nm = #{out_loan_psn_nm} </if>
+     <if test='out_loan_psn_tel != null'> , out_loan_psn_tel = #{out_loan_psn_tel} </if>
+     <if test='out_loan_psn_email != null'> , out_loan_psn_email =#{out_loan_psn_email} </if>
+     , updt_psn_syspayno= #{updt_syspayno}
+     , updt_daytm= SYSDATE
+ WHERE loan_no = #{loan_no}
+</update>
+
+<!-- 대출정보 삭제 -->
+<delete id="deleteKbkBookLoan" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.kbk.brw.deleteKbkBookLoan */
+      kbkbookloan
+WHERE  loan_no = #{loan_no}
+</delete>
+</mapper>

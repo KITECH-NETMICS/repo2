@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.uss.cod">
+<!-- 자산관리 통합관리계정 변경이력 관리부서 조회 -->
+<select id="selectDeptHeadQrtr" resultType="kr.re.kitech.biz.uss.cod.vo.ComBoxCodeVo" parameterType="kr.re.kitech.biz.uss.cod.vo.ComBoxSrcVo">
+SELECT /* kr.re.kitech.biz.uss.cod.selectDeptHeadQrtr */
+       dept_cd AS cd
+     , dept_new_ymd
+     , dept_nm AS cd_nm
+  FROM xodhdeptinfo
+ WHERE dept_shape = '3'
+   AND abol_ymd IS NULL
+   AND prj_dept_yn = 'N'
+   AND dept_job='HAE010' /* 연구부문 */
+</select>
+<!-- 연구관리 센터조회 -->
+<select id="selectDivsnDept" parameterType="kr.re.kitech.biz.uss.cod.vo.ComBoxSrcVo" resultType="kr.re.kitech.biz.uss.cod.vo.ComBoxCodeVo">
+SELECT /* kr.re.kitech.biz.uss.cod.selectDivsnDept */
+       DISTINCT divsn_dept AS cd, 
+       fun_dept_nm(divsn_dept , divsn_dept_new_ymd) AS cd_nm
+FROM xodhdeptinfo 
+WHERE  NVL(abol_ymd,'')=''
+</select>
+<!-- 자산관리 관리주체별  부서조회 -->
+<select id="selectAssDeptInfo" parameterType="kr.re.kitech.biz.uss.cod.vo.ComBoxSrcVo" resultType="kr.re.kitech.biz.uss.cod.vo.ComBoxCodeVo">
+SELECT DISTINCT /* kr.re.kitech.biz.uss.selectAssDeptInfo */
+       t1.dept_cd AS cd, /* 부서코드 */
+       t1.dept_nm AS cd_nm  /* 부서이름 */
+FROM xodhdeptinfo t1
+JOIN xodxcommst t2 ON t1.dept_typ = t2.mngmt_item_1
+WHERE t1.abol_ymd IS NULL
+AND t2.cd = #{dept_shape}
+ORDER BY t1.dept_nm
+</select>
+</mapper>

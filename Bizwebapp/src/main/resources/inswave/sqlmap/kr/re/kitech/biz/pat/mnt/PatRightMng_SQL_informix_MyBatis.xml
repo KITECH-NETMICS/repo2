@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.mnt">
+<select id="selectPatMastrMS05" parameterType="kr.re.kitech.biz.pat.mnt.vo.PatRightMngVo" resultType="kr.re.kitech.biz.pat.mnt.vo.PatRightMngVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.mnt.selectPatMastrMS05 */ 
+		  req_no,
+        mngmt_no
+FROM    patmastr
+WHERE   (smitapp_no = #{smitapp_no}
+OR      regst_no    = #{regst_no})
+  </select>
+  <select id="selectPatRightMng" parameterType="kr.re.kitech.biz.pat.mnt.vo.PatRightMngVo" resultType="kr.re.kitech.biz.pat.mnt.vo.PatRightMngVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.mnt.selectPatRightMng */ 
+		  t1.req_no,
+        t1.mngmt_no,
+        t1.pat_clsf,
+        fun_xodxcommst_cd_nm(t1.pat_clsf, 0) AS pat_clsf_nm,
+        NVL(t6.accnt_no, '') AS accnt_no,
+        t1.regst_no,                                                                        -- 등록번호
+        t1.regst_ymd,                                                                       -- 등록일자
+        t1.smitapp_no,                                                                      -- 출원번호
+        t1.smitapp_ymd,                                                                     -- 출원일자
+        t2.mnt_seq,                                                                         -- 유지차수
+        NVL(t2.thsyear_evyearfee_pay_close_ymd, '') AS thsyear_evyearfee_pay_close_ymd,     -- 금년차연차료납부마감일
+        NVL(t2.governpay_fee, 0)                    AS governpay_fee,                       -- 관납료
+        t2.right_expir_ymd,                                                                 -- 권리만료일자 
+        t1.right_expir_ymd                          AS last_right_expir_ymd,                -- 최종권리만료일자 
+        t3.nm,
+        t3.empno,
+        t3.syspayno,
+        t1.invnt_krn_nm,
+        t2.right_req_no,
+        t5.cd_nm                                    AS apr_state
+FROM    patmastr            t1,
+        patrightmnt         t2,
+        humbasicinfo        t3,
+        OUTER(xomxintfatab  t4,
+              xodxcommst    t5),
+        OUTER((SELECT req_no, MIN(accnt_no) AS accnt_no FROM patrelatreschprj GROUP BY 1) t6)
+WHERE   t1.mngmt_no         = t2.mngmt_no
+AND     t1.req_no           = t6.req_no
+AND     t1.invnt_syspayno   = t3.syspayno
+AND     t2.right_req_no     = t4.req_no
+AND     t4.apr_state        = t5.cd
+<if test="regst_ymd_st != null and regst_ymd_st != ''">
+	     AND     t1.regst_ymd        >= #{regst_ymd_st} 
+</if>
+<if test="regst_ymd_ed != null and regst_ymd_ed != ''">
+	     AND     t1.regst_ymd     <![CDATA[ <= ]]> #{regst_ymd_ed} 
+	     
+</if>
+<if test="smitapp_ymd_st != null and smitapp_ymd_st != ''">
+	     AND     t1.smitapp_ymd  <![CDATA[ >= ]]>  #{smitapp_ymd_st} 
+</if>
+<if test="smitapp_ymd_ed != null and smitapp_ymd_ed != ''">
+	     AND     t1.smitapp_ymd   <![CDATA[ <= ]]> #{smitapp_ymd_ed} 
+</if>
+<if test="regst_no_like != null and regst_no_like != ''">
+	  AND     t1.regst_no         LIKE #{regst_no_like}
+</if>
+<if test="smitapp_no_like != null and smitapp_no_like != ''">
+	  AND     t1.smitapp_no       LIKE #{smitapp_no_like}
+</if>
+<if test="nm_like != null and nm_like != ''">
+	  AND     t3.nm               LIKE #{nm_like}
+</if>
+<if test="invnt_syspayno != null and invnt_syspayno != ''">
+	  AND     t1.invnt_syspayno   = #{invnt_syspayno}
+</if>
+<if test="mnt_seq != null and mnt_seq != ''">
+	  AND     t2.mnt_seq          = #{mnt_seq}
+</if>
+ORDER BY    t1.smitapp_no, 
+            t1.regst_no,
+            t2.mnt_seq
+  </select>
+  <insert id="insertPatGiveUpSI01" parameterType="kr.re.kitech.biz.pat.mnt.vo.PatrightmntVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.mnt.insertPatGiveUpSI01 */ 
+		 INTO patgiveup ( giveup_req_no      ,
+                        seq_no             ,
+                        mngmt_no           ,
+                        giveup_clsf        ,
+                        state_cd           ,
+                        giveup_dept_cd     ,
+                        giveup_syspayno    ,
+                        giveup_dept_new_ymd,
+                        giveup_ymd         ,
+                        giveup_knd         ,
+                        giveup_resn        ,
+                        draft_syspayno     ,
+                        draft_ymd          ,
+                        apprvl_complt_ymd  ,
+                        reject_ymd         ,
+                        attach_file_no     ,
+                        adm_yn             ,
+                        multi_app_yn       ,
+                        regst_syspayno     ,
+                        regst_daytm        )
+VALUES (#{giveup_req_no},
+        #{seq_no},
+        #{mngmt_no},
+        #{giveup_clsf},
+        #{state_cd},
+        #{giveup_dept_cd},
+        #{giveup_syspayno},
+        #{giveup_dept_new_ymd},
+        #{giveup_ymd},
+        #{giveup_knd},
+        #{giveup_resn},
+        #{draft_syspayno},
+        #{draft_ymd},
+        #{apprvl_complt_ymd},
+        #{reject_ymd},
+        #{attach_file_no},
+        #{adm_yn},
+        #{multi_app_yn},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+  <select id="selectPatTodoSS01" parameterType="kr.re.kitech.biz.pat.mnt.vo.PatrightmntVo" resultType="kr.re.kitech.biz.pat.mnt.vo.PatrightmntVo">
+select /* QueryID : kr.re.kitech.biz.pat.mnt.selectPatTodoSS01 */ 
+		 todo_id,
+       work_id,
+       req_no
+from pattodo 
+where mngmt_no = #{mngmt_no}
+and end_yn='N'
+  </select>
+  <update id="updatePatPtsTodoSU01" parameterType="kr.re.kitech.biz.pat.mnt.vo.PatrightmntVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.mnt.updatePatPtsTodoSU01 */ 
+		 pattodo
+   SET end_yn = 'Y'
+ WHERE mngmt_no = #{mngmt_no}
+   AND end_yn = 'N'
+  </update>
+  <update id="updatePatGiveUpSU01" parameterType="kr.re.kitech.biz.pat.mnt.vo.PatrightmntVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.mnt.updatePatGiveUpSU01 */ 
+		  patgiveup
+SET     
+ mngmt_no            = #{mngmt_no},    
+ giveup_clsf         = #{giveup_clsf},    
+ state_cd            = #{state_cd},    
+ giveup_dept_cd      = #{giveup_dept_cd},    
+ giveup_syspayno     = #{giveup_syspayno},    
+ giveup_dept_new_ymd = #{giveup_dept_new_ymd},    
+ giveup_ymd          = #{giveup_ymd},    
+ giveup_knd          = #{giveup_knd},    
+ giveup_resn         = #{giveup_resn},    
+ draft_syspayno      = #{draft_syspayno},    
+ draft_ymd           = #{draft_ymd},    
+ apprvl_complt_ymd   = #{apprvl_complt_ymd},    
+ reject_ymd          = #{reject_ymd},    
+ attach_file_no      = #{attach_file_no},    
+ updt_syspayno   = #{updt_syspayno},
+ updt_daytm      = CURRENT
+WHERE   giveup_req_no   = #{giveup_req_no}
+<if test="seq_no != null and seq_no != ''">
+	  AND     seq_no          = #{seq_no}
+</if>
+  </update>
+</mapper>

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="병가 미처리 현황 팝업">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="aset_typ" name="aset_typ" dataType="text"></w2:column>
+            			<w2:column id="aset_clsf_nm" name="aset_clsf_nm" dataType="text"></w2:column>
+            			<w2:column id="couse_clsf_nm" name="couse_clsf_nm" dataType="text"></w2:column>
+            			<w2:column id="aset_no" name="aset_no" dataType="text"></w2:column>
+            			<w2:column id="intro_ymd" name="intro_ymd" dataType="text"></w2:column>
+            			<w2:column id="aset_nm" name="aset_nm" dataType="text"></w2:column>
+            			<w2:column id="user_empno" name="user_empno" dataType="text"></w2:column>
+            			<w2:column id="user_nm" name="user_nm" dataType="text"></w2:column>
+            			<w2:column id="user_ext_no" name="user_ext_no" dataType="text"></w2:column>
+            			<w2:column id="posi_region_nm" name="posi_region_nm" dataType="text"></w2:column>
+            			<w2:column id="posi_build_nm" name="posi_build_nm" dataType="text"></w2:column>
+            			<w2:column id="posi_floor" name="posi_floor" dataType="text"></w2:column>
+            			<w2:column id="posi_detls" name="posi_detls" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="user_syspayno" name="시스템개인번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+          <!-- 회의실신청조회 -->
+			<xf:submission id="sbm_selectAssetList" ref='data:json,dma_search'
+				target='data:json,{"id":"dlt_grd","key":"assetsVoList"}' action="SvcHUMAPYSVRR09.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 병가 증빙파일 미처리 현황 팝업
+ 	 * 변경 이력 : 2022-09-07	이영희	최초 작성
+ 	 * serviceId : 
+ 	 ****************************************************/
+    /*
+     *페이지 로딩 이벤트
+     */        
+	scwin.onpageload = function() {
+		dma_search.set("user_syspayno",com.getParameter("user_syspayno"));
+		console.log(com.getParameter("user_syspayno"));	
+		com.execute(sbm_selectAssetList, {
+			successCallback : function(e){
+				dlt_grd.setJSON(e.responseJSON.cgslappVoList);
+			}
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/*
+     * 닫기 버튼 클릭 이벤트
+     */  
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="titleSection pt0" id="" style="">
+    			<xf:group class="le" id="">
+    				<w2:span class="note red" id="" label="공용 자산은 부서장의 일괄 인수 인계 대상 입니다."
+    					style="">
+    				</w2:span>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:group class="btnarea" id="" style="">
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="10">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="자산구분" width="70" rowSpan="2"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="자산분류" width="150" rowSpan="2"> </w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="개인/공용" width="70" rowSpan="2"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="column14" value="자산번호" displayMode="label" rowSpan="2"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column12" value="도입일자" displayMode="label" rowSpan="2"></w2:column>
+    					<w2:column width="150" inputType="text" style="height:28px" id="column10" value="자산명" displayMode="label" rowSpan="2"></w2:column>
+    					<w2:column width="200" inputType="text" style="height:28px" id="column68" value="사용자" displayMode="label" colSpan="3" rowSpan="2"></w2:column>
+    					<w2:column width="200" inputType="text" style="height:28px" id="column8" value="사용자" displayMode="label" colSpan="4"></w2:column>
+    				</w2:row>
+    				<w2:row>
+							<w2:column inputType="text" valueType="binary" style="height:20px;" id="column11" width="84" value="지역"></w2:column>
+							<w2:column inputType="text" valueType="binary" style="height:20px" id="column7" width="70" value="건물"></w2:column>
+							<w2:column inputType="text" valueType="binary" style="height:20px" id="column12" width="70" value="층"></w2:column>
+							<w2:column inputType="text" valueType="binary" style="height:20px" id="column15" width="136" value="상세 위치"></w2:column>
+						</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column id="aset_typ" style="height:22px" inputType="select" width="70" allOption="" chooseOption="">
+								<w2:choices>
+									<w2:item>
+										<w2:label>자산</w2:label>
+										<w2:value>AAA010</w2:value>
+									</w2:item>
+									<w2:item>
+										<w2:label>수량</w2:label>
+										<w2:value>AAA030</w2:value>
+									</w2:item>
+								</w2:choices>
+							</w2:column>
+							<w2:column inputType="text" valueType="binary" style="height:22px" id="aset_clsf_nm" width="150" readOnly="true"></w2:column>
+							<w2:column id="couse_clsf_nm" style="height:22px" hidden="" inputType="text" width="70" valueType="binary" textAlign="center" readOnly="true"></w2:column>
+							<w2:column id="aset_no"  inputType="text" style="height:22px" valueType="binary" width="94"  readOnly="true"/>
+							<w2:column id="intro_ymd" style="height:22px" inputType="text" width="80" dataType="date" depthColumn="" displayFormat="yyyy-MM-dd" readOnly="true"></w2:column>
+							<w2:column id="aset_nm" inputType="text" style="height:22px" valueType="binary" width="220" textAlign="left"  readOnly="true"/>
+							<w2:column inputType="text" valueType="binary" style="height:22px" id="user_empno" width="60" readOnly="true"></w2:column>
+							<w2:column id="user_nm" inputType="text" style="height:22px" valueType="binary" width="74"  readOnly="true"/>
+							<w2:column inputType="text" valueType="binary" style="height:22px" id="user_ext_no" width="96" readOnly="true"></w2:column>
+							<w2:column id="posi_region_nm" inputType="text" style="height:22px" valueType="binary" width="84" textAlign="center"  readOnly="true"/>
+							<w2:column inputType="text" valueType="binary" style="height:22px" id="posi_build_nm" width="70" textAlign="center" readOnly="true"></w2:column>
+							<w2:column inputType="text" valueType="binary" style="height:22px" id="posi_floor" width="70" textAlign="center" readOnly="true"></w2:column>
+							<w2:column inputType="text" valueType="binary" style="height:22px" id="posi_detls" width="136" textAlign="left" readOnly="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

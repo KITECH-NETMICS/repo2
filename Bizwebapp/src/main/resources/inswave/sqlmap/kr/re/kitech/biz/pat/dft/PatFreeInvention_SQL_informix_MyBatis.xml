@@ -1,0 +1,907 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.dft">
+  <select id="selectPatMastrMS02" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo" resultType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.dft.xda.PatMastrMS02 자유발명신고서조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.dft.selectPatMastrMS02 */ 
+		 t9.dept_typ    /*지역본부  */
+     , t1.req_no     /* 신청번호 */
+     , t1.pat_clsf   /* 지식재산권 유형  */ 
+     , t1.invnt_krn_nm  /* 발명의 명칭 */
+     , t3.nm            /* 주발명자    */
+     , t4.nm AS regst_nm    /* 등록자    */
+     , t1.invnt_clsf
+     , fun_pat_app_vend_lst(t1.req_no) AS co_smitapp_ex /* 출원인      */ 
+     , decode(NVL(rsml.key_2,''),'','미등록',rsml.key_2)  AS rsml_mngmt_no  /* 소연심의 등록여부*/
+     , decode(NVL(rsup.key_2,''),'','미등록',rsup.key_2)  AS rsup_mngmt_no  /* 지 심의 등록여부*/
+     , FUN_XODXCOMMST_CD_NM(rsml.rvew_rst_cd,0) AS rsml_rst_cd   /* 소연심의 상태 값*/
+     , FUN_XODXCOMMST_CD_NM(rsup.rvew_rst_cd,0) AS rsup_rst_cd    /* 지 심의 상태 값*/
+     , FUN_XODXCOMMST_CD_NM(t10.apr_state,0) as apr_state_nm
+     , t1.regst_daytm
+FROM patappmastr t1
+LEFT JOIN humbasicinfo t3 ON t3.syspayno = t1.invnt_syspayno
+LEFT JOIN humbasicinfo t4 ON t4.syspayno = t1.regst_syspayno
+LEFT JOIN xodhdeptinfo t9 ON t9.dept_cd = t3.dept_cd AND t9.dept_new_ymd = t3.dept_new_ymd 
+LEFT JOIN ressmlrvewd rsml ON t1.req_no = rsml.key_1
+LEFT JOIN ressuperrvewd rsup ON t1.req_no = rsup.key_1
+INNER join xomxintfatab t10 on t1.req_no = t10.req_no
+WHERE t1.invnt_clsf IN ('PBT030', 'PBT040')
+  AND t1.invnt_krn_nm LIKE '%'||#{req_no}||'%' 
+<if test="invnt_syspayno != null and invnt_syspayno != ''">
+	 AND (t1.invnt_syspayno = #{invnt_syspayno} OR t1.regst_syspayno= #{regst_syspayno} )
+</if>
+<if test="pat_clsf != null and pat_clsf != ''">
+	 AND t1.pat_clsf = #{pat_clsf}
+</if>
+<if test="req_no != null and req_no != ''">
+	 AND t1.req_no = #{req_no}
+</if>
+<if test="dept_typ != null and dept_typ != ''">
+	 AND t9.dept_typ = #{dept_typ}
+</if>
+<if test="regst_daytm_st != null and regst_daytm_st != ''">
+	 AND TO_CHAR(t1.regst_daytm, '%Y%m%d') <![CDATA[ >= ]]> #{regst_daytm_st}
+</if>
+<if test="regst_daytm_ed != null and regst_daytm_ed != ''">
+	 AND TO_CHAR(t1.regst_daytm, '%Y%m%d') <![CDATA[ <= ]]> #{regst_daytm_ed}
+</if>
+<if test='rve_clsf == "Y"'> AND rsml.key_1 IS NOT NULL </if>
+<if test='rve_clsf == "N"'> AND rsup.key_1 IS NOT NULL </if>
+<if test='rve_clsf == "F"'> AND (rsml.key_1 IS NULL AND rsup.key_1 IS NULL) </if>
+ORDER BY t1.req_no DESC
+  </select>
+  <update id="updatePatAppMastrSU01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppMastrSU01 결재 특허마스터 변경 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.dft.updatePatAppMastrSU01 */ 
+		 patappmastr
+SET 
+    <if test="pat_clsf != null and pat_clsf != ''">
+	  pat_clsf                = #{pat_clsf},
+</if>  /* 특허구분 */
+    <if test="state != null and state != ''">
+	  state                   = #{state},
+</if>  /* 상태 */
+    <if test="invnt_krn_nm != null and invnt_krn_nm != ''">
+	  invnt_krn_nm            = #{invnt_krn_nm},
+</if>  /* 발명국문명칭 */
+    <if test="invnt_eng_nm != null and invnt_eng_nm != ''">
+	  invnt_eng_nm            = #{invnt_eng_nm},
+</if>  /* 발명영문명칭 */
+    <if test="trans_nm != null and trans_nm != ''">
+	  trans_nm                = #{trans_nm},
+</if>  /* 양도명칭 */
+    <if test="invnt_syspayno != null and invnt_syspayno != ''">
+	  invnt_syspayno          = #{invnt_syspayno},
+</if>  /* 발명시스템개인번호 */
+    <if test="charg_syspayno != null and charg_syspayno != ''">
+	  charg_syspayno          = #{charg_syspayno},
+</if>  /* 담당시스템개인번호 */
+    <if test="tech_field != null and tech_field != ''">
+	  tech_field              = #{tech_field},
+</if>  /* 기술적특징 - 배경기술 */
+    <if test="relat_invnt != null and relat_invnt != ''">
+	  relat_invnt             = #{relat_invnt},
+</if>  /* 관련특허 */
+    <if test="indst_use_clsf != null and indst_use_clsf != ''">
+	  indst_use_clsf          = #{indst_use_clsf},
+</if>  /* 기술적특징 - 산업상 이용분야 */
+    <if test="solve_task != null and solve_task != ''">
+	  solve_task              = #{solve_task},
+</if>  /* 기술적특징 - 해결하고자 하는 과제 */
+    <if test="invnt_efct != null and invnt_efct != ''">
+	  invnt_efct              = #{invnt_efct},
+</if>  /* 기술적특징 - 발명의 효과 */
+    <if test="dom_oversea_clsf != null and dom_oversea_clsf != ''">
+	  dom_oversea_clsf        = #{dom_oversea_clsf},
+</if>  /* 국내해외구분 */
+    <if test="temp_oversapp_hope_ex != null and temp_oversapp_hope_ex != ''">
+	  temp_oversapp_hope_ex   = #{temp_oversapp_hope_ex},
+</if>  /* 임시해외출원희망유무 */
+    <if test="pct_chk != null and pct_chk != ''">
+	  pct_chk                 = #{pct_chk},
+</if>  /* PCT 진입여부 */
+    <if test="smitapp_hope_natn_cd != null and smitapp_hope_natn_cd != ''">
+	  smitapp_hope_natn_cd    = #{smitapp_hope_natn_cd},
+</if>  /* 출원희망국가코드 */
+    <if test="smitapp_hope_natn_nm != null and smitapp_hope_natn_nm != ''">
+	  smitapp_hope_natn_nm    = #{smitapp_hope_natn_nm},
+</if>  /* 출원희망국가명 */
+    <if test="open_ex != null and open_ex != ''">
+	  open_ex                 = #{open_ex},
+</if>  /* 공개유무 */
+    <if test="open_ymd != null and open_ymd != ''">
+	  open_ymd                = #{open_ymd},
+</if>  /* 공개일자 */
+    <if test="open_contnt != null and open_contnt != ''">
+	  open_contnt             = #{open_contnt},
+</if>  /* 공개내용 */
+    <if test="invnt_clsf != null and invnt_clsf != ''">
+	  invnt_clsf              = #{invnt_clsf},
+</if>  /* 발명구분 */
+    <if test="pat_grd != null and pat_grd != ''">
+	  pat_grd                 = #{pat_grd},
+</if>  /* 발명의 등급 */
+    <if test="grd_resn != null and grd_resn != ''">
+	  grd_resn                = #{grd_resn},
+</if> /* 발명등급 선택 이유*/
+    <if test="bef_open_yn != null and bef_open_yn != ''">
+	  bef_open_yn             = #{bef_open_yn},
+</if> /* 사전공개유무*/
+    <if test="ely_open_ex != null and ely_open_ex != ''">
+	  ely_open_ex             = #{ely_open_ex},
+</if>  /* 조기공개유무 */
+    <if test="eval_demnd_ex != null and eval_demnd_ex != ''">
+	  eval_demnd_ex           = #{eval_demnd_ex},
+</if>  /* 심사청구유무 */
+    <if test="prity_eval_ex != null and prity_eval_ex != ''">
+	  prity_eval_ex           = #{prity_eval_ex},
+</if>  /* 우선심사유무 */
+    <if test="smitapp_occr_clsf != null and smitapp_occr_clsf != ''">
+	  smitapp_occr_clsf       = #{smitapp_occr_clsf},
+</if>  /* 출원발생구분 */
+    <if test="co_smitapp_ex != null and co_smitapp_ex != ''">
+	  co_smitapp_ex           = #{co_smitapp_ex},
+</if>  /* 공동출원유무 */
+    <if test="smitapp_way != null and smitapp_way != ''">
+	  smitapp_way             = #{smitapp_way},
+</if>  /* 출원방법 */
+    <if test="hope_patofic_cd != null and hope_patofic_cd != ''">
+	  hope_patofic_cd         = #{hope_patofic_cd},
+</if>  /* 희망특허사무소코드 */
+    <if test="hope_patofic_contac_loc != null and hope_patofic_contac_loc != ''">
+	  hope_patofic_contac_loc = #{hope_patofic_contac_loc},
+</if>  /* 희망특허사무소연락처 */
+    <if test="hope_patofic_nm != null and hope_patofic_nm != ''">
+	  hope_patofic_nm         = #{hope_patofic_nm},
+</if>  /* 희망특허사무소명칭 */
+    <if test="hope_patofic_charg_id != null and hope_patofic_charg_id != ''">
+	  hope_patofic_charg_id   = #{hope_patofic_charg_id},
+</if>  /* 희망특허사무소담당자id */
+    <if test="hope_patofic_charg_nm != null and hope_patofic_charg_nm != ''">
+	  hope_patofic_charg_nm   = #{hope_patofic_charg_nm},
+</if>  /* 희망특허사무소담당자명 */
+    <if test="tech_eval_hope_ex != null and tech_eval_hope_ex != ''">
+	  tech_eval_hope_ex       = #{tech_eval_hope_ex},
+</if>  /* 기술평가희망유무 */
+    <if test="tech_befr_hope_ex != null and tech_befr_hope_ex != ''">
+	  tech_befr_hope_ex       = #{tech_befr_hope_ex},
+</if>  /* 기술이전희망유무 */
+    <if test="tech_trans_hope_amt != null and tech_trans_hope_amt != ''">
+	  tech_trans_hope_amt     = #{tech_trans_hope_amt},
+</if>  /* 기술이전희망금액 */
+    <if test="tech_trans_hope_typ != null and tech_trans_hope_typ != ''">
+	  tech_trans_hope_typ     = #{tech_trans_hope_typ},
+</if>  /* 기술이전희망유형 */
+    <if test="temp_storg_ymd != null and temp_storg_ymd != ''">
+	  temp_storg_ymd          = #{temp_storg_ymd},
+</if>  /* 임시저장일자 */
+    <if test="affir_req_ymd != null and affir_req_ymd != ''">
+	  affir_req_ymd           = #{affir_req_ymd},
+</if>  /* 확인요청일자 */
+    <if test="invnt_psn_rmk != null and invnt_psn_rmk != ''">
+	  invnt_psn_rmk           = #{invnt_psn_rmk},
+</if>  /* 발명자비고 */
+    <if test="invnt_draft_ymd != null and invnt_draft_ymd != ''">
+	  invnt_draft_ymd         = #{invnt_draft_ymd},
+</if>  /* 발명기안일자 */
+    <if test="invnt_apprvl_complt_ymd != null and invnt_apprvl_complt_ymd != ''">
+	  invnt_apprvl_complt_ymd = #{invnt_apprvl_complt_ymd},
+</if>  /* 발명결재완료일자 */
+    <if test="invnt_reject_ymd != null and invnt_reject_ymd != ''">
+	  invnt_reject_ymd        = #{invnt_reject_ymd},
+</if>  /* 발명부결일자 */
+    <if test="invnt_reject_resn != null and invnt_reject_resn != ''">
+	  invnt_reject_resn       = #{invnt_reject_resn},
+</if>  /* 발명부결사유 */
+    <if test="invnt_wrte_syspayno != null and invnt_wrte_syspayno != ''">
+	  invnt_wrte_syspayno     = #{invnt_wrte_syspayno},
+</if>  /* 발명작성시스템개인번호 */
+    <if test="prityrgt_wdrw_ymd != null and prityrgt_wdrw_ymd != ''">
+	  prityrgt_wdrw_ymd       = #{prityrgt_wdrw_ymd},
+</if>  /* 우선권취하일자 */
+    <if test="old_data_mngmt_no != null and old_data_mngmt_no != ''">
+	  old_data_mngmt_no       = #{old_data_mngmt_no},
+</if>  /* 구데이터관리번호 */
+    <if test="attach_file_no_1 != null and attach_file_no_1 != ''">
+	  attach_file_no_1        = #{attach_file_no_1},
+</if>  /* 첨부파일 */
+    <if test="pct_attach_file_no != null and pct_attach_file_no != ''">
+	  pct_attach_file_no        = #{pct_attach_file_no},
+</if>  /* pct사업화계획서 */
+    <if test="out_deed_attach_file_no != null and out_deed_attach_file_no != ''">
+	  out_deed_attach_file_no = #{out_deed_attach_file_no},
+</if>  /* 외부인양도증 */
+    <if test="com_apply_attach_file_no != null and com_apply_attach_file_no != ''">
+	  com_apply_attach_file_no = #{com_apply_attach_file_no},
+</if>  /* 공동출원사유서 */
+    <if test="one_invnt_attach_file_no != null and one_invnt_attach_file_no != ''">
+	  one_invnt_attach_file_no = #{one_invnt_attach_file_no},
+</if>  /* 1인 발명지분 소명서 */
+    <if test="tech_clsf != null and tech_clsf != ''">
+	  tech_clsf               = #{tech_clsf},
+</if>  /* 기술분류 */
+    <if test="relat_dom_smitapp_no != null and relat_dom_smitapp_no != ''">
+	  relat_dom_smitapp_no    = #{relat_dom_smitapp_no},
+</if>  /* 관련국내출원번호 */
+    <if test="pre_tech_wrt_invst != null and pre_tech_wrt_invst != ''">
+	  pre_tech_wrt_invst      = #{pre_tech_wrt_invst},
+</if>  /* 선행기술조사서여부 */
+    <if test="attach_file_no_2 != null and attach_file_no_2 != ''">
+	  attach_file_no_2        = #{attach_file_no_2},
+</if>  /* 첨부파일 */
+    <if test="attach_file_no_3 != null and attach_file_no_3 != ''">
+	  attach_file_no_3        = #{attach_file_no_3},
+</if>  /* 첨부파일 */
+    <if test="attach_file_no_4 != null and attach_file_no_4 != ''">
+	  attach_file_no_4        = #{attach_file_no_4},
+</if>  /* 첨부파일 */
+    <if test="plan_attach_file_no != null and plan_attach_file_no != ''">
+	  plan_attach_file_no     = #{plan_attach_file_no},
+</if>  /* 도면 첨부파일 */
+    <if test="open_attach_file_no != null and open_attach_file_no != ''">
+	  open_attach_file_no     = #{open_attach_file_no},
+</if>  /* 사전공개 첨부파일 */
+    <if test="etc_attach_file_no != null and etc_attach_file_no != ''">
+	  etc_attach_file_no      = #{etc_attach_file_no},
+</if>  /* 기타 첨부파일 */
+    <if test="attach_file_no_5 != null and attach_file_no_5 != ''">
+	  attach_file_no_5        = #{attach_file_no_5},
+</if>  /* 발명인터뷰 발표자료 */
+    <if test="mandate_psn_syspayno != null and mandate_psn_syspayno != ''">
+	  mandate_psn_syspayno = #{mandate_psn_syspayno},
+</if>  /* 위임담당자 */
+    <if test="indst_tech_clsf != null and indst_tech_clsf != ''">
+	  indst_tech_clsf = #{indst_tech_clsf},
+</if> /* 산업기술분류(중분류) */
+    <if test="indst_tech_sml_clsf != null and indst_tech_sml_clsf != ''">
+	  indst_tech_sml_clsf = #{indst_tech_sml_clsf},
+</if> /* 산업기술분류(소분류) */
+    <if test="trns_yn != null and trns_yn != ''">
+	  trns_yn = #{trns_yn},
+</if>
+    <if test="tech_fee != null and tech_fee != ''">
+	  tech_fee = #{tech_fee},
+</if>
+    <if test="trns_ymd != null and trns_ymd != ''">
+	  trns_ymd = #{trns_ymd},
+</if>
+    <if test="interview_yn != null and interview_yn != ''">
+	  interview_yn = #{interview_yn},
+</if>
+    <if test="trl_step_cd != null and trl_step_cd != ''">
+	  trl_step_cd = #{trl_step_cd},
+</if>
+    <if test="indst_tech_minor_clsf != null and indst_tech_minor_clsf != ''">
+	  indst_tech_minor_clsf = #{indst_tech_minor_clsf},
+</if>
+    <if test="pdp_flag != null and pdp_flag != ''">
+	  pdp_flag = #{pdp_flag},
+</if>
+    demand_vend_nm = #{demand_vend_nm},    /* 수요기업 */
+    updt_syspayno = #{updt_syspayno},    /* 수정시스템개인번호 */
+    updt_daytm = CURRENT  /* 수정일시 */
+WHERE req_no = #{req_no}
+  </update>
+  <insert id="insertPatAppMastrSI01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppMastrSI01 결재 특허마스터 등록 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.dft.insertPatAppMastrSI01 */ 
+		 INTO patappmastr (req_no                 ,   /* 의뢰번호 */               
+                         pat_clsf               ,   /* 특허구분 */               
+                         state                  ,   /* 상태 */                   
+                         invnt_krn_nm           ,   /* 발명국문명칭 */           
+                         invnt_eng_nm           ,   /* 발명영문명칭 */           
+                         trans_nm               ,   /* 양도명칭 */               
+                         invnt_syspayno         ,   /* 발명시스템개인번호 */     
+                         charg_syspayno         ,   /* 담당시스템개인번호 */
+                         tech_field             ,   /* 기술적 특징 - 배경기술*/
+                         relat_invnt            ,   /* 관련특허*/
+                         indst_use_clsf         ,   /* 기술적 특징 - 산없방 이용 분야*/
+                         solve_task             ,   /* 기술적 특징 - 해결하고자 하는 과제*/
+                         invnt_efct             ,   /* 기술적 특징 - 발명의 효과*/
+                         dom_oversea_clsf       ,   /* 국내해외구분 */           
+                         temp_oversapp_hope_ex  ,   /* 임시해외출원희망유무 */   
+                         pct_chk                ,   /* PCT 진입여부 */
+                         smitapp_hope_natn_cd   ,   /* 출원희망국가코드 */       
+                         smitapp_hope_natn_nm   ,   /* 출원희망국가명 */         
+                         open_ex                ,   /* 공개유무 */               
+                         open_ymd               ,   /* 공개일자 */               
+                         open_contnt            ,   /* 공개내용 */               
+                         invnt_clsf             ,   /* 발명구분 */
+                         pat_grd                ,   /* 발명의 등급*/
+                         grd_resn               ,   /* 등급 선택 이유*/
+                         bef_open_yn            ,   /* 사전공개유무*/
+                         ely_open_ex            ,   /* 조기공개유무 */           
+                         eval_demnd_ex          ,   /* 심사청구유무 */           
+                         prity_eval_ex          ,   /* 우선심사유무 */           
+                         smitapp_occr_clsf      ,   /* 출원발생구분 */           
+                         co_smitapp_ex          ,   /* 공동출원유무 */           
+                         smitapp_way            ,   /* 출원방법 */               
+                         hope_patofic_cd        ,   /* 희망특허사무소코드 */     
+                         hope_patofic_contac_loc,   /* 희망특허사무소연락처 */   
+                         hope_patofic_nm        ,   /* 희망특허사무소명칭 */
+                         hope_patofic_charg_id  ,   /* 희망특허사무소담당자id */
+                         hope_patofic_charg_nm  ,   /* 희망특허사무소담당자명 */
+                         tech_eval_hope_ex      ,   /* 기술평가희망유무 */       
+                         tech_befr_hope_ex      ,   /* 기술이전희망유무 */       
+                         tech_trans_hope_amt    ,   /* 기술이전희망금액 */       
+                         tech_trans_hope_typ    ,   /* 기술이전희망유형 */       
+                         temp_storg_ymd         ,   /* 임시저장일자 */           
+                         affir_req_ymd          ,   /* 확인요청일자 */           
+                         invnt_psn_rmk          ,   /* 발명자비고 */             
+                         invnt_draft_ymd        ,   /* 발명기안일자 */           
+                         invnt_apprvl_complt_ymd,   /* 발명결재완료일자 */       
+                         invnt_reject_ymd       ,   /* 발명부결일자 */           
+                         invnt_reject_resn      ,   /* 발명부결사유 */           
+                         invnt_wrte_syspayno    ,   /* 발명작성시스템개인번호 */ 
+                         prityrgt_wdrw_ymd      ,   /* 우선권취하일자 */         
+                         old_data_mngmt_no      ,   /* 구데이터관리번호 */       
+                         attach_file_no_1       ,   /* 첨부파일(기술설명서) */
+                         pct_attach_file_no     ,   /* pct사업화계획서 */
+                         out_deed_attach_file_no,   /* 외부인양도증 */
+                         com_apply_attach_file_no,   /* 공동출원사유서 */
+                         one_invnt_attach_file_no,   /* 1인 발명지분 소명서 */                   
+                         tech_clsf              ,   /* 기술분류 */ 
+                         relat_dom_smitapp_no   ,   /* 관련국내출원번호 */         
+                         pre_tech_wrt_invst     ,   /* 선행기술조사서여부 */
+                         attach_file_no_2       ,   /* 첨부파일 (선행기술조사서)*/ 
+                         attach_file_no_3       ,   /* 첨부파일(사업화계획서) */ 
+                         attach_file_no_4       ,   /* 첨부파일(외부인 양도증) */
+                         plan_attach_file_no    ,   /* 기술적 특징 - 도면첨부*/
+                         open_attach_file_no    ,   /* 사전공개 첨부파일*/
+                         etc_attach_file_no     ,   /* 기타 첨부파일*/
+                         attach_file_no_5       ,   /* 기타 첨부파일( 발명인터뷰 발표자료)*/
+                         mandate_psn_syspayno,
+                         indst_tech_clsf,
+                         indst_tech_sml_clsf,
+                         trns_yn,
+                         tech_fee,
+                         trns_ymd,
+                         interview_yn,
+                         trl_step_cd,
+                         indst_tech_minor_clsf,
+                         demand_vend_nm,
+                         pdp_flag,        /* 특허설계지원사업 유무 */ 
+                         regst_syspayno,  /* 등록시스템개인번호 */     
+                         regst_daytm )    /* 등록일시 */                     
+VALUES (#{req_no},
+        #{pat_clsf},
+        #{state},
+        #{invnt_krn_nm},
+        #{invnt_eng_nm},
+        #{trans_nm},
+        #{invnt_syspayno},
+        #{charg_syspayno},
+        #{tech_field},
+        #{relat_invnt},
+        #{indst_use_clsf},
+        #{solve_task},
+        #{invnt_efct},
+        #{dom_oversea_clsf},
+        #{temp_oversapp_hope_ex},
+        #{pct_chk},
+        #{smitapp_hope_natn_cd},
+        #{smitapp_hope_natn_nm},
+        #{open_ex},
+        #{open_ymd},
+        #{open_contnt},
+        #{invnt_clsf},
+        #{pat_grd},
+        #{grd_resn},
+        #{bef_open_yn},
+        #{ely_open_ex},
+        #{eval_demnd_ex},
+        #{prity_eval_ex},
+        #{smitapp_occr_clsf},
+        #{co_smitapp_ex},
+        #{smitapp_way},
+        #{hope_patofic_cd},
+        #{hope_patofic_contac_loc},
+        #{hope_patofic_nm},
+        #{hope_patofic_charg_id},
+        #{hope_patofic_charg_nm},
+        #{tech_eval_hope_ex},
+        #{tech_befr_hope_ex},
+        #{tech_trans_hope_amt},
+        #{tech_trans_hope_typ},
+        #{temp_storg_ymd},
+        #{affir_req_ymd},
+        #{invnt_psn_rmk},
+        #{invnt_draft_ymd},
+        #{invnt_apprvl_complt_ymd},
+        #{invnt_reject_ymd},
+        #{invnt_reject_resn},
+        #{invnt_wrte_syspayno},
+        #{prityrgt_wdrw_ymd},
+        #{old_data_mngmt_no},
+        #{attach_file_no_1},
+        #{pct_attach_file_no},
+        #{out_deed_attach_file_no},
+        #{com_apply_attach_file_no},
+        #{one_invnt_attach_file_no},
+        #{tech_clsf},
+        #{relat_dom_smitapp_no},
+        #{pre_tech_wrt_invst},
+        #{attach_file_no_2},
+        #{attach_file_no_3},
+        #{attach_file_no_4},
+        #{plan_attach_file_no},
+        #{open_attach_file_no},
+        #{etc_attach_file_no},
+        #{attach_file_no_5},
+        #{mandate_psn_syspayno},
+        #{indst_tech_clsf},
+        #{indst_tech_sml_clsf},
+        #{trns_yn},
+        #{tech_fee},
+        #{trns_ymd},
+        #{interview_yn},
+        #{trl_step_cd},
+        #{indst_tech_minor_clsf},
+        #{demand_vend_nm},
+        #{pdp_flag},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+  <update id="updatePatAppCoSmitappVendSI01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.dft.xda.PatAppCoSmitappVendSI01 자유발명신고서_출원인 저장 */
+MERGE /* QueryID : kr.re.kitech.biz.pat.dft.updatePatAppCoSmitappVendSI01 */ 
+		 INTO patappcosmitappvend AS a
+USING DUAL AS B ON 1=1 AND a.req_no = #{req_no} AND a.seq = #{seq}
+WHEN MATCHED THEN
+UPDATE
+   SET vend_type = #{vend_type}
+     , vend_cd = #{vend_cd}
+     , vend_bsn_no = #{vend_bsn_no}
+     , vend_nm = #{vend_nm}
+     , stake_rt = #{stake_rt}
+     , charg = #{charg}
+     , contac_loc = #{contac_loc}
+     , addr = #{addr}
+     , updt_syspayno = #{regst_syspayno}
+     , updt_daytm = CURRENT
+WHEN NOT MATCHED THEN
+INSERT ( req_no        ,   /* 의뢰번호 */   
+         seq           ,   /* 일련번호 */
+         vend_type     ,   /* 업체구분 */
+         stake_rt      ,   /* 지분율   */                         
+         vend_nm       ,   /* 업체명   */
+         vend_cd       ,   /* 업체코드 */
+         vend_bsn_no   ,   /* 사업자번호 */
+         addr          ,   /* 주소     */
+         charg         ,   /* 담당자 */
+         contac_loc    ,   /* 연락처 */        
+         regst_syspayno,   /* 등록시스템개인번호 */ 
+         regst_daytm   )   /* 등록일시 */ 
+VALUES ( #{req_no},
+         #{seq},
+         #{vend_type},
+         #{stake_rt},
+         #{vend_nm},
+         #{vend_cd},
+         #{vend_bsn_no},
+         #{addr},
+         #{charg},
+         #{contac_loc},        
+         #{regst_syspayno},
+         CURRENT)
+  </update>
+  <delete id="deletePatAppCoSmitappVendSD01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppCoSmitappVendSD01 결재 공동출원업체 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.dft.deletePatAppCoSmitappVendSD01 */ 
+		 FROM patappcosmitappvend
+ WHERE req_no = #{req_no}
+ <if test="seq != null and seq != ''">
+ AND seq = #{seq}
+ </if>
+  </delete>
+  <update id="updatePatAppCoInvntPsnSI01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.dft.xda.PatAppCoInvntPsnSI01 자유발명신고서_자유발명자 저장 */
+MERGE /* QueryID : kr.re.kitech.biz.pat.dft.updatePatAppCoInvntPsnSI01 */ 
+		 INTO patappcoinvntpsn AS a
+USING DUAL AS b ON 1=1 AND a.req_no = #{req_no} AND a.seq = #{seq}
+WHEN MATCHED THEN
+UPDATE
+   SET  syspayno       = #{syspayno}
+      , blong_clsf     = #{blong_clsf}
+      , blong_cd       = #{blong_cd}
+      , dept_new_ymd   = #{dept_new_ymd}
+      , blong_nm       = #{blong_nm}
+      , nm_krn         = #{nm_krn}
+      , nm_eng         = #{nm_eng}
+      , resid_regst_no = #{resid_regst_no}
+      , contac_loc     = #{contac_loc}
+      , email          = #{email}
+      , addr           = #{addr}
+      , stake_rt       = #{stake_rt}
+      , invnt_psn_clsf = #{invnt_psn_clsf}
+      , updt_syspayno = #{regst_syspayno}
+      , updt_daytm = CURRENT
+WHEN NOT MATCHED THEN
+INSERT ( req_no            ,  /* 의뢰번호 */
+         seq               ,  /* 일련번호 */
+         syspayno          ,  /* 시스템개인번호 */
+         blong_clsf        ,  /* 소속구분 */
+         blong_cd          ,  /* 소속코드 */
+         dept_new_ymd     ,  /* 소속부서생성일 */
+         blong_nm          ,  /* 소속명 */
+         nm_krn            ,  /* 성명국문 */
+         nm_eng            ,  /* 성명영문 */
+         resid_regst_no    ,  /* 주민등록번호 */
+         contac_loc        ,  /* 연락처 */
+         email             ,  /* 이메일 */
+         addr              ,  /* 주소 */
+         stake_rt          ,  /* 지분율 */
+         invnt_psn_clsf    ,  /* 발명자구분 */
+         regst_syspayno    ,  /* 등록시스템개인번호 */ 
+         regst_daytm       )  /* 등록일시 */ 
+VALUES (#{req_no},
+        #{seq},
+        #{syspayno},
+        #{blong_clsf},
+        #{blong_cd},
+        #{dept_new_ymd},
+        #{blong_nm},
+        #{nm_krn},
+        #{nm_eng},
+        #{resid_regst_no},
+        #{contac_loc},
+        #{email},
+        #{addr},
+        #{stake_rt},
+        #{invnt_psn_clsf},
+        #{regst_syspayno},
+        CURRENT)
+  </update>
+  <delete id="deletePatAppCoInvntPsnSD01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppCoInvntPsnSD01 결재 공동발명자 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.dft.deletePatAppCoInvntPsnSD01 */ 
+		 FROM patappcoinvntpsn
+ WHERE req_no = #{req_no}
+ <if test="seq != null and seq != ''">
+ AND seq = #{seq}
+ </if>
+  </delete>
+  <insert id="insertPatAppTmInvntBookSI01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppTmInvntBookSI01 결재 상표발명서 등록 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.dft.insertPatAppTmInvntBookSI01 */ 
+		 INTO patapptminvntbook ( req_no               ,   /* 의뢰번호 */
+                                tm_mean              ,   /* 상표의미 */
+                                tm_desc              ,   /* 상표설명 */
+                                appont_goods         ,   /* 지정상품 */
+                                attach_file_no       ,   /* 첨부파일 */
+                                smitapp_urgntgee     ,   /* 출원시급도 */
+                                smitapp_urgntgee_resn,   /* 출원시급도이유 */
+                                regst_syspayno       ,   /* 등록시스템개인번호 */ 
+                                regst_daytm          )   /* 등록일시 */ 
+VALUES ( #{req_no},
+         #{tm_mean},
+         #{tm_desc},
+         #{appont_goods},
+         #{attach_file_no},
+         #{smitapp_urgntgee},
+         #{smitapp_urgntgee_resn},
+         #{regst_syspayno},
+         CURRENT)
+  </insert>
+  <update id="updatePatAppTmInvntBookSU01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppTmInvntBookSU01 결재 상표발명서 변경 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.dft.updatePatAppTmInvntBookSU01 */ 
+		  patapptminvntbook
+   SET  <if test="tm_mean != null and tm_mean != ''">
+	  tm_mean                 = #{tm_mean},
+</if>  /* 업체코드 */
+        <if test="tm_desc != null and tm_desc != ''">
+	  tm_desc                 = #{tm_desc},
+</if>  /* 담당자 */
+        <if test="appont_goods != null and appont_goods != ''">
+	  appont_goods            = #{appont_goods},
+</if>  /* 연락처 */
+        <if test="attach_file_no != null and attach_file_no != ''">
+	  attach_file_no          = #{attach_file_no},
+</if>  /* 연락처 */
+        <if test="smitapp_urgntgee != null and smitapp_urgntgee != ''">
+	  smitapp_urgntgee        = #{smitapp_urgntgee},
+</if>  /* 연락처 */
+        <if test="smitapp_urgntgee_resn != null and smitapp_urgntgee_resn != ''">
+	  smitapp_urgntgee_resn   = #{smitapp_urgntgee_resn},
+</if>  /* 연락처 */
+        updt_syspayno       = #{updt_syspayno},                                                                /* 수정시스템개인번호 */
+        updt_daytm          = CURRENT                                                           /* 수정일시 */
+WHERE   req_no              = #{req_no}
+  </update>
+  <insert id="insertPatAppDesnInvntBookSI01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppDesnInvntBookSI01 결재 디자인발명서 등록 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.dft.insertPatAppDesnInvntBookSI01 */ 
+		 INTO patappdesninvntbook ( req_no          ,   /* 의뢰번호 */
+                                  pre_desn_ex     ,   /* 선행디자인유무 */
+                                  pre_desn_nm     ,   /* 선행디자인명 */
+                                  desn_detls_desc ,   /* 디자인상세설명 */
+                                  attach_file_no_1,   /* 첨부파일1 */
+                                  attach_file_no_2,   /* 첨부파일2 */
+                                  attach_file_no_3,   /* 첨부파일3 */
+                                  attach_file_no_4,   /* 첨부파일4 */
+                                  attach_file_no_5,   /* 첨부파일5 */
+                                  attach_file_no_6,   /* 첨부파일6 */
+                                  attach_file_no_7,   /* 첨부파일7 */
+                                  regst_syspayno  ,   /* 등록시스템개인번호 */ 
+                                  regst_daytm     )   /* 등록일시 */ 
+VALUES ( #{req_no},
+         #{pre_desn_ex},
+         #{pre_desn_nm},
+         #{desn_detls_desc},
+         #{attach_file_no_1},
+         #{attach_file_no_2},
+         #{attach_file_no_3},
+         #{attach_file_no_4},
+         #{attach_file_no_5},
+         #{attach_file_no_6},
+         #{attach_file_no_7},
+         #{regst_syspayno},
+         CURRENT)
+  </insert>
+  <update id="updatePatAppDesnInvntBookSU01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppDesnInvntBookSU01 결재 디자인발명서 변경 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.dft.updatePatAppDesnInvntBookSU01 */ 
+		  patappdesninvntbook
+SET     <if test="pre_desn_ex != null and pre_desn_ex != ''">
+	  pre_desn_ex         = #{pre_desn_ex},
+</if>  /* 업체코드 */
+        <if test="pre_desn_nm != null and pre_desn_nm != ''">
+	  pre_desn_nm         = #{pre_desn_nm},
+</if>  /* 담당자 */
+        <if test="desn_detls_desc != null and desn_detls_desc != ''">
+	  desn_detls_desc     = #{desn_detls_desc},
+</if>  /* 연락처 */
+        <if test="attach_file_no_1 != null and attach_file_no_1 != ''">
+	  attach_file_no_1    = #{attach_file_no_1},
+</if>  /* 연락처 */
+        <if test="attach_file_no_2 != null and attach_file_no_2 != ''">
+	  attach_file_no_2    = #{attach_file_no_2},
+</if>  /* 연락처 */
+        <if test="attach_file_no_3 != null and attach_file_no_3 != ''">
+	  attach_file_no_3    = #{attach_file_no_3},
+</if>  /* 연락처 */
+        <if test="attach_file_no_4 != null and attach_file_no_4 != ''">
+	  attach_file_no_4    = #{attach_file_no_4},
+</if>  /* 연락처 */
+        <if test="attach_file_no_5 != null and attach_file_no_5 != ''">
+	  attach_file_no_5    = #{attach_file_no_5},
+</if>  /* 연락처 */
+        <if test="attach_file_no_6 != null and attach_file_no_6 != ''">
+	  attach_file_no_6    = #{attach_file_no_6},
+</if>  /* 연락처 */
+        <if test="attach_file_no_7 != null and attach_file_no_7 != ''">
+	  attach_file_no_7    = #{attach_file_no_7},
+</if>  /* 연락처 */
+        updt_syspayno       = #{updt_syspayno},                                                        /* 수정시스템개인번호 */
+        updt_daytm          = CURRENT                                                   /* 수정일시 */
+WHERE   req_no              = #{req_no}
+  </update>
+  <delete id="deletePatAttchaMastrSD01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAttchaMastrSD01 첨부파일마스터 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.dft.deletePatAttchaMastrSD01 */ 
+FROM    patattchamastr
+WHERE   req_no = #{req_no}
+<if test="attach_file_no != null and attach_file_no != ''">
+	  AND  attach_file_no    = #{attach_file_no}
+</if>
+  </delete>
+  <select id="selectPatAppMastrSS03" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo" resultType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.dft.xda.PatAppMastrSS03 자유/외부발명신고서 작성 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.dft.selectPatAppMastrSS03 */ 
+		 t1.req_no           /* 의뢰번호     */  
+     , t1.pat_clsf         /* 특허구분     */  
+     , t1.tech_clsf        /* 기술구분     */  
+     , t1.invnt_clsf         /* 발명구분      */ 
+     , t1.invnt_krn_nm     /* 발명국문명칭 */ 
+     , t1.invnt_syspayno   /* 발명시스템개인번호 */  
+     , t1.charg_syspayno   /* 담당시스템개인번호 */  
+     , fun_emp_nm(t1.charg_syspayno) AS charg_nm  /* 담당시스템사원명 */
+     , t1.attach_file_no_1  /* 첨부파일(기술설명서) */      
+     , t1.attach_file_no_2  /* 첨부파일(자유발명신고서)*/ 
+     , t1.plan_attach_file_no  /* 기술적특징 - 도면첨부*/
+     , t1.temp_storg_ymd          /* 임시저장일자     */   
+     , t1.affir_req_ymd           /* 확인요청일자     */  
+     , t1.invnt_wrte_syspayno     /* 발명작성시스템개인번호 */   
+     , t1.prityrgt_wdrw_ymd       /* 우선권취하일자   */ 
+     , t1.regst_syspayno          /* 등록시스템개인번호 */
+     , fun_emp_nm(t1.regst_syspayno) AS regst_nm /* 등록시스템사원명*/
+     , TO_CHAR(t1.regst_daytm, '%Y-%m-%d %H:%M:%S') AS regst_daytm /* 등록일시 */
+     , t1.tech_field      /* 기술적특징 - 배경기술*/
+     , t1.relat_invnt     /* 관련특허*/
+     , t1.indst_use_clsf  /* 발명을 하게된 경위*/
+     , t1.solve_task      /* 기술적특징 - 과제해결수단*/
+     , t1.trans_nm        /* 기술적특징 - 상세한설명*/
+     , t1.invnt_efct      /* 기술적특징 -  발명의 효과*/
+     , t8.apr_state        /* 결재진행상태   */
+     /* 상표      */
+     , t3.req_no AS tm_req_no
+     , t3.tm_mean       /* 상표의미 */
+     , t3.tm_desc       /* 상표설명 */
+     , t3.appont_goods  /* 지정상품 */
+     , t3.attach_file_no  AS attach_file_no_tab3  /* 첨부파일 */
+     /* 디자인    */
+     , t4.req_no AS desn_req_no
+     , t4.pre_desn_ex  /* 선행디자인유무 */
+     , t4.pre_desn_nm  /* 선행디자인명   */
+     , t4.desn_detls_desc  /* 디자인상세설명 */
+     , t4.attach_file_no_1  AS attach_file_no_tab2  /* 첨부파일1    */    
+FROM patappmastr t1
+LEFT JOIN patapptminvntbook t3 ON t1.req_no = t3.req_no  /* 상표  */
+LEFT JOIN patappdesninvntbook t4 ON t1.req_no = t4.req_no  /* 디자인 */
+LEFT JOIN xomxintfatab t8 ON t1.req_no = t8.req_no 
+WHERE t1.req_no = #{req_no}
+  </select>
+  <select id="selectPatAppCosmitAppVendMS01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo" resultType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.dft.xda.PatAppCosmitAppVendMS01 결재 공동출원업체 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.dft.selectPatAppCosmitAppVendMS01 */ 
+		 t1.req_no            AS req_no
+     , t1.vend_type         AS vend_type
+     , t1.seq
+     , t1.stake_rt          AS stake_rt
+     , t1.vend_cd           AS vend_cd
+     , t1.vend_nm           AS vend_nm
+     , t1.vend_bsn_no       AS vend_bsn_no
+     , t1.charg             AS charg
+     , t1.addr              AS addr
+     , t1.contac_loc        AS contac_loc
+  FROM patappcosmitappvend t1
+ WHERE t1.req_no = #{req_no}   /* 의뢰번호 */
+ ORDER BY t1.seq
+  </select>
+  <select id="selectPatAppCoinvntPsnMS01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo" resultType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.dft.xda.PatAppCoinvntPsnMS01 결재 공동발명자 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.dft.selectPatAppCoinvntPsnMS01 */ 
+		 a.req_no  /* 의뢰번호 */
+     , a.seq     /* 의뢰차수 */
+     , a.syspayno     /* 시스템개인번호   */
+     , substr(a.syspayno,3,8) AS empno     /* 시스템개인번호   */
+     , a.blong_clsf   /* 소속구분 */
+     , a.blong_cd     /* 소속코드 */
+     , a.blong_nm     /* 소속명   */
+     , a.nm_krn       /* 성명국문 */
+     , a.nm_eng       /* 성명영문 */
+     , a.resid_regst_no  /* 주민등록번호  */
+     , SUBSTR(a.resid_regst_no, 1, 6)||'*******' AS resid_no_dis  /* 주민등록번호*/
+     , a.contac_loc  /* 연락처 */
+     , a.email  /* 이메일 */
+     , a.addr   /* 주소   */
+     , a.stake_rt    /* 지분율 */
+     , RTRIM(a.invnt_psn_clsf) AS invnt_psn_clsf /* 발명자구분 */
+     , a.trans_ex  /* 양도유무 */
+     , a.attach_file_no /* 첨부파일 */
+     , a.co_invnt_affir_ex  /* 공동발명확인유무 */
+     , a.co_invnt_affir_ymd /* 공동발명확인일자 */
+     , a.co_invnt_affir_rmk /* 공동발명확인비고 */
+     , a.co_invnt_retn_ymd  /* 공동발명반송일자 */
+     , a.co_invnt_retn_rmk  /* 공동발명반송비고 */
+     , b.work_clsf
+     , c.cd_nm AS work_clsf_nm
+FROM patappcoinvntpsn a
+LEFT JOIN humbasicinfo b ON a.syspayno = b.syspayno
+LEFT JOIN xodxcommst c ON b.work_clsf = c.cd AND c.cd_clsf = 'HAG'
+WHERE a.req_no = #{req_no}
+ORDER BY a.seq
+  </select>
+  <select id="selectXodrEpuManSS02" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo" resultType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.epu.com.xda.XodrEpuManSS02 구매, 검수 권한 담당자 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.dft.selectXodrEpuManSS02 */ 
+    A.syspayno AS syspayno,
+    C.empno AS empno,
+    C.nm AS nm
+FROM xodrdeptpurman A
+JOIN humbasicinfo B
+ON A.dept_cd = B.dept_cd 
+AND A.dept_new_ymd = B.dept_new_ymd
+JOIN humbasicinfo C
+ON A.syspayno = C.syspayno
+WHERE A.role_type = #{role_type}
+AND B.syspayno = #{syspayno}
+  </select>
+  <select id="selectPatAppAttachMS01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo" resultType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.dft.xda.PatAppAttachMS01 결재 디자인 첨부파일 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.dft.selectPatAppAttachMS01 */ 
+		  req_no          ,   /* 의뢰번호           */  
+        attach_file_no  ,   /* 첨부파일번호       */
+        desc                /* 첨부파일내용       */
+FROM    Patattchamastr                       
+WHERE   1=1
+<if test="attach_clsf != null and attach_clsf != ''">
+	  AND attach_clsf  = #{attach_clsf}
+</if>   /* 첨부파일 구분 */
+<if test="req_no != null and req_no != ''">
+	  AND req_no       = #{req_no}
+</if>   /* 의뢰번호 */
+  </select>
+  <select id="selectPatDftInfoMS01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo" resultType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatDftInfoMS01 직무발명자정보 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.dft.selectPatDftInfoMS01 */ 
+		 b.dept_nm  AS blong_nm, /* 부서이름*/
+       a.syspayno AS syspayno, /* 개인번호*/
+       '1'   AS invnt_psn_clsf, /* 개인번호*/
+       a.nm  AS nm_krn,  /* 이름 */
+       a.empno,
+       a.nm_eng,
+       a.work_clsf,
+       '100' AS stake_rt,  /* 지분 */
+       a.ext_no AS contac_loc, /* 연락처 */
+       a.resid_no AS resid_regst_no, /* 주민번호 */
+       decode (nvl(a.addr_base,'') ,'', '충남 천안시 서북구 입장면 양대기로길 89 한국생산기술연구원' , a.addr_base||' '||a.addr_detls) AS addr,
+       SUBSTR(a.resid_no, 0, 6)||'-*******' AS resid_no_dis,   /* 주민번호*/
+       a.dept_cd   AS blong_cd,   /*소속코드  */
+       a.dept_new_ymd, /*부서신설일 */
+       a.email,   /*E-Mail  */
+       'PDT010' AS blong_clsf ,  /*소속구분 */
+       '1'  AS co_invnt_affir_ex, /*공동발명확인여부*/
+       TO_CHAR(CURRENT, '%Y%m%d') AS co_invnt_affir_ymd /*공동발명확인일자*/
+FROM humbasicinfo a
+INNER JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+WHERE a.syspayno = #{syspayno}
+  </select>
+  <delete id="deletePatAppMastrSD01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppMastrSD01 결재마스터삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.dft.deletePatAppMastrSD01 */ 
+		  patappmastr
+WHERE   req_no = #{req_no}
+  </delete>
+  <delete id="deletePatAppRelatReschPrjSD01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppRelatReschPrjSD01 결재 관련연구과제 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.dft.deletePatAppRelatReschPrjSD01 */ 
+FROM    patapprelatreschprj
+WHERE   req_no      = #{req_no}
+<if test="accnt_no != null and accnt_no != ''">
+	  AND     accnt_no    = #{accnt_no}
+</if>
+  </delete>
+  <delete id="deletePatAppRelatAccntSD01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppRelatAccntSD01 결재 관련계정 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.dft.deletePatAppRelatAccntSD01 */ 
+FROM    patapprelataccnt
+WHERE   req_no      = #{req_no}
+<if test="accnt_no != null and accnt_no != ''">
+	  AND     accnt_no    = #{accnt_no}
+</if>
+  </delete>
+  <delete id="deletePatAppPgmInvnibookSD01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppPgmInvnibookSD01 결재프로그램발명서삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.dft.deletePatAppPgmInvnibookSD01 */ 
+FROM    patapppgminvnibook
+WHERE   req_no = #{req_no}
+  </delete>
+  <delete id="deletePatAppDesnInvntbookSD01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppDesnInvntbookSD01 결재디자인발명서 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.dft.deletePatAppDesnInvntbookSD01 */ 
+FROM    patappdesninvntbook
+WHERE   req_no = #{req_no}
+  </delete>
+  <delete id="deletePatAppTmInvntBookSD01" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.com.xda.PatAppTmInvntBookSD01 결재상표발명서삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.dft.deletePatAppTmInvntBookSD01 */ 
+FROM    patapptminvntbook
+WHERE   req_no = #{req_no}
+  </delete>
+  <update id="updatePatFreeInvention" parameterType="kr.re.kitech.biz.pat.dft.vo.PatFreeInventionVo">
+/* XDA : kitech.pat.dft.xda.PatAttchaMastrSI01 자유발명신고서_디자인 첨부파일 그리드 저장 단건*/
+MERGE /* QueryID : kr.re.kitech.biz.pat.dft.updatePatFreeInvention */ 
+		 INTO patattchamastr AS a
+USING DUAL AS b ON a.req_no = #{req_no} AND a.attach_file_no =#{attach_file_no}
+WHEN MATCHED THEN
+UPDATE
+   SET desc = #{desc}
+     , updt_syspayno = #{regst_syspayno}
+     , updt_daytm = CURRENT
+WHEN NOT MATCHED THEN
+INSERT (req_no         , 
+        attach_clsf    , 
+        attach_file_no , 
+        desc           , 
+        regst_syspayno , 
+        regst_daytm)     
+VALUES(#{req_no},
+       #{attach_clsf},
+       #{attach_file_no},
+       #{desc},
+       #{regst_syspayno},
+       CURRENT)
+  </update>
+</mapper>

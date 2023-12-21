@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="메시지 팝업">
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection></w2:dataCollection>
+		</xf:model>
+		<style type="text/css"><![CDATA[
+			.w2popup_window.alert .w2window_close{display: none;}
+		]]></style>		
+		<script type="text/javascript" lazy="false"><![CDATA[
+		 	/****************************************************
+			 * 화면 설명 : alert 메시지 박스
+		 	 * 변경 이력 : 2021-11-01	문철주	최초작성
+		 	 ****************************************************/
+		
+			/**
+			 * 페이지 로딩 이벤트
+			 */
+			scwin.onpageload = function() {
+				try {
+					var message = com.getParameter("message") || "메시지 없음";
+					var isNotEscape = com.getParameter("isNotEscape") || false;
+					
+					tbx_msg.setValue(com.newlineToBr(message, isNotEscape)); // 개행문자 <br/>로 변경
+					// 메시지 길이가 길면 높이 조정
+					gcm.pop.setMsgPopHeight(scwin, grp_content);
+
+					$("div[id*='"+ scwin.$w.getPopupId() +"'").on('keydown', function(e){
+						if (e.keyCode == 32 || e.keyCode == 13 || e.keyCode == 27) {
+							var popComp = com.getComponent(this.id);
+							if (popComp._isWframePopup)
+								com.getComponent(this.id + '_wframe_com').closePopup(true);
+						}
+					});
+				} catch(e) {
+					console.error("[alertPop] Exception :: " + e);
+				}
+			};
+		
+			/**
+			 * 확인 버튼 클릭 이벤트
+			 */
+			scwin.btn_confirm_onclick = function(e) {
+				try {
+					com.closePopup(true);
+				} catch(ex) {
+					console.error("[alertPop] Exception :: " + ex);
+				}
+			};
+		]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group class="pop_contents" id="grp_body" style="">
+			<xf:group class="messageBox" id="grp_content">
+				<w2:textbox class="text" id="tbx_msg" label="Plese wait a moment." style="" tagname="p" ref="" escape="false"></w2:textbox>
+			</xf:group>
+			<xf:group id="" class="messageBtn">
+				<xf:group id="" class="fr">
+					<w2:anchor ev:onclick="scwin.btn_confirm_onclick" outerDiv="false" style="" id="btn_confirm" class="btn pro conf">
+						<xf:label><![CDATA[확인]]></xf:label>
+					</w2:anchor>
+				</xf:group>
+			</xf:group></xf:group>
+	</body>
+</html>

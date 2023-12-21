@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="휴가원 증빙자료">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="req_no" name="신청번호"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataList baseNode="list" id="dlt_aprReject" repeatNode="map" saveRemovedData="true" style="">
+            		<w2:columnInfo>
+            			<w2:column dataType="text" id="empname" name="반려자명"></w2:column>
+            			<w2:column dataType="text" id="contents" name="반려비고"></w2:column>
+            			<w2:column dataType="text" id="created_date" name="반려일자"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_cgsInfo" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="req_no" name="신청번호"></w2:key>
+            			<w2:key dataType="text" id="req_psn_syspayno" name="신청자시스템개인번호"></w2:key>
+            			<w2:key dataType="text" id="req_psn_empno" name="개인번호"></w2:key>
+            			<w2:key dataType="text" id="req_psn_nm" name="신청자"></w2:key>
+            			<w2:key dataType="text" id="holiday_clsf" name="휴가구분"></w2:key>
+            			<w2:key dataType="text" id="holiday_sub_clsf" name="휴가소구분"></w2:key>
+            			<w2:key dataType="text" id="holiday_clsf_nm" name="휴가구분명"></w2:key>
+
+            			<w2:key dataType="text" id="attach_file_no" name="첨부파일번호"></w2:key>
+            			<w2:key id="validAttachNo" name="첨부파일번호" dataType="text"></w2:key>
+            			<w2:key dataType="text" id="regst_psn" name="등록자"></w2:key>
+            			<w2:key dataType="text" id="vaccine" name="백신접종구분"></w2:key>
+            			<w2:key dataType="text" id="vac_cause" name="백신접종사유"></w2:key>
+            			<w2:key dataType="text" id="vac_gb" name="백신종류"></w2:key>
+            			<w2:key dataType="text" id="vac_date" name="접종시기"></w2:key>
+            			<w2:key id="holiday_prd" name="휴가기간" dataType="text"></w2:key>
+            			<w2:key id="endpoints" name="결재자" dataType="text"></w2:key>
+            			<w2:key id="req_ymd" name="신청일" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_apr">
+            		<w2:keyInfo>
+            			<w2:key id="reqNo" name="신청번호" dataType="text"></w2:key>
+            			<w2:key id="endpoint" name="결재자" dataType="text"></w2:key>
+            			<w2:key id="comments" name="결재의견" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 휴가원신청 조회 -->
+			<xf:submission id="sbm_selectData" ref='data:json,dma_search' target='data:json,[{"id":"dma_cgsInfo","key":"cgslappVo"},{"id":"dlt_aprReject","key":"docList"}]' action="/SvcCCSCGSVACR03.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+				ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<!-- 휴가원신청 저장 -->
+			<xf:submission id="sbm_saveData" ref='data:json,dma_cgsInfo' 
+				target='' action="/SvcCCSCGSVACU01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 휴가원증빙자료 결재 -->
+			<xf:submission id="sbm_sendApr" ref='data:json,dma_apr' 
+				target='' action="/SvcCCSCOMM01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 휴가원증빙자료 반려 -->
+			<xf:submission id="sbm_sendAprReject" ref='data:json,dma_apr' 
+				target='' action="/SvcCCSCOMM02.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>			
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+	 * 화면 설명 : 휴가원 증빙자료
+	 * 변경 이력 : 2022-09-02 이영희 최초생성
+	 * serviceId : C241
+	 ****************************************************/     
+	/**
+	 * 페이지 로딩 이벤트
+	 */  
+	scwin.data={
+		typeCode : "C241",
+		cmd : ""
+	};
+	scwin.onpageload = function() {
+		var param = com.getParameter();
+		dma_search.setJSON(param);		
+		
+		// 반려자 숨기기
+		grp_reject.hide();
+		
+		// session
+		var session = com.getLoginInfo();
+		scwin.data.sn = session.sn;
+		scwin.data.uid = session.uid;
+		
+		// 첨부파일 컴포넌트 초기화
+		com.file.init();
+//		com.file.create(upload_A.getID(), {fileKey: scwin.data.typeCode, mode: 'edit'});	
+
+		var roleCode =  session.roleCode;
+		// 1006215가 아닐때는 모두 숨김처리(김기탁 실장님/이민기 선임 요청)
+		if(roleCode.indexOf("1006215") == -1) {
+			btn_reject.hide();
+			btn_confirm.hide();
+		}
+		
+		if(param.param4 == "apr"){
+			scwin.data.cmd = "apr";
+			btn_close.hide();
+		}
+		
+		// 공통코드
+		var codeOptions = [ { code : "CBA", compID :"sbx_vac_cause" } // 백신접종사유
+						,	{ code : "CBS", compID :"sbx_vac_gb" } // 백신종류
+						,	{ code : "CBD", compID :"sbx_vac_date" } // 접종시기
+			];
+		com.setCmnCd(codeOptions, function() {	
+			scwin.search();
+		});
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */ 
+	scwin.search = function(){
+		com.execute(sbm_selectData, {
+			successCallback : function(e){
+				var attachFileNo = dma_cgsInfo.get("attach_file_no");
+				attachFileNo = attachFileNo.trim() == '' ? scwin.data.typeCode : attachFileNo;
+				if(attachFileNo != ""){
+					com.file.create(upload_A.getID(), {fileKey:attachFileNo, mode:'edit'});
+				}
+				
+				if(dlt_aprReject.getRowCount() > 0){
+					grp_reject.show("");
+				}else{
+					grp_reject.hide();
+				}
+				
+				var endpoints = dma_cgsInfo.get("endpoints").split(";");
+				var existsFlag = false;
+				if(endpoints.includes(scwin.data.uid)){
+					existsFlag = true;
+				}
+				// 2019-06-10, 장사랑, 휴가자 및 상신자 및 대결자가 아닐 경우에만 버튼 숨김 처리.
+				if(dma_cgsInfo.get("req_psn_syspayno")!= scwin.data.sn && dma_cgsInfo.get("regst_psn") !=scwin.data.sn  && !existsFlag){
+					btn_save.hide();
+				}
+				var roleCode = com.getLoginInfo('roleCode');
+				if(roleCode.indexOf("1006215") > -1) {
+					btn_save.show("");
+				}
+				
+				// 백신접종구분이 백신접종인 경우 백신정보 입력기능 보이기
+				if(dma_cgsInfo.get("vaccine") == "CBC001"){
+					grpVac.show("");
+				}else{
+					grpVac.hide();
+				}						
+			}
+		});
+	};
+	
+	/**
+	 * 닫기버튼 클릭 이벤트
+	 */ 
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**
+	 * 저장 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_save_onclick = function(e) {
+		if(com.file.action.getTotalFileCount(upload_A.getID()) < 1){
+			com.alert(com.getMsg("message.xom.co.com.0011", "증빙파일"));
+			return;
+		}
+		if (dma_cgsInfo.get("holiday_clsf") == "HBI100") { // 공가-코로나19인 경우 백신접종구분 필수값 처리
+			if(dma_cgsInfo.get("vaccine") == "CBC001"){
+				if(dma_cgsInfo.get("vac_cause") == "" || dma_cgsInfo.get("vac_gb") == "" || dma_cgsInfo.get("vac_date") == "" ){
+					com.alert("message.xom.ui.cgs.003"); // 공가-코로나19로 백신접종인 경우 백신접종사유, 백신종류, 접종시기 입력은 필수입니다.
+					return;
+				}
+			}
+		}
+		
+		com.file.transport( function( attachObj){
+			dma_cgsInfo.set("attach_file_no", attachObj.upload_A);
+			dma_cgsInfo.set("validAttachNo", attachObj.upload_A);
+			
+			com.execute(sbm_saveData, {
+				successCallback : function(e){
+					if (dma_cgsInfo.get("req_ymd") >= '20221017') {
+						com.alert("message.xom.wq.023" /*정상적으로 처리되었습니다.*/, function () {
+							com.closePopup();	
+						});
+					}
+					com.confirm("message.xom.ui.cgs.002", function(ret){
+						if(ret){
+								scwin.sendApr(1);
+						}
+					});
+				}
+			});
+		});
+	};
+	
+	/**
+	 * 결재 실행 
+	 10 17 이전이면 전문 전송 X
+	 */ 
+	scwin.sendApr = function(flag){
+		dma_apr.set("reqNo", dma_cgsInfo.get("req_no"));
+		dma_apr.set("endpoint", scwin.data.uid);							
+		
+		com.execute(sbm_sendApr, {
+			successCallback : function(e){
+				var arpDoc = "A003";
+				if(flag == 1){
+					alert("[알림] 증빙 확인 요청 하였습니다.");
+				}else if(flag == 2){
+					alert("[알림] 증빙 승인 하였습니다.");
+					arpDoc = "A004";
+				}
+				if(scwin.data.cmd == "apr"){
+					com.openTabMenu(arpDoc, {});
+				}
+			}
+		});
+	};
+	
+	/**
+	 * 승인 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_confirm_onclick = function(e) {
+		scwin.sendApr(2);
+	};
+	
+	/**
+	 * 반려 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_reject_onclick = function(e) {
+		dma_apr.set("reqNo", dma_cgsInfo.get("req_no"));
+		dma_apr.set("endpoint", scwin.data.uid);	
+		dma_apr.set("comments", "신청하신 휴가원과 관련있는 증빙서류를 첨부하여 재등록하여 주시기 바랍니다.<br/> 병가의 경우, 진단서는 반드시 첨부하여 주시기 바랍니다.");							
+		
+		com.execute(sbm_sendAprReject, {
+			successCallback : function(e){
+				alert("[알림] 증빙 반려 하였습니다.");
+				
+				if(scwin.data.cmd == "apr"){
+					com.openTabMenu("A003", {});
+				}
+			}
+		});
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group class="" id="grp_reject" style="">
+    		<xf:group class="titleSection" id="" style="">
+    			<w2:textbox class="tit_tbl" id="" label="반려자" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_aprReject" defaultCellHeight="28"
+    			evenRowBackgroundColor="#f7faff" id="grdReject" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult"
+    			rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40"
+    			rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="40" scrollByColumn="false" scrollByColumnAdaptive="false"
+    			selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;" summaryAuto="true" visibleRowNum="5">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column colSpan="1" displayMode="label" id="column5" inputType="text" rowSpan="" style="height:28px;" value="반려자"
+    						width="240">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column29" inputType="text" style="height:28px;" value="반려의견" width="200"></w2:column>
+    					<w2:column displayMode="label" id="column30" inputType="text" style="height:28px" value="반려일시" width="70"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" escape="false" id="empname" inputType="text" readOnly="true" style="height:28px;"
+    						width="120">
+    					</w2:column>
+    					<w2:column class="le" displayMode="label" id="contents" inputType="text" readOnly="true" style="height:28px;"
+    						width="400">
+    					</w2:column>
+    					<w2:column displayMode="label" id="created_date" inputType="text" readOnly="true" style="height:28px" value=""
+    						width="120">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    	<xf:group class="titleSection" id="" style="">
+    		<w2:textbox class="tit_tbl" id="" label="휴가원정보" style="" tagname="h3"></w2:textbox>
+    	</xf:group>
+    	<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    		<w2:attributes>
+    			<w2:summary></w2:summary>
+    		</w2:attributes>
+    		<xf:group tagname="caption" text="개인휴가현황 기본정보"></xf:group>
+    		<xf:group tagname="colgroup">
+    			<xf:group style="width:150px;" tagname="col"></xf:group>
+    			<xf:group style="" tagname="col"></xf:group>
+    			<xf:group style="width:150px;" tagname="col"></xf:group>
+    			<xf:group style="" tagname="col"></xf:group>
+    		</xf:group>
+    		<xf:group tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="신청번호" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:textbox class="txt" id="" label="000" style="" tagname="span" ref="data:dma_cgsInfo.req_no"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th" style="">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="신청자" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td" style="">
+    				<w2:attributes></w2:attributes>
+    				<w2:textbox class="txt" id="" label="000" style="" tagname="span" ref="data:dma_cgsInfo.req_psn_nm"></w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group tagname="tr" style="">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="휴가기간" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:textbox class="txt" id="" label="000" style="" tagname="span" ref="data:dma_cgsInfo.holiday_prd"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_th" style="" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="휴가구분" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" style="" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:textbox class="txt" id="" label="000" style="" tagname="span" ref="data:dma_cgsInfo.holiday_clsf_nm"></w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" tagname="tr" id="grpVac">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="백신접종정보" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes>
+    					<w2:colspan>3</w2:colspan>
+    					<w2:rowspan>1</w2:rowspan>
+    				</w2:attributes>
+    				<w2:textbox class="txt" id="" label="백신접송사유" style="" tagname="span"></w2:textbox>
+    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="sel" direction="auto"
+    					disabled="false" disabledClass="w2selectbox_disabled" id="sbx_vac_cause" ref="data:dma_cgsInfo.vac_cause" style="width:150px;" submenuSize="auto">
+    					<xf:choices></xf:choices>
+    				</xf:select1>
+    				<w2:textbox class="txt ml20" id="" label="백신종류" style="" tagname="span"></w2:textbox>
+    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="sel" direction="auto"
+    					disabled="false" disabledClass="w2selectbox_disabled" id="sbx_vac_gb" ref="data:dma_cgsInfo.vac_gb" style="width:100px;" submenuSize="auto">
+    					<xf:choices></xf:choices>
+    				</xf:select1>
+    				<w2:textbox class="txt ml20" id="" label="접종시기" style="" tagname="span"></w2:textbox>
+    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="sel" direction="auto"
+    					disabled="false" disabledClass="w2selectbox_disabled" id="sbx_vac_date" ref="data:dma_cgsInfo.vac_date" style="width:100px;" submenuSize="auto">
+    					<xf:choices></xf:choices>
+    				</xf:select1>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    				<w2:textbox id="" label="증빙자료" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes>
+    					<w2:colspan>3</w2:colspan>
+    					<w2:rowspan>1</w2:rowspan>
+    				</w2:attributes>
+    				<xf:group style="height:125px;">
+    					<xf:group class="full" id="upload_A" style="height:100%;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group class="helparea " id="" style="">
+    		<xf:group id="" style="" tagname="ol">
+    			<xf:group id="" tagname="li">
+    				<w2:textbox class="blue" id="" label='증빙첨부자료 추가/삭제 후 반드시 저장 버튼을 클릭하십시요.' style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le">
+    			<xf:trigger class=" btn pro " id="btn_reject" style="" type="button" ev:onclick="scwin.btn_reject_onclick">
+    				<xf:label><![CDATA[반려]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger class=" btn pro " id="btn_confirm" style="" type="button" ev:onclick="scwin.btn_confirm_onclick">
+    				<xf:label><![CDATA[승인]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class=" btn pro " ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger class=" btn pro conf" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    				<xf:label><![CDATA[저장]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

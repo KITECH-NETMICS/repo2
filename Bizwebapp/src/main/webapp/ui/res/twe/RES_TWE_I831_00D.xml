@@ -1,0 +1,571 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="시장정보 등록 및 상세조회">
+    	<w2:type>DEFAULT</w2:type>
+    	<w2:buildDate />
+    	<xf:model>
+    		<xf:instance>
+    			<data xmlns="" />
+    		</xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_market">
+            		<w2:keyInfo>
+            			<w2:key id="reg_no" name="reg_no" dataType="text"></w2:key>
+            			<w2:key id="title_ko" name="title_ko" dataType="text"></w2:key>
+            			<w2:key id="title_en" name="title_en" dataType="text"></w2:key>
+            			<w2:key id="industry_area_cd" name="industry_area_cd" dataType="text"></w2:key>
+            			<w2:key id="cd_nm" name="cd_nm" dataType="text"></w2:key>
+            			<w2:key id="author" name="author" dataType="text"></w2:key>
+            			<w2:key id="publisher" name="publisher" dataType="text"></w2:key>
+            			<w2:key id="publish_date" name="publish_date" dataType="text"></w2:key>
+            			<w2:key id="attach_file_no" name="attach_file_no" dataType="text"></w2:key>
+            			<w2:key id="open_yn" name="open_yn" dataType="text"></w2:key>
+            			<w2:key id="open_yn_nm" name="open_yn_nm" dataType="text"></w2:key>
+            			<w2:key id="regst_syspayno" name="regst_syspayno" dataType="text"></w2:key>
+            			<w2:key id="wri_psn_syspaynm" name="wri_psn_syspaynm" dataType="text"></w2:key>
+            			<w2:key id="regst_daytm" name="regst_daytm" dataType="text"></w2:key>
+            			<w2:key id="contnt" name="contnt" dataType="text"></w2:key>
+            			<w2:key id="rmk" name="rmk" dataType="text"></w2:key>
+            			<w2:key id="updt_syspayno" name="updt_syspayno" dataType="text"></w2:key>
+            			<w2:key id="rowStatus" name="rowStatus" dataType="text"></w2:key>
+            			<w2:key id="empno" name="empno" dataType="text"></w2:key>
+            			<w2:key id="wri_psn_syspayno" name="wri_psn_syspayno" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	
+            	<w2:dataMap baseNode="map" id="dma_downHist">
+            		<w2:keyInfo>
+            			<w2:key id="reg_no" name="reg_no" dataType="text"></w2:key>
+            			<w2:key id="attach_file_no" name="attach_file_no" dataType="text"></w2:key>
+            			<w2:key id="attach_file_nm" name="attach_file_nm" dataType="text"></w2:key>
+            			<w2:key id="regst_syspayno" name="regst_syspayno" dataType="text"></w2:key>
+            			<w2:key id="rowStatus" name="rowStatus" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <xf:submission id="sbm_selectMarket" ref="data:json,dma_market" encoding="UTF-8" mode="asynchronous"
+    			target='data:json,dma_market' action="SvcRESTWEMARL02.pwkjson" method="post" mediatype="application/json">
+    		</xf:submission>
+    		<xf:submission id="sbm_saveMarket" ref="data:json,dma_market" action="SvcRESTWECADM01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    		<xf:submission id="sbm_saveHistory" ref="data:json,dma_downHist" action="SvcRESTWECADM02.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    		<xf:submission id="sbm_deleteMarket" ref="data:json,dma_market" action="SvcRESTWECADD01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    	</xf:model>
+    	<script type="text/javascript" lazy="false"><![CDATA[
+	/**************************************************************
+	*						
+	*						정의함수
+	*
+	***************************************************************/
+	
+	//	페이지 로드
+	scwin.onpageload = function() {
+		com.file.init();
+		com.setEnterKeyEvent(grpSchHum, scwin.selectHumBtn);
+		var codeOptions = [ { code : "IND", compID : "industry_area_cd" } ];
+		com.initDataMap(dma_market);
+		fileArea.hide();
+		com.setCmnCd(codeOptions, function() {
+			com.setEnterKeyEvent(grpSchHum, scwin.selectHumBtn);
+			scwin.initForm();
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};	
+	
+	// 페이지 초기화
+	scwin.initForm = function() {
+		var params = com.getParameter();
+		if (com.isEmpty(params.reg_no)) {
+			com.initDataMap(dma_market);
+			com.file.create(upload_A.getID(), {fileKey: 'I831', mode: 'edit'});
+			agreeArea.hide();
+			fileArea.show();
+			chkBtn1.hide();
+			regst_daytm.setValue(com.getServerDateTime());
+			dma_market.set("empno", com.getLoginInfo("empno"));
+			dma_market.set("wri_psn_syspayno", com.getLoginInfo("sn"));
+			scwin.schHum();
+		} else {
+			scwin.selectData(params.reg_no);
+		}
+	};
+	
+	// 데이터 조회
+	scwin.selectData = function(reg_no) {
+		dma_market.set("rowStatus", "U"); // 상태 : 수정
+		dma_market.set("reg_no", reg_no); // 키 셋팅 및 조회
+		com.execute(sbm_selectMarket, {
+			successCallback : function(e) { 
+				//scwin.schHum();
+				var fileKey = e.responseJSON.elData.attach_file_no;
+				fileKey = (null == fileKey || '' == fileKey.trim()) ? 'I831' : fileKey;
+				com.file.create(upload_A.getID(), {fileKey: fileKey, mode: 'edit'});
+				
+				if(fileKey.length > 4){
+					fileArea.hide();
+					agreeArea.show();
+					chkBtn1.show();
+				}
+				else{
+					fileArea.show();
+					agreeArea.hide();
+					chkBtn1.hide();
+				}
+				
+				if (dma_market.get("regst_syspayno") != com.getLoginInfo("sn")) {
+					btn_del.hide();
+					btn_save.hide();
+				}
+			}
+		});
+	};
+	
+	// 저장
+	scwin.save = function() {
+		
+		com.confirm("message.xom.wq.017", function(ret) {
+			if (ret) {
+				dma_market.set("updt_syspayno", com.getLoginInfo("sn"));
+				com.file.transport( function(attachObj) {
+					dma_market.set("attach_file_no", attachObj.upload_A);
+					com.execute(sbm_saveMarket, {
+						successCallback : function(e) { // 성공 콜백
+							com.alert("message.xom.wq.023" /*정상적으로 처리되었습니다.*/, function () {
+								scwin.selectData(e.responseJSON.elData.reg_no);
+							});
+						}
+					});
+				});	
+			}
+		});
+	};
+	
+	// 삭제
+	scwin.del = function() {
+		com.confirm("message.xom.wq.022", function(ret) {
+			if (ret) {
+				com.file.deleteAll( function(){
+					com.execute(sbm_deleteMarket, {
+						successCallback : function(e) { // 성공 콜백
+							com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+								scwin.checkList = [];
+								com.moveList("I830", {});
+							});
+						}
+					});
+				});
+			}
+		});
+	};
+	
+	// 사원검색 돋보기 아이콘 클릭 이벤트
+	scwin.btn_search_hum_onclick = function(e) {
+		scwin.selectHumBtn("img");
+	};
+	
+	// 직원검색 팝업 호출
+	scwin.selectHumBtn = function(data) {
+		// 버튼(img)으로 팝업함수 바로 호출 처음 변수에 아무것도 넣지 않으면 최초 서브미션도 실행 안함. 
+		data == "img" ? data = { empno : ""} : data = { empno : inp_empno.getValue(), nm : inp_empno.getValue(), work_clsf : "HAG010" };
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			if (ret) {
+				inp_empno.setValue(ret.empno);
+				tb_nm.setValue(ret.nm);
+				dma_market.set("wri_psn_syspayno", ret.syspayno);
+			}
+		});
+	};
+	
+	// 사원검색
+	scwin.schHum = function() {
+		var data = { empno : dma_market.get("empno"), work_clsf : "HAG010" };
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret) {
+			if (ret) {
+				let residNo = ret.resid_no.split('-');
+				let residNoFr = residNo[0];
+				let residNoBk = residNo[1];
+				
+				dma_market.set("wri_psn_syspaynm", ret.nm);
+			}
+		});
+	};
+	
+	// 유효성 체크
+	scwin.validateData = function() {
+		if(!com.validateData(dma_market,[
+			{ id : "wri_psn_syspaynm", mandatory : true},
+			{ id : "wri_daytm", mandatory : true},
+			{ id : "market_title", mandatory : true},
+		], false)) return false;
+		
+		return true;		
+	};
+	
+	function agreeChk() {
+		agreeArea.hide();
+		fileArea.show("inline");
+		chkBtn1.hide();
+			
+		downHist();
+	}
+	
+	function downHist() {
+		var checkValue = com.file.getAttachFiles(upload_A.getID());
+		
+		for (i = 0; i < checkValue.length; i++) {
+			dma_downHist.set("rowStatus", "C"); // 상태 : 수정
+			dma_downHist.set("reg_no", dma_market.get("reg_no"));
+			dma_downHist.set("attach_file_no", checkValue[i].attach_file_no+checkValue[i].seq);
+			dma_downHist.set("attach_file_nm", checkValue[i].file_nm);
+			dma_downHist.set("regst_syspayno", com.getLoginInfo("sn"));
+			
+			com.execute(sbm_saveHistory, {
+				successCallback : function(e) { // 성공 콜백
+				}
+			});
+		}	
+    }
+	
+	
+	/**************************************************************
+	*						
+	*						컴포넌트 이벤트
+	*
+	***************************************************************/
+	
+	// 목록버튼 이벤트
+	scwin.btn_list_onclick = function(e) {
+		com.moveList("I830", {});
+	};
+	
+	// 저장버튼 이벤트
+	scwin.btn_save_onclick = function(e) {
+		// 저장
+		//if(!scwin.validateData()) return;
+		
+		scwin.save();
+		
+	};
+	
+	// 직원찾기 팝업 버튼 이벤트
+	scwin.btn_search_hum_onclick = function(e) {
+		scwin.schHum();
+	};
+	
+	// 삭제 버튼 클릭 이벤트
+	scwin.btn_del_onclick = function(e) {
+		scwin.del();
+	};
+	
+	scwin.inp_empno_onchange = function(info) {
+		if(info.newValue == "") {	
+			tb_nm.setValue("");
+			dma_market.set("wri_psn_syspayno", "");
+		}
+	};
+	]]></script>
+	</head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group class="searchSection step" id="" style="">
+    			<xf:group class="le" id="" style="">
+    				<xf:trigger class="btn" ev:onclick="scwin.btn_list_onclick" id="btn_list" style="" type="button">
+    					<xf:label><![CDATA[목록]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    			<xf:group class="ri">
+    				<xf:group class="btnbox" id="">
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		
+    		<xf:group id="grp_report" style="margin-top:20px;">
+    			<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    				<w2:attributes>
+    					<w2:summary></w2:summary>
+    				</w2:attributes>
+    				<xf:group tagname="caption" text="연구보고서  상세정보"></xf:group>
+    				<xf:group tagname="colgroup">
+    					<xf:group style="width:140px;" tagname="col"></xf:group>
+    					<xf:group style="" tagname="col"></xf:group>
+    					<xf:group style="width:140px;" tagname="col"></xf:group>
+    					<xf:group style="" tagname="col"></xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr">
+    					<xf:group class="w2tb_th" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="작성자" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes></w2:attributes>
+    						<xf:group style="width: 120px;" id="grpSchHum" class="inpSch">
+    							<xf:input adjustMaxLength="false" class="inp" ev:onchange="scwin.inp_empno_onchange"
+    								ev:onkeypress="scwin.inp_empno_onkeypress" id="inp_empno" style="" title="근무자명" ref="data:dma_market.empno" disabled="true">
+    							</xf:input>
+
+    							<xf:trigger style="" id="btn_search_syspayno" type="button" class="btn" title="근무자 조회"
+    								ev:onclick="scwin.btn_search_hum_onclick">
+    								<xf:label><![CDATA[검색]]></xf:label>
+    							</xf:trigger>
+    						</xf:group>
+    						<xf:input adjustMaxLength="false" class="inp" disabled="true" id="tb_nm" ref="data:dma_market.wri_psn_syspaynm"
+    							style="width:192px;" title="근무자 상세 ">
+    						</xf:input>
+    					</xf:group>
+    					<xf:group class="w2tb_th" tagname="th" style="">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="작성일시" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td" style="">
+    						<w2:attributes>
+    							<w2:colspan>1</w2:colspan>
+    							<w2:rowspan>1</w2:rowspan>
+    						</w2:attributes>
+    						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal req" focusOnDateSelect="false"
+    							footerDiv="false" id="regst_daytm" placeholder="작성일" renderDiv="true" rightAlign="false" style="width:150px;" title="작성일자"
+    							readOnly="false" ref="data:dma_market.regst_daytm">
+    						</w2:inputCalendar>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr" style="">
+    					<xf:group class="w2tb_th" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="제목(국문)" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes>
+    							<w2:colspan>3</w2:colspan>
+    							<w2:rowspan>1</w2:rowspan>
+    						</w2:attributes>
+    						<xf:input adjustMaxLength="false" class="inp full" id="inp_market_title_kr" style="" title="과제번호"
+    							ref="data:dma_market.title_ko">
+    						</xf:input>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr" style="">
+    					<xf:group class="w2tb_th" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="제목(영문)" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes>
+    							<w2:colspan>3</w2:colspan>
+    							<w2:rowspan>1</w2:rowspan>
+    						</w2:attributes>
+    						<xf:input adjustMaxLength="false" class="inp full" id="inp_market_title_en" style="" title="과제번호"
+    							ref="data:dma_market.title_en">
+    						</xf:input>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr">
+    					<xf:group class="w2tb_th" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="발행일" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal req" focusOnDateSelect="false"
+	    							footerDiv="false" id="publish_date" placeholder="작성일" renderDiv="true" rightAlign="false" style="width:150px;" title="작성일자"
+	    							readOnly="false" ref="data:dma_market.publish_date">
+    						</w2:inputCalendar>
+    					</xf:group>
+    					<xf:group class="w2tb_th" tagname="th" style="">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="자료공개" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td" style="">
+    						<w2:attributes>
+    							<w2:colspan>1</w2:colspan>
+    							<w2:rowspan>1</w2:rowspan>
+    						</w2:attributes>
+    						
+    						<xf:select1 allOption="" appearance="minimal" chooseOption="" chooseOptionLabel="- 선택 -" class="sel full"
+    							direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="open_yn" style="" submenuSize="auto"
+    							title="자료공개" ref="data:dma_market.open_yn">
+    							<xf:choices>
+    								<xf:item>
+    									<xf:label><![CDATA[공개]]></xf:label>
+    									<xf:value><![CDATA[Y]]></xf:value>
+    								</xf:item>
+    								<xf:item>
+    									<xf:label><![CDATA[비공개]]></xf:label>
+    									<xf:value><![CDATA[N]]></xf:value>
+    								</xf:item>
+    							</xf:choices>
+    						</xf:select1>
+    						
+    					</xf:group>
+    				</xf:group>
+    				
+    				<xf:group tagname="tr">
+    					<xf:group class="w2tb_th" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="저자명" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<xf:input adjustMaxLength="false" class="inp full" id="author" style="" title="저자명"
+    							ref="data:dma_market.author">
+    						</xf:input>
+    					</xf:group>
+    					<xf:group class="w2tb_th" tagname="th" style="">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="발간자(출판사)" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td" style="">
+    						<xf:input adjustMaxLength="false" class="inp full" id="publisher" style="" title="발간자(출판사)"
+    							ref="data:dma_market.publisher">
+    						</xf:input>
+    					</xf:group>
+    				</xf:group>
+    				
+    				<xf:group tagname="tr" style="">
+    					<xf:group class="w2tb_th" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="산업분야" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes>
+    							<w2:colspan>3</w2:colspan>
+    							<w2:rowspan>1</w2:rowspan>
+    						</w2:attributes>
+    						<xf:select1 appearance="minimal" class="sel" direction="auto"
+    							disabled="false" disabledClass="w2selectbox_disabled" id="industry_area_cd" ref="data:dma_market.industry_area_cd" style="width:219px;"
+    							submenuSize="auto" title="산업분야" visibleRowNum="10" chooseOption="true" chooseOptionLabel="- 전체 -">
+    							<xf:choices></xf:choices>
+    						</xf:select1>
+    					</xf:group>
+    				</xf:group>
+    				
+    				<xf:group tagname="tr" style="">
+    					<xf:group class="w2tb_th" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="내용" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes>
+    							<w2:colspan>3</w2:colspan>
+    							<w2:rowspan>1</w2:rowspan>
+    						</w2:attributes>
+    						<xf:textarea id="contnt" style="height:200px;" title="목차" ref="data:dma_market.contnt"></xf:textarea>
+    					</xf:group>
+    				</xf:group>
+    				
+    				<xf:group tagname="tr" style="">
+    					<xf:group class="w2tb_th" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    						<w2:textbox id="" label="목차" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes>
+    							<w2:colspan>3</w2:colspan>
+    							<w2:rowspan>1</w2:rowspan>
+    						</w2:attributes>
+    						<xf:textarea id="rmk" style="height:400px;" title="목차" ref="data:dma_market.rmk"></xf:textarea>
+    					</xf:group>
+    				</xf:group>
+    				
+    				
+    				
+    				<xf:group style="" tagname="tr">
+    					<xf:group class="w2tb_th" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:textbox id="" label="첨부파일" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes>
+    							<w2:colspan>3</w2:colspan>
+    							<w2:rowspan>1</w2:rowspan>
+    						</w2:attributes>
+    						<xf:trigger id="chkBtn1" class="btn btnSecondary" type="button" style="float:right;">
+								<xf:label>동의</xf:label>
+								<script ev:event="onclick" type="javascript"><![CDATA[  
+									agreeChk();
+						    	]]></script>
+							</xf:trigger>
+	
+							<xf:group class="w2tb_td" style="height:70px;padding-top:5px;text-align:right;" id="agreeArea">
+								<div style="width:auto;overflow:hidden;text-align:left;font-family:돋움">
+									* 본 자료는 다른 사람(기관)의 저작권이 있는 자료로서 내부적으로만 이용이 가능하며, 외부로 유출시에는 저작권법에 위배됨을 알려드립니다.
+									<br />
+									그러므로 본 자료를 다운 받는 경우에는 이러한 사정을 이해하고 저작권법에 위배되지 않도록 파일관리에 유의하고
+									<br />
+									외부 유출시에는 이에 대한 법적인 책임을 질것에 동의하는 경우에 한하여 자료를 받을 수 있습니다.
+									<br />
+									이에 동의하십니까?
+								</div>
+							</xf:group>
+							
+							<xf:group id="fileArea" style="float:none;width:auto;height:70.06%;overflow:hidden;">
+								<xf:group class="full" id="upload_A" style="height:198px;"></xf:group>
+							</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+
+    			<xf:group style="" id="" class="btnGroup">
+    			
+    			
+    				<xf:group style="" id="" class="le"></xf:group>
+    				<xf:group id="" class="ri">
+    					<xf:trigger style="" id="btn_del" type="button" class="btn pro" ev:onclick="scwin.btn_del_onclick">
+    						<xf:label><![CDATA[삭제]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger class=" btn pro conf" ev:onclick="scwin.btn_save_onclick" id="btn_save" style="" type="button">
+    						<xf:label><![CDATA[저장]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+
+    </body>
+</html>

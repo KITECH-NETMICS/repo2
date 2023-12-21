@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.res.stu">
+	<select id="selectResStuCostTrnsMS01" parameterType="kr.re.kitech.biz.res.stu.vo.ResStuCostTrnsVo"
+		resultType="kr.re.kitech.biz.res.stu.vo.ResStuCostTrnsVo">
+		SELECT /* QueryID : kr.re.kitech.biz.res.stu.selectResStuCostTrnsMS01 */
+			t1.unslip_no -- 결의번호
+			, t1.slip_ymd -- 결의일자
+			, t1.decsn_ex -- 확정여부
+			, t1.accnt_ymd -- 확정일자
+			, t1.wrte_psn -- 작성자시스템번호
+			, t5.nm AS wrte_psn_nm -- 작성자 성명
+			, t1.rmk -- 적요
+			, t3.slip_no -- 확정결의번호
+			, t3.decsn_psn -- 확정자 시스템번호
+			, t4.nm AS decsn_psn_nm -- 확정자 성명
+			, t6.apr_state -- 결재상태
+			, b.absrp_yrmon			
+			, CASE WHEN b.plan_amt  <![CDATA[ >  0 AND b.accnt_no <> ]]> 'FF130005' THEN 'A'
+        	   WHEN b.accnt_no = 'FF130005' THEN 'T' ELSE 'C' END AS slip_typ
+			, MAX(b.accnt_no) AS accnt_no
+			, SUM(CASE WHEN b.plan_amt  <![CDATA[  < 0 AND b.accnt_no <> 'FF130005' THEN -b.plan_amt 
+			            WHEN b.plan_amt   < 0 ]]>AND b.accnt_no = 'FF130005' THEN 0 ELSE b.plan_amt END) AS unslip_amt -- 결의금액
+			FROM fspsliph t1
+			JOIN humbasicinfo t5 ON t1.wrte_psn = t5.syspayno
+			JOIN xomxintfatab t6 ON t1.unslip_no = t6.req_no
+			JOIN fsaabsrp b ON t1.unslip_no = b.unslip_no
+			LEFT JOIN fspslipdecsnh t3 ON t1.slip_no = t3.slip_no
+			LEFT JOIN humbasicinfo t4 ON t3.decsn_psn = t4.syspayno
+			WHERE t1.slip_typ_cd = '312'
+			AND b.absrp_clsf = 'FBK035'
+			AND t1.slip_ymd BETWEEN #{slip_ymd_st} AND #{slip_ymd_ed}
+			<if test="unslip_no != null and unslip_no != ''">
+				AND t1.unslip_no LIKE #{unslip_no}||'%'
+			</if>			
+			<if test="decsn_ex != null and decsn_ex != ''">
+				AND t1.decsn_ex = #{decsn_ex}
+			</if>
+			<if test="accnt_rspns != null and accnt_rspns != ''">
+				AND b.accnt_rspns = #{accnt_rspns}
+			</if>
+			<if test="accnt_no != null and accnt_no != ''">
+				AND b.accnt_no = #{accnt_no}
+			</if>
+			<if test='slip_typ == "A"'> AND b.plan_amt <![CDATA[ > 0 ]]> AND b.accnt_no<![CDATA[ <> ]]> 'FF130005'</if>
+			<if test='slip_typ == "T"'> AND b.plan_amt <![CDATA[ > 0 ]]> AND b.accnt_no = 'FF130005'</if>
+			<if test='slip_typ == "C"'> AND b.plan_amt <![CDATA[<= 0 ]]> AND b.accnt_no<![CDATA[ <> ]]> 'FF130005'</if>
+			GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
+			ORDER BY 1
+	</select>
+	<select id="selectResStuCostTrnsMS02" parameterType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo"
+		resultType="kr.re.kitech.biz.fin.set.vo.FsaAbsrpVo">
+		SELECT /* QueryID : kr.re.kitech.biz.res.stu.selectResStuCostTrnsMS02 */ 
+				 a.accnt_no
+		     , a.accnt_cd
+		     , c.accnt_rspns
+		     , h.nm AS accnt_rspns_nm
+		     , h.empno AS accnt_empno
+		     , d.absrp_yrmon AS absrp_yrmon
+		     , h.dept_cd AS dept
+		     , c.accnt_no_nm
+		     , c.bugt_ctrl_psn
+		     , c.card_use_ex
+		     , c.itm_solve_base
+		     , TRIM(SUBSTR(c.start_ymd, 1, 4)||'-'||SUBSTR(c.start_ymd, 5, 2)||'-'||SUBSTR(c.start_ymd, 7, 2) ||'~'
+		       || SUBSTR(c.cls_ymd, 1, 4)||'-'||SUBSTR(c.cls_ymd, 5, 2)||'-'||SUBSTR(c.cls_ymd, 7, 2)) AS accnt_prd
+		     , a.bugt_amt - a.preyr_enfrc_amt - a.enfrc_amt AS ori_plan_amt
+		     , COUNT(d.accnt_no) AS cnt
+		FROM bblbugtactrslt a
+		JOIN xodfaccnt b ON a.accnt_cd = b.accnt_cd
+		JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+		JOIN humbasicinfo h ON c.accnt_rspns = h.syspayno
+		JOIN fsaabsrp d ON d.absrp_clsf = 'FBK035' AND d.absrp_yrmon = #{absrp_yrmon}
+		WHERE a.accnt_no = #{accnt_no}
+		AND   b.resch_accnt_clsf = 'FBL027'
+		GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13	
+	</select>
+	<select id="selectResStuCostTrnsMS03" parameterType="kr.re.kitech.biz.res.stu.vo.ResStuCostTrnsVo"
+		resultType="kr.re.kitech.biz.res.stu.vo.ResStuCostTrnsVo">		
+		SELECT  a.bugt_yr /* QueryID : kr.re.kitech.biz.res.stu.selectResStuCostTrnsMS03 */
+				,a.accnt_no
+				,a.accnt_cd
+				,b.accnt_cd_abbr AS accnt_cd_nm
+				,a.relat_no  AS accnt_empno
+				,c.syspayno AS accnt_rspns 
+				,c.nm AS accnt_rspns_nm
+				,a.cryfwd_bugt
+				,a.bugt_amt
+				,a.req_amt
+				,a.enfrc_amt
+				,a.rmk
+				,a.bugt_amt+a.cryfwd_bugt-a.enfrc_amt as unslip_amt
+				FROM bblbugtactrsltetc a JOIN xodfaccnt b
+				ON a.accnt_cd = b.accnt_cd
+				JOIN humbasicinfo c
+				ON a.relat_no = c.empno
+				WHERE a.bugt_yr = #{bugt_yr}
+				AND a.accnt_no = 'FF130005'
+				AND a.relat_no = #{relat_no}
+				AND a.accnt_cd IN ('22050010', '22050011')
+				AND a.bugt_amt+a.cryfwd_bugt-a.enfrc_amt > 0
+				ORDER BY a.accnt_cd											
+	</select>
+</mapper>

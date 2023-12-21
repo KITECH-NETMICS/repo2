@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programId="A001F" meta_programName="레이아웃 팝업" meta_programDesc="레이아웃 팝업" meta_author="James" meta_date="2022-06-14">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+			</w2:dataCollection>
+			<w2:workflowCollection>
+			</w2:workflowCollection>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+			scwin.onpageload = async function() {
+				// 팝업창에서는 공통코드 전체조회가 아닌 필요한거만 조회하도록
+				gcm.CMNCD_INFO.isIndexAll = false;
+
+				menuObj = await gcm.win.getMenuObj(com.getParameter("serviceid"), null, true);
+
+				let paramStr = com.getParameter();
+				let data = { "menuObj" : menuObj };
+
+				if (paramStr != null) {
+					paramStr = paramStr.substr(1);
+
+					const pairs = paramStr.split('&');
+
+					pairs.forEach(pair => {
+						const [key, value] = pair.split('=');
+						data[key] = value;
+					});
+				}
+				
+				let params = { 
+						"dataObject" : {
+						"type" : "json",
+						"name" : "param",
+						"data" : data
+					}
+				};
+
+				wfForm.setSrc(menuObj.serviceNewUrl, params);
+			};
+		]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group id="" class="pageWrap">
+			<w2:wframe id="wfForm" src="" style=""></w2:wframe>
+		</xf:group>
+	</body>
+</html>

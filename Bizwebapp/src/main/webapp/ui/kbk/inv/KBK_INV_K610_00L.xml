@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="연구보고서">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_report" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="regst_no" name="코드" dataType="text"></w2:column>
+        				<w2:column id="rcpt_no" name="접수번호" dataType="text"></w2:column>
+        				<w2:column id="regst_ymd" name="등록일자" dataType="text"></w2:column>
+        				<w2:column id="rptp_nm" name="보고서명" dataType="text"></w2:column>
+        				<w2:column id="resch_respn_psn" name="연구책임자" dataType="text"></w2:column>
+        				<w2:column id="publ_yr" name="출간일" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_ofic" name="관계부처" dataType="text"></w2:column>
+        				<w2:column id="bsns_cd_bsns" name="사업분류" dataType="text"></w2:column>
+        				<w2:column id="kitech_publc_yn" name="생기원발간" dataType="text"></w2:column>
+        				<w2:column id="attach_file_yn" name="첨부파일유무" dataType="text"></w2:column>
+        				<w2:column id="attach_file_no" name="첨부파일번호" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="regst_no" name="코드" dataType="text"></w2:key>
+        				<w2:key id="rcpt_no" name="접수번호" dataType="text"></w2:key>
+        				<w2:key id="resch_respn_psn" name="연구책임자" dataType="text"></w2:key>
+        				<w2:key id="rptp_nm" name="보고서명" dataType="text"></w2:key>
+        				<w2:key id="publ_yr" name="출간연도" dataType="text"></w2:key>
+        				<w2:key id="kitech_publc_yn" name="생기원발간" dataType="text"></w2:key>
+        				<w2:key id="rptp_no" name="계정번호" dataType="text"></w2:key>
+        				<w2:key id="idx" name="키워드" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectReportList" ref="data:json,dma_search"
+        		target='data:json,{"id":"dlt_report","key":"invReportVoList"}' action="SvcKBKINVRPTR01.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script src="/cm/js/biz/kbk.js" cache="false" />
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+	 * 화면 설명 : 연구보고서
+	 * 변경 이력 : 2022-09-01	홍성민	최초 작성
+	 * serviceId : K610
+	 ****************************************************/     
+	scwin.onpageload = function() {
+		com.setEnterKeyEvent(grp_search, scwin.search);
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	scwin.search = function() {
+		var isValid = scwin.isSearchable();
+		
+		if (!isValid) {
+			com.alert("검색할 조건을 하나이상 입력하세요 ");
+			return;	
+		} else {
+			com.execute(sbm_selectReportList, {
+				successCallback : function(e) {
+					var totalRow = dlt_report.getTotalRow();
+					tbx_result.setValue(totalRow);	
+				}
+			});	
+		}
+	};
+	
+	scwin.isSearchable = function(e) {
+		var dataMap = dma_search.getJSON();
+		
+		for (key in dataMap) {
+			if (dataMap[key]) { 
+				return true;
+			} 	
+		}
+		
+		return false;
+	};
+	
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	scwin.grd_report_oncellclick = function(row,col,colId) {
+		if (colId === 'attach_file_yn') {
+			var rowJson = dlt_report.getRowJSON(row);
+			
+			var data = {
+				attach_file_no : rowJson.attach_file_no,
+				mode : "view"
+			};
+			
+			com.openPopup(com.pop.TYPE.ATTACH.URL, com.pop.TYPE.ATTACH.OPTION, data);
+		}else if(colId == "regst_no"){
+			var data = {
+				regst_no : dlt_report.getCellData(row, "regst_no")	
+			}
+			biz.kbk.pop.open(biz.kbk.pop.TYPE.REG_RPTP, data, function(){
+				scwin.search();
+			});
+		}
+	};
+	
+	scwin.btn_reg_onclick = function(e) {
+		var data = {};
+		//com.openTabUrl("연구보고서", "/ui/kbk/inv/KBK_INV_K610_00D.xml", 1, data);
+		com.openTabMenu("K651", data, function(ret){
+			if(scwin.isSearchable()){
+				scwin.search();
+			}
+		});
+	};
+	
+	scwin.btn_print_onclick = function(e) {
+		var isValid = scwin.isSearchable();
+		
+		if (!isValid) {
+			com.alert("검색할 조건을 하나이상 입력하세요 ");
+			return;	
+		} else {
+			var regst_no = dma_search.get("regst_no");
+           	var rcpt_no = dma_search.get("rcpt_no");
+           	var resch_respn_psn =  dma_search.get("resch_respn_psn");
+           	var rptp_nm = dma_search.get("rptp_nm");
+           	var publ_yr = dma_search.get("publ_yr");
+           	var kitech_publc_yn = dma_search.get("kitech_publc_yn");
+           	var rptp_no = dma_search.get("rptp_no");
+           	var idx = dma_search.get("idx");
+           	
+           	var node = "regst_no="+regst_no + "&rcpt_no=" + rcpt_no + 
+           				"&resch_respn_psn=" + resch_respn_psn + "&rptp_nm=" + rptp_nm + 
+           				"&publ_yr=" + publ_yr + "&kitech_publc_yn=" + kitech_publc_yn +
+           				"&rptp_no=" + rptp_no + "&idx=" + idx ;
+           	
+           	var reportObj = {
+				ozrCode : "K610",
+				param : node
+			};
+			
+			com.oz.openPopup(reportObj);
+		}
+	};
+	
+	scwin.btn_excel_onclick = function(e) {
+		var now = com.getServerDateTime("yyyyMMdd");
+		var name = '연구보고서_' + now + '.xlsx';
+		
+		var option = {
+			    fileName : name
+		};
+		com.downloadGridExcel(grd_report, option);
+	};
+
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="grp_search" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="검색조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:160px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:160px;"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:160px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="등록번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_regst_no" style="width:120px;" title="등록번호" ref="data:dma_search.regst_no"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="접수번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_rcpt_no" style="width:120px;" title="접수번호" ref="data:dma_search.rcpt_no"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="연구자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_resch_respn_psn" style="width:120px;" title="연구자" ref="data:dma_search.resch_respn_psn"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="보고서명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_rptp_nm" style="width:120px;" title="보고서명" ref="data:dma_search.rptp_nm"></xf:input>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="발행년도" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>3</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_publ_yr" style="width:120px;" title="발행년도" ref="data:dma_search.publ_yr"></xf:input>
+    							<xf:select appearance="full" class="chkGroup" cols="" id="cbx_kitech_publc_yn" ref="data:dma_search.kitech_publc_yn" renderType="checkboxgroup" rows=""
+    								selectedindex="-1" style="">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[생기원 발간만 표시]]></xf:label>
+    										<xf:value><![CDATA[Y]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="계정번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_rptp_no" style="width:120px;" title="계정번호" ref="data:dma_search.rptp_no"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="키워드" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_idx" style="width:120px;" title="키워드" ref="data:dma_search.idx"></xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="margin-top:5px;">
+    			<xf:group class="le" id="">
+    				<xf:group class="result" id="" style="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:trigger class="btn" id="btn_reg" style="" type="button" ev:onclick="scwin.btn_reg_onclick">
+    					<xf:label><![CDATA[등록]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn icon print" id="btn_print" style="" type="button" ev:onclick="scwin.btn_print_onclick">
+    					<xf:label><![CDATA[인쇄]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn icon down" id="btn_excel" style="" type="button" ev:onclick="scwin.btn_excel_onclick">
+    					<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_report" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_report" visibleRowNum="20"
+    			class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_report_oncellclick">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column9" value="등록번호" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px;" id="column7" value="접수번호" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column5" value="등록일자" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:28px;" id="column20" value="보고서명" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column29" value="연구책임" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column27" value="발행년도" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column42" value="사업분류" displayMode="label"></w2:column>
+    					<w2:column width="130" inputType="text" style="height:28px" id="column40" value="관계부서" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column38" value="원문파일" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column36" value="생기원발간" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="70" inputType="link" readOnly="true" style="height:28px;" id="regst_no" displayMode="label" class=""></w2:column>
+    					<w2:column width="80" inputType="text" readOnly="true" style="height:28px;" id="rcpt_no" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="regst_ymd" class="" escape="false"
+    						displayMode="label" dataType="date">
+    					</w2:column>
+    					<w2:column width="300" inputType="text" readOnly="true" style="height:28px;" id="rptp_nm" displayMode="label"
+    						class="le">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="resch_respn_psn" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="publ_yr" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="bsns_cd_ofic" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="130" inputType="text" style="height:28px" id="bsns_cd_bsns" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="link" style="height:28px" id="attach_file_yn" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="kitech_publc_yn" value="" displayMode="label" readOnly="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.xom.core">
+<!-- 계좌검증 로그저장 -->
+<insert id="insertCooconCallLog" parameterType="kr.re.kitech.biz.xom.core.vo.AccountVerfVo">
+INSERT /* kr.re.kitech.biz.xom.core.insertCooconCallLog */
+   INTO cooconcalllog(
+     call_time
+  <if test='syspayno != null'> , req_syspayno </if>
+   , req_bank_cd
+   , req_search_acct_no
+  <if test='acnm_no != null'> , req_acnm_no </if>
+   , req_trsc_seq_no
+   , req_iche_amt
+  <if test='res_data != null'> , res_data </if>
+   , success
+   , service_id
+  <if test='tmp2 != null'>, tmp2 </if>
+  <if test='tmp3 != null'>, tmp3 </if>
+ ) 
+ VALUES(
+     sysdate
+  <if test='syspayno != null'> , #{syspayno} </if>
+   , #{bank_cd}
+   , #{bankaccnt_no}
+  <if test='acnm_no != null'> , #{acnm_no} </if>
+   , #{trsc_seq_no}
+   , #{iche_amt} 
+  <if test='res_data != null'> , #{res_data} </if>
+   , #{success}
+   , #{service_id}
+  <if test='tmp2 != null'> , #{tmp2} </if>
+  <if test='tmp3 != null'> , #{tmp3} </if>
+  )
+</insert>
+
+<!-- 거래 일련번호 조회 -->
+<select id="selectTrscSeqNo" resultType="java.lang.String" parameterType="kr.re.kitech.biz.xom.core.vo.AccountVerfVo">
+SELECT /* kr.re.kitech.biz.xom.core.selectTrscSeqNo */
+      lpad(trunc(to_number(nvl(max(req_trsc_seq_no),0) + 1)), 7, '0') AS trsc_seq_no
+  FROM cooconcalllog 
+  WHERE to_char(call_time,'%Y-%m-%d') = to_char(sysdate,'%Y-%m-%d')
+</select>
+</mapper>

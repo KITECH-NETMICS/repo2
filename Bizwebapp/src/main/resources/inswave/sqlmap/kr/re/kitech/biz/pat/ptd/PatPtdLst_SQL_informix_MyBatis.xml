@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.ptd">
+  <select id="selectPatPtdLst" parameterType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo" resultType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptd.selectPatPtdLst */ 
+		 mst.req_no
+    , mst.mngmt_no
+    , ptd.work_id AS ref_no
+    , ptd.reg_cd AS curr_state_cd
+    , mst.invnt_krn_nm
+    , hum.nm AS invnt_psn_nm
+    , pof.patofic_nm
+    , CASE SUBSTR(ptd.reg_cd, 0, 3) WHEN 'P14' THEN poa.cnt || '차 ' || ptd.job_title
+                                    WHEN 'P15' THEN poa.cnt || '차 ' ||  ptd.job_title
+                                    ELSE ptd.job_title END AS job_title
+    , ptd.todo_title
+    , ptd.todo_due_date
+    , CASE WHEN DATE(TO_DATE(ptd.todo_due_date, '%Y%m%d')) - TODAY  <![CDATA[ <= ]]> 7 THEN '1'
+           WHEN DATE(TO_DATE(ptd.todo_due_date, '%Y%m%d')) - TODAY  <![CDATA[ > ]]>  7 THEN '2'
+           ELSE '3' END todo_pro
+    , ptd.page_id
+    , ptd.page_detail_id
+    , mst.smitapp_no
+    , a.status
+    , a.defname
+  FROM patmastr mst 
+  JOIN humbasicinfo hum ON hum.syspayno = mst.invnt_syspayno
+  JOIN patoffice pof ON pof.patofic_cd = mst.patofic_cd
+  JOIN pattodo ptd ON mst.req_no = ptd.req_no AND mst.mngmt_no = ptd.mngmt_no 
+  LEFT JOIN (SELECT mngmt_no, COUNT(oa_id) AS cnt FROM patoa GROUP BY mngmt_no) poa ON poa.mngmt_no = mst.mngmt_no
+  LEFT JOIN bpm_procinst a ON ptd.work_id = a.name AND a.isdeleted ='0' AND a.name = ptd.req_no
+ WHERE NVL(ptd.end_yn, 'N') = 'N'
+ AND ptd.todo_auth = #{todo_auth}
+<if test="req_no != null and req_no != ''">
+	 AND mst.req_no = #{req_no}
+</if>
+<if test="mngmt_no != null and mngmt_no != ''">
+	 AND mst.mngmt_no = #{mngmt_no}
+</if>
+<if test="pat_clsf != null and pat_clsf != '' and pat_clsf != 'all'">
+	 AND mst.pat_clsf = #{pat_clsf}
+</if>
+<if test="invnt_krn_nm != null and invnt_krn_nm != ''">
+	 AND mst.invnt_krn_nm LIKE '%'||#{invnt_krn_nm}||'%'
+</if>
+<if test="invnt_syspayno != null and invnt_syspayno != ''">
+	 AND (mst.invnt_syspayno = #{invnt_syspayno} OR mst.mandate_psn_syspayno = #{invnt_syspayno})
+</if>
+ ORDER BY mst.req_no, mst.mngmt_no
+  </select>
+  <select id="selectPatPsrMstInfoSS01" parameterType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo" resultType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptd.selectPatPsrMstInfoSS01 */ 
+		 pm.req_no
+      , pm.mngmt_no
+      , pm.invnt_syspayno
+      , pm.patofic_cd
+      , pm.patofic_charg_id
+FROM patmastr pm
+      INNER JOIN patappmastr pap
+         ON pap.req_no = pm.req_no
+WHERE 1 = 1
+AND pm.req_no = #{req_no}
+AND pm.mngmt_no = #{mngmt_no}
+  </select>
+  <insert id="insertPatComMstSrhReqSI01" parameterType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.ptd.insertPatComMstSrhReqSI01 */ 
+     INTO patsrh (
+    srh_id
+  , req_no
+  , mngmt_no
+  , job_state_cd
+  , req_psn_syspayno
+  , req_daytm
+  , req_patofic_cd
+  , hope_patofic_charg_id
+  , req_due_date
+  , req_comment
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{srh_id}
+  , #{req_no}
+  , #{mngmt_no}
+  , #{job_state_cd}
+  , #{req_psn_syspayno}
+  , CURRENT
+  , #{req_patofic_cd}
+  , #{hope_patofic_charg_id}
+  , #{req_due_date}
+  , #{req_comment}
+  , #{regst_syspayno}
+  , CURRENT
+)
+  </insert>
+  <insert id="insertPatPseRstSI01" parameterType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.ptd.insertPatPseRstSI01 */ 
+     INTO patspec (
+      spec_id
+    , req_no
+    , mngmt_no
+    , job_state_cd
+    , req_psn_syspayno
+    , regst_syspayno
+    , regst_daytm)
+VALUES (
+      #{spec_id}
+    , #{req_no}
+    , #{mngmt_no}
+    , #{job_state_cd}
+    , #{req_psn_syspayno}
+    , #{regst_syspayno}
+    , CURRENT)
+  </insert>
+  <insert id="insertPatPtsRecSI01" parameterType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.ptd.insertPatPtsRecSI01 */ 
+     INTO patapp (app_id
+                     , req_no
+                     , mngmt_no
+                     , job_state_cd
+                     , regst_syspayno
+                     , regst_daytm)
+VALUES (#{app_id}
+        , #{req_no}
+        , #{mngmt_no}
+        , 'P0500'
+        , #{regst_syspayno}
+        , CURRENT)
+  </insert>
+  <insert id="insertPatComMstPEInfoSI01" parameterType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.ptd.insertPatComMstPEInfoSI01 */ 
+     INTO patpritydemnd (
+    prity_demnd_id
+  , req_no
+  , mngmt_no
+  , job_state_cd
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{prity_demnd_id}
+  , #{req_no}
+  , #{mngmt_no}
+  , #{job_state_cd}
+  , #{regst_syspayno}
+  , CURRENT
+)
+  </insert>
+  <insert id="insertPatPapReeSI01" parameterType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.ptd.insertPatPapReeSI01 */ 
+     INTO patdemnd (
+      demnd_id
+    , req_no
+    , mngmt_no
+    , job_state_cd
+    , ask_psn_syspayno
+    , ask_daytm
+    , req_psn_syspayno
+    , req_daytm
+    , req_patofic_cd
+    , hope_patofic_charg_id
+    , req_due_date
+    , regst_syspayno
+    , regst_daytm
+    , req_comment)
+VALUES (
+      #{demnd_id}
+    , #{req_no}
+    , #{mngmt_no}
+    , #{job_state_cd}
+    , #{ask_psn_syspayno}
+    , CURRENT
+    , '20100355'
+    , CURRENT
+    , #{req_patofic_cd}
+    , #{hope_patofic_charg_id}
+    , TO_CHAR(TODAY + 30 UNITS day, '%Y%m%d')
+    , #{regst_syspayno}
+    , CURRENT
+    , '자동의뢰')
+  </insert>
+  <update id="updatePatComMstStateSU01" parameterType="kr.re.kitech.biz.pat.ptd.vo.PatPtdLstVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptd.updatePatComMstStateSU01 */ 
+     patmastr 
+SET state = #{state}
+WHERE 1 = 1
+AND req_no = #{req_no}
+AND mngmt_no = #{mngmt_no}
+  </update>
+</mapper>

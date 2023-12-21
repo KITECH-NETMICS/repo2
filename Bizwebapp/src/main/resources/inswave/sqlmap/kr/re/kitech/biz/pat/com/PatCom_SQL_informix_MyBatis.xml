@@ -1,0 +1,1175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.pat.com">
+<!-- 발명신고서 결재완료시 state, invnt_apprvl_complt_ymd 업데이트 -->
+<update id="updatePatAppMastrState" parameterType="kr.re.kitech.biz.pat.app.vo.PatComVo">
+UPDATE /* kr.re.kitech.biz.pat.com.updatePatAppMastrState */
+      patappmastr
+SET   <if test ='state != null and state != ""'> state = #{state}, /* 상태 */ </if>      
+      <if test ='app_yn != null and app_yn == "Y"'>  invnt_apprvl_complt_ymd = TO_CHAR(CURRENT, '%Y%m%d'), /*발명신고서 결재완료시 */ </if>
+      updt_syspayno = #{updt_syspayno},
+      updt_daytm = SYSDATE
+WHERE req_no = #{req_no}
+</update>
+
+<!-- 발명신고서 결재완료시 관련과제 입력 -->
+<insert id="insertPatRelatReschPrj" parameterType="kr.re.kitech.biz.pat.app.vo.PatComVo">
+INSERT /* kr.re.kitech.biz.pat.com.insertPatRelatReschPrj */
+   INTO patrelatreschprj (
+     req_no 
+   , accnt_no 
+   , prj_no           
+   , prj_nm             
+   , resch_respn_syspayno    
+   , prj_term           
+   , regst_syspayno
+   , regst_daytm         
+) 
+SELECT req_no      
+     , accnt_no        
+     , prj_no             
+     , prj_nm             
+     , resch_respn_syspayno  
+     , prj_term
+     , CAST(#{regst_syspayno} AS CHAR(8))
+     , SYSDATE 
+FROM  patapprelatreschprj a
+WHERE req_no = #{req_no}
+AND NOT EXISTS (SELECT 1 FROM patrelatreschprj WHERE req_no = a.req_no)
+</insert>
+
+<!-- 관리번호 순번 조회 -->
+<select id="selectMngmtNoSeq" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.pat.com.selectMngmtNoSeq */
+       NVL(MAX(SUBSTR(mngmt_no, 7, 4)), 0) + 1 AS seq
+FROM    patmastr
+WHERE   mngmt_no LIKE #{mngmt_no} ||'%'
+</select>
+
+<!-- 지재권마스터 저장을 위한 조회 -->
+<select id="selectPatAppMastr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.com.vo.PatMastrVo">
+SELECT /* kr.re.kitech.biz.pat.com.selectPatAppMastr */
+       FIRST 1 a.req_no
+     , a.pat_clsf
+     , a.invnt_krn_nm
+     , a.invnt_eng_nm
+     , a.invnt_syspayno
+     , a.charg_syspayno
+     , a.hope_patofic_cd AS patofic_cd
+     , a.hope_patofic_nm AS patofic_nm
+     , a.hope_patofic_charg_id AS patofic_charg_id
+     , a.hope_patofic_charg_nm AS patofic_charg_nm
+     , a.hope_patofic_contac_loc AS patofic_contac_loc 
+     , a.pct_chk
+     , a.smitapp_hope_natn_cd AS smitapp_natn_cd
+     , a.smitapp_hope_natn_nm AS smitapp_natn_nm
+     , a.invnt_clsf
+     , a.pat_grd
+     , a.grd_resn
+     , a.co_smitapp_ex
+     , a.tech_eval_hope_ex
+     , a.tech_trans_hope_amt
+     , a.tech_trans_hope_typ
+     , a.affir_req_ymd
+     , a.invnt_psn_rmk
+     , a.invnt_draft_ymd
+     , a.invnt_apprvl_complt_ymd
+     , a.invnt_reject_ymd
+     , a.invnt_reject_resn
+     , a.invnt_wrte_syspayno
+     , a.old_data_mngmt_no
+     , a.attach_file_no_1
+     , a.attach_file_no_2
+     , a.attach_file_no_3
+     , a.attach_file_no_4
+     , a.tech_field
+     , a.indst_use_clsf
+     , a.solve_task
+     , a.invnt_efct
+     , a.relat_invnt
+     , a.plan_attach_file_no
+     , a.open_attach_file_no
+     , a.etc_attach_file_no
+     , a.tech_clsf
+     , a.mandate_psn_syspayno
+     , a.smitapp_occr_clsf
+     , a.relat_dom_smitapp_no
+     , NVL(a.pdp_flag, 'N') AS pdp_flag
+     , b.accnt_no
+FROM patappmastr a
+LEFT JOIN patapprelatreschprj b ON a.req_no = b.req_no
+WHERE a.req_no = #{req_no}
+</select>
+
+<!-- 지재권 마스터 저장 -->
+<insert id="insertPatMastr" parameterType="kr.re.kitech.biz.pat.com.vo.PatMastrVo">
+INSERT /* kr.re.kitech.biz.pat.com.insertPatMastr */
+   INTO patmastr (
+     req_no
+   , mngmt_no
+   , pat_clsf
+   <if test='state != null'> , state </if>
+   , invnt_krn_nm
+   <if test='invnt_eng_nm != null'> , invnt_eng_nm </if>
+   , invnt_syspayno 
+   <if test='charg_syspayno != null'> , charg_syspayno </if>
+   <if test='patofic_cd != null'> , patofic_cd </if>
+   <if test='patofic_nm != null'> , patofic_nm </if>
+   <if test='patofic_charg_id != null'> , patofic_charg_id </if>
+   <if test='patofic_charg_nm != null'> , patofic_charg_nm </if>
+   <if test='patofic_contac_loc != null'> , patofic_contac_loc </if>
+   <if test='dom_oversea_clsf != null'> , dom_oversea_clsf </if>
+   <if test='pct_chk != null'> , pct_chk </if>
+   <if test='smitapp_natn_cd != null'> , smitapp_natn_cd </if>
+   <if test='smitapp_natn_nm != null'> , smitapp_natn_nm </if>
+   <if test='invnt_clsf != null'> , invnt_clsf </if>
+   <if test='pat_grd != null'> , pat_grd </if>
+   <if test='grd_resn != null'> , grd_resn </if>
+   <if test='co_smitapp_ex != null'> , co_smitapp_ex </if>
+   <if test='tech_eval_hope_ex != null'> , tech_eval_hope_ex </if>
+   <if test='tech_trans_hope_ex != null'> , tech_trans_hope_ex </if>
+   <if test='tech_trans_hope_amt != null'> , tech_trans_hope_amt </if>
+   <if test='tech_trans_hope_typ != null'> , tech_trans_hope_typ </if>
+   <if test='affir_req_ymd != null'> , affir_req_ymd </if>
+   <if test='invnt_psn_rmk != null'> , invnt_psn_rmk </if>
+   <if test='invnt_draft_ymd != null'> , invnt_draft_ymd </if>
+   <if test='invnt_apprvl_complt_ymd != null'> , invnt_apprvl_complt_ymd </if>
+   <if test='invnt_reject_ymd != null'> , invnt_reject_ymd </if>
+   <if test='invnt_reject_resn != null'> , invnt_reject_resn </if>
+   <if test='invnt_wrte_syspayno != null'> , invnt_wrte_syspayno </if>
+   <if test='old_data_mngmt_no != null'> , old_data_mngmt_no </if>
+   <if test='attach_file_no_1 != null'> , attach_file_no_1 </if>
+   <if test='attach_file_no_2 != null'> , attach_file_no_2 </if>
+   <if test='attach_file_no_3 != null'> , attach_file_no_3 </if>
+   <if test='attach_file_no_4 != null'> , attach_file_no_4 </if>
+   <if test='tech_field != null'> , tech_field </if>
+   <if test='indst_use_clsf != null'> , indst_use_clsf </if>
+   <if test='solve_task != null'> , solve_task </if>
+   <if test='invnt_efct != null'> , invnt_efct </if>
+   <if test='relat_invnt != null'> , relat_invnt </if>
+   <if test='plan_attach_file_no != null'> , plan_attach_file_no </if>
+   <if test='open_attach_file_no != null'> , open_attach_file_no </if>
+   <if test='etc_attach_file_no != null'> , etc_attach_file_no </if>
+   <if test='tech_clsf != null'> , tech_clsf </if>
+   <if test='mandate_psn_syspayno != null'> , mandate_psn_syspayno </if>
+   <if test='smitapp_occr_clsf != null'> , smitapp_occr_clsf </if>
+   <if test='relat_dom_smitapp_no != null'> , relat_dom_smitapp_no </if>
+   <if test='eval_act_yn != null'> , eval_act_yn </if>
+   , regst_syspayno
+   , regst_daytm
+) VALUES (
+       #{req_no}
+     , #{mngmt_no}
+     , #{pat_clsf}
+     <if test='state != null'> , #{state} </if>
+     , #{invnt_krn_nm} 
+     <if test='invnt_eng_nm != null'> , #{invnt_eng_nm} </if>
+     , #{invnt_syspayno} 
+     <if test='charg_syspayno != null'> , #{charg_syspayno} </if>
+     <if test='patofic_cd != null'> , #{patofic_cd} </if>
+     <if test='patofic_nm != null'> , #{patofic_nm} </if>
+     <if test='patofic_charg_id != null'> , #{patofic_charg_id} </if>
+     <if test='patofic_charg_nm != null'> , #{patofic_charg_nm} </if>
+     <if test='patofic_contac_loc != null'> , #{patofic_contac_loc} </if>
+     <if test='dom_oversea_clsf != null'> , #{dom_oversea_clsf} </if>
+     <if test='pct_chk != null'> , #{pct_chk} </if>
+     <if test='smitapp_natn_cd != null'> , #{smitapp_natn_cd} </if>
+     <if test='smitapp_natn_nm != null'> , #{smitapp_natn_nm} </if>
+     <if test='invnt_clsf != null'> , #{invnt_clsf} </if>
+     <if test='pat_grd != null'> , #{pat_grd} </if>
+     <if test='grd_resn != null'> , #{grd_resn} </if>
+     <if test='co_smitapp_ex != null'> , #{co_smitapp_ex} </if>
+     <if test='tech_eval_hope_ex != null'> , #{tech_eval_hope_ex} </if>
+     <if test='tech_trans_hope_ex != null'> , #{tech_trans_hope_ex} </if>
+     <if test='tech_trans_hope_amt != null'> , #{tech_trans_hope_amt} </if>
+     <if test='tech_trans_hope_typ != null'> , #{tech_trans_hope_typ} </if>
+     <if test='affir_req_ymd != null'> , #{affir_req_ymd} </if>
+     <if test='invnt_psn_rmk != null'> , #{invnt_psn_rmk} </if>
+     <if test='invnt_draft_ymd != null'> , #{invnt_draft_ymd} </if>
+     <if test='invnt_apprvl_complt_ymd != null'> , #{invnt_apprvl_complt_ymd} </if>
+     <if test='invnt_reject_ymd != null'> , #{invnt_reject_ymd} </if>
+     <if test='invnt_reject_resn != null'> , #{invnt_reject_resn} </if>
+     <if test='invnt_wrte_syspayno != null'> , #{invnt_wrte_syspayno} </if>
+     <if test='old_data_mngmt_no != null'> , #{old_data_mngmt_no} </if>
+     <if test='attach_file_no_1 != null'> , #{attach_file_no_1} </if>
+     <if test='attach_file_no_2 != null'> , #{attach_file_no_2} </if>
+     <if test='attach_file_no_3 != null'> , #{attach_file_no_3} </if>
+     <if test='attach_file_no_4 != null'> , #{attach_file_no_4} </if>
+     <if test='tech_field != null'> , #{tech_field} </if>
+     <if test='indst_use_clsf != null'> , #{indst_use_clsf} </if>
+     <if test='solve_task != null'> , #{solve_task} </if>
+     <if test='invnt_efct != null'> , #{invnt_efct} </if>
+     <if test='relat_invnt != null'> , #{relat_invnt} </if>
+     <if test='plan_attach_file_no != null'> , #{plan_attach_file_no} </if>
+     <if test='open_attach_file_no != null'> , #{open_attach_file_no} </if>
+     <if test='etc_attach_file_no != null'> , #{etc_attach_file_no} </if>
+     <if test='tech_clsf != null'> , #{tech_clsf} </if>
+     <if test='mandate_psn_syspayno != null'> , #{mandate_psn_syspayno} </if>
+     <if test='smitapp_occr_clsf != null'> , #{smitapp_occr_clsf} </if>
+     <if test='relat_dom_smitapp_no != null'> , #{relat_dom_smitapp_no} </if>
+     <if test='eval_act_yn != null'> , #{eval_act_yn} </if>
+     , #{invnt_syspayno}
+     , SYSDATE
+   )
+</insert>
+
+<!-- 발명신고서 결재완료시 공동발명자 저장 -->
+<insert id="insertPatCoInvntPsnList" parameterType="kr.re.kitech.biz.pat.app.vo.PatComVo">
+INSERT /* kr.re.kitech.biz.pat.com.insertPatCoInvntPsnList */
+   INTO patcoinvntpsn (
+    req_no
+  , mngmt_no
+  , seq
+  , syspayno
+  , blong_clsf
+  , blong_cd
+  , dept_new_ymd
+  , blong_nm
+  , nm_krn
+  , nm_eng
+  , resid_regst_no
+  , contac_loc
+  , email
+  , post_no
+  , addr
+  , detls_addr  
+  , stake_rt
+  , stake_dept
+  , invnt_psn_clsf
+  , trans_ex
+  , attach_file_no
+  , co_invnt_affir_ex
+  , co_invnt_affir_ymd
+  , co_invnt_affir_rmk
+  , co_invnt_retn_ymd
+  , regst_syspayno
+  , regst_daytm
+) 
+SELECT req_no
+     , CAST(#{mngmt_no} AS VARCHAR(12)) AS mngmt_no
+     , seq
+     , syspayno
+     , blong_clsf
+     , blong_cd
+     , dept_new_ymd
+     , blong_nm
+     , nm_krn
+     , nm_eng
+     , resid_regst_no
+     , contac_loc
+     , email
+     , post_no
+     , addr
+     , detls_addr  
+     , stake_rt
+     , stake_dept
+     , invnt_psn_clsf
+     , trans_ex
+     , attach_file_no
+     , co_invnt_affir_ex
+     , co_invnt_affir_ymd
+     , co_invnt_affir_rmk
+     , co_invnt_retn_ymd
+     , CAST(#{invnt_syspayno} AS VARCHAR(8)) AS regst_syspayno
+     , SYSDATE
+FROM patappcoinvntpsn
+WHERE req_no = #{req_no}
+</insert>
+
+<!-- 발명신고서 결재완료시 공동출원업체 저장 -->
+<insert id="insertPatCoSmitappVendList" parameterType="kr.re.kitech.biz.pat.app.vo.PatComVo">
+INSERT /* kr.re.kitech.biz.pat.com.insertPatCoSmitappVendList */
+   INTO patcosmitappvend (
+    req_no
+  , mngmt_no
+  , seq
+  , vend_type
+  , stake_rt  
+  , vend_cd  
+  , vend_nm 
+  , vend_bsn_no 
+  , addr 
+  , charg
+  , contac_loc 
+  , attach_file_no
+  , regst_syspayno
+  , regst_daytm
+) 
+SELECT req_no
+     , CAST(#{mngmt_no} AS VARCHAR(12)) AS mngmt_no
+     , seq
+     , vend_type
+     , stake_rt  
+     , vend_cd  
+     , vend_nm 
+     , vend_bsn_no 
+     , addr 
+     , charg
+     , contac_loc 
+     , attach_file_no
+     , CAST(#{invnt_syspayno} AS VARCHAR(8)) AS regst_syspayno
+     , SYSDATE
+FROM patappcosmitappvend
+WHERE req_no = #{req_no}
+</insert>
+
+<!-- 발명신고서 결재완료시 선행기술조사 저장 -->
+<insert id="insertPatSrh" parameterType="kr.re.kitech.biz.pat.com.vo.PatSrhVo">
+INSERT /* kr.re.kitech.biz.pat.com.insertPatSrh */
+   INTO patsrh (
+    srh_id
+  , req_no
+  , mngmt_no
+  , job_state_cd
+  , req_psn_syspayno
+  , req_daytm
+  , req_patofic_cd
+  , hope_patofic_charg_id
+  , req_due_date
+  , req_comment
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{srh_id}
+  , #{req_no}
+  , #{mngmt_no}
+  , #{job_state_cd}
+  , #{req_psn_syspayno}
+  , CURRENT
+  , #{req_patofic_cd}
+  , #{hope_patofic_charg_id}
+  , TO_CHAR(SYSDATE, '%Y%m%d')
+  , #{req_comment}
+  , #{regst_syspayno}
+  , CURRENT
+)
+</insert>
+
+<!-- TO-DO정보 조회 - executePatComWFBiz에서 호출 (As IS :PatComWFBiz.execute) -->
+<select id="selectPatTotoCd" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.com.vo.PatToDoVo">
+SELECT /* kr.re.kitech.biz.pat.com.selectPatTotoCd */
+       todo_cd_id
+     , reg_cd
+     , job_cd
+     , job_title
+     , todo_title
+     , todo_auth 
+     , todo_day
+     , page_id
+     , apr_state
+     , page_detail_id
+     , bpm_yn
+     , todo_yn
+     , mail_yn
+     , sms_yn
+     , alarm_from
+FROM pattodocd 
+WHERE reg_cd = #{reg_cd}
+</select>
+
+<!-- 지재권 공동발명자 조회 -->
+<select id="selectPatCoInvntPsnList" resultType="kr.re.kitech.biz.pat.app.vo.PatCoinvntPsnVo" parameterType="kr.re.kitech.biz.pat.app.vo.PatComVo">
+SELECT /* kr.re.kitech.biz.pat.com.selectPatCoInvntPsnList */
+      req_no 
+     , seq
+     , syspayno
+     , blong_clsf
+     , blong_cd
+     , dept_new_ymd
+     , blong_nm
+     , nm_krn
+     , nm_eng
+     , resid_regst_no
+     , contac_loc
+     , email
+     , post_no
+     , addr
+     , detls_addr  
+     , stake_rt
+     , stake_dept
+     , invnt_psn_clsf
+     , trans_ex
+     , attach_file_no
+     , co_invnt_affir_ex
+     , co_invnt_affir_ymd
+     , co_invnt_affir_rmk
+     , co_invnt_retn_ymd      
+FROM patcoinvntpsn
+WHERE req_no = #{req_no}
+AND mngmt_no = #{mngmt_no}
+</select>
+
+<!-- 지재권 공동발명자 저장 -->
+<insert id="insertPatCoInvntPsn" parameterType="kr.re.kitech.biz.pat.app.vo.PatCoinvntPsnVo">
+INSERT /* kr.re.kitech.biz.pat.com.insertPatCoInvntPsn */
+  INTO patcoinvntpsn (
+    req_no
+  , mngmt_no
+  , seq
+  <if test='syspayno != null'> , syspayno </if>
+  <if test='blong_clsf != null'> , blong_clsf </if>
+  <if test='blong_cd != null'> , blong_cd </if>
+  <if test='dept_new_ymd != null'> , dept_new_ymd </if>
+  <if test='blong_nm != null'> , blong_nm </if>
+  <if test='nm_krn != null'> , nm_krn </if>
+  <if test='nm_eng != null'> , nm_eng </if>
+  <if test='resid_regst_no != null'> , resid_regst_no </if>
+  <if test='contac_loc != null'> , contac_loc </if>
+  <if test='email != null'> , email </if>
+  <if test='post_no != null'> , post_no </if>
+  <if test='addr != null'> , addr </if>
+  <if test='detls_addr   != null'> , detls_addr   </if>
+  <if test='stake_rt != null'> , stake_rt </if>
+  <if test='stake_dept != null'> , stake_dept </if>
+  <if test='invnt_psn_clsf != null'> , invnt_psn_clsf </if>
+  <if test='trans_ex != null'> , trans_ex </if>
+  <if test='attach_file_no != null'> , attach_file_no </if>
+  <if test='co_invnt_affir_ex != null'> , co_invnt_affir_ex </if>
+  <if test='co_invnt_affir_ymd != null'> , co_invnt_affir_ymd </if>
+  <if test='co_invnt_affir_rmk != null'> , co_invnt_affir_rmk </if>
+  <if test='co_invnt_retn_ymd != null'> , co_invnt_retn_ymd </if>
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{req_no}
+  , #{mngmt_no}
+  , #{seq}
+  <if test='syspayno != null'> , #{syspayno} </if>
+  <if test='blong_clsf != null'> , #{blong_clsf} </if>
+  <if test='blong_cd != null'> , #{blong_cd} </if>
+  <if test='dept_new_ymd != null'> , #{dept_new_ymd} </if>
+  <if test='blong_nm != null'> , #{blong_nm} </if>
+  <if test='nm_krn != null'> , #{nm_krn} </if>
+  <if test='nm_eng != null'> , #{nm_eng} </if>
+  <if test='resid_regst_no != null'> , #{resid_regst_no} </if>
+  <if test='contac_loc != null'> , #{contac_loc} </if>
+  <if test='email != null'> , #{email} </if>
+  <if test='post_no != null'> , #{post_no} </if>
+  <if test='addr != null'> , #{addr} </if>
+  <if test='detls_addr != null'> , #{detls_addr} </if>
+  <if test='stake_rt != null'> , #{stake_rt} </if>
+  <if test='stake_dept != null'> , #{stake_dept} </if>
+  <if test='invnt_psn_clsf != null'> , #{invnt_psn_clsf} </if>
+  <if test='trans_ex != null'> , #{trans_ex} </if>
+  <if test='attach_file_no != null'> , #{attach_file_no} </if>
+  <if test='co_invnt_affir_ex != null'> , #{co_invnt_affir_ex} </if>
+  <if test='co_invnt_affir_ymd != null'> , #{co_invnt_affir_ymd} </if>
+  <if test='co_invnt_affir_rmk != null'> , #{co_invnt_affir_rmk} </if>
+  <if test='co_invnt_retn_ymd != null'> , #{co_invnt_retn_ymd} </if>
+  , #{regst_syspayno}
+  , CURRENT
+)
+</insert>
+
+<!-- 공동출원업체 조회 -->
+<select id="selectPatCoSmitappVendList" parameterType="kr.re.kitech.biz.pat.app.vo.PatComVo" resultType="kr.re.kitech.biz.pat.app.vo.PatCoSmitappVendVo">
+SELECT /* kr.re.kitech.biz.pat.com.selectPatCoSmitappVendList */
+      req_no
+     , seq
+     , vend_type
+     , stake_rt  
+     , vend_cd  
+     , vend_nm 
+     , vend_bsn_no 
+     , addr 
+     , charg
+     , contac_loc 
+     , attach_file_no
+FROM patcosmitappvend
+WHERE req_no = #{req_no}
+AND mngmt_no = #{mngmt_no}
+</select>
+
+<!-- 공동출원업체 저장 -->
+<insert id="insertPatCoSmitappVend" parameterType="kr.re.kitech.biz.pat.app.vo.PatCoSmitappVendVo">
+INSERT /* kr.re.kitech.biz.pat.com.insertPatCoSmitappVend */
+   INTO patcosmitappvend (
+    req_no
+  , mngmt_no
+  , seq
+  , vend_type
+  <if test='stake_rt != null'> , stake_rt  </if>
+  <if test='vend_cd != null'> , vend_cd  </if>
+  <if test='vend_nm != null'> , vend_nm </if>
+  <if test='vend_bsn_no != null'> , vend_bsn_no </if>
+  <if test='addr  != null'> , addr </if>
+  <if test='charg != null'> , charg</if>
+  <if test='contac_loc != null'> , contac_loc </if>
+  <if test='attach_file_no != null'> , attach_file_no</if>
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{req_no}
+  , #{mngmt_no}
+  , #{seq}
+  , #{vend_type}
+  <if test='stake_rt != null'> , #{stake_rt} </if>
+  <if test='vend_cd != null'> , #{vend_cd} </if>
+  <if test='vend_nm != null'> , #{vend_nm} </if>
+  <if test='vend_bsn_no != null'> , #{vend_bsn_no} </if>
+  <if test='addr != null'> , #{addr} </if>
+  <if test='charg != null'> , #{charg} </if>
+  <if test='contac_loc != null'> , #{contac_loc} </if>
+  <if test='attach_file_no != null'> , #{attach_file_no} </if>
+  , #{regst_syspayno}
+  , CURRENT
+)
+</insert>
+
+<!-- 지재권 마스터 정보 조회(bpm 처리용) -->
+<select id="selectPatComWfInfo" parameterType="kr.re.kitech.biz.pat.com.vo.PatToDoVo" resultType="kr.re.kitech.biz.pat.com.vo.PatComWFBizVo">
+SELECT /* kr.re.kitech.biz.pat.com.selectPatComWfInfo */
+       base.ref_key
+     , base.req_no
+     , base.mngmt_no
+     , pm.invnt_krn_nm
+     , pm.smitapp_natn_nm
+     , xcm.cd_desc AS pat_clsf_nm
+     , base.patofic_cd
+     , base.patofic_charg_id
+     , pm.patofic_mng_no
+     , po.patofic_nm
+     , po.email AS patofic_email
+     , DECODE(NVL(poc.nm,''),'',po.patofic_nm,poc.nm) AS patofic_charg_nm
+     , DECODE(NVL(poc.email,''),'',po.email,poc.email) AS patofic_charg_email
+     , poc.contac_loc AS patofic_charg_contac_loc
+     , REPLACE(poc.contac_hp,'-','') AS patofic_charg_mobile
+     , hbi2.syspayno AS login_syspayno
+     , pm.mandate_psn_syspayno
+     , hbi3.email AS mandate_email
+     , hbi3.nm AS mandate_nm
+     , REPLACE(hbi3.mobile,'-','') AS mandate_mobile
+     , CASE WHEN NVL(hbi.retire_ymd,'') = '' AND (hbi.work_clsf != 'HAG020' AND hbi.work_clsf != 'HAG025') THEN hbi.syspayno
+            ELSE pm.mandate_psn_syspayno END invnt_syspayno
+     , CASE WHEN NVL(hbi.retire_ymd,'') = '' AND (hbi.work_clsf != 'HAG020' AND hbi.work_clsf != 'HAG025') THEN hbi.email 
+            ELSE hbi3.email END invnt_email
+     , CASE WHEN NVL(hbi.retire_ymd,'') = '' AND (hbi.work_clsf != 'HAG020' AND hbi.work_clsf != 'HAG025') THEN hbi.nm
+            ELSE hbi3.nm END invnt_nm
+     , REPLACE(hbi.mobile,'-','') AS invnt_mobile
+     , hbi2.email AS login_email
+     , hbi2.nm AS login_nm
+     , REPLACE(hbi2.mobile,'-','') AS login_mobile
+     , pm.bpm_yn
+     , pm.invnt_syspayno AS invnt_syspayno2 
+     , DECODE(base.req_due_date,'','', SUBSTR(base.req_due_date,1,4) || '-' || SUBSTR(base.req_due_date,5,2) || '-' || SUBSTR(base.req_due_date,7,2)) AS req_due_date
+     , prj.resch_respn_syspayno
+     , hbi4.email AS resch_respn_email
+     , hbi4.nm AS resch_respn_nm
+     , pm.charg_syspayno
+     , hbi5.email  AS charg_email
+     , hbi5.nm  AS charg_nm
+FROM ( SELECT srh_id AS ref_key, req_no, mngmt_no, req_patofic_cd AS patofic_cd, hope_patofic_charg_id AS patofic_charg_id  ,req_due_date
+       FROM patsrh
+       UNION
+       SELECT spec_id AS ref_key, req_no, mngmt_no, req_patofic_cd AS patofic_cd, hope_patofic_charg_id AS patofic_charg_id,req_due_date
+       FROM patspec
+       UNION
+       SELECT app_id AS ref_key, req_no, mngmt_no, com_patofic_cd AS patofic_cd, com_patofic_charg_id AS patofic_charg_id,req_due_date
+       FROM patapp
+       UNION
+       SELECT demnd_id AS ref_key, req_no, mngmt_no, req_patofic_cd AS patofic_cd, hope_patofic_charg_id AS patofic_charg_id,req_due_date
+       FROM patdemnd
+       UNION
+       SELECT prity_demnd_id AS ref_key, req_no, mngmt_no, req_patofic_cd AS patofic_cd, hope_patofic_charg_id AS patofic_charg_id,req_due_date
+       FROM patpritydemnd
+       UNION
+       SELECT oa_id AS ref_key, req_no, mngmt_no, rcpt_patofic_cd AS patofic_cd, rcpt_charg_psn_id AS patofic_charg_id, '' AS req_due_date
+       FROM patoa
+       UNION
+       SELECT reg_id AS ref_key , req_no, mngmt_no, req_patofic_cd AS patofic_cd, req_charg_psn_id AS patofic_charg_id , com_due_date AS req_due_date
+       FROM patreg
+       UNION
+       SELECT ids_id AS ref_key , req_no, mngmt_no, rcpt_patofic_cd AS patofic_cd, rcpt_charg_psn_id AS patofic_charg_id ,'' AS req_due_date
+       FROM patids
+       UNION
+       SELECT trans_id AS ref_key , req_no, mngmt_no, rcpt_patofic_cd AS patofic_cd, rcpt_charg_psn_id AS patofic_charg_id,'' AS req_due_date
+       FROM pattrans
+       UNION
+       SELECT post_req_id AS ref_key , req_no, mngmt_no, req_patofic_cd AS patofic_cd, rcpt_charg_psn_id AS patofic_charg_id,'' AS req_due_date
+       FROM patpostreq
+       UNION
+       SELECT reminder_cnt_id AS ref_key, req_no, mngmt_no, '' AS patofic_cd, '' AS patofic_charg_id,'' AS req_due_date
+       FROM patremindercnt
+  ) base
+JOIN patmastr pm ON pm.req_no = base.req_no AND pm.mngmt_no = base.mngmt_no
+LEFT JOIN patcoinvntpsn pci ON pci.req_no = pm.req_no AND pci.mngmt_no = pm.mngmt_no AND pci.invnt_psn_clsf = '1'
+LEFT JOIN humbasicinfo hbi ON hbi.syspayno = pci.syspayno
+LEFT JOIN patoffice po ON po.patofic_cd = base.patofic_cd
+LEFT JOIN patoficcharg poc ON poc.id = base.patofic_charg_id
+LEFT JOIN humbasicinfo hbi2 ON hbi2.syspayno = #{syspayno}
+LEFT JOIN humbasicinfo hbi3 ON hbi3.syspayno = pm.mandate_psn_syspayno
+LEFT JOIN xodxcommst xcm ON xcm.cd = pm.pat_clsf
+LEFT JOIN patrelatreschprj prj ON prj.req_no = pm.req_no
+LEFT JOIN humbasicinfo hbi4 ON hbi4.syspayno = pm.mandate_psn_syspayno
+LEFT JOIN humbasicinfo hbi5 ON hbi5.syspayno = pm.charg_syspayno
+WHERE base.ref_key = #{ref_key}
+</select>
+
+<!-- 기존 todo 제거 -->
+<update id="updatePatToDoDel" parameterType="kr.re.kitech.biz.pat.com.vo.PatToDoVo">
+UPDATE  /* kr.re.kitech.biz.pat.com.updatePatToDoDel */
+     pattodo
+   SET end_yn = 'Y'
+     , end_date = CURRENT
+   <if test='todo_actor != null'>, todo_actor = #{todo_actor} </if>
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+ WHERE todo_auth != '2'
+ <if test ='todo_auth != null and todo_auth != ""'> AND todo_auth = #{todo_auth} </if>
+   AND req_no = #{req_no}
+   AND mngmt_no = #{mngmt_no}
+   AND reg_cd = #{curr_state_cd}
+</update>
+
+<!-- 심사청구 진행중 상태 todo 조회 -->
+<select id="selectPatToDoDel" resultType="kr.re.kitech.biz.pat.com.vo.PatToDoVo" parameterType="kr.re.kitech.biz.pat.com.vo.PatToDoVo">
+SELECT /* kr.re.kitech.biz.pat.com.selectPatToDoDel */
+       todo_id
+     , 'D' AS init
+     , work_id AS ref_key
+     , req_no
+     , mngmt_no
+     , reg_cd
+     , todo_auth
+     , '' AS next_state_cd
+     , 'XAD100' AS apr_state
+  FROM pattodo
+ WHERE req_no = #{req_no}
+   AND mngmt_no = #{mngmt_no} 
+   AND end_yn != 'Y'
+   AND reg_cd IN ('P1110','P1111','P1112','P1113') /* 심사청구 의뢰대기, 의뢰완료, 접수완료, 결과확인 */
+</select>
+
+<!-- 심사청구 진행중 상태 todo 삭제 처리 -->
+<delete id="deletePatToDo" parameterType="kr.re.kitech.biz.pat.com.vo.PatToDoVo">
+DELETE /* kr.re.kitech.biz.pat.com.deletePatToDo */
+  FROM pattodo
+WHERE todo_id = #{todo_id}
+</delete>
+
+<!-- 특허팀권한 정보 조회 -->
+<select id="selectRoleUserTableList" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.com.vo.EmpTableVo">
+SELECT /* kr.re.kitech.biz.pat.com.selectRoleUserTableList */
+       a.rolecode
+     , b.empcode
+     , b.empname
+     , b.empsn
+  FROM roleusertable a
+  JOIN emptable b ON b.empcode = a.empcode
+WHERE a.rolecode = #{rolecode}
+</select>
+
+<!-- pattodo 저장(PatComService.executePatComWFBiz에서 호출) -->
+<insert id="insertPatToDo" parameterType="kr.re.kitech.biz.pat.com.vo.PatToDoVo">
+INSERT /* kr.re.kitech.biz.pat.com.insertPatToDo */
+   INTO pattodo (
+    todo_id
+  , work_id
+  , req_no
+  , mngmt_no
+ <if test='main_key != null'> , main_key </if>
+  , reg_cd
+ <if test='job_cd != null'>, job_cd </if>
+ <if test='job_title != null'>, job_title </if>
+ <if test='todo_title != null'>, todo_title </if>
+ <if test='todo_auth != null'>, todo_auth </if>
+ <if test='todo_due_date != null'>, todo_due_date </if>
+ <if test='page_id != null'>, page_id </if>
+ <if test='page_detail_id != null'>, page_detail_id </if>
+  , end_yn
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    fn_uid('1')
+  , #{work_id}
+  , #{req_no}
+  , #{mngmt_no}
+ <if test='main_key != null'> , #{main_key} </if>
+  , #{reg_cd}
+ <if test='job_cd != null'>, #{job_cd} </if>
+ <if test='job_title != null'>, #{job_title} </if>
+ <if test='todo_title != null'>, #{todo_title} </if>
+ <if test='todo_auth != null'>, #{todo_auth} </if>
+ <if test='todo_due_date != null'>, #{todo_due_date} </if>
+ <if test='page_id != null'>, #{page_id} </if>
+ <if test='page_detail_id != null'>, #{page_detail_id} </if>
+  , 'N'
+  , #{regst_syspayno}
+  , CURRENT
+)
+</insert>
+<select id="selectPatMastr" parameterType="kr.re.kitech.biz.pat.com.vo.PatMastrVo" resultType="kr.re.kitech.biz.pat.com.vo.PatMastrVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.com.selectPatMastr */ 
+		  COUNT(req_no) AS cnt
+FROM    patmastr
+WHERE   req_no      = #{req_no}
+AND     mngmt_no    = #{mngmt_no}
+  </select>
+<update id="updatePatMastr" parameterType="kr.re.kitech.biz.pat.com.vo.PatMastrVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.com.updatePatMastr */ 
+		  patmastr
+SET     <if test="pat_clsf != null and pat_clsf != ''">
+	  pat_clsf               = #{pat_clsf},
+</if>  /* 특허구분               */
+        <if test="pat_grd != null and pat_grd != ''">
+	  pat_grd                 = #{pat_grd},
+</if>  /* 발명의등급                   */
+        <if test="state != null and state != ''">
+	  state                  = #{state},
+</if>  /* 상태                   */
+        <if test="invnt_krn_nm != null and invnt_krn_nm != ''">
+	  invnt_krn_nm            = #{invnt_krn_nm},
+</if>  /* 발명국문명칭           */
+        <if test="invnt_eng_nm != null and invnt_eng_nm != ''">
+	  invnt_eng_nm            = #{invnt_eng_nm},
+</if>  /* 발명영문명칭           */
+        <if test="detls_krn_nm != null and detls_krn_nm != ''">
+	  detls_krn_nm            = #{detls_krn_nm},
+</if>  /* 명세국문명칭           */
+        <if test="detls_eng_nm != null and detls_eng_nm != ''">
+	  detls_eng_nm            = #{detls_eng_nm},
+</if>  /* 명세영문명칭           */
+        <if test="smitapp_krn_nm != null and smitapp_krn_nm != ''">
+	  smitapp_krn_nm          = #{smitapp_krn_nm},
+</if>  /* 출원국문명칭           */
+        <if test="smitapp_eng_nm != null and smitapp_eng_nm != ''">
+	  smitapp_eng_nm          = #{smitapp_eng_nm},
+</if>  /* 출원영문명칭           */
+        <if test="regst_krn_nm != null and regst_krn_nm != ''">
+	  regst_krn_nm            = #{regst_krn_nm},
+</if>  /* 등록국문명칭           */
+        <if test="regst_eng_nm != null and regst_eng_nm != ''">
+	  regst_eng_nm            = #{regst_eng_nm},
+</if>  /* 등록영문명칭           */
+        <if test="trans_nm != null and trans_nm != ''">
+	  trans_nm                = #{trans_nm},
+</if>  /* 양도명칭               */
+        <if test="smitapp_no != null and smitapp_no != ''">
+	  smitapp_no              = #{smitapp_no},
+</if>  /* 출원번호               */
+        <if test="smitapp_ymd != null and smitapp_ymd != ''">
+	  smitapp_ymd             = #{smitapp_ymd},
+</if>  /* 출원일자               */
+        <if test="smitapp_reg_ymd != null and smitapp_reg_ymd != ''">
+	  smitapp_reg_ymd         = #{smitapp_reg_ymd},
+</if>  /* 출원실적년월           */
+        <if test="regst_no != null and regst_no != ''">
+	  regst_no                = #{regst_no},
+</if>  /* 등록번호               */
+        <if test="regst_ymd != null and regst_ymd != ''">
+	  regst_ymd               = #{regst_ymd},
+</if>  /* 등록일자               */
+        <if test="regst_reg_ymd != null and regst_reg_ymd != ''">
+	  regst_reg_ymd           = #{regst_reg_ymd},
+</if>  /* 등록실적년월           */
+        <if test="invnt_syspayno != null and invnt_syspayno != ''">
+	  invnt_syspayno          = #{invnt_syspayno},
+</if>  /* 발명시스템개인번호     */
+        <if test="charg_syspayno != null and charg_syspayno != ''">
+	  charg_syspayno          = #{charg_syspayno},
+</if>  /* 담당시스템개인번호     */
+        <if test="patofic_cd != null and patofic_cd != ''">
+	  patofic_cd              = #{patofic_cd},
+</if>  /* 특허사무소코드         */
+        <if test="patofic_charg_id != null and patofic_charg_id != ''">
+	  patofic_charg_id        = #{patofic_charg_id},
+</if>  /* 특허사무소담당자아이디 */
+        <if test="patofic_nm != null and patofic_nm != ''">
+	  patofic_nm              = #{patofic_nm},
+</if>  /* 특허사무소담당자아이디 */
+        <if test="patofic_charg_nm != null and patofic_charg_nm != ''">
+	  patofic_charg_nm        = #{patofic_charg_nm},
+</if>  /* 특허사무소담당자아이디 */
+        <if test="patofic_contac_loc != null and patofic_contac_loc != ''">
+	  patofic_contac_loc      = #{patofic_contac_loc},
+</if>  /* 특허사무소담당자아이디 */
+        <if test="right_expir_ymd != null and right_expir_ymd != ''">
+	  right_expir_ymd         = #{right_expir_ymd},
+</if>  /* 권리만료일자           */
+        <if test="right_mnt_final_seq != null and right_mnt_final_seq != ''">
+	  right_mnt_final_seq     = #{right_mnt_final_seq},
+</if>  /* 권리유지최종차수       */
+        <if test="dom_oversea_clsf != null and dom_oversea_clsf != ''">
+	  dom_oversea_clsf        = #{dom_oversea_clsf},
+</if>  /* 국내해외구분           */
+        <if test="oversapp_hope_ex != null and oversapp_hope_ex != ''">
+	  oversapp_hope_ex        = #{oversapp_hope_ex},
+</if>  /* 해외출원희망유무       */
+        <if test="pct_chk != null and pct_chk != ''">
+	  pct_chk                 = #{pct_chk},
+</if>  /* PCT 진입 여부          */
+        <if test="smitapp_natn_cd != null and smitapp_natn_cd != ''">
+	  smitapp_natn_cd         = #{smitapp_natn_cd},
+</if>  /* 출원국가코드           */
+        <if test="smitapp_natn_nm != null and smitapp_natn_nm != ''">
+	  smitapp_natn_nm         = #{smitapp_natn_nm},
+</if>  /* 출원국가코드           */
+        <if test="open_no != null and open_no != ''">
+	  open_no                 = #{open_no},
+</if>  /* 공개번호               */
+        <if test="intrn_smitapp_no != null and intrn_smitapp_no != ''">
+	  intrn_smitapp_no        = #{intrn_smitapp_no},
+</if>  /* 국제출원번호           */
+        <if test="intrn_smitapp_ymd != null and intrn_smitapp_ymd != ''">
+	  intrn_smitapp_ymd       = #{intrn_smitapp_ymd},
+</if>  /* 국제출원일자           */
+        <if test="prityrgt_main_rspns_no != null and prityrgt_main_rspns_no != ''">
+	  prityrgt_main_rspns_no  = #{prityrgt_main_rspns_no},
+</if>  /* 우선권주장번호         */
+        <if test="prityrgt_main_rspns_ymd != null and prityrgt_main_rspns_ymd != ''">
+	  prityrgt_main_rspns_ymd = #{prityrgt_main_rspns_ymd},
+</if>  /* 우선권주장일자         */
+        <if test="open_ex != null and open_ex != ''">
+	  open_ex                 = #{open_ex},
+</if>  /* 공개유무               */
+        <if test="open_ymd != null and open_ymd != ''">
+	  open_ymd                = #{open_ymd},
+</if>  /* 공개일자               */
+        <if test="open_contnt != null and open_contnt != ''">
+	  open_contnt             = #{open_contnt},
+</if>  /* 공개내용               */
+        <if test="invnt_clsf != null and invnt_clsf != ''">
+	  invnt_clsf              = #{invnt_clsf},
+</if>  /* 발명구분               */
+        <if test="ely_open_ex != null and ely_open_ex != ''">
+	  ely_open_ex             = #{ely_open_ex},
+</if>  /* 조기공개유무           */
+        <if test="eval_demnd_ex != null and eval_demnd_ex != ''">
+	  eval_demnd_ex           = #{eval_demnd_ex},
+</if>  /* 심사청구유무           */
+        <if test="prity_eval_ex != null and prity_eval_ex != ''">
+	  prity_eval_ex           = #{prity_eval_ex},
+</if>  /* 우선심사유무           */
+        <if test="smitapp_occr_clsf != null and smitapp_occr_clsf != ''">
+	  smitapp_occr_clsf       = #{smitapp_occr_clsf},
+</if>  /* 출원발생구분           */
+        <if test="co_smitapp_ex != null and co_smitapp_ex != ''">
+	  co_smitapp_ex           = #{co_smitapp_ex},
+</if>  /* 공동출원유무           */
+        <if test="smitapp_way != null and smitapp_way != ''">
+	  smitapp_way             = #{smitapp_way},
+</if>  /* 출원방법               */
+        <if test="tech_eval_hope_ex != null and tech_eval_hope_ex != ''">
+	  tech_eval_hope_ex       = #{tech_eval_hope_ex},
+</if>  /* 기술평가희망유무       */
+        <if test="tech_trans_hope_ex != null and tech_trans_hope_ex != ''">
+	  tech_trans_hope_ex      = #{tech_trans_hope_ex},
+</if>  /* 기술이전희망유무       */
+        <if test="tech_trans_hope_amt != null and tech_trans_hope_amt != ''">
+	  tech_trans_hope_amt     = #{tech_trans_hope_amt},
+</if>  /* 기술이전희망금액       */
+        <if test="tech_trans_hope_typ != null and tech_trans_hope_typ != ''">
+	  tech_trans_hope_typ     = #{tech_trans_hope_typ},
+</if>  /* 기술이전희망유형       */
+        <if test="affir_req_ymd != null and affir_req_ymd != ''">
+	  affir_req_ymd           = #{affir_req_ymd},
+</if>  /* 확인요청일자           */
+        <if test="invnt_psn_rmk != null and invnt_psn_rmk != ''">
+	  invnt_psn_rmk           = #{invnt_psn_rmk},
+</if>  /* 발명자비고             */
+        <if test="invnt_draft_ymd != null and invnt_draft_ymd != ''">
+	  invnt_draft_ymd         = #{invnt_draft_ymd},
+</if>  /* 발명기안일자           */
+        <if test="invnt_apprvl_complt_ymd != null and invnt_apprvl_complt_ymd != ''">
+	  invnt_apprvl_complt_ymd = #{invnt_apprvl_complt_ymd},
+</if>  /* 발명결재완료일자       */
+        <if test="invnt_reject_ymd != null and invnt_reject_ymd != ''">
+	  invnt_reject_ymd        = #{invnt_reject_ymd},
+</if>  /* 발명부결일자           */
+        <if test="invnt_reject_resn != null and invnt_reject_resn != ''">
+	  invnt_reject_resn       = #{invnt_reject_resn},
+</if>  /* 발명부결사유           */
+        <if test="invnt_wrte_syspayno != null and invnt_wrte_syspayno != ''">
+	  invnt_wrte_syspayno     = #{invnt_wrte_syspayno},
+</if>  /* 발명작성시스템개인번호 */
+        <if test="prityrgt_wdrw_ymd != null and prityrgt_wdrw_ymd != ''">
+	  prityrgt_wdrw_ymd       = #{prityrgt_wdrw_ymd},
+</if>  /* 우선권취하일자         */
+        <if test="old_data_mngmt_no != null and old_data_mngmt_no != ''">
+	  old_data_mngmt_no       = #{old_data_mngmt_no},
+</if>  /* 구데이터관리번호       */
+        <if test="attach_file_no_1 != null and attach_file_no_1 != ''">
+	  attach_file_no_1        = #{attach_file_no_1},
+</if>  /* 첨부파일 */
+        <if test="tech_clsf != null and tech_clsf != ''">
+	  tech_clsf               = #{tech_clsf},
+</if>  /* 기술분류 */
+        <if test="relat_dom_smitapp_no != null and relat_dom_smitapp_no != ''">
+	  relat_dom_smitapp_no    = #{relat_dom_smitapp_no},
+</if>  /* 관련국내출원번호 */
+        <if test="pre_tech_wrt_invst != null and pre_tech_wrt_invst != ''">
+	  pre_tech_wrt_invst      = #{pre_tech_wrt_invst},
+</if>  /* 선행기술조사서여부 */
+        <if test="attach_file_no_2 != null and attach_file_no_2 != ''">
+	  attach_file_no_2        = #{attach_file_no_2},
+</if>  /* 첨부파일 */
+        <if test="attach_file_no_3 != null and attach_file_no_3 != ''">
+	  attach_file_no_3        = #{attach_file_no_3},
+</if>  /* 첨부파일 */
+        <if test="attach_file_no_4 != null and attach_file_no_4 != ''">
+	  attach_file_no_4        = #{attach_file_no_4},
+</if>  /* 첨부파일 */
+        <if test="ipc_01 != null and ipc_01 != ''">
+	  ipc_01                  = #{ipc_01},
+</if>  /* IPC01 */
+        <if test="ipc_02 != null and ipc_02 != ''">
+	  ipc_02                  = #{ipc_02},
+</if>  /* IPC02 */
+        <if test="ipc_03 != null and ipc_03 != ''">
+	  ipc_03                  = #{ipc_03},
+</if>  /* IPC03 */
+        <if test="exam_reflect_clsf != null and exam_reflect_clsf != ''">
+	  exam_reflect_clsf       = #{exam_reflect_clsf},
+</if> /* 질평가반영여부*/
+        updt_syspayno   = #{updt_syspayno},                                                                    /* 수정시스템개인번호     */
+        updt_daytm      = CURRENT                                                               /* 수정일시               */
+WHERE   req_no          = #{req_no}       
+<if test="mngmt_no != null and mngmt_no != ''">
+	  AND     mngmt_no        = #{mngmt_no}
+</if>
+  </update>
+  <select id="selectPatRightMnt" parameterType="kr.re.kitech.biz.pat.com.vo.PatRightMntVo" resultType="kr.re.kitech.biz.pat.com.vo.PatRightMntVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.com.selectPatRightMnt */ 
+          COUNT(req_no) AS cnt
+FROM    patrightmnt
+WHERE   mngmt_no    = #{mngmt_no}
+AND     mnt_seq     = #{mnt_seq}
+<if test="req_no != null and req_no != ''">
+      AND   req_no = #{req_no}
+</if>
+  </select>
+  <insert id="insertPatRightMnt" parameterType="kr.re.kitech.biz.pat.com.vo.PatRightMntVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.com.insertPatRightMnt */ 
+         INTO patrightmnt (req_no                         ,
+                         mngmt_no                       ,
+                         mnt_seq                        ,
+                         rightmnt_div                   ,
+                         thsyear_evyearfee_pay_ymd      ,
+                         thsyear_evyearfee_pay_close_ymd,
+                         accnt_no                       ,
+                         governpay_fee                  ,
+                         unusual_item                   ,
+                         attach_file_no                 ,
+                         regst_syspayno                 ,
+                         regst_daytm                    )
+VALUES (#{req_no},
+        #{mngmt_no},
+        #{mnt_seq},
+        #{rightmnt_div},
+        #{thsyear_evyearfee_pay_ymd},
+        #{thsyear_evyearfee_pay_close_ymd},
+        #{accnt_no},
+        #{governpay_fee},
+        #{unusual_item},
+        #{attach_file_no},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+  <update id="updatePatRightMnt" parameterType="kr.re.kitech.biz.pat.com.vo.PatRightMntVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.com.updatePatRightMnt */ 
+          patrightmnt
+SET     <if test="rightmnt_div != null and rightmnt_div != ''">
+      rightmnt_div                    = #{rightmnt_div},
+</if>   -- 권리유지구분 Y/N    
+        <if test="right_req_no != null and right_req_no != ''">
+      right_req_no                    = #{right_req_no},
+</if>   -- 권리유지신청번호                  
+        <if test="rightmnt_div_syspayno != null and rightmnt_div_syspayno != ''">
+      rightmnt_div_syspayno           = #{rightmnt_div_syspayno},
+</if>   -- 권리유지구분입력자     
+        <if test="patofic_cd != null and patofic_cd != ''">
+      patofic_cd                      = #{patofic_cd},
+</if>   -- 특허사무소코드         
+        <if test="patofic_nm != null and patofic_nm != ''">
+      patofic_nm                      = #{patofic_nm},
+</if>   -- 특허사무소명           
+        <if test="nedguidpsn_id != null and nedguidpsn_id != ''">
+      nedguidpsn_id                   = #{nedguidpsn_id},
+</if>   -- 필요안내자아이디       
+        <if test="nedguidpsn_nm != null and nedguidpsn_nm != ''">
+      nedguidpsn_nm                   = #{nedguidpsn_nm},
+</if>   -- 필요안내자명           
+        <if test="nedguidpsn_reply_req_ymd != null and nedguidpsn_reply_req_ymd != ''">
+      nedguidpsn_reply_req_ymd        = #{nedguidpsn_reply_req_ymd},
+</if>   -- 필요안내자회신요청일자 
+        <if test="need_guide_ymd != null and need_guide_ymd != ''">
+      need_guide_ymd                  = #{need_guide_ymd},
+</if>   -- 필요안내일자           
+        <if test="need_guide_rmk != null and need_guide_rmk != ''">
+      need_guide_rmk                  = #{need_guide_rmk},
+</if>   -- 필요안내비고           
+        <if test="rcpt_syspayno != null and rcpt_syspayno != ''">
+      rcpt_syspayno                   = #{rcpt_syspayno},
+</if>   -- 접수시스템개인번호     
+        <if test="rcpt_syspaynm != null and rcpt_syspaynm != ''">
+      rcpt_syspaynm                   = #{rcpt_syspaynm},
+</if>   -- 접수자명               
+        <if test="rcpt_revw_req_ymd != null and rcpt_revw_req_ymd != ''">
+      rcpt_revw_req_ymd               = #{rcpt_revw_req_ymd},
+</if>   -- 접수검토요청일자       
+        <if test="rcpt_revw_req_rmk != null and rcpt_revw_req_rmk != ''">
+      rcpt_revw_req_rmk               = #{rcpt_revw_req_rmk},
+</if>   -- 접수검토요청비고       
+        <if test="revw_giveup_clsf != null and revw_giveup_clsf != ''">
+      revw_giveup_clsf                = #{revw_giveup_clsf},
+</if>   -- 검토포기구분           
+        <if test="revw_complt_hope_ymd != null and revw_complt_hope_ymd != ''">
+      revw_complt_hope_ymd            = #{revw_complt_hope_ymd},
+</if>   -- 검토완료희망일         
+        <if test="revw_ymd != null and revw_ymd != ''">
+      revw_ymd                        = #{revw_ymd},
+</if>   -- 검토일자               
+        <if test="revw_rmk != null and revw_rmk != ''">
+      revw_rmk                        = #{revw_rmk},
+</if>   -- 검토비고               
+        <if test="indic_complt_hope_ymd != null and indic_complt_hope_ymd != ''">
+      indic_complt_hope_ymd           = #{indic_complt_hope_ymd},
+</if>   -- 지시완료희망일         
+        <if test="indic_ymd != null and indic_ymd != ''">
+      indic_ymd                       = #{indic_ymd},
+</if>   -- 지시일자               
+        <if test="indic_rmk != null and indic_rmk != ''">
+      indic_rmk                       = #{indic_rmk},
+</if>   -- 지시비고               
+        <if test="thsyear_evyearfee_pay_ymd != null and thsyear_evyearfee_pay_ymd != ''">
+      thsyear_evyearfee_pay_ymd       = #{thsyear_evyearfee_pay_ymd},
+</if>   -- 금년차연차료납부일
+        <if test="governpay_fee != null and governpay_fee != ''">
+      governpay_fee                   = #{governpay_fee},
+</if>   -- 관납료(수수료)
+        <if test="accnt_no != null and accnt_no != ''">
+      accnt_no                        = #{accnt_no},
+</if>   -- 유지계정
+        <if test="thsyear_evyearfee_pay_close_ymd != null and thsyear_evyearfee_pay_close_ymd != ''">
+      thsyear_evyearfee_pay_close_ymd = #{thsyear_evyearfee_pay_close_ymd},
+</if>   -- 금년차연차료납부마감일     
+        <if test="nexyear_evyearfee_pay_close_ymd != null and nexyear_evyearfee_pay_close_ymd != ''">
+      nexyear_evyearfee_pay_close_ymd = #{nexyear_evyearfee_pay_close_ymd},
+</if>   -- 내년차연차료납부마감일 
+        <if test="right_expir_ymd != null and right_expir_ymd != ''">
+      right_expir_ymd                 = #{right_expir_ymd},
+</if>   -- 권리만료일자           
+        <if test="complt_rpt_id != null and complt_rpt_id != ''">
+      complt_rpt_id                   = #{complt_rpt_id},
+</if>   -- 완료보고아이디         
+        <if test="complt_rpt_nm != null and complt_rpt_nm != ''">
+      complt_rpt_nm                   = #{complt_rpt_nm},
+</if>   -- 완료보고자명           
+        <if test="complt_rpt_ymd != null and complt_rpt_ymd != ''">
+      complt_rpt_ymd                  = #{complt_rpt_ymd},
+</if>   -- 완료보고일자           
+        <if test="complt_rpt_rmk != null and complt_rpt_rmk != ''">
+      complt_rpt_rmk                  = #{complt_rpt_rmk},
+</if>   -- 완료보고비고           
+        <if test="revw_req_ymd != null and revw_req_ymd != ''">
+      revw_req_ymd                    = #{revw_req_ymd},
+</if>   -- 검토요청일자           
+        <if test="revw_req_rmk != null and revw_req_rmk != ''">
+      revw_req_rmk                    = #{revw_req_rmk},
+</if>   -- 검토요청비고           
+        <if test="re_wrte_indic_req_ymd != null and re_wrte_indic_req_ymd != ''">
+      re_wrte_indic_req_ymd           = #{re_wrte_indic_req_ymd},
+</if>   -- 재작성지시요청일자     
+        <if test="re_wrte_indic_req_rmk != null and re_wrte_indic_req_rmk != ''">
+      re_wrte_indic_req_rmk           = #{re_wrte_indic_req_rmk},
+</if>   -- 재작성지시요청비고     
+        <if test="re_wrte_indic_ymd != null and re_wrte_indic_ymd != ''">
+      re_wrte_indic_ymd               = #{re_wrte_indic_ymd},
+</if>   -- 재작성지시일자         
+        <if test="re_wrte_indic_rmk != null and re_wrte_indic_rmk != ''">
+      re_wrte_indic_rmk               = #{re_wrte_indic_rmk},
+</if>   -- 재작성지시비고         
+        <if test="revw_complt_affir_ymd != null and revw_complt_affir_ymd != ''">
+      revw_complt_affir_ymd           = #{revw_complt_affir_ymd},
+</if>   -- 검토완료확인일자       
+        <if test="revw_complt_affir_rmk != null and revw_complt_affir_rmk != ''">
+      revw_complt_affir_rmk           = #{revw_complt_affir_rmk},
+</if>   -- 검토완료확인비고       
+        <if test="rcpt_complt_affir_ymd != null and rcpt_complt_affir_ymd != ''">
+      rcpt_complt_affir_ymd           = #{rcpt_complt_affir_ymd},
+</if>   -- 접수완료확인일자       
+        <if test="rcpt_complt_affir_rmk != null and rcpt_complt_affir_rmk != ''">
+      rcpt_complt_affir_rmk           = #{rcpt_complt_affir_rmk},
+</if>   -- 접수완료확인비고       
+        <if test="tax_bill_no != null and tax_bill_no != ''">
+      tax_bill_no                     = #{tax_bill_no},
+</if>   -- 세금계산서번호         
+        <if test="unslip_no != null and unslip_no != ''">
+      unslip_no                       = #{unslip_no},
+</if>   -- 가결의번호 
+        <if test="unusual_item != null and unusual_item != ''">
+      unusual_item                    = #{unusual_item},
+</if>   -- 특이사항 
+        <if test="attach_file_no != null and attach_file_no != ''">
+      attach_file_no                  = #{attach_file_no},
+</if>   -- 첨부파일    
+        updt_syspayno                   = #{updt_syspayno},                                                                        -- 수정시스템개인번호     
+        updt_daytm                      = CURRENT                                                                   -- 수정일시            
+WHERE   mngmt_no    = #{mngmt_no}   
+AND     mnt_seq     = #{mnt_seq} 
+<if test="req_no != null and req_no != ''">
+      AND req_no  = #{req_no}
+</if>
+  </update>
+  <delete id="deletePatRightMnt" parameterType="kr.re.kitech.biz.pat.com.vo.PatRightMntVo">
+DELETE /* QueryID : kr.re.kitech.biz.pat.com.deletePatRightMnt */ 
+         FROM    patrightmnt
+WHERE   req_no      = #{req_no}
+AND     mngmt_no    = #{mngmt_no}
+AND     mnt_seq     = #{mnt_seq}
+  </delete>
+<select id="selectPatTotAcdtHis" parameterType="kr.re.kitech.biz.pat.com.vo.PatTotAcdtHisVo" resultType="kr.re.kitech.biz.pat.com.vo.PatTotAcdtHisVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.com.selectPatTotAcdtHis */ 
+          COUNT(mngmt_no) AS cnt
+FROM    pattotacdthis
+WHERE   req_no      = #{req_no}
+AND     mngmt_no    = #{mngmt_no}
+AND     state_code  = #{state_code}
+<if test="proc_ymd != null and proc_ymd != ''">
+      AND     proc_ymd    = #{proc_ymd}
+</if>
+  </select>
+  <insert id="insertPatTotAcdtHis" parameterType="kr.re.kitech.biz.pat.com.vo.PatTotAcdtHisVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.com.insertPatTotAcdtHis */ 
+         INTO pattotacdthis (req_no               ,
+                             mngmt_no           ,
+                             state_code         ,
+                             proc_ymd           ,
+                             state_nm           ,
+                             rmk                ,
+                             regst_syspayno     ,
+                             regst_daytm        )
+VALUES (#{req_no}, 
+        #{mngmt_no}, 
+        #{state_code}, 
+        #{proc_ymd},
+        #{state_nm}, 
+        #{rmk}, 
+        #{regst_syspayno}, 
+        CURRENT)
+  </insert>
+  <update id="updatePatTotAcdtHis" parameterType="kr.re.kitech.biz.pat.com.vo.PatTotAcdtHisVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.com.updatePatTotAcdtHis */ 
+          pattotacdthis
+SET     state_nm        = #{state_nm},
+        rmk             = #{rmk},
+        updt_syspayno   = #{updt_syspayno},
+        updt_daytm      = CURRENT
+WHERE   req_no      = #{req_no}
+AND     mngmt_no    = #{mngmt_no}
+AND     state_code  = #{state_code}
+<if test="proc_ymd != null and proc_ymd != ''">
+      AND     proc_ymd    = #{proc_ymd}
+</if>
+  </update>
+  <delete id="deletePatTotAcdtHis" parameterType="kr.re.kitech.biz.pat.com.vo.PatTotAcdtHisVo">
+DELETE /* QueryID : kr.re.kitech.biz.pat.com.deletePatTotAcdtHis */ 
+FROM    pattotacdthis
+WHERE   req_no      = #{req_no}
+AND     mngmt_no    = #{mngmt_no}
+AND     state_code  = #{state_code}
+<if test="proc_ymd != null and proc_ymd != ''">
+      AND     proc_ymd    = #{proc_ymd}
+</if>
+  </delete>
+</mapper>

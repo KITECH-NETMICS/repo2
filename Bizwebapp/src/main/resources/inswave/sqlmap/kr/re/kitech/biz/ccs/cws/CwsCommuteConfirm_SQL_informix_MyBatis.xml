@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.ccs.cws">
+
+	<!-- 출퇴근 인증 INSERT -->
+	<insert id="insertCwsCmtAreaTag" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsCmtAreaTagVo">
+		INSERT INTO mbiGpsAreaTag 		/* QueryID : kr.re.kitech.biz.ccs.cws.insertCwsCmtAreaTag */
+		(
+			TAG_NO
+			, REF_NO
+			, TAG_SYSPAYNO
+			, TAG_HOR
+			, TAG_VER
+			, TAG_ADDR
+			, GPS_CLSF
+			, IS_VALID
+			, RMK
+			, REGST_SYSPAYNO
+		)
+		VALUES
+		(
+			0
+			, #{ref_no}
+			, #{tag_syspayno}
+			, #{tag_hor}
+			, #{tag_ver}
+			, #{tag_addr}
+			, #{gps_clsf}
+			, #{is_valid}
+			, #{rmk}
+			, #{regst_syspayno}
+		)
+	</insert>
+
+	<!-- 출퇴근 예외 비교 SELECT -->
+	<select id="selectCwsCmtAreaCheck" 	parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsCmtAreaTagVo"
+										resultType="org.apache.commons.collections.map.LinkedMap">
+		SELECT 							/* QueryID : kr.re.kitech.biz.ccs.cws.selectCwsCmtAreaCheck */
+				area_no as ref_no
+				, left_hor
+				, left_ver
+				, right_hor
+				, right_ver
+				, offset
+		FROM
+				mbiGpsArea AS mst
+		WHERE
+				IS_USE = 'T'
+		UNION ALL
+		SELECT
+				except_no as ref_no
+				, left_hor
+				, left_ver
+				, right_hor
+				, right_ver
+				, offset
+		FROM
+				mbiGpsAreaExcept AS expt
+		WHERE
+				syspayno = #{tag_syspayno}
+		AND
+				TO_CHAR(SYSDATE, '%Y%m%d')
+		BETWEEN
+				use_start_ymd
+		AND
+				use_close_ymd
+	</select>
+
+	<!-- 출퇴근인증 최신 5건 리스트 select -->
+	<select id="selectCwsCmtAreaList" 	parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsCmtAreaTagVo"
+										resultType="kr.re.kitech.biz.ccs.cws.vo.CwsCmtAreaTagVo">
+		SELECT 							/* QueryID : kr.re.kitech.biz.ccs.cws.selectCwsCmtAreaList */
+			CASE WHEN 
+						tag_ymd BETWEEN TO_DATE(TO_CHAR(SYSDATE, '%Y%m%d'), '%Y%m%d') 
+				AND 
+						TO_DATE(TO_CHAR(SYSDATE, '%Y%m%d045959'), '%Y%m%d%H%M%S')
+		        THEN 
+		        		trunc(24 + TO_CHAR(tag_ymd, '%H')) || TO_CHAR(tag_ymd, ':%M')
+	            ELSE 
+	            		TO_CHAR(tag_ymd, '%H:%M')
+		    END AS tag_ymd
+			    , gps_clsf
+			    , is_valid
+			    , tag_addr
+		FROM 
+				mbiGpsAreaTag
+		WHERE 
+				regst_syspayno = #{regst_syspayno}
+			AND  
+				(tag_ymd <![CDATA[ >= ]]>
+				CASE WHEN 
+				     		SYSDATE BETWEEN TO_DATE(TO_CHAR(SYSDATE, '%Y%m%d'), '%Y%m%d') 
+					AND 
+				      		TO_DATE(TO_CHAR(SYSDATE, '%Y%m%d045959'), '%Y%m%d%H%M%S')
+				    THEN 
+				    		TO_DATE(TO_CHAR(SYSDATE -1 units day, '%Y%m%d05'), '%Y%m%d%H')
+				    ELSE 
+				    		TO_DATE(TO_CHAR(SYSDATE, '%Y%m%d05'), '%Y%m%d%H')
+			      END
+			AND   
+				tag_ymd <![CDATA[ < ]]>
+		      	CASE WHEN 
+			      			SYSDATE BETWEEN TO_DATE(TO_CHAR(SYSDATE, '%Y%m%d'), '%Y%m%d') 
+			      	AND 
+			      			TO_DATE(TO_CHAR(SYSDATE, '%Y%m%d045959'), '%Y%m%d%H%M%S')
+			        THEN 
+			        		TO_DATE(TO_CHAR(SYSDATE, '%Y%m%d05'), '%Y%m%d%H')
+			        ELSE 
+			        		TO_DATE(TO_CHAR(SYSDATE +1 units day, '%Y%m%d05'), '%Y%m%d%H')
+		      	END)
+		ORDER BY 
+				tag_no DESC limit 5
+	</select>
+</mapper>

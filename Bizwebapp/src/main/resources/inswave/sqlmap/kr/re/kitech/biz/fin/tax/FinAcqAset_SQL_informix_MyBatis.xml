@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.tax">
+<!-- 인수자산 수익관리 리스트 조회 -->
+<select id="selectListFinAcqAset" parameterType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanMstrVo" resultType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanMstrVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.tax.selectListFinAcqAset */
+        t1.aset_no          										/* 자산번호 */
+        , t1.aset_nm        										/* 자산명 */
+        , t1.intro_ymd      										/* 취득일자 */
+        , t1.intro_amt      										/* 인수금액 */
+        , DECODE(NVL(t3.plan_req_no,''), '', 'N', 'Y') AS plan_yn   /* 계획생성여부 */
+        , t3.plan_req_no    										/* 계획번호 */
+        , t3.regst_daytm 											/* 계획생성일자 */
+        , t3.plan_st_ymd || ' ~ ' || t3.plan_ed_ymd AS plan_ymd 	/* 계획기간 */
+        , SUM(t4.add_tax) AS add_tax
+FROM assmastrh t1
+JOIN assmastrb t2 ON t1.aset_no = t2.aset_no
+LEFT JOIN finacqasetplanmstr t3 ON t1.aset_no = t3.aset_no
+LEFT JOIN finacqasetplandtl t4 ON t4.plan_req_no = t3.plan_req_no
+WHERE t2.kbcc_yn = 'Y'
+ <if test='aset_no != null and aset_no != ""'>AND t1.aset_no = #{aset_no}</if>
+ <if test='aset_nm != null and aset_nm != ""'>AND t1.aset_nm like '%'|| #{aset_nm} ||'%'</if>
+ <if test='from_ymd != null and from_ymd != ""'><![CDATA[AND t1.intro_ymd >= #{from_ymd}]]></if>
+ <if test='to_ymd != null and to_ymd != ""'><![CDATA[AND t1.intro_ymd <= #{to_ymd}]]></if>
+ <if test='plan_req_no != null and plan_req_no != ""'>AND t3.plan_req_no = #{plan_req_no}</if>
+ <if test='plan_yn != null and plan_yn != ""'>AND DECODE(NVL(t3.plan_req_no,''), '', 'N', 'Y') = #{plan_yn}</if>
+GROUP BY 1,2,3,4,5,6,7,8
+ORDER BY t1.aset_no
+</select>
+
+<!-- 인수자산 단건 조회 -->
+<select id="selectTaxAcqAset" parameterType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanMstrVo" resultType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanMstrVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.tax.selectTaxAcqAset */
+        t1.aset_no																				/* 자산번호 */
+        , fun_xodxcommst_cd_nm(t1.aset_clsf,0) AS aset_clsf										/* 자산구분 */
+        , t2.user_syspayno || ' / ' || fun_humbasicinfo_cd_nm(t2.user_syspayno,0) AS chrg_info	/* 담당자 */
+        , t1.aset_nm																			/* 자산명 */
+        , t1.intro_amt AS suply_value															/* 도입금액 */
+        , t1.intro_ymd 																			/* 취득일자 */
+        , t3.plan_req_no																		/* 계획번호 */
+        , t3.acq_intro_ymd																		/* 도입일자 */
+        , t3.plan_st_ymd																		/* 계획시작일자 */
+        , t3.add_tax																			/* 부가세 */
+FROM assmastrh t1
+JOIN assmastrb t2 ON t1.aset_no = t2.aset_no
+LEFT JOIN finacqasetplanmstr t3 ON t1.aset_no = t3.aset_no
+LEFT JOIN finacqasetplanmstr t4 ON t3.plan_req_no = t4.plan_req_no
+WHERE t2.kbcc_yn = 'Y'
+<if test='aset_no != null and aset_no != ""'>AND t1.aset_no = #{aset_no}</if>
+<if test='plan_req_no != null and plan_req_no != ""'>AND t3.plan_req_no = #{plan_req_no}</if>
+</select>
+
+<insert id="insertPlanMstr" parameterType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanMstrVo">    
+INSERT INTO FINACQASETPLANMSTR   /* QueryID : kr.re.kitech.biz.fin.tax.insertPlanMstr */
+( 
+
+    <if test="plan_req_no   != null"> 	PLAN_REQ_NO    </if>
+    <if test="aset_no       != null"> , ASET_NO        </if>
+    <if test="suply_value   != null"> , SUPLY_VALUE    </if>
+    <if test="add_tax       != null"> , ADD_TAX        </if>
+    <if test="chrg_info     != null"> , CHRG_INFO      </if>
+    <if test="plan_st_ymd   != null"> , PLAN_ST_YMD    </if>
+    <if test="plan_ed_ymd   != null"> , PLAN_ED_YMD    </if>
+    <if test="acq_intro_ymd != null"> , ACQ_INTRO_YMD  </if>
+    <if test="regst_syspayno!= null"> , REGST_SYSPAYNO </if>
+    , REGST_DAYTM
+)
+VALUES  
+( 
+
+    <if test="plan_req_no   != null"> 	#{plan_req_no}    </if>
+    <if test="aset_no       != null"> , #{aset_no}        </if>
+    <if test="suply_value   != null"> , #{suply_value}    </if>
+    <if test="add_tax       != null"> , #{add_tax}        </if>
+    <if test="chrg_info     != null"> , #{chrg_info}      </if>
+    <if test="plan_st_ymd   != null"> , #{plan_st_ymd}    </if>
+    <if test="plan_ed_ymd   != null"> , #{plan_ed_ymd}    </if>
+    <if test="acq_intro_ymd != null"> , #{acq_intro_ymd}  </if>
+    <if test="regst_syspayno!= null"> , #{regst_syspayno} </if>
+    , CURRENT
+)          
+</insert>
+
+<delete id="deletePlanMstr" parameterType="java.lang.String">
+DELETE FROM FINACQASETPLANMSTR   /* QueryID : kr.re.kitech.biz.fin.tax.deletePlanMstr */ 
+WHERE PLAN_REQ_NO = #{planReqNo}
+</delete>
+
+<select id="selectPlanDtlList" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanDtlVo">    
+SELECT     /* QueryID : kr.re.kitech.biz.fin.tax.selectPlanDtlList */
+    PLAN_REQ_NO
+    , PLAN_SEQ
+    , REC_YMD
+    , SUPLY_VALUE
+    , ADD_TAX
+    , SUPLY_VALUE + ADD_TAX AS TOTAL_AMT
+    , UNSLIP_NO
+    , UNSLIP_ODR
+    , RMK
+    , BILL_NO
+    , REGST_SYSPAYNO
+    , REGST_DAYTM
+    , UPDT_SYSPAYNO
+    , UPDT_DAYTM
+FROM FINACQASETPLANDTL 
+WHERE PLAN_REQ_NO = #{planReqNo}
+
+</select>
+
+<insert id="insertPlanDtl" parameterType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanDtlVo">    
+INSERT INTO FINACQASETPLANDTL   /* QueryID : kr.re.kitech.biz.fin.tax.insertPlanDtl */
+( 
+
+    <if test="plan_req_no   != null"> 	PLAN_REQ_NO    </if>
+    <if test="plan_seq      != null"> , PLAN_SEQ       </if>
+    <if test="rec_ymd       != null"> , REC_YMD        </if>
+    <if test="suply_value   != null"> , SUPLY_VALUE    </if>
+    <if test="add_tax       != null"> , ADD_TAX        </if>
+    <if test="unslip_no     != null"> , UNSLIP_NO      </if>
+    <if test="unslip_odr    != null"> , UNSLIP_ODR     </if>
+    <if test="rmk           != null"> , RMK            </if>
+    <if test="bill_no       != null"> , BILL_NO        </if>
+    <if test="regst_syspayno!= null"> , REGST_SYSPAYNO </if>
+    , REGST_DAYTM
+)
+VALUES  
+( 
+
+    <if test="plan_req_no   != null"> 	#{plan_req_no}    </if>
+    <if test="plan_seq      != null"> , #{plan_seq}       </if>
+    <if test="rec_ymd       != null"> , #{rec_ymd}        </if>
+    <if test="suply_value   != null"> , #{suply_value}    </if>
+    <if test="add_tax       != null"> , #{add_tax}        </if>
+    <if test="unslip_no     != null"> , #{unslip_no}      </if>
+    <if test="unslip_odr    != null"> , #{unslip_odr}     </if>
+    <if test="rmk           != null"> , #{rmk}            </if>
+    <if test="bill_no       != null"> , #{bill_no}        </if>
+    <if test="regst_syspayno!= null"> , #{regst_syspayno} </if>
+    , CURRENT
+)          
+</insert>
+
+<delete id="deletePlanDtl" parameterType="java.lang.String">
+DELETE FROM FINACQASETPLANDTL   /* QueryID : kr.re.kitech.biz.fin.tax.deletePlanDtl */ 
+WHERE PLAN_REQ_NO = #{planReqNo}
+</delete>
+
+<!-- 인수자산 수익관리 리스트 조회 -->
+<select id="selectListFinAcqAsetPlan" parameterType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanDtlVo" resultType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanDtlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.tax.selectListFinAcqAsetPlan */
+      	t1.plan_req_no
+      , t1.plan_seq
+      , t1.rec_ymd
+      ,	t1.suply_value
+      , t1.add_tax
+      , t1.suply_value + t1.add_tax AS total_amt
+      , t1.unslip_no
+      , t1.unslip_odr
+      , t1.bill_no
+      , t4.slip_ymd
+      , t4.slip_no
+      , t3.aset_no
+      , t3.aset_nm
+      , t1.bsns_psn_regst_no
+      , t5.vend_fulnm
+      , t1.rmk
+FROM finacqasetplandtl t1
+JOIN finacqasetplanmstr t2 ON t1.plan_req_no = t2.plan_req_no
+LEFT JOIN assmastrh t3 ON t2.aset_no = t3.aset_no
+LEFT JOIN fspsliph t4 ON t4.unslip_no = t1.unslip_no
+LEFT JOIN xodfvend t5 ON t1.bsns_psn_regst_no = t5.bsns_psn_regst_no
+WHERE 1=1 
+<if test='plan_req_no != null and plan_req_no != ""'>AND t1.plan_req_no = #{plan_req_no}</if>
+<if test='unslip_no != null and unslip_no != ""'>AND t1.unslip_no = #{unslip_no}</if>
+<if test='aset_no != null and aset_no != ""'>AND t3.aset_no = #{aset_no}</if>
+<if test='aset_nm != null and aset_nm != ""'>AND t3.aset_nm like '%'|| #{aset_nm} ||'%'</if>
+<if test='rec_st_ymd != null and rec_st_ymd != ""'><![CDATA[AND t1.rec_ymd >= #{rec_st_ymd}]]></if>
+<if test='rec_ed_ymd != null and rec_ed_ymd != ""'><![CDATA[AND t1.rec_ymd <= #{rec_ed_ymd}]]></if>
+</select>
+
+<update id="updateBillNo" parameterType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanDtlVo">
+    UPDATE FINACQASETPLANDTL    /* QueryID : kr.re.kitech.biz.fin.tax.updateBillNo */      
+        SET  
+        <if test="unslip_no     	!= null"> UNSLIP_NO      	= #{unslip_no},      			</if>
+        <if test="unslip_odr    	!= null"> UNSLIP_ODR     	= #{unslip_odr},     			</if>
+        <if test="bill_no       	!= null"> BILL_NO        	= #{bill_no},        			</if>
+        <if test="bsns_psn_regst_no	!= null"> BSNS_PSN_REGST_NO	= #{bsns_psn_regst_no},			</if>
+        <if test="updt_syspayno 	!= null"> UPDT_SYSPAYNO  	= #{updt_syspayno},  			</if>
+        UPDT_DAYTM = CURRENT                  
+    WHERE PLAN_REQ_NO = #{plan_req_no}
+	  AND PLAN_SEQ = #{plan_seq}
+</update>
+
+<update id="updateCancelSlip" parameterType="kr.re.kitech.biz.fin.tax.vo.FinAcqAsetPlanDtlVo">
+    UPDATE FINACQASETPLANDTL    /* QueryID : kr.re.kitech.biz.fin.tax.updateCancelSlip */      
+        SET  
+        <if test="unslip_no     	!= null"> UNSLIP_NO      	= #{unslip_no},      </if>
+        <if test="unslip_odr    	!= null"> UNSLIP_ODR     	= #{unslip_odr},     </if>
+        <if test="bill_no	    	!= null"> BILL_NO	     	= #{bill_no},    	 </if>
+        <if test="updt_syspayno 	!= null"> UPDT_SYSPAYNO  	= #{updt_syspayno},  </if>
+        UPDT_DAYTM = CURRENT                  
+    WHERE UNSLIP_NO = #{cancel_unslip_no}
+</update>
+</mapper>

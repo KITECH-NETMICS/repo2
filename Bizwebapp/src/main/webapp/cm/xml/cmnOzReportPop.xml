@@ -1,0 +1,579 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/ext/OZHtml5Viewer/jquery/jquery-ui.css" type="text/css"?>
+<?xml-stylesheet href="/cm/ext/OZHtml5Viewer/ui.dynatree.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare"
+        xmlns:xf="http://www.w3.org/2002/xforms">
+       	<head meta_programName="공통 오즈리포트 팝업">
+            <w2:type>DEFAULT</w2:type>
+            <w2:buildDate />
+            <xf:model>
+                <xf:instance>
+                    <data xmlns="" />
+                </xf:instance>
+                <w2:dataCollection baseNode="map">
+                	<w2:dataMap baseNode="map" id="dma_ozrInfo">
+                		<w2:keyInfo>
+                			<w2:key id="ozrCode" name="레포트항목코드" dataType="text"></w2:key>
+                			<w2:key id="ozrPath" name="ozr path" dataType="text"></w2:key>
+                			<w2:key id="odiNm" name="odi명" dataType="text"></w2:key>
+                			<w2:key id="displayName" name="디스플레이명" dataType="text"></w2:key>
+                			<w2:key id="formAlias" name="양식코드" dataType="text"></w2:key>
+                			<w2:key id="req_no" name="신청번호" dataType="text"></w2:key>
+                			<w2:key id="chg_no" name="순번" dataType="text"></w2:key>
+                			<w2:key id="clsf" name="구분" dataType="text"></w2:key>
+                		</w2:keyInfo>
+                	</w2:dataMap>
+                	<w2:dataList baseNode="list" repeatNode="map" id="dlt_ozrInfo" saveRemovedData="true">
+                		<w2:columnInfo>
+                			<w2:column id="ozrCode" name="레포트항목코드" dataType="text"></w2:column>
+                			<w2:column id="ozrPath" name="ozr path" dataType="text"></w2:column>
+                			<w2:column id="odiNm" name="odi명" dataType="text"></w2:column>
+                			<w2:column id="displayName" name="디스플레이명" dataType="text"></w2:column>
+                			<w2:column id="formAlias" name="양식코드" dataType="text"></w2:column>
+                			<w2:column id="req_no" name="신청번호" dataType="text"></w2:column>
+                			<w2:column id="key_col" name="키컬럼" dataType="text"></w2:column>
+                		</w2:columnInfo>
+                	</w2:dataList>
+                </w2:dataCollection>
+                <w2:workflowCollection></w2:workflowCollection>
+                <!-- report info 조회 -->
+	        	<xf:submission id="sbm_selectOzReportInfo" ref="data:json,dma_ozrInfo" target='data:json,dma_ozrInfo' 
+	        	    action="SvcCOMPOPR03.pwkjson" method="post" mediatype="application/json"
+	        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+	        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+	        	</xf:submission>
+	        	<!-- report info 리스트 조회(formAlias) -->
+	        	<xf:submission id="sbm_selectOzReportInfoList" ref='data:json,{"id":"dlt_ozrInfo,"key":"ozrInfoList"}' target='data:json,{"id":"dlt_ozrInfo,"key":"ozrInfoList"}' 
+	        	    action="SvcCOMPOPR04.pwkjson" method="post" mediatype="application/json"
+	        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+	        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+	        	</xf:submission>
+            </xf:model>
+            <script type="text/javascript" src="/cm/ext/OZHtml5Viewer/jquery/jquery-1.8.3.min.js"></script>
+            <script type="text/javascript" src="/cm/ext/OZHtml5Viewer/jquery/jquery-ui.min.js"></script>
+            <script type="text/javascript" src="/cm/ext/OZHtml5Viewer/jquery.dynatree.js"></script>
+            <script type="text/javascript" src="/cm/ext/OZHtml5Viewer/OZJSViewer.js"></script>
+            <script type="text/javascript" lazy="false"><![CDATA[
+	/************************************************************
+	 * 화면 설명 : 레포트 출력
+	 * 변경 이력 : 20-07-02	박정일 최초 작성
+	            20-08 이영희 레포트 출력 ozrCode사용하여 단건 또는 다건 출력
+	                        결재완료함에서 formAlias를 사용하여 다건 출력 추가
+	            2023-06-09 여러개의 ozrCode가 섞여있는 레포트 다건출력            
+	 ************************************************************/
+
+	scwin.ozviewerid = "OZViewer";
+
+	scwin.onpageload = function() {		
+		debugger;
+
+		if (document.getElementById(scwin.ozviewerid) != null) {
+			scwin.ozviewerid = scwin.ozviewerid + udc_obj.uuid;
+		}
+		
+		document.getElementById("ozviewertemp").id = scwin.ozviewerid;
+		window['SetOZParamters_' + scwin.ozviewerid] = scwin.setOZParamters;
+
+		var reportArr = $p.getParameter("param").reportArr;
+		if (!com.isEmpty(reportArr[0].formAlias)){
+			for(var i=0; i<reportArr.length; i++){
+				dlt_ozrInfo.setRowJSON(i, {
+					formAlias : reportArr[i].formAlias,
+					req_no : reportArr[i].reqNo.trim()
+				});
+			}
+			com.execute(sbm_selectOzReportInfoList, {
+		        successCallback : function(e){
+			        debugger;
+		        	if (e.responseJSON.elData && e.responseJSON.elData.ozrInfoList && 0 < e.responseJSON.elData.ozrInfoList.length) {
+						start_ozjs(scwin.ozviewerid, "/cm/ext/OZHtml5Viewer/");
+					} else {
+						scwin.print(reportArr[0].snapFrame);
+					}
+			    }
+		    });						
+			
+		}else if (!com.isEmpty(reportArr[0].ozrPath)){ // 다수의 리포트를 출력하는경우(ozr이 다른경우)
+			dma_ozrInfo.set("clsf", "Multi");
+									
+			start_ozjs(scwin.ozviewerid, "/cm/ext/OZHtml5Viewer/");
+		}else { // ozr이 같은경우
+			dma_ozrInfo.set("ozrCode", reportArr[0].ozrCode);
+			if(reportArr[0].clsf != undefined){
+				dma_ozrInfo.set("clsf", reportArr[0].clsf);
+			}
+			com.execute(sbm_selectOzReportInfo, {
+		        successCallback : function(e){
+		        	if (e.responseJSON.elData && e.responseJSON.elData.odiNm && e.responseJSON.elData.ozrPath) {
+						start_ozjs(scwin.ozviewerid, "/cm/ext/OZHtml5Viewer/");
+					} else {
+						scwin.print(reportArr[0].snapFrame);
+					}
+			    }
+		    });
+		}
+	};
+	
+	scwin.print = function(snapFrameId) {
+		
+		window.onbeforeprint = function(e) {
+			// TODO: 다건 처리에 대한 고민 필요.
+			var printHtml = document.createElement('div');
+			printHtml.setAttribute("class", "docWrap");
+			var html = eval("opener." + snapFrameId +".render.innerHTML");
+
+			printHtml.innerHTML = html;
+			$("body").html(printHtml);
+		};
+		
+		window.onafterprint = function(e) {
+			window.close();
+		};								
+		window.print();
+	};
+
+    /**
+     * 오즈 레포트 파라미터 셋팅
+        * params : 레포트 팝업 파라미터 json object  
+        * params.reportArr 레포트 정보 array
+        * params.isConcatpage ture/false 멀티폼을 하나의 리포트 처럼 이용할 지 여부
+        * params.printMode 프린트 모드, true : silent(윈도우출력창)로 설정, 그외 ""(오즈출력창 -> 윈도우출력창)
+        * params.reportArr.ozr : ozr 레포트파일명
+        * params.reportArr.odi : odi 파일명
+        * params.reportArr.displayName : 다건 레포트인경우 미리보기 화면 좌측 트리에 보여질 레포트 명
+        * params.reportArr.param : 파라미터 key1=value1&key2=value2 
+        * params.filename : 저장시 파일명
+        * params.applyformat : 저장시 포맷 목록
+        */			    
+	scwin.setOZParamters = function() {
+		debugger;
+	
+	
+        var params = $p.getParameter("param");			        
+        var mainRpt = params.reportArr[0];
+		var oz = document.getElementById(scwin.ozviewerid);
+		
+		var multiYn = "";
+		if(!com.isEmpty(mainRpt.formAlias)){
+			multiYn = "Y";
+		}
+		
+		var odiNm = "";
+		var ozrPath = "";
+		var displayNm = "";
+		var keyCol = "";					
+		
+		if(multiYn == "Y"){
+			if(!/P26|P44|P51|R78|P81|P32/.test(mainRpt.formAlias)){
+				var rowJson = dlt_ozrInfo.getMatchedJSON("formAlias", mainRpt.formAlias);
+				/*
+				if (0 == rowJson.length) {
+					// 오류 처리
+					com.warn("인쇄를 지원하지 않는 양식입니다.");
+					window.setTimeout(function(){
+						WebSquare.util.closePopup();	
+					}, 1000);
+				}*/
+				odiNm = rowJson[0].odiNm;
+				ozrPath = rowJson[0].ozrPath;
+				displayNm = rowJson[0].displayName + mainRpt.reqNo;							
+				keyCol = rowJson[0].key_col;
+
+			}else{
+				for(var i=0; i<dlt_ozrInfo.getRowCount(); i++){
+					if(dlt_ozrInfo.getCellData(i, "formAlias") == mainRpt.formAlias && dlt_ozrInfo.getCellData(i, "req_no") == mainRpt.reqNo){
+						odiNm = dlt_ozrInfo.getCellData(i, "odiNm");
+						ozrPath = dlt_ozrInfo.getCellData(i, "ozrPath");
+						displayNm = dlt_ozrInfo.getCellData(i, "displayName") + mainRpt.reqNo;
+						keyCol = dlt_ozrInfo.getCellData(i, "key_col");
+						break;
+					}
+				}
+			}
+			
+			// 키=값 셋팅
+			var keyArr = keyCol.split(",");
+			if(keyArr.length == 1){
+				mainRpt.param = keyArr[0] + "=" + mainRpt.reqNo;
+			}else if(keyArr.length == 2){
+				if(mainRpt.formAlias == "F41"){
+					mainRpt.param = keyArr[0] + "=" + mainRpt.reqNo;
+				}else{
+					var valueArr = mainRpt.reqNo.split("-");
+					mainRpt.param = keyArr[0] + "=" + valueArr[0] + "&" + keyArr[1] + "=" + valueArr[1];
+				}
+			}
+		}else if(dma_ozrInfo.get("clsf") == "Multi"){
+			odiNm = mainRpt.odiNm;
+			ozrPath = mainRpt.ozrPath;
+			displayNm = mainRpt.displayNm;
+		}else{
+			odiNm = dma_ozrInfo.get("odiNm");
+			ozrPath = dma_ozrInfo.get("ozrPath");
+			displayNm = dma_ozrInfo.get("displayName") + "1";
+		}					
+		
+        // 메인 리포트 정보
+		oz.sendToActionScript("connection.servlet", "//oz.kitech.re.kr/oz70/server");
+		oz.sendToActionScript("connection.reportname", ozrPath);
+		oz.sendToActionScript("connection.pcount", "1");
+		oz.sendToActionScript("export.filename", params.filename);
+		oz.sendToActionScript("export.applyformat", params.applyformat);
+		oz.sendToActionScript("export.format", params.applyformat.split(",")[0]);
+        oz.sendToActionScript("connection.displayname", displayNm); //좌측 트리창에서보여지는 이름
+        oz.sendToActionScript("odi.odinames", odiNm);
+       
+        var mainParams = mainRpt.param.split("&");
+	    if (mainParams) {
+		    oz.sendToActionScript("odi." + odiNm + ".pcount" , mainParams.length);
+	        for(var i=0; i< mainParams.length; i++){
+		        oz.sendToActionScript("odi." + odiNm + ".args" + (i+1), mainParams[i]);
+		    }
+	    }    
+     
+        oz.sendToActionScript("connection.compressedform", "true");
+        oz.sendToActionScript("viewer.mode", "preview");  // print:바로출력, export:저장, preview:미리보기. flash에서는 print모드 지원않됨.
+        oz.sendToActionScript("print.mode", params.printMode ? "silent" : "");
+        oz.sendToActionScript("print.pagerange", "all");
+        oz.sendToActionScript("toolbar.showtree", "false");
+        oz.sendToActionScript("toolbar.open", "false");
+        oz.sendToActionScript("toolbar.refresh", "false");
+        oz.sendToActionScript("toolbar.addmemo", "false");
+        oz.sendToActionScript("toolbar.inputparameter", "false");
+        oz.sendToActionScript("information.debug", "true");
+        oz.sendToActionScript("viewer.fontdpi", "auto");
+        
+        // child문서
+        // 0 번째 인덱스는 메인 레포트
+		var children = params.reportArr.slice(1);
+        children.forEach( function(child, index){
+	        if(multiYn == "Y"){
+				if(!/P26|P44|P51|R78|P81|P32/.test(child.formAlias)){
+					var rowJson = dlt_ozrInfo.getMatchedJSON("formAlias", child.formAlias);
+					
+					odiNm = rowJson[0].odiNm;
+					ozrPath = rowJson[0].ozrPath;
+					displayNm = rowJson[0].displayName + child.reqNo;
+					keyCol = rowJson[0].key_col;
+				}else{								
+					for(var i=0; i<dlt_ozrInfo.getRowCount(); i++){
+						if(dlt_ozrInfo.getCellData(i, "formAlias") == child.formAlias && dlt_ozrInfo.getCellData(i, "req_no") == child.reqNo){
+							odiNm = dlt_ozrInfo.getCellData(i, "odiNm");
+							ozrPath = dlt_ozrInfo.getCellData(i, "ozrPath");
+							displayNm = dlt_ozrInfo.getCellData(i, "displayName") + child.reqNo;
+							keyCol = dlt_ozrInfo.getCellData(i, "key_col");
+							break;
+						}
+					}
+				}							
+				
+				// 키=값 셋팅
+				var keyArr = keyCol.split(",");
+				if(keyArr.length == 1){
+					child.param = keyArr[0] + "=" + child.reqNo;
+				}else if(keyArr.length == 2){
+					if(child.formAlias == "F41"){
+						child.param = keyArr[0] + "=" + child.reqNo;
+					}else{
+						var valueArr = child.reqNo.split("-");
+						child.param = keyArr[0] + "=" + valueArr[0] + "&" + keyArr[1] + "=" + valueArr[1];
+					}
+				}
+				
+			}else if(dma_ozrInfo.get("clsf") == "Multi"){
+				odiNm = child.odiNm;
+				ozrPath = child.ozrPath;
+				displayNm = child.displayNm;
+			}else{
+				odiNm = dma_ozrInfo.get("odiNm");
+				ozrPath = dma_ozrInfo.get("ozrPath");
+				displayNm = dma_ozrInfo.get("displayName") + (index+2);
+			}
+		
+            oz.sendToActionScript("child"+(index+1)+".connection.servlet", "//oz.kitech.re.kr/oz70/server");
+            oz.sendToActionScript("child"+(index+1)+".viewer.configmode", "html");
+            oz.sendToActionScript("child"+(index+1)+".viewer.isframe", "false");
+            oz.sendToActionScript("child"+(index+1)+".connection.reportname", ozrPath);                 
+            oz.sendToActionScript("child"+(index+1)+".connection.displayname", displayNm); //좌측 트리창에서보여지는 이름
+            oz.sendToActionScript("child"+(index+1)+".odi.odinames", odiNm);
+           
+            var childParams = child.param.split("&");
+		    if (childParams) {
+			    oz.sendToActionScript("child"+(index+1)+".odi." + odiNm + ".pcount", childParams.length);
+		        for(var i=0; i< childParams.length; i++){
+			        oz.sendToActionScript("child"+(index+1)+".odi." + odiNm + ".args" + (i+1), childParams[i]);
+			    }
+		    }
+        });
+        
+        // 다건 리포트인 경우 자식 리포트 정보를 추가 한다.        
+        oz.sendToActionScript("viewer.childcount", children.length); // 하나의 오즈 뷰어에 여러 개의 보고서를 보여줄 때 메인 보고서 외에 추가되는 차일드 보고서의 개수를 설정합니다.
+        if(children.length > 0){
+	        oz.sendToActionScript("viewer.showtree", "true"); 
+	    }
+        
+        // 멀티폼을 하나의 리포트 처럼 이용할 지 여부를 설정합니다. True이면 멀티폼의 페이지 번호등이 연결됩니다.
+        oz.sendToActionScript("global.concatpage", params.isConcatpage ? "true" : "false");
+        oz.sendToActionScript("print.alldocument", "true"); // 멀티문서 형식의 보고서를 한번에 모두 인쇄할지 여부를 설정합니다.
+        
+		return true;
+	}
+
+	scwin.onpageunload = function() {
+
+	};
+]]></script>
+        </head>
+       	<body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+       		<style><![CDATA[
+			.topline{display:none}
+			.w2group.link{display:none}
+			/* 결재함공통 */
+			.docWrap {padding:20px;min-width: 900px;border: 1px solid #ddd;margin: 0 auto;}
+			.docWrap form > table {width: 100%;}
+			.docWrap .doc_header .topline {line-height:2;}
+			.docWrap .doc_header .topline em {color:#111;font-weight:800;font-size:13px;}
+			.docWrap .doc_header .topline .btn {float:right;}
+			.docWrap .doc_header .titleline {position:relative;height:55px;}
+			.docWrap .doc_header .titleline > h2 {position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);display:inline-block;color:#111;font-weight:800;font-size:22px;text-align:center;letter-spacing:-.5px;}
+			.docWrap .doc_header .titleline > .link {position:absolute;right:0;bottom:10px;}
+			.docWrap .doc_header .titleline > .link a {display:inline-block;padding-left:20px;background:url(/cm/images/ico_link.png) no-repeat left center;color:#777;text-decoration:none;}
+			.docWrap .doc_header .titleline > .link a + a {margin-left:20px;}
+			.docWrap .doc_header .approval {display: flex;flex-direction: column;align-items: flex-end;}
+			.docWrap .doc_header .approval > div {display:inline-block;margin-left: 10px;margin-bottom: 5px;}
+			.docWrap .doc_header .approval .tbl .w2tb_th.flow {background:#f4f5fa;text-align:center;}
+			.docWrap .doc_header .approval .tbl .w2tb_td {background:white;text-align:center;}
+			.docWrap .doc_header .approval .tbl .w2tb_td.sign {height:35px;}
+			.docWrap .doc_header .approval .tbl:before {content:none;}
+
+			.approval .grd01{display: inline-block;margin-left: 5px;}
+			.approval .grd02{display: inline-block;}
+			.approval .grd02 .sign_label{margin-left: 5px;}
+			.approval .grd06{display: inline-block;}
+			.approval .grd06 .sign_label{margin-left: 5px;}
+			.approval .grd03{display: inline-block;margin-left: 5px;}
+			.approval .grd04{display: inline-block;}
+			.approval .grd04 .sign_label{margin-left: 5px;}
+			
+			.approval .signWrap{display: flex;text-align: center;}
+			.approval .signWrap .sign_label{width: 30px;display: flex;flex-wrap: nowrap;align-content: center;border: 1px solid #003b8f;justify-content: center;background-color: #e9ecf5;flex-direction: column;}
+			.approval .signWrap .generatorWrap{display: flex;height: 100%;}
+			.approval .signWrap .generatorWrap .generatorSection {display: inline-table;border-collapse: collapse;width: 85px;}
+			.approval .signWrap .generatorWrap .generatorSection .jikname{min-height:20px;border: 1px solid #003b8f;border-left: none;background-color: #e9ecf5;display: table-row;}
+			.approval .signWrap .generatorWrap .generatorSection .jikname p span{padding:1px 1px;display: block;word-break: break-all;}
+			.approval .signWrap .generatorWrap .generatorSection .empname{height:20px;border: 1px solid;display: table-row;border-left: none;}
+			.approval .signWrap .generatorWrap .generatorSection .pic_person{height:42px;border: 1px solid;display: table-row;border-left: none;}
+			.approval .signWrap .generatorWrap .generatorSection .pic_person img{width:60px;height:40px;}
+			.approval .signWrap .generatorWrap .generatorSection .endTime{height:30px;border: 1px solid;display: table-row;border-left: none;line-height: 11px;}
+			.approval .signWrap .generatorWrap .generatorSection p{display: table-cell;vertical-align: middle;}
+			.divJunGyul {display:inline-block;width: 180px;line-height: 20px;margin-left: 5px;color: #7A7A7A;border: 1px solid #C7C7C7;background-image: linear-gradient(#FCFCFC, #E3E3E3);border-radius: 4px;float:right;}
+			.w2radio_label input[type="radio"]:checked + label::before {    content: "✔";    position: absolute;    left: 5px;    color: #C86400;}
+
+			/* CSS Document */
+
+			/**********************************************
+			용도 : 본문 내용 전체 설정
+			**********************************************/
+			.snapshot_body {
+				font-family:"돋움", Dotum, Helvetica, AppleGothic, Sans-serif;
+				font-size:12px;
+				line-height:18px;
+			}
+
+			.document_title {
+				text-align:center;
+				width:100%;
+				height:30px;
+				line-height:25px;
+				font-size:17px;
+				font-weight: bold;
+			}
+
+			/**********************************************
+			main-class : aprlinetable
+			용도 :  결재선 테이블
+			***********************************************/
+			.aprlinetable {
+				text-align:center;
+				border-collapse:collapse; 
+				margin-bottom:15px;
+			}
+			.aprlinetable th{
+				background:#EAEAEA;
+			}
+
+			/**********************************************
+			main-class : aproutertable
+			용도 : 테이블의 외곽선
+			**********************************************/
+			.aproutertable {
+			}
+
+			/**********************************************
+			main-class : aproutertable
+			sub-class : head
+			용도 : 외곽 테이블의 제목영역
+			**********************************************/
+			.aproutertable .head{
+				width:100%;
+				height:50px;
+				line-height:25px;
+				background:#ffffff;
+				border-right:0px solid #B9C3D1;
+				text-align:left;
+				vertical-align:bottom;
+				padding-left:5px;
+				font-weight:bold;
+				color:#444;
+				font-size:12px;
+			}
+				
+			/**********************************************
+			main-class : aprinnertable
+			sub-class : body
+			용도 : 외곽 테이블의 내용영역
+			**********************************************/
+			.aproutertable .body {
+				border-top:1px solid #B9C3D1;
+				border-left:1px solid #B9C3D1;
+			}
+
+			/**********************************************
+			main-class : aprinnertable
+			sub-class : title
+			용도 : 내용 테이블의 제목 (가운데 정렬, 배경색)
+			**********************************************/
+			.aprinnertable .title {
+				height:25px;
+				line-height:20px;
+				background:#EAEAEA;
+				border-right:1px solid #B9C3D1;
+				text-align:center;
+				font-weight:100;
+				color:#636564;
+				font-size:12px;
+				border-bottom:1px solid #B9C3D1;
+			}
+
+			/**********************************************
+			main-class : aprinnertable
+			sub-class : title2
+			용도 : 내용 테이블의 제목 (왼쪽 정렬, 배경색)
+			**********************************************/
+			.aprinnertable .title2 {
+				height:25px;
+				line-height:20px;
+				background:#EAEAEA;
+				border-right:1px solid #B9C3D1;
+				text-align:left;
+				padding-left:10px;
+				font-weight:100;
+				color:#636564;
+				font-size:12px;
+				border-bottom:1px solid #B9C3D1;
+			}
+
+			/**********************************************
+			main-class : aprinnertable
+			sub-class : title3
+			용도 : 내용 테이블 제목 (왼쪽 정렬, 배경색, 큰폰트)
+			**********************************************/
+			.aprinnertable .title3 {
+				height:25px;
+				line-height:20px;
+				background:#EAEAEA;
+				border-right:1px solid #B9C3D1;
+				text-align:left;
+				padding-left:10px;
+				font-weight:100;
+				color:#636564;
+				font-size:12px;
+				border-bottom:1px solid #B9C3D1;
+			}
+
+			/**********************************************
+			main-class : aprinnertable
+			sub-class : contant
+			용도 : aprinnertable을 사용하는 테이블의 내용 (왼쪽정렬)
+			**********************************************/
+			.aprinnertable .contant {
+				text-align:left;
+				padding:5px;
+				border-bottom:1px solid #B9C3D1;
+				border-right:1px solid #B9C3D1;
+				font-family:"돋움", Dotum, Helvetica, AppleGothic, Sans-serif;
+				font-size:12px;
+			}
+
+			/**********************************************
+			main-class : aprinnertable
+			sub-class : contant-right
+			용도 : aprinnertable을 사용하는 테이블의 내용 (오른쪽 정렬)
+			**********************************************/
+			.aprinnertable .contant-right {
+				text-align:right;
+				padding:5px;
+				border-bottom:1px solid #B9C3D1;
+				border-right:1px solid #B9C3D1;
+				font-family:"돋움", Dotum, Helvetica, AppleGothic, Sans-serif;
+				font-size:12px;
+			}
+
+			/**********************************************
+			main-class : aprinnertable
+			sub-class : contant-right
+			용도 : aprinnertable을 사용하는 테이블의 내용 (가운데 정렬)
+			**********************************************/
+			.aprinnertable .contant-center {
+				text-align:center;
+				padding:5px;
+				border-bottom:1px solid #B9C3D1;
+				border-right:1px solid #B9C3D1;//rhs추가
+				font-family:"돋움", Dotum, Helvetica, AppleGothic, Sans-serif;
+				font-size:12px;
+			}
+
+			/**********************************************
+			ext-class : aprtextfield
+			용도 : 텍스트필드에 사용 
+			**********************************************/
+			.aprtextfield {
+				border:1px solid #ACB1B7;
+				width:95%;
+				line-height:18px;
+				height:18px;
+				background:#f9f9f9;
+			}
+
+			/**********************************************
+			ext-class : aprselectbox
+			용도 : 선택박스에 사용
+			**********************************************/
+			.aprselectbox {
+				border:1px solid #ACB1B7;
+			}
+
+			/**********************************************
+			ext-class : aprtextarea
+			용도 : 텍스트영역에 사용
+			**********************************************/
+			.aprtextarea {
+				border:1px solid #ACB1B7;
+				width:100%;
+			}
+
+			/**********************************************
+			ext-class : aprtip
+			용도 : 사용자에게 업무힌트를 주기위하여 사용
+			**********************************************/
+			.aprtip {
+				color:#DD5E00;
+				font-size:11px;
+			}
+			
+		]]></style>
+       		    <div style="width:100%;height:100%" id="ozviewertemp"></div>
+<!--       		<xf:group style="width:98%;height:98%;" id="oZViewer"></xf:group>-->
+       		<w2:wframe id="wfPrint" src="" style="margin-top:20px;" class="w2tb tbl"></w2:wframe>
+       	</body>
+</html>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.lpl.lpr">
+  <select id="selectLplLprPressPrList" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPressPrInfoVo" resultType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPressPrInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lpr.selectLprRptgReqList */ 
+     a.req_no ,
+     a.req_psn_syspayno,
+     fun_humbasicinfo_cd_nm(a.req_psn_syspayno,0) as req_psn_syspayno_nm ,
+     a.req_ymd ,
+     a.rptg_hope_ymd ,
+     a.req_clsf,
+     fun_xodxcommst_cd_nm(a.req_clsf,0) as req_clsf_nm ,
+     a.rptg_media_clsf,
+     fun_xodxcommst_cd_nm(a.rptg_media_clsf,0) as rptg_media_clsf_nm ,
+     a.press_nm ,
+     a.charg_nm ,
+     a.tel ,
+     a.email ,
+     '언론사 : '||a.press_nm||'/'||'담당자 : '||a.charg_nm||'/'||'전화번호 : '||a.tel||'/'||'이메일 : '||a.email as press_info,
+     a.rptg_contnt ,
+     a.rptg_resn ,
+     a.attach_file_mngmt_no ,
+     a.req_state,
+     b.apr_state,
+     fun_xodxcommst_cd_nm(b.apr_state,0) as req_state_nm,
+     a.regst_psn_syspayno ,
+     a.regst_daytm ,
+     a.updt_psn_syspayno ,
+     a.updt_daytm
+FROM lprrptgreq a INNER JOIN xomxintfatab b
+ON a.req_no = b.req_no
+WHERE 1=1
+AND a.req_ymd <![CDATA[ >= ]]> #{req_fr_ymd}
+AND a.req_ymd <![CDATA[ <= ]]> #{req_to_ymd}
+AND a.req_clsf LIKE DECODE(#{req_clsf},'','%',#{req_clsf})
+AND b.state_inform_flag = '1'
+<if test='rptg_media_clsf == "1"'> and substring(a.rptg_media_clsf from 1 for 1) = #{rptg_media_clsf}</if>
+<if test='rptg_media_clsf == "2"'> and substring(a.rptg_media_clsf from 2 for 1) = #{rptg_media_clsf}</if>
+<if test='rptg_media_clsf == "3"'> and substring(a.rptg_media_clsf from 3 for 1) = #{rptg_media_clsf}</if>
+<if test='rptg_media_clsf == "4"'> and substring(a.rptg_media_clsf from 4 for 1) = #{rptg_media_clsf}</if>
+<if test='rptg_media_clsf == null or rptg_media_clsf ==""'> and a.rptg_media_clsf LIKE DECODE(#{rptg_media_clsf},'','%',#{rptg_media_clsf})</if>
+<if test='param4 == "apr"'> and b.apr_state<![CDATA[ <> ]]>'XAD100'</if>
+AND b.apr_state LIKE DECODE(#{apr_state},'','%',#{apr_state})
+AND a.req_psn_syspayno LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno})
+  </select>
+  
+  
+  <select id="selectLplLprPressPrInfo" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPressPrInfoVo" resultType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPressPrInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lpr.selectLplLprPressPrInfo */ 
+     e.req_no ,
+     e.req_psn_syspayno,
+     fun_humbasicinfo_cd_nm(e.req_psn_syspayno,0) as req_psn_syspayno_nm ,
+     (SELECT 
+    a.dept_nm
+FROM XODHDEPTINFO A LEFT JOIN XODXCOMMST B ON A.fomat_unit = B.cd   -- 센터코드
+                     LEFT JOIN XODHDEPTINFO C ON A.divsn_dept = C.dept_cd   -- 본부코드
+WHERE A.abol_ymd IS NULL
+and a.dept_cd = fun_humbasicinfo_cd_nm(e.req_psn_syspayno,18)
+and c.abol_ymd is null) as dept_nm,
+     e.req_ymd ,
+     e.rptg_hope_ymd ,
+     e.req_clsf,     
+     e.rptg_media_clsf,     
+     e.press_nm ,
+     e.charg_nm ,
+     e.tel ,
+     e.email ,
+     e.rptg_contnt ,
+     e.rptg_resn ,
+     e.attach_file_mngmt_no ,
+     e.req_state,
+     b.apr_state,
+     fun_xodxcommst_cd_nm(b.apr_state,0) as req_state_nm, 
+     e.regst_psn_syspayno ,
+     e.regst_daytm ,
+     e.updt_psn_syspayno ,
+     e.updt_daytm
+FROM lprrptgreq e INNER JOIN xomxintfatab b
+ON b.req_no = e.req_no
+WHERE e.req_no = #{req_no}
+  </select>  
+  
+  <insert id="insertLplLprPressPr" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPressPrInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lpr.insertLplLprPressPr */ 
+		 INTO lprrptgreq(
+     req_no ,
+     req_psn_syspayno ,
+     req_ymd ,
+     rptg_hope_ymd ,
+     req_clsf ,
+     rptg_media_clsf ,
+     press_nm ,
+     charg_nm ,
+     tel ,
+     email ,
+     rptg_contnt ,
+     rptg_resn ,
+     attach_file_mngmt_no ,
+     req_state ,
+     regst_psn_syspayno ,
+     regst_daytm    
+) VALUES ( #{req_no}, #{req_psn_syspayno}, #{req_ymd}, #{rptg_hope_ymd}, #{req_clsf}, #{rptg_media_clsf}, #{press_nm}, #{charg_nm}, #{tel}, #{email}, #{rptg_contnt}, #{rptg_resn}, #{attach_file_mngmt_no}, #{req_state}, #{regst_psn_syspayno}, CURRENT)
+  </insert>
+  
+  <update id="updateLplLprPressPr" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPressPrInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lpr.updateLplLprPressPr */ 
+		 lprrptgreq SET
+     req_ymd=#{req_ymd} ,
+     rptg_hope_ymd=#{rptg_hope_ymd} ,
+     req_clsf=#{req_clsf} ,
+     rptg_media_clsf=#{rptg_media_clsf} ,
+     press_nm=#{press_nm} ,
+     charg_nm=#{charg_nm} ,
+     tel=#{tel} ,
+     email=#{email} ,
+     rptg_contnt=#{rptg_contnt} ,
+     rptg_resn=#{rptg_resn} ,
+     attach_file_mngmt_no=#{attach_file_mngmt_no} ,
+     req_state=#{req_state} ,
+     updt_psn_syspayno=#{updt_psn_syspayno} ,
+     updt_daytm=CURRENT
+WHERE  req_no= #{req_no}
+  </update>  
+  
+   <delete id="deleteLplLprPressPr" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPressPrInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lpr.deleteLplLprPressPr */ 
+		 FROM lprrptgreq
+WHERE  req_no= #{req_no}
+  </delete>  
+</mapper>

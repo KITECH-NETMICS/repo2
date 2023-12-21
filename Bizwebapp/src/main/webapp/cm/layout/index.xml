@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="레이아웃">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	        
+			scwin.onpageload = function() {
+				// 사용 언어
+				gcm.langCode = gcm.lang.getLangCode(); 
+				
+				// 언어 설정 및 언어팩 로딩 (메시지/레이블)
+				gcm.lang.loadLangpack(scwin, gcm.langCode);
+		
+				// 뒤로가기 방지
+				gcm.win.backControl();
+				// onbeforeunload 이벤트 추가 (페이지 나갈 시 경고)
+				// gcm.win.addEventOnBeforeUnload();
+				
+				// 로컬환경인 경우 샘플목록 열기
+				if (location.hostname == "127.0.0.1" || location.hostname == "localhost" || location.hostname == "bizdev.kitech.re.kr") {
+					if (gcm.CMNCD_INFO.isIndexAll === false) {
+						// 샘플용 공통코드 추가
+						gcm.cd.sampleCmnCd();
+					}
+				}
+				wdc_layout.bind('onclick', function(){
+					var grp_side = gcm.util.getComponent(scwin, 'mf_wfm_side_grp_side');
+					if (grp_side.hasClass("more") && !grp_container.hasClass("fix")) {			
+						grp_side.removeClass("more");
+					}
+					// 로컬 스토리지에서 메뉴 고정 여부 값을 가져온다.
+					if (grp_side.hasClass("more") && "true" === WebSquare.localStorage.getItem("fix")) {
+						grp_container.removeClass("fix");
+						grp_container.addClass("fix");
+					}	
+				}); 
+			};
+			
+			scwin.wdc_layout_oncustomcontrolclick = function(controlId) {
+				debugger;
+			};
+			
+			scwin.wdc_layout_onwindowchange = function(oldWindowId,newWindowId) {
+				// 창 변경 시 이벤트
+				// debugger;
+				gcm.win.access(newWindowId);
+				
+				// 툴팁 표현을 위한 메뉴 타이틀 삽입
+				var mf_wdc_layout_name = document.querySelector('#mf_wdc_layout_name')
+				for(var i = 0 ; i < mf_wdc_layout_name.children.length ; i++){
+				    mf_wdc_layout_name.children[i].setAttribute('title', mf_wdc_layout_name.children[i].firstChild.textContent)
+				}
+				
+				// 활성 탭 타이틀 설정
+				var selectedTab = document.querySelectorAll('.w2windowContainer_nameLayer.w2windowContainer_selectedNameLayer');
+				if(selectedTab.length > 0){
+					selectedTab[0].textContent;
+					document.title = selectedTab[0].textContent + " : KITECH EIP3.0 전자결재"	
+				}
+
+				// MDI 탭 색상 변경
+				gcm.util.changeTabColor();
+				
+				if (event == undefined || event.type != "click" || com.isEmpty(event.target.id) ||event.target.id.includes('_restore')) {
+					// 클릭 되어서 발생된 이벤트가 아닌 경우
+					return true;
+				}
+				
+				// 변경된 창의 Scope 선언
+				var id = event.target.id;
+				var targetId = "";
+
+				if (id.split('_')[3] === 'nameLayer') {
+					targetId = id.substr(id.lastIndexOf('mf_wdc_layout'), id.length);
+				} else if (id.split('_')[3]?.includes('subWindow')){
+					targetId = id.substr(0, id.indexOf('subWindow') + 10);
+				}
+				
+				targetId += "_wframe";
+				if (com.getComponent(targetId)) {
+					var changeScope = com.getComponent(targetId).scope;
+
+					// wfForm(문서함)이 있을 경우 해당 wframe의 첨부파일을 체크
+					if (com.isNotEmpty(changeScope.wfForm)) {
+						changeScope = changeScope.wfForm.getWindow();
+					}
+					// Scope 상의 업로드 객체가 없을 경우 이벤트 세팅 안함
+					if (changeScope.com.file.uploadObj.length == 0) {
+						return;	
+					} 
+
+					changeScope.com.file.globalSetting();
+				}
+			};
+
+			/**
+			 * Mdi 모든 창닫기 버튼 이벤트 헨들러: 마지막 남은 Mdi 탭은 닫지 않는다.
+			 * @see gcm.data.checkBeforeClose() 
+			 */
+			scwin.wdc_layout_onbeforecloseall = function() {
+				wdc_layout.setUserData("isOnbeforeCloseAll", true);
+				for (var winIdx = 0; winIdx < wdc_layout.windows.length; winIdx++) {
+		      		wdc_layout.closeWindow(wdc_layout.windows[winIdx].windowId);
+			      	if (winIdx === wdc_layout.windows.length - 1) {
+			       		wdc_layout.setUserData("isOnbeforeCloseAll", false);
+			      	}
+				}
+				return false;
+			};
+		]]></script>
+    </head> 
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="wrap" tagname="div">
+    		<w2:wframe id="wfm_header" style="position: relative;z-index: 300;min-width: 1260px" src="/cm/layout/header.xml"></w2:wframe>
+    		<xf:group id="grp_container" class="container">
+    			<w2:wframe id="wfm_side" src="/cm/layout/side.xml" style=""></w2:wframe>
+    			<w2:windowContainer id="wdc_layout" frameMode="wframe" class="wincont" controlIconPosition="allright"
+    					hideTitleOnMaximize="false" horizontalArrangeNum="2" sequentialArrangeColNum="2" sequentialArrangeRowNum="2"
+    					spaInitCount="0" stopMinimizeOnNameLayer="false" stopToggleOnLast="false" style="" toolbarPosition="top" tooltipDisplay="false"
+    					tooltipGroupClass="false" useCloseButton="true" useControlIconTitle="true" useCustomMsg="false" useNameContainer="true" verticalArrangeNum="2" windowAutoResize="false" windowMaxNum="10"
+    					windowMaximizeAll="true" windowTooltipDisplay="false" useWindowScrollButton="true" windowScrollVisibleRowNum="10" useFixButton="false" useStatusMsg="false" 
+    					ev:onwindowchange="scwin.wdc_layout_onwindowchange" closeType="noneFixedWindow" ev:onbeforecloseall="scwin.wdc_layout_onbeforecloseall" autoArrange="true" processMsgFrame="true">
+    				<w2:windowToolbar>
+    					<w2:nameLayer></w2:nameLayer>
+    					<w2:controlIconLayer>
+    						<w2:controlIcon></w2:controlIcon>
+    						<w2:controlIcon></w2:controlIcon>
+    						<w2:controlIcon></w2:controlIcon>
+    						<w2:controlIcon></w2:controlIcon>
+    						<w2:controlIcon></w2:controlIcon>
+    					</w2:controlIconLayer>
+    					<w2:selectedNameLayer></w2:selectedNameLayer>
+    				</w2:windowToolbar>
+    			</w2:windowContainer>
+    		</xf:group>
+    	</xf:group>
+   	</body>
+</html>

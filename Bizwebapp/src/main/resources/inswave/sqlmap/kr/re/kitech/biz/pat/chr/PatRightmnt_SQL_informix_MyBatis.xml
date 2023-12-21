@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.chr">
+  <select id="selectPatRightmnt" parameterType="kr.re.kitech.biz.pat.chr.vo.PatRightmntVo" resultType="kr.re.kitech.biz.pat.chr.vo.PatRightmntVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.chr.selectPatRightmnt */ 
+		  t1.req_no                           ,           -- 신청번호
+        t1.mngmt_no                         ,           -- 관리번호
+        t1.mnt_seq                          ,           -- 연차료 회차
+        t1.thsyear_evyearfee_pay_close_ymd  ,           -- 납부마감일
+        t1.rightmnt_div                     ,           -- 연차유지여부
+        DECODE(t1.rightmnt_div, "Y", "포기", 
+                                "N", "유지", "")    
+                                AS rightmnt_div_nm,     -- 연차유지여부명
+        t1.thsyear_evyearfee_pay_ymd        ,           -- 납부일자
+        t1.attach_file_no                   ,           -- 첨부파일
+        t1.unusual_item                     ,           -- 특이사항
+        t2.state                AS state    ,           -- 상태
+        t1.governpay_fee                    ,           -- 관납료(수수료) 
+        t1.accnt_no                         ,           -- 유지계정     
+        NVL(COUNT(t3.seq), 0)   AS cnt                  -- 첨부파일 갯수        
+FROM    patrightmnt                 t1,
+        patmastr                    t2,
+        OUTER(xomxcomattachfile     t3)                    
+WHERE   t1.req_no           = t2.req_no
+AND     t1.mngmt_no         = t2.mngmt_no
+AND     t1.attach_file_no   = t3.attach_file_no
+AND     t1.req_no           = #{req_no}   
+AND     t1.mngmt_no         = #{mngmt_no} 
+<if test="mnt_seq != null and mnt_seq != ''">
+	  AND   mnt_seq   = #{mnt_seq}
+</if>
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+ORDER BY t1.req_no,
+        t1.mngmt_no,
+        t1.mnt_seq
+  </select>
+</mapper>

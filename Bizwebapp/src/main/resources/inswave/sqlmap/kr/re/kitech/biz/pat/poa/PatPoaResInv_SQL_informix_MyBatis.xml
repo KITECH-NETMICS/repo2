@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.poa">
+  <select id="selectPatPoaResInvSS01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo" resultType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.res.xda.PatPoaResInvSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.poa.selectPatPoaResInvSS01 */ 
+      oa.oa_id
+          , oa.oa_sn
+          , oa.req_no
+          , oa.mngmt_no
+          , oa.job_state_cd
+          , oa.rpn_wri_id
+          , oa.rpn_psn_id
+          , oa.rpn_adm_id
+          , fn_ofic_user_nm(oa.rpn_wri_id) rpn_wri_nm
+          , fn_ofic_user_nm(oa.rpn_psn_id) rpn_psn_nm
+          , fn_ofic_user_nm(oa.rpn_adm_id) rpn_adm_nm
+          , fn_ofic_user_nm(oa.rpn_charg_psn_id) rpn_charg_psn_nm
+          , TO_CHAR(oa.rpn_daytm, '%Y%m%d') AS rpn_daytm
+          , oa.rpn_clsf
+          , CASE oa.rpn_clsf WHEN '0' THEN '의견'
+                              WHEN '1' THEN '의견/보정'
+                              WHEN '2' THEN '재심사청구'
+                              WHEN '3' THEN '거절결정불복심판청구'
+                              WHEN '4' THEN '1차'
+                              WHEN '5' THEN '2차'
+                              WHEN '6' THEN '3차'
+                              WHEN '7' THEN '4차이상'
+                              WHEN '8' THEN '포기' END rpn_clsf_nm
+          , oa.rpn_comment
+          , oa.rpn_attach_file
+          , res.eval_psn_syspayno
+          , CASE res.eval_res_clsf WHEN '9' THEN fun_emp_nm(res.rereq_psn_syspayno)
+                                    ELSE fun_emp_nm(res.eval_psn_syspayno) END AS eval_psn_syspaynm
+          , TO_CHAR(res.eval_daytm, '%Y%m%d') AS eval_daytm
+          , res.eval_comment
+          , res.eval_res_clsf
+          , CASE res.eval_res_clsf WHEN '0' THEN '의견'
+                              WHEN '1' THEN '의견/보정'
+                              WHEN '2' THEN '재심사청구'
+                              WHEN '3' THEN '거절결정불복심판청구'
+                              WHEN '4' THEN '1차'
+                              WHEN '5' THEN '2차'
+                              WHEN '6' THEN '3차'
+                              WHEN '7' THEN '4차이상'
+                              WHEN '8' THEN '포기' END AS eval_res_clsf_nm
+  FROM   patoa oa
+          LEFT JOIN patoares res ON res.oa_id = oa.oa_id AND res.oares_sn = (SELECT MAX(oares_sn) FROM patoares WHERE oa_id = #{oa_id})
+  WHERE  oa.oa_id = #{oa_id}
+    </select>
+  <update id="updatePatPoaResInvSU01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.res.xda.PatPoaResInvSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.poa.updatePatPoaResInvSU01 */ 
+      patoa
+    SET job_state_cd = #{job_state_cd}
+      , rpe_psn_syspayno = #{rpe_psn_syspayno}
+      , rpe_daytm = CURRENT
+      , rpe_service_scr = #{rpe_service_scr}
+      , rpe_result_scr = #{rpe_result_scr}
+      , rpe_comment = #{rpe_comment}
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm = CURRENT
+      , fnsh_daytm = CURRENT
+  WHERE 1=1
+    AND oa_id = #{oa_id}
+    </update>
+  <update id="updatePatMastrSU01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.pcm.xda.PatMastrSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.poa.updatePatMastrSU01 */ 
+      patmastr
+    SET state         = #{state}
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm    = current
+  WHERE req_no        = #{req_no}
+    AND mngmt_no      = #{mngmt_no}
+    </update>
+  <select id="selectPatPoaResInvSS02" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo" resultType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.res.xda.PatPoaResInvSS02 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.poa.selectPatPoaResInvSS02 */ 
+      poa.oa_id
+      , poa.job_state_cd
+      , fn_ofic_user_nm(poa.rcpt_wri_id) rcpt_wri_nm
+      , fn_ofic_user_nm(poa.rcpt_psn_id) rcpt_psn_nm
+      , fn_ofic_user_nm(poa.rcpt_charg_psn_id) rcpt_charg_psn_nm
+      , TO_CHAR(poa.rcpt_daytm, '%Y%m%d') rcpt_daytm
+      , CASE poa.rcpt_clsf WHEN '1' THEN '의견제출통지'
+                          ELSE '거절결정통지' END rcpt_clsf_nm
+      , CASE poa.rcpt_notice WHEN '0' THEN '최초'
+                            WHEN '1' THEN '의견/보정'
+                            WHEN '2' THEN '재심사청구'
+                            WHEN '3' THEN '1차'
+                            WHEN '4' THEN '2차'
+                            WHEN '5' THEN '3차' END rcpt_notice_nm
+      , poa.rcpt_oa_date
+      , poa.rcpt_due_date
+      , poa.rcpt_comment
+      , poa.rcpt_attach_file
+      , fn_ofic_user_nm(res.res_wri_id) res_wri_nm
+      , fn_ofic_user_nm(res.res_psn_id) res_psn_nm
+      , fn_ofic_user_nm(res.res_charg_psn_id) res_charg_psn_nm
+      , TO_CHAR(res.res_daytm, '%Y%m%d') res_daytm
+      , res.res_clsf
+      , CASE res.res_clsf WHEN '0' THEN '의견'
+                          WHEN '1' THEN '의견/보정'
+                          WHEN '2' THEN '재심사청구'
+                          WHEN '3' THEN '거절결정불복심판청구'
+                          WHEN '4' THEN '1차'
+                          WHEN '5' THEN '2차'
+                          WHEN '6' THEN '3차'
+                          WHEN '7' THEN '4차이상'
+                          WHEN '8' THEN '포기' END res_clsf_nm
+      , res.res_comment
+      , res.res_file
+      , res.res_attach_file
+      , CASE NVL(res.eval_psn_syspayno, '') WHEN '' THEN fun_emp_nm(res.rereq_psn_syspayno)
+                                              ELSE fun_emp_nm(res.eval_psn_syspayno) END AS eval_psn_syspaynm
+      , CASE NVL(res.eval_daytm, '') WHEN '' THEN TO_CHAR(res.rereq_daytm, '%Y%m%d')
+                                              ELSE TO_CHAR(res.eval_daytm, '%Y%m%d') END AS eval_daytm
+      , res.eval_comment
+      , res.rereq_comment
+      , res.eval_res_clsf
+      , CASE res.eval_res_clsf WHEN '0' THEN '의견'
+                                WHEN '1' THEN '의견/보정'
+                                WHEN '2' THEN '재심사청구'
+                                WHEN '3' THEN '거절결정불복심판청구'
+                                WHEN '4' THEN '1차'
+                                WHEN '5' THEN '2차'
+                                WHEN '6' THEN '3차'
+                                WHEN '7' THEN '4차이상'
+                                WHEN '8' THEN '포기'
+                                WHEN '9' THEN '보완요청' END eval_res_clsf_nm
+          , CASE ress.eval_res_clsf WHEN '9' THEN fun_emp_nm(ress.rereq_psn_syspayno)
+                                    ELSE fun_emp_nm(ress.eval_psn_syspayno) END  AS rereq_psn_syspaynm
+      , TO_CHAR(ress.rereq_daytm, '%Y%m%d') AS rereq_daytm
+      , ress.rereq_comment AS re_rereq_comment
+      , CASE ress.res_clsf WHEN '0' THEN '의견'
+                                WHEN '1' THEN '의견/보정'
+                                WHEN '2' THEN '재심사청구'
+                                WHEN '3' THEN '거절결정불복심판청구'
+                                WHEN '4' THEN '1차'
+                                WHEN '5' THEN '2차'
+                                WHEN '6' THEN '3차'
+                                WHEN '7' THEN '4차이상'
+                                WHEN '8' THEN '포기'
+                                WHEN '9' THEN '보완요청' END re_res_clsf_nm
+          , fn_ofic_user_nm(poa.rpn_wri_id) rpn_wri_nm
+          , fn_ofic_user_nm(poa.rpn_psn_id) rpn_psn_nm
+          , fn_ofic_user_nm(poa.rpn_charg_psn_id) rpn_charg_psn_nm
+          , TO_CHAR(poa.rpn_daytm, '%Y%m%d') AS rpn_daytm
+          , poa.rpn_clsf
+          , CASE poa.rpn_clsf WHEN '0' THEN '의견'
+                              WHEN '1' THEN '의견/보정'
+                              WHEN '2' THEN '재심사청구'
+                              WHEN '3' THEN '거절결정불복심판청구'
+                              WHEN '4' THEN '1차'
+                              WHEN '5' THEN '2차'
+                              WHEN '6' THEN '3차'
+                              WHEN '7' THEN '4차이상'
+                              WHEN '8' THEN '포기' END rpn_clsf_nm
+          , poa.rpn_comment
+          , poa.rpn_attach_file
+          , fun_emp_nm(poa.rpe_psn_syspayno) AS rpe_psn_syspaynm
+          , TO_CHAR(poa.rpe_daytm, '%Y%m%d') AS rpe_daytm
+          , poa.rpe_service_scr
+          , poa.rpe_result_scr
+          , poa.rpe_comment
+          , res.oares_sn
+          , CASE poa.rcpt_quote_yn WHEN '0' THEN '인용무'
+                                  ELSE '인용유' END AS rcpt_quote_yn
+          , poa.rcpt_rsn
+    FROM patoa poa
+  LEFT OUTER JOIN patoares res ON res.oa_id = poa.oa_id AND res.oares_sn = #{oares_sn}
+  LEFT OUTER JOIN patoares ress ON ress.oa_id = poa.oa_id AND ress.oares_sn = res.oares_sn - 1
+  WHERE poa.oa_id = #{oa_id}
+    </select>
+  <update id="updatePatPoaAttachSU02" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.res.xda.PatPoaAttachSU02 */
+  update /* QueryID : kr.re.kitech.biz.pat.poa.updatePatPoaAttachSU02 */ 
+      patoares set res_file=#{res_file} , res_attach_file=#{res_attach_file} where oa_id= #{oa_id} and oares_sn=#{oares_sn}
+    </update>
+  <update id="updatePatPoaAttachSU01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.res.xda.PatPoaAttachSU01 */
+  update /* QueryID : kr.re.kitech.biz.pat.poa.updatePatPoaAttachSU01 */ 
+      patoa set rcpt_attach_file = #{rcpt_attach_file} , rpn_attach_file = #{rpn_attach_file} where  mngmt_no= #{mngmt_no} and oa_id = #{oa_id}
+    </update>
+  <select id="selectPatPoaResCntSS01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo" resultType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.res.xda.PatPoaResCntSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.poa.selectPatPoaResCntSS01 */ 
+      '보완요청(' || nvl(b.oares_sn,1) - 1 ||')' oa_sn_nm
+        , nvl(oares_sn,1) AS oa_sn_cd
+    FROM patoa a
+    LEFT OUTER JOIN patoares b on b.oa_id=a.oa_id
+  WHERE a.oa_id = #{oa_id}
+  ORDER BY 2
+    </select>
+  <select id="selectPatPoaRecInvSS01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo" resultType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.rec.xda.PatPoaRecInvSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.poa.selectPatPoaRecInvSS01 */ 
+      oa.oa_id                                                        /*중간사건 의뢰번호*/
+          , oa.oa_sn                                                     /*중간사건 일련번호*/
+          , oa.req_no                                                    /*신청번호*/
+          , oa.mngmt_no                                                  /*관리번호*/
+          , oa.job_state_cd                                              /*업무진행상태코드*/
+          , pst.state_desc AS job_state_nm_detail       /*업무진행상태코드명*/
+          , fn_state_desc(oa.job_state_cd) job_state_nm                  /*업무명*/
+          , oa.rcpt_wri_id                                               /*접수보고 작성자 ID*/
+          , oa.rcpt_psn_id                                               /*접수보고자 ID*/
+          , oa.rcpt_adm_id                                               /*접수보고 행정담당자 ID*/
+          , fn_ofic_user_nm(oa.rcpt_wri_id) rcpt_wri_nm                  /*접수보고 작성자명*/
+          , fn_ofic_user_nm(oa.rcpt_psn_id) rcpt_psn_nm                  /*접수보고자명*/
+          , fn_ofic_user_nm(oa.rcpt_adm_id) rcpt_adm_nm                  /*접수보고 행정담당자명*/
+          , TO_CHAR(oa.rcpt_daytm, '%Y%m%d') rcpt_daytm                  /*접수보고 일자*/
+          , oa.rcpt_charg_psn_id                                         /*접수보고 사무소 담당자 ID*/
+          , fn_ofic_user_nm(oa.rcpt_charg_psn_id) rcpt_charg_psn_nm      /*접수보고 사무소 담당자명*/
+          , oa.rcpt_clsf                                                 /*접수보고 구분*/
+          , CASE oa.rcpt_clsf WHEN '1' THEN '의견제출통지'
+                              WHEN '2' THEN '거절결정통지'
+                              ELSE '국외' END rcpt_clsf_nm               /*접수보고 구분명*/
+          , oa.rcpt_notice                                               /*접수보고 통지구분*/
+          , CASE oa.rcpt_notice WHEN '0' THEN '의견'
+                              WHEN '1' THEN '의견/보정'
+                              WHEN '2' THEN '재심사청구'
+                              WHEN '3' THEN '거절결정불복심판청구'
+                              WHEN '4' THEN '1차'
+                              WHEN '5' THEN '2차'
+                              WHEN '6' THEN '3차'
+                              WHEN '7' THEN '4차이상'
+                              WHEN '8' THEN '포기'
+                              WHEN '9' THEN '보완요청' END rcpt_notice_nm    /*접수보고 통지구분명*/
+          , oa.rcpt_oa_date                                              /*접수보고 OA접수일*/
+          , oa.rcpt_due_date                                             /*접수보고 기한일*/
+          , TRIM(oa.rcpt_comment::CHAR(3000)) rcpt_comment               /*접수보고 내용*/
+          , oa.rcpt_attach_file                                          /*접수보고 첨부파일*/
+          , res.oares_id                                                 /*중간사건대응 의뢰번호*/
+          , res.oares_sn                                                 /*중간사건 일련번호*/
+          , res.res_wri_id                                               /*대응안 작성자 ID*/
+          , res.res_psn_id                                               /*대응안 보고자 ID*/
+          , res.res_adm_id                                               /*대응안 행정담당자 ID*/
+          , fn_ofic_user_nm(res.res_wri_id) res_wri_nm                   /*대응안 작성자명*/
+          , fn_ofic_user_nm(res.res_psn_id) res_psn_nm                   /*대응안 보고자명*/
+          , fn_ofic_user_nm(res.res_adm_id) res_adm_nm                   /*대응안 행정담당자명*/
+          , TO_CHAR(res.res_daytm, '%Y%m%d') res_daytm                   /*대응안 작성일자*/
+          , res.res_charg_psn_id                                         /*대응안 사무소 담당자 ID*/
+          , fn_ofic_user_nm(res.res_charg_psn_id) res_charg_psn_nm       /*대응안 사무소 담당자명*/
+          , res.res_clsf                                                 /*대응안 구분*/
+          , CASE res.res_clsf WHEN '0' THEN '의견'
+                              WHEN '1' THEN '의견/보정'
+                              WHEN '2' THEN '재심사청구'
+                              WHEN '3' THEN '거절결정불복심판청구'
+                              WHEN '4' THEN '1차'
+                              WHEN '5' THEN '2차'
+                              WHEN '6' THEN '3차'
+                              WHEN '7' THEN '4차이상'
+                              WHEN '8' THEN '포기' 
+                              WHEN '9' THEN '보완요청 'END res_clsf_nm       /*대응안 구분명*/
+          , res.res_div_clsf                                             /*대응안 분할출원*/
+          , CASE res.res_div_clsf WHEN 'Y' THEN 'YES'
+                                  ELSE 'NO' END res_div_clsf_nm          /*대응안 분할출원 유무*/
+          , TRIM(res.res_comment::CHAR(3000)) res_comment                /*대응안 내용*/
+          , res.res_file                                                 /*대응안 파일*/
+          , res.res_attach_file                                          /*대응안 첨부파일*/
+          , ress.oares_id re_oares_id                                    /*중간사건대응 의뢰번호*/
+          , ress.oares_sn re_oares_sn                                    /*중간사건 일련번호*/
+          , ress.res_wri_id re_res_wri_id                                /*대응안 작성자 ID*/
+          , ress.res_psn_id re_res_psn_id                                /*대응안 보고자 ID*/
+          , ress.res_adm_id re_res_adm_id                                /*대응안 행정담당자 ID*/
+          , fn_ofic_user_nm(ress.res_wri_id) re_res_wri_nm               /*대응안 작성자명*/
+          , fn_ofic_user_nm(ress.res_psn_id) re_res_psn_nm               /*대응안 보고자명*/
+          , fn_ofic_user_nm(ress.res_adm_id) re_res_adm_nm               /*대응안 행정담당자명*/
+          , TO_CHAR(ress.res_daytm, '%Y%m%d') re_res_daytm               /*대응안 작성일자*/
+          , ress.res_charg_psn_id re_res_charg_psn_id                    /*대응안 사무소 담당자 ID*/
+          , fn_ofic_user_nm(ress.res_charg_psn_id) re_res_charg_psn_nm   /*대응안 사무소 담당자명*/
+          , ress.res_clsf re_res_clsf                                    /*대응안 구분*/
+          , CASE ress.res_clsf WHEN '0' THEN '의견'
+                              WHEN '1' THEN '의견/보정'
+                              WHEN '2' THEN '재심사청구'
+                              WHEN '3' THEN '거절결정불복심판청구'
+                              WHEN '4' THEN '1차'
+                              WHEN '5' THEN '2차'
+                              WHEN '6' THEN '3차'
+                              WHEN '7' THEN '4차이상'
+                              WHEN '8' THEN '포기' END re_res_clsf_nm  /*대응안 구분명*/
+          , ress.res_div_clsf re_res_div_clsf                          /*대응안 분할출원*/
+          , CASE ress.res_div_clsf WHEN 'Y' THEN 'YES'
+                                  ELSE 'NO' END re_res_div_clsf_nm     /*대응안 분할출원 유무*/
+          , TRIM(ress.res_comment::CHAR(3000)) re_res_comment          /*대응안 내용*/
+          , ress.res_file re_res_file                                  /*대응안 파일*/
+          , ress.res_attach_file re_res_attach_file                    /*대응안 첨부파일*/
+          , ress.rereq_psn_syspayno re_rereq_psn_syspayno              /*보완요청자 ID*/
+          , TO_CHAR(ress.rereq_daytm, '%Y%m%d') re_rereq_daytm                   /*보완요청 일시*/
+          , TRIM(ress.rereq_comment::CHAR(3000)) re_rereq_comment            /*보완요청 내용*/
+          , CASE ress.eval_res_clsf WHEN '0' THEN '의견'
+                              WHEN '1' THEN '의견/보정'
+                              WHEN '2' THEN '재심사청구'
+                              WHEN '3' THEN '거절결정불복심판청구'
+                              WHEN '4' THEN '1차'
+                              WHEN '5' THEN '2차'
+                              WHEN '6' THEN '3차'
+                              WHEN '7' THEN '4차이상'
+                              WHEN '8' THEN '포기'
+                              WHEN '9' THEN '보완요청' END eval_res_clsf_nm
+          , CASE ress.eval_res_clsf WHEN '9' THEN fun_emp_nm(ress.rereq_psn_syspayno)
+                                    ELSE fun_emp_nm(ress.eval_psn_syspayno) END AS re_rereq_psn_syspaynm
+  fROM   patoa oa
+          INNER JOIN patstatecode pst ON pst.state_cd = oa.job_state_cd
+          LEFT JOIN patoares res ON res.oa_id = oa.oa_id AND res.oares_sn = (SELECT MAX(oares_sn) FROM patoares WHERE oa_id = #{oa_id})
+          LEFT JOIN patoares ress ON ress.oa_id = oa.oa_id
+          AND  ress.oares_sn = res.oares_sn -1
+  WHERE  oa.oa_id = #{oa_id}
+    </select>
+  <update id="updatePatPoaRecInvSU01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.rec.xda.PatPoaRecInvSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.poa.updatePatPoaRecInvSU01 */ 
+      patoares
+    SET eval_res_clsf = #{eval_res_clsf}
+  <if test="rereq_psn_syspayno != null and rereq_psn_syspayno != ''">
+      , rereq_psn_syspayno = #{rereq_psn_syspayno}
+  </if>
+  <if test="rereq_daytm != null and rereq_daytm != ''">
+      , rereq_daytm = TO_DATE(#{rereq_daytm}, '%Y%m%d')
+  </if>
+  <if test="rereq_comment != null and rereq_comment != ''">
+      , rereq_comment = #{rereq_comment}
+  </if>
+  <if test="eval_psn_syspayno != null and eval_psn_syspayno != ''">
+      , eval_psn_syspayno = #{eval_psn_syspayno}
+  </if>
+  <if test="eval_daytm != null and eval_daytm != ''">
+      , eval_daytm = TO_DATE(#{eval_daytm}, '%Y%m%d')
+  </if>
+  <if test="eval_result_scr != null and eval_result_scr != ''">
+      , eval_result_scr = #{eval_result_scr}
+  </if>
+  <if test="eval_service_scr != null and eval_service_scr != ''">
+      , eval_service_scr = #{eval_service_scr}
+  </if>
+  <if test="eval_comment != null and eval_comment != ''">
+      , eval_comment = #{eval_comment}
+  </if>
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm = CURRENT
+  WHERE oa_id = #{oa_id}
+    AND oares_id = #{oares_id}
+    AND oares_sn = #{oares_sn}
+    </update>
+  <update id="updatePatPoaReeInvSU02" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.xda.PatPoaReeInvSU02 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.poa.updatePatPoaReeInvSU02 */ 
+      patoa
+    SET job_state_cd = #{state}
+      , updt_syspayno = #{psn_syspayno}
+      , updt_daytm = CURRENT
+  WHERE oa_id = #{oa_id}
+    AND oa_sn = #{oa_sn}
+    </update>
+  <update id="updatePatPoaReeInvSU01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.ree.xda.PatPoaReeInvSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.poa.updatePatPoaReeInvSU01 */ 
+      patoares
+    SET eval_res_clsf = #{eval_res_clsf}
+  <if test="rereq_psn_syspayno != null and rereq_psn_syspayno != ''">
+      , rereq_psn_syspayno = #{rereq_psn_syspayno}
+  </if>
+  <if test="rereq_daytm != null and rereq_daytm != ''">
+      , rereq_daytm = TO_DATE(#{rereq_daytm}, '%Y%m%d')
+  </if>
+  <if test="rereq_comment != null and rereq_comment != ''">
+      , rereq_comment = #{rereq_comment}
+  </if>
+  <if test="eval_psn_syspayno != null and eval_psn_syspayno != ''">
+      , eval_psn_syspayno = #{eval_psn_syspayno}
+  </if>
+  <if test="eval_daytm != null and eval_daytm != ''">
+      , eval_daytm = TO_DATE(#{eval_daytm}, '%Y%m%d')
+  </if>
+  <if test="eval_result_scr != null and eval_result_scr != ''">
+      , eval_result_scr = #{eval_result_scr}
+  </if>
+  <if test="eval_service_scr != null and eval_service_scr != ''">
+      , eval_service_scr = #{eval_service_scr}
+  </if>
+  <if test="eval_comment != null and eval_comment != ''">
+      , eval_comment = #{eval_comment}
+  </if>
+      , updt_syspayno = #{psn_syspayno}
+      , updt_daytm = CURRENT
+  WHERE oa_id = #{oa_id}
+    AND oares_id = #{oares_id}
+    AND oares_sn = #{oares_sn}
+    </update>
+  <select id="selectPatPoaReeInvSS01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo" resultType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.ree.xda.PatPoaReeInvSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.poa.selectPatPoaReeInvSS01 */ 
+      oa.oa_id                                                        /*중간사건 의뢰번호*/
+          , oa.oa_sn                                                     /*중간사건 일련번호*/
+          , oa.req_no                                                    /*신청번호*/
+          , oa.mngmt_no                                                  /*관리번호*/
+          , oa.job_state_cd                                              /*업무진행상태코드*/
+          , pst.state_desc AS job_state_nm_detail                        /*업무진행상태코드명*/
+          , fn_state_desc(oa.job_state_cd) job_state_nm                  /*업무명*/
+          , oa.rcpt_wri_id                                               /*접수보고 작성자 ID*/
+          , oa.rcpt_psn_id                                               /*접수보고자 ID*/
+          , oa.rcpt_adm_id                                               /*접수보고 행정담당자 ID*/
+          , fn_ofic_user_nm(oa.rcpt_wri_id) rcpt_wri_nm                  /*접수보고 작성자명*/
+          , fn_ofic_user_nm(oa.rcpt_psn_id) rcpt_psn_nm                  /*접수보고자명*/
+          , fn_ofic_user_nm(oa.rcpt_adm_id) rcpt_adm_nm                  /*접수보고 행정담당자명*/
+          , TO_CHAR(oa.rcpt_daytm, '%Y%m%d') rcpt_daytm                  /*접수보고 일자*/
+          , oa.rcpt_charg_psn_id                                         /*접수보고 사무소 담당자 ID*/
+          , fn_ofic_user_nm(oa.rcpt_charg_psn_id) rcpt_charg_psn_nm      /*접수보고 사무소 담당자명*/
+          , oa.rcpt_clsf                                                 /*접수보고 구분*/
+          , CASE oa.rcpt_clsf WHEN '1' THEN '의견제출통지'
+                              WHEN '2' THEN '거절결정통지'
+                              ELSE '국외' END rcpt_clsf_nm               /*접수보고 구분명*/
+          , oa.rcpt_notice                                               /*접수보고 통지구분*/
+          , CASE oa.rcpt_notice WHEN '0' THEN '의견'
+                              WHEN '1' THEN '의견/보정'
+                              WHEN '2' THEN '재심사청구'
+                              WHEN '3' THEN '거절결정불복심판청구'
+                              WHEN '4' THEN '1차'
+                              WHEN '5' THEN '2차'
+                              WHEN '6' THEN '3차'
+                              WHEN '7' THEN '4차이상'
+                              WHEN '8' THEN '포기' END rcpt_notice_nm    /*접수보고 통지구분명*/
+          , oa.rcpt_oa_date                                              /*접수보고 OA접수일*/
+          , oa.rcpt_due_date                                             /*접수보고 기한일*/
+          , TRIM(oa.rcpt_comment::CHAR(3000)) rcpt_comment               /*접수보고 내용*/
+          , oa.rcpt_attach_file                                          /*접수보고 첨부파일*/
+          , res.oares_id                                                 /*중간사건대응 의뢰번호*/
+          , res.oares_sn                                                 /*중간사건 일련번호*/
+          , res.res_wri_id                                               /*대응안 작성자 ID*/
+          , res.res_psn_id                                               /*대응안 보고자 ID*/
+          , res.res_adm_id                                               /*대응안 행정담당자 ID*/
+          , fn_ofic_user_nm(res.res_wri_id) res_wri_nm                   /*대응안 작성자명*/
+          , fn_ofic_user_nm(res.res_psn_id) res_psn_nm                   /*대응안 보고자명*/
+          , fn_ofic_user_nm(res.res_adm_id) res_adm_nm                   /*대응안 행정담당자명*/
+          , TO_CHAR(res.res_daytm, '%Y%m%d') res_daytm                   /*대응안 작성일자*/
+          , res.res_charg_psn_id                                         /*대응안 사무소 담당자 ID*/
+          , fn_ofic_user_nm(res.res_charg_psn_id) res_charg_psn_nm       /*대응안 사무소 담당자명*/
+          , res.res_clsf                                                 /*대응안 구분*/
+          , CASE res.res_clsf WHEN '0' THEN '의견'
+                              WHEN '1' THEN '의견/보정'
+                              WHEN '2' THEN '재심사청구'
+                              WHEN '3' THEN '거절결정불복심판청구'
+                              WHEN '4' THEN '1차'
+                              WHEN '5' THEN '2차'
+                              WHEN '6' THEN '3차'
+                              WHEN '7' THEN '4차이상'
+                              WHEN '8' THEN '포기' END res_clsf_nm       /*대응안 구분명*/
+          , res.res_div_clsf                                             /*대응안 분할출원*/
+          , CASE res.res_div_clsf WHEN 'Y' THEN 'YES'
+                                  ELSE 'NO' END res_div_clsf_nm          /*대응안 분할출원 유무*/
+          , TRIM(res.res_comment::CHAR(3000)) res_comment                /*대응안 내용*/
+          , res.res_file                                                 /*대응안 파일*/
+          , res.res_attach_file                                          /*대응안 첨부파일*/
+          , res.rereq_comment                                            /*의견안 검토 내용*/
+  FROM   patoa oa
+          LEFT JOIN patoares res ON res.oa_id = oa.oa_id
+          LEFT JOIN patstatecode pst ON pst.state_cd = oa.job_state_cd
+      WHERE  oa.oa_id = #{oa_id}
+    </select>
+  <insert id="insertPatPoaHistorySI01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.poa.xda.PatPoaHistorySI01 */
+  INSERT /* QueryID : kr.re.kitech.biz.pat.poa.insertPatPoaHistorySI01 */ 
+      INTO PATACTHISTORY (
+              hist_id
+              , act_no
+              , act_sn
+              , act_cd
+              , req_no
+              , mngmt_no
+              , act_syspayno
+              , act_blong_clsf
+              , act_daytm
+              , regst_syspayno
+              , regst_daytm
+        ) VALUES(FN_UID('')
+                , #{oa_id}
+                , #{act_sn}
+                , #{bf_state}
+                , (SELECT req_no FROM patoa WHERE oa_id = #{oa_id})
+                , (SELECT mngmt_no FROM patoa WHERE oa_id = #{oa_id})
+                , #{psn_syspayno}
+                , #{act_blong_clsf}
+                , current
+                , #{psn_syspayno}
+                , current)
+    </insert>
+  <delete id="deleteXomxIntfatabSD01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.com.xda.XomxIntfatabSD01 */
+  DELETE /* QueryID : kr.re.kitech.biz.pat.poa.deleteXomxIntfatabSD01 */ 
+        from xomxintfatab
+  WHERE   req_no = #{req_no}
+    </delete>
+  <update id="updatePatPtsTodoSU01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.pts.rec.xda.PatPtsTodoSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.poa.updatePatPtsTodoSU01 */ 
+      pattodo
+    SET end_yn = 'Y'
+  WHERE mngmt_no = #{mngmt_no}
+    AND end_yn = 'N'
+    </update>
+  <update id="updatePatBpmSU01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaResInvVo">
+  /* XDA : kitech.pat.ptd.xda.PatBpmSU01 */
+  update /* QueryID : kr.re.kitech.biz.pat.poa.updatePatBpmSU01 */ 
+      bpm:bpm_procinst
+  set isdeleted = 1
+  where name =  #{req_no}
+    </update>
+</mapper>

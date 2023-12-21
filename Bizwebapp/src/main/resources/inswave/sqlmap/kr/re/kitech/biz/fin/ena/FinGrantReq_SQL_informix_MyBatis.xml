@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.ena">
+  <update id="updateFinGrantReq" parameterType="kr.re.kitech.biz.fin.ena.vo.FinGrantReqVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.ena.updateFinGrantReq */ 
+		 t_ifs_tsk_dvrq_erp
+SET 
+    <if test="req_no != null and req_no != ''">
+	  req_no = #{req_no},
+</if>
+    <if test="req_psn != null and req_psn != ''">
+	  req_psn = #{req_psn},
+</if>
+    <if test="unslip_no != null and unslip_no != ''">
+	  unslip_no = #{unslip_no},
+</if>
+    <if test="cancel_slip != null and cancel_slip != ''">
+	  unslip_no = '',
+</if>
+    regst_syspayno = #{regst_syspayno},
+    regst_daytm = SYSDATE
+WHERE ((bsnsyear = #{bsnsyear} AND ddtlbz_id = #{ddtlbz_id} AND dvrq_odr = #{dvrq_odr} )
+       OR req_no = #{req_no} )
+  </update>
+  
+  <select id="selectFinGrantReqList" parameterType="kr.re.kitech.biz.fin.ena.vo.FinGrantReqVo" resultType="kr.re.kitech.biz.fin.ena.vo.FinGrantReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.ena.selectFinGrantReqList */ 
+		 c.accnt_no
+     , a.req_no
+     , a.bsnsyear -- 사업연도
+     , a.ddtlbz_id -- 상세내역사업 ID
+     , a.dvrq_odr  -- 교부신청차수
+     , a.ddtlbz_nm -- 상세내역사업명
+     , c.thyr_yr_orign_ymd ||'~'||thyr_yr_cls_ymd AS biz_prd
+     , a.reqst_instt_nm -- 신청기관명
+     , a.reqst_de -- 신청일자
+     , a.reqst_sj_nm  -- 신청제목
+     , b.dvrq_amount -- 교부신청금액
+     , b.reqst_matter  -- 신청사항
+     , b.exc_instt_nm -- 수행기관명
+FROM t_ifs_tsk_dvrq_erp a 
+JOIN t_ifs_perfrmr_accto_dvrq_erp b ON a.bsnsyear = b.bsnsyear AND a.ddtlbz_id = b.ddtlbz_id AND a.dvrq_odr = b.dvrq_odr
+LEFT JOIN resinpyear c ON a.upper_bsns_id = c.reschamt_card_prj_no
+WHERE a.reqst_de BETWEEN #{reqst_de_st} AND #{reqst_de_ed}
+AND ( '' = #{accnt_no} OR c.accnt_no = #{accnt_no})
+AND ('N' != #{req_yn} OR NVL(a.req_no, '') = '')
+AND ('Y' != #{req_yn} OR NVL(a.req_no, '') != '')
+AND a.reqst_instt_nm like '%'|| #{reqst_instt_nm} ||'%'
+  </select>  
+  
+  <select id="selectFinGrantReq" parameterType="kr.re.kitech.biz.fin.ena.vo.FinGrantReqVo" resultType="kr.re.kitech.biz.fin.ena.vo.FinGrantReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.ena.selectFinGrantReq */ 
+		 c.accnt_no
+     , c.accnt_rspns -- 계정책임자(결재신청시 필요)
+     , a.req_no
+     , a.req_psn
+     , a.bsnsyear -- 사업연도
+     , a.ddtlbz_id -- 상세내역사업 ID
+     , a.dvrq_odr  -- 교부신청차수
+     , a.ddtlbz_nm -- 상세내역사업명
+     , SUBSTR(c.thyr_yr_orign_ymd,1,4)||'-'|| SUBSTR(c.thyr_yr_orign_ymd,5,2) || '-'|| SUBSTR(c.thyr_yr_orign_ymd,7,2)
+          ||'~'||SUBSTR(c.thyr_yr_cls_ymd,1,4)||'-'|| SUBSTR(c.thyr_yr_cls_ymd,5,2) || '-'|| SUBSTR(c.thyr_yr_cls_ymd,7,2) AS biz_prd
+     , a.reqst_instt_nm -- 신청기관명
+     , a.reqst_de -- 신청일자
+     , a.reqst_sj_nm  -- 신청제목
+     , b.dvrq_amount -- 교부신청금액
+     , b.reqst_matter  -- 신청사항
+     , b.exc_instt_nm -- 수행기관명
+     , d.dev_goal -- 사업목적
+     , d.resch_contnt -- 사업내용
+     , e.gov_subsidy -- 국고보조금
+     , e.self_share -- 자기부담금
+     , e.area_share_wide -- 지방비부담금(광역)
+     , e.area_share_base -- 지방비부담금(기초)
+     , e.gov_subsidy + e.self_share + e.area_share_wide + e.area_share_base AS subsidy_sum
+     , b.dpstg_acnut_no -- 계좌번호
+     , b.dpstg_rcpmny_idntfc_code -- 입금식별번호
+     , b.rcpmny_dpstr_nm -- 예금주
+     , x1.cd_nm AS dpstg_bank_nm -- 은행명
+     , x1.cd AS bank
+     , h1.nm AS req_psn_nm
+     , h1.empno AS req_psn_no
+     , h1.email
+     , h1.ext_no
+     , f.dvdc_instt_nm -- 교부결정기관
+     , f.delvry_purps_cn  -- 교부목적내용
+     , f.dvdc_amount -- 교부결정금액
+     , f.dvdc_de -- 교부결정일자
+     , g.unslip_no
+     , g.slip_ymd
+     , g.decsn_ex
+     , x2.syspayno AS manager_id -- 연구지원담당자(결재신청시 필요)
+     , v.postmt_no
+     , v.addr
+     , v.reprs_psn_nm
+<if test="req_no != null and req_no != ''">     
+     , x.apr_state
+</if>          
+FROM t_ifs_tsk_dvrq_erp a 
+JOIN t_ifs_perfrmr_accto_dvrq_erp b ON a.bsnsyear = b.bsnsyear AND a.ddtlbz_id = b.ddtlbz_id AND a.dvrq_odr = b.dvrq_odr
+JOIN resinpyear c ON a.upper_bsns_id = c.reschamt_card_prj_no
+JOIN resinptgct d ON c.prj_no = d.prj_no
+JOIN resinpbugt e ON c.prj_no = e.prj_no
+JOIN humbasicinfo h2 ON c.accnt_rspns = h2.syspayno
+JOIN xodfvend v ON 1=1 AND v.vend_cd ='100000'
+LEFT JOIN xodrresman x2 ON h2.dept_cd = x2.dept_cd AND h2.dept_new_ymd = x2.dept_new_ymd
+<if test="req_no != null and req_no != ''">
+LEFT JOIN xomxintfatab  x  ON x.req_no = a.req_no
+</if>
+LEFT JOIN xodxcommst x1 ON b.dpstg_bank_code = x1.mngmt_item_5 AND x1.cd_clsf = 'FAA'
+LEFT JOIN humbasicinfo h1 ON a.req_psn = h1.syspayno
+LEFT JOIN t_ifs_dvdc_erp f ON a.bsnsyear = f.bsnsyear AND a.upper_bsns_id = f.ddtlbz_id AND a.dvrq_odr = f.dvrq_odr
+LEFT JOIN fspsliph g ON a.unslip_no = g.unslip_no
+<if test="bsnsyear != null and bsnsyear != ''">
+	 WHERE a.bsnsyear = #{bsnsyear} AND a.ddtlbz_id = #{ddtlbz_id} AND a.dvrq_odr = #{dvrq_odr}
+</if>
+<if test="req_no != null and req_no != ''">
+	 AND a.req_no = #{req_no}
+</if>
+  </select>
+  
+  <select id="selectFinGrantReqApr" parameterType="kr.re.kitech.biz.fin.ena.vo.FinGrantReqVo" resultType="kr.re.kitech.biz.fin.ena.vo.FinGrantReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.ena.selectFinGrantReqApr */ 
+		 c.accnt_no
+     , c.accnt_rspns -- 계정책임자(결재신청시 필요)
+     , a.req_no
+     , a.req_psn
+     , a.bsnsyear -- 사업연도
+     , a.ddtlbz_id -- 상세내역사업 ID
+     , a.dvrq_odr  -- 교부신청차수
+     , a.ddtlbz_nm -- 상세내역사업명
+     , SUBSTR(c.thyr_yr_orign_ymd,1,4)||'-'|| SUBSTR(c.thyr_yr_orign_ymd,5,2) || '-'|| SUBSTR(c.thyr_yr_orign_ymd,7,2)
+          ||'~'||SUBSTR(c.thyr_yr_cls_ymd,1,4)||'-'|| SUBSTR(c.thyr_yr_cls_ymd,5,2) || '-'|| SUBSTR(c.thyr_yr_cls_ymd,7,2) AS biz_prd
+     , a.reqst_instt_nm -- 신청기관명
+     , a.reqst_de -- 신청일자
+     , a.reqst_sj_nm  -- 신청제목
+     , b.dvrq_amount -- 교부신청금액
+     , b.reqst_matter  -- 신청사항
+     , b.exc_instt_nm -- 수행기관명
+     , d.dev_goal -- 사업목적
+     , d.resch_contnt -- 사업내용
+     , e.gov_subsidy -- 국고보조금
+     , e.self_share -- 자기부담금
+     , e.area_share_wide -- 지방비부담금(광역)
+     , e.area_share_base -- 지방비부담금(기초)
+     , e.gov_subsidy + e.self_share + e.area_share_wide + e.area_share_base AS subsidy_sum
+     , b.dpstg_acnut_no -- 계좌번호
+     , b.dpstg_rcpmny_idntfc_code -- 입금식별번호
+     , b.rcpmny_dpstr_nm -- 예금주
+     , x1.cd_nm AS dpstg_bank_nm -- 은행명
+     , x1.cd AS bank
+     , h1.nm AS req_psn_nm
+     , h1.empno AS req_psn_no
+     , h1.email
+     , h1.ext_no
+     , f.dvdc_instt_nm -- 교부결정기관
+     , f.delvry_purps_cn  -- 교부목적내용
+     , f.dvdc_amount -- 교부결정금액
+     , f.dvdc_de -- 교부결정일자
+     , g.unslip_no
+     , g.slip_ymd
+     , g.decsn_ex
+     , x2.syspayno AS manager_id -- 연구지원담당자(결재신청시 필요)
+     , v.postmt_no
+     , v.addr
+     , v.reprs_psn_nm
+<if test="req_no != null and req_no != ''">     
+     , x.apr_state
+</if>          
+FROM t_ifs_tsk_dvrq_erp a 
+JOIN t_ifs_perfrmr_accto_dvrq_erp b ON a.bsnsyear = b.bsnsyear AND a.ddtlbz_id = b.ddtlbz_id AND a.dvrq_odr = b.dvrq_odr
+JOIN resinpyear c ON a.upper_bsns_id = c.reschamt_card_prj_no
+JOIN resinptgct d ON c.prj_no = d.prj_no
+JOIN resinpbugt e ON c.prj_no = e.prj_no
+JOIN humbasicinfo h2 ON c.accnt_rspns = h2.syspayno
+JOIN xodfvend v ON 1=1 AND v.vend_cd ='100000'
+LEFT JOIN xodrresman x2 ON h2.dept_cd = x2.dept_cd AND h2.dept_new_ymd = x2.dept_new_ymd
+<if test="req_no != null and req_no != ''">
+LEFT JOIN xomxintfatab  x  ON x.req_no = a.req_no
+</if>
+LEFT JOIN xodxcommst x1 ON b.dpstg_bank_code = x1.mngmt_item_5 AND x1.cd_clsf = 'FAA'
+LEFT JOIN humbasicinfo h1 ON a.req_psn = h1.syspayno
+LEFT JOIN t_ifs_dvdc_erp f ON a.bsnsyear = f.bsnsyear AND a.upper_bsns_id = f.ddtlbz_id AND a.dvrq_odr = f.dvrq_odr
+LEFT JOIN fspsliph g ON a.unslip_no = g.unslip_no
+<if test="req_no != null and req_no != ''">
+	 WHERE a.req_no = #{req_no}
+</if>
+  </select>  
+  
+ <update id="updatedeleteFile" parameterType="kr.re.kitech.biz.fin.ena.vo.UpdatedeleteFileVo">
+update /* QueryID : kr.re.kitech.biz.res.com.updatedeleteFile */ 
+		 t_ifs_tsk_dvrq_erp
+set req_no = null
+where req_no = #{req_no}
+  </update>
+  
+  <select id="selectResBgAccTm" parameterType="kr.re.kitech.biz.fin.ena.vo.FinGrantResBgacCtmVo" resultType="kr.re.kitech.biz.fin.ena.vo.FinGrantResBgacCtmVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.ena.selectResBgAccTm */ 
+		  accnt_rspns,
+        fomat_unit        
+FROM    resbgacctm
+WHERE   accnt_no = #{accnt_no}
+  </select>
+  
+  <select id="selectFinRcmsPaySlip" parameterType="kr.re.kitech.biz.fin.ena.vo.FinRcmsPaySlipVo" resultType="kr.re.kitech.biz.fin.ena.vo.FinRcmsPaySlipVo">
+select /* QueryID : kr.re.kitech.biz.fin.ena.selectFinRcmsPaySlip */ 
+		 dept_cd, dept_new_ymd
+from   humbasicinfo
+where  syspayno = #{syspayno}
+  </select>
+  
+  <select id="selectFspEnaSliph" parameterType="kr.re.kitech.biz.fin.ena.vo.FspEnaSliphVo" resultType="kr.re.kitech.biz.fin.ena.vo.FspEnaSliphVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.ena.selectFspEnaSliph */ 
+		 RIGHT(HEX(HEX('0x'||NVL(MAX(unslip_no[7,10]),0)) + 1)::VARCHAR(10), 4) AS cnt
+FROM   fspsliph  
+WHERE  unslip_no like #{unslip_no_ym} || '%'
+AND    slip_typ_cd = #{slip_typ_cd}
+  </select>
+
+  <update id="updateFinGrantReqNum" parameterType="kr.re.kitech.biz.fin.ena.vo.FinGrantReqUpdateVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.ena.updateFinGrantReqNum */ 
+		 t_ifs_tsk_dvrq_erp
+SET 
+    <if test="req_no != null and req_no != ''">
+	  req_no = #{req_no},
+</if>
+    <if test="req_psn != null and req_psn != ''">
+	  req_psn = #{req_psn},
+</if>
+    <if test="unslip_no != null and unslip_no != ''">
+	  unslip_no = #{unslip_no},
+</if>
+    <if test="cancel_slip != null and cancel_slip != ''">
+	  unslip_no = '',
+</if>
+    regst_syspayno = #{regst_syspayno},
+    regst_daytm = SYSDATE
+WHERE ((bsnsyear = #{bsnsyear} AND ddtlbz_id = #{ddtlbz_id} AND dvrq_odr = #{dvrq_odr} )
+       OR req_no = #{req_no} )
+  </update>             
+</mapper>

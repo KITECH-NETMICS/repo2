@@ -1,0 +1,490 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="지식재산권 프로세스 상태 조회">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+				       <w2:key id="mngmt_no" name="mngmt_no" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				
+				<w2:dataMap baseNode="map" id="dma_result">
+				  <w2:keyInfo>
+				       <w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+				       <w2:key id="mngmt_no" name="mngmt_no" dataType="text"></w2:key>
+				       <w2:key id="state" name="state" dataType="text"></w2:key>
+				       <w2:key id="state_desc" name="state_desc" dataType="text"></w2:key>
+				       <w2:key id="job_cd" name="job_cd" dataType="text"></w2:key>
+				       <w2:key id="dom_oversea_clsf" name="dom_oversea_clsf" dataType="text"></w2:key>
+				       <w2:key id="srh_key" name="srh_key" dataType="text"></w2:key>
+				       <w2:key id="srh_state" name="srh_state" dataType="text"></w2:key>
+				       <w2:key id="srh_comp_yn" name="srh_comp_yn" dataType="text"></w2:key>
+				       <w2:key id="exam_key" name="exam_key" dataType="text"></w2:key>
+				       <w2:key id="exam_state" name="exam_state" dataType="text"></w2:key>
+				       <w2:key id="exam_comp_yn" name="exam_comp_yn" dataType="text"></w2:key>
+				       <w2:key id="psc_key" name="psc_key" dataType="text"></w2:key>
+				       <w2:key id="psc_state" name="psc_state" dataType="text"></w2:key>
+				       <w2:key id="psc_comp_yn" name="psc_comp_yn" dataType="text"></w2:key>
+				       <w2:key id="pap_key" name="pap_key" dataType="text"></w2:key>
+				       <w2:key id="pap_state" name="pap_state" dataType="text"></w2:key>
+				       <w2:key id="pap_comp_yn" name="pap_comp_yn" dataType="text"></w2:key>
+				       <w2:key id="pd_key" name="pd_key" dataType="text"></w2:key>
+				       <w2:key id="pd_state" name="pd_state" dataType="text"></w2:key>
+				       <w2:key id="pd_comp_yn" name="pd_comp_yn" dataType="text"></w2:key>
+				       <w2:key id="ppd_key" name="ppd_key" dataType="text"></w2:key>
+				       <w2:key id="ppd_state" name="ppd_state" dataType="text"></w2:key>
+				       <w2:key id="ppd_comp_yn" name="ppd_comp_yn" dataType="text"></w2:key>
+				       <w2:key id="oa_key" name="oa_key" dataType="text"></w2:key>
+				       <w2:key id="oa_state" name="oa_state" dataType="text"></w2:key>
+				       <w2:key id="oa_comp_yn" name="oa_comp_yn" dataType="text"></w2:key>
+				       <w2:key id="reg_key" name="reg_key" dataType="text"></w2:key>
+				       <w2:key id="reg_state" name="reg_state" dataType="text"></w2:key>
+				       <w2:key id="reg_comp_yn" name="reg_comp_yn" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+            
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            
+			<!-- 출원업무 프로세스 상태 조회 -->
+			<xf:submission id="sbm_svcpatpsrmstr02" 
+						   ref='data:json,dma_search' 
+						   target='data:json,{"id":"dma_result","key":"patPsrStaVo"}' 
+						   action="SvcPATPSRMSTR02.pwkjson" 
+						   ev:submitdone="scwin.sbm_svcpatpsrmstr02_done" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+
+
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+			scwin.GLOBAL_VARS = {
+				p_param: com.getParameter(),
+				revParam: {}
+			};
+			
+			scwin.onpageload = function() {
+			
+				dma_search.set("req_no", scwin.GLOBAL_VARS.p_param.req_no);
+				dma_search.set("mngmt_no", scwin.GLOBAL_VARS.p_param.mngmt_no);
+				
+				com.execute(sbm_svcpatpsrmstr02);
+				
+			};
+			
+			scwin.sbm_svcpatpsrmstr02_done = function(e) {
+			
+				com.trimDataCollection(dma_result);
+				
+				var image01 = "url(/cm/images/pat/btn_process_type02.png)";
+				var image02 = "url(/cm/images/pat/btn_process_type01.png)";
+				var image03 = "url(/cm/images/pat/btn_process_type03.png)";
+				
+				var curr_state = dma_result.get("state");
+				var curr_job_cd = dma_result.get("job_cd");
+				if (curr_job_cd == "I20") { // 등록
+				    if (curr_state == "P2000") { // 등록완료
+				        document.getElementById(ps20C.id).style.backgroundImage = image02;
+				        document.getElementById(ps20I.id).style.backgroundImage = image01;
+				        document.getElementById(ps20R.id).style.backgroundImage = image01;
+				        document.getElementById(ps18I.id).style.backgroundImage = image01;
+				        document.getElementById(ps18.id).style.backgroundImage = image01;
+				        document.getElementById(ps156.id).style.backgroundImage = image01;
+				        document.getElementById(ps14C.id).style.backgroundImage = image01;
+				        document.getElementById(ps14.id).style.backgroundImage = image01;
+				        document.getElementById(ps13.id).style.backgroundImage = image01;
+				        document.getElementById(ps12.id).style.backgroundImage = image01;
+				        document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				        document.getElementById(ps20C.id).style.color = "white";
+				        document.getElementById(ps20I.id).style.color = "white";
+				        document.getElementById(ps20R.id).style.color = "white";
+				        document.getElementById(ps18I.id).style.color = "white";
+				        document.getElementById(ps18.id).style.color = "white";
+				        document.getElementById(ps156.id).style.color = "white";
+				        document.getElementById(ps14C.id).style.color = "white";
+				        document.getElementById(ps14.id).style.color = "white";
+				        document.getElementById(ps13.id).style.color = "white";
+				        document.getElementById(ps12.id).style.color = "white";
+				        document.getElementById(ps11.id).style.color = "white";
+				    } else if (curr_state == "P1611" || curr_state == "P1612" || curr_state == "P1613") { // 등록지시 의뢰완료, 접수완료, 결과확인
+				        document.getElementById(ps20I.id).style.backgroundImage = image02;
+				        document.getElementById(ps20R.id).style.backgroundImage = image01;
+				        document.getElementById(ps18I.id).style.backgroundImage = image01;
+				        document.getElementById(ps18.id).style.backgroundImage = image01;
+				        document.getElementById(ps156.id).style.backgroundImage = image01;
+				        document.getElementById(ps14C.id).style.backgroundImage = image01;
+				        document.getElementById(ps14.id).style.backgroundImage = image01;
+				        document.getElementById(ps13.id).style.backgroundImage = image01;
+				        document.getElementById(ps12.id).style.backgroundImage = image01;
+				        document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				        document.getElementById(ps20I.id).style.color = "white";
+				        document.getElementById(ps20R.id).style.color = "white";
+				        document.getElementById(ps18I.id).style.color = "white";
+				        document.getElementById(ps18.id).style.color = "white";
+				        document.getElementById(ps156.id).style.color = "white";
+				        document.getElementById(ps14C.id).style.color = "white";
+				        document.getElementById(ps14.id).style.color = "white";
+				        document.getElementById(ps13.id).style.color = "white";
+				        document.getElementById(ps12.id).style.color = "white";
+				        document.getElementById(ps11.id).style.color = "white";
+				    } else if (curr_state == "P1610") { // 등록결정보고
+				        document.getElementById(ps20R.id).style.backgroundImage = image02;
+				        document.getElementById(ps18I.id).style.backgroundImage = image01;
+				        document.getElementById(ps18.id).style.backgroundImage = image01;
+				        document.getElementById(ps156.id).style.backgroundImage = image01;
+				        document.getElementById(ps14C.id).style.backgroundImage = image01;
+				        document.getElementById(ps14.id).style.backgroundImage = image01;
+				        document.getElementById(ps13.id).style.backgroundImage = image01;
+				        document.getElementById(ps12.id).style.backgroundImage = image01;
+				        document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				        document.getElementById(ps20R.id).style.color = "white";
+				        document.getElementById(ps18I.id).style.color = "white";
+				        document.getElementById(ps18.id).style.color = "white";
+				        document.getElementById(ps156.id).style.color = "white";
+				        document.getElementById(ps14C.id).style.color = "white";
+				        document.getElementById(ps14.id).style.color = "white";
+				        document.getElementById(ps13.id).style.color = "white";
+				        document.getElementById(ps12.id).style.color = "white";
+				        document.getElementById(ps11.id).style.color = "white";
+				    }
+				} else if (curr_job_cd == "I18") { // OA대응
+				    if (curr_state != "P1410") { // OA 접수보고
+				        document.getElementById(ps18I.id).style.backgroundImage = image02;
+				        document.getElementById(ps18.id).style.backgroundImage = image01;
+				        document.getElementById(ps156.id).style.backgroundImage = image01;
+				        document.getElementById(ps14C.id).style.backgroundImage = image01;
+				        document.getElementById(ps14.id).style.backgroundImage = image01;
+				        document.getElementById(ps13.id).style.backgroundImage = image01;
+				        document.getElementById(ps12.id).style.backgroundImage = image01;
+				        document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				        document.getElementById(ps18I.id).style.color = "white";
+				        document.getElementById(ps18.id).style.color = "white";
+				        document.getElementById(ps156.id).style.color = "white";
+				        document.getElementById(ps14C.id).style.color = "white";
+				        document.getElementById(ps14.id).style.color = "white";
+				        document.getElementById(ps13.id).style.color = "white";
+				        document.getElementById(ps12.id).style.color = "white";
+				        document.getElementById(ps11.id).style.color = "white";
+				    } else {
+				        document.getElementById(ps18.id).style.backgroundImage = image02;
+				        document.getElementById(ps156.id).style.backgroundImage = image01;
+				        document.getElementById(ps14C.id).style.backgroundImage = image01;
+				        document.getElementById(ps14.id).style.backgroundImage = image01;
+				        document.getElementById(ps13.id).style.backgroundImage = image01;
+				        document.getElementById(ps12.id).style.backgroundImage = image01;
+				        document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				        document.getElementById(ps18.id).style.color = "white";
+				        document.getElementById(ps156.id).style.color = "white";
+				        document.getElementById(ps14C.id).style.color = "white";
+				        document.getElementById(ps14.id).style.color = "white";
+				        document.getElementById(ps13.id).style.color = "white";
+				        document.getElementById(ps12.id).style.color = "white";
+				        document.getElementById(ps11.id).style.color = "white";
+				    }
+				} else if (curr_job_cd == "I15" || curr_job_cd == "I16") { // 심사청구, 우선심사청구
+				    document.getElementById(ps156.id).style.backgroundImage = image02;
+				    document.getElementById(ps14C.id).style.backgroundImage = image01;
+				    document.getElementById(ps14.id).style.backgroundImage = image01;
+				    document.getElementById(ps13.id).style.backgroundImage = image01;
+				    document.getElementById(ps12.id).style.backgroundImage = image01;
+				    document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				    document.getElementById(ps156.id).style.color = "white";
+				    document.getElementById(ps14C.id).style.color = "white";
+				    document.getElementById(ps14.id).style.color = "white";
+				    document.getElementById(ps13.id).style.color = "white";
+				    document.getElementById(ps12.id).style.color = "white";
+				    document.getElementById(ps11.id).style.color = "white";
+				} else if (curr_job_cd == "I14") { // 출원
+				    if (curr_state == "P1000") { // 출원완료
+				        document.getElementById(ps14C.id).style.backgroundImage = image02;
+				        document.getElementById(ps14.id).style.backgroundImage = image01;
+				        document.getElementById(ps13.id).style.backgroundImage = image01;
+				        document.getElementById(ps12.id).style.backgroundImage = image01;
+				        document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				        document.getElementById(ps14C.id).style.color = "white";
+				        document.getElementById(ps14.id).style.color = "white";
+				        document.getElementById(ps13.id).style.color = "white";
+				        document.getElementById(ps12.id).style.color = "white";
+				        document.getElementById(ps11.id).style.color = "white";
+				    } else {
+				        document.getElementById(ps14.id).style.backgroundImage = image02;
+				        document.getElementById(ps13.id).style.backgroundImage = image01;
+				        document.getElementById(ps12.id).style.backgroundImage = image01;
+				        document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				        document.getElementById(ps14.id).style.color = "white";
+				        document.getElementById(ps13.id).style.color = "white";
+				        document.getElementById(ps12.id).style.color = "white";
+				        document.getElementById(ps11.id).style.color = "white";
+				    }
+				} else if (curr_job_cd == "I13") { // 명세서 작성
+				    document.getElementById(ps13.id).style.backgroundImage = image02;
+				    document.getElementById(ps12.id).style.backgroundImage = image01;
+				    document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				    document.getElementById(ps13.id).style.color = "white";
+				    document.getElementById(ps12.id).style.color = "white";
+				    document.getElementById(ps11.id).style.color = "white";
+				} else if (curr_job_cd == "I12") { // 심의
+				    document.getElementById(ps12.id).style.backgroundImage = image02;
+				    document.getElementById(ps11.id).style.backgroundImage = image01;
+				
+				    document.getElementById(ps12.id).style.color = "white";
+				    document.getElementById(ps11.id).style.color = "white";
+				} else if (curr_job_cd == "I11") {
+				    document.getElementById(ps11.id).style.backgroundImage = image02;
+				    document.getElementById(ps11.id).style.color = "white";
+				}
+			};
+			
+			
+			scwin.go_detail = async function(state) {
+			
+			/*
+				IA37
+				IA33
+				IA28
+				IA25
+				IA22
+				IA18
+				IA14
+				IA65 // 지재권 소연심의 상세조회
+			
+				TO-DO
+				IA71 // 지심의 상세조회
+				
+			*/
+			
+			    var req_no = scwin.GLOBAL_VARS.p_param.req_no;
+			    var mngmt_no = scwin.GLOBAL_VARS.p_param.mngmt_no;
+			    var ref_no = "";
+			    var callXmlId = "";
+			    var serviceid = "";
+			    var ref_key = "";
+			    var isPopup = "Y";
+			
+			    // 등록
+			    if (state == "I20") {
+			        ref_key = dma_result.get("reg_key");
+			        serviceid = "IA37"
+			        // oa
+			    } else if (state == "I18") {
+			        ref_key = dma_result.get("oa_key");
+			        serviceid = "IA33";
+			        // 심사청구
+			    } else if (state == "I156") {
+			        ref_key = dma_result.get("ppd_key");
+			        serviceid = "IA28";
+			        if (ref_key == "") {
+			            ref_key = dma_result.get("pd_key");
+			            serviceid = "IA25";
+			        }
+			        // 출원
+			    } else if (state == "I14") {
+			        ref_key = dma_result.get("pap_key");
+			        serviceid = "IA22";
+			        // 명세서
+			    } else if (state == "I13") {
+			        ref_key = dma_result.get("psc_key");
+			        serviceid = "IA18";
+			        // 심의
+			    } else if (state == "I12") {
+			        if (dma_result.get("dom_oversea_clsf") == "PNT010") {
+			            ref_key = dma_result.get("exam_key");
+			            serviceid = "IA65";
+			        } else {
+			            ref_key = dma_result.get("exam_key");
+			            serviceid = "IA71";
+			        }
+			
+			        // 선행기술조사
+			    } else if (state == "I11") {
+			        ref_key = dma_result.get("srh_key");
+			        serviceid = "IA14";
+			        // 발명신고
+			    } else if (state == "I01") {
+			        ref_key = dma_result.get("req_no");
+			        callXmlId = "I130";
+			        req_no = ref_key;
+			
+			        com.openTabMenu("I110", { req_no: ref_key });
+			
+			        return;
+			    }
+			    ref_no = ref_key;
+			
+			    if (ref_key == "") {
+			        com.alert("업무 데이터가 존재하지 않습니다.");
+			        return;
+			    }
+			
+			    const munuObj = await com.getMenuObj(serviceid);
+		
+			    const data = {
+			    	req_no: req_no,
+					mngmt_no: mngmt_no,
+					ref_no: ref_no,
+					callXmlId: callXmlId,
+					serviceid: serviceid,
+					isPopup: isPopup
+			    };
+			
+			    const popUp = { OPTION : { width: 950, height: 750, id: munuObj.serviceID, popupName: munuObj.cn},  URL : munuObj.serviceNewUrl};
+			
+			    com.pop.open(popUp, data, function(ret) {});
+			
+			    /*const params = [
+			        `req_no=${req_no}`,
+			        `mngmt_no=${mngmt_no}`,
+			        `ref_no=${ref_no}`,
+			        `callXmlId=${callXmlId}`,
+			        `serviceid=${serviceid}`,
+			        `isPopup=${isPopup}`
+			    ];
+			    const baseUrl = gcm.baseUrls.oldBizUrl + "/websquare/popup.html?w2xPath=/kitech/pat/psr/PatPsrPopDtl.xml";
+			    const windowFeatures = "width=1030,height=660,scrollbars=true,resizable=true";
+			    const url = `${baseUrl}&${params.join('&')}`;
+			
+			    window.open(url, "_blank", windowFeatures);*/
+			};
+			
+			scwin.onpageunload = function() {
+				
+			};
+		
+		]]></script>
+	<style><![CDATA[
+   		.top-div:after {
+		    position: absolute;
+		    content: '';
+		    width: 853px;
+		    height: 100%;
+		    border-bottom: 1px solid #b9c3d1;
+		    left: -13px;
+		    top: 1px;
+		}
+   	]]></style>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pageWrap" id="" style="">
+    		<xf:group class="titleSection" id="" style="">
+    			<w2:textbox class="tit_tbl" id="" label="프로세스" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+			<xf:group id="group1" class="" style="position:relative;left:0px;top:0px;width:974px;height:347px;">
+	    		<xf:group id="group2" class="" style="border: 1px solid #b9c3d1;position: absolute;left:0px;top:51px;width:974px;height: 274px;">
+	    			<w2:textbox id="textbox3" style="border-right: 1px solid #b9c3d1;background-color: #eaeaea;position: absolute;left: 0px;top: 0px;width:120px;height:138px;text-align:center;line-height : 125px;font-weight : bold;" label="출원" class="labelC"></w2:textbox>
+	    			<w2:textbox class="labelC" id="textbox4" label="등록" style="border-top: 1px solid #b9c3d1;background-color: #eaeaea;position: absolute;left:0px;top:134px;width:120px;height:138px;text-align: center;line-height : 125px;font-weight : bold;border-right: 1px solid #b9c3d1;"></w2:textbox>
+	    			<w2:textbox id="textbox5" style="position: absolute ;left:132px;top:0px;width:833px;height:134px;background-image:url(/cm/images/pat/bg_arrow.png);" label="" class="fieldL top-div"></w2:textbox>
+	    			<w2:textbox class="fieldL" id="textbox6" label="" style="position: absolute ;left:132px;top:134px;width:833px;height:138px;background-image:url(/cm/images/pat/bg_arrow.png);"></w2:textbox>
+	    			<w2:textbox id="ps01" dataType="text"
+	    				style='position: absolute ;height:49px;text-align: center;width:100px;left:140px;color: white;font-weight: bold;top:10px;line-height : 45px;cursor: pointer;font-weight : bold;background-image:url(/cm/images/pat/btn_process_type02.png);'
+	    				class="" label="발명신고" displayFormat="" displayFormatter="" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I01");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps11" label="선행기술조사"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 45px;left:276px;font-weight: bold;top:10px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I11");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps12" label="심의"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 45px;left:412px;font-weight: bold;top:10px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I12");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps13" label="명세서작성"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 45px;left:551px;font-weight: bold;top:10px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I13");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps14" label="출원지시"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 45px;left:690px;font-weight: bold;top:10px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I14");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox id="ps14C" dataType="text"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 45px;left:828px;font-weight: bold;top:10px;background-image:url(/cm/images/pat/btn_process_type03.png);" class=""
+	    				label="출원완료" displayFormat="" displayFormatter="" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I14");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps14G" label="출원진행&lt;br/&gt;포기"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 25px;left:828px;font-weight: bold;top:74px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label" escape="false">
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps156" label="심사청구"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 45px;left:140px;font-weight: bold;top:145px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I156");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps18" label="OA접수&lt;br/&gt;보고"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 25px;left:276px;font-weight: bold;top:145px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label" escape="false">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I18");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps18I" label="OA대응"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 45px;left:412px;font-weight: bold;top:145px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I18");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps20R" label="등록결정&lt;br/&gt;보고"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 25px;left:551px;font-weight: bold;top:145px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label" escape="false">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I20");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps20I" label="등록지시"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 45px;left:690px;font-weight: bold;top:145px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[ 
+	    					scwin.go_detail("I20");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps20C" label="등록완료"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 45px;left:828px;font-weight: bold;top:145px;background-image:url(/cm/images/pat/btn_process_type03.png);" tagname="label">
+	    				<script type="javascript" ev:event="onclick"><![CDATA[
+	    					scwin.go_detail("I20");
+	    				]]></script>
+	    			</w2:textbox>
+	    			<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="ps20G" label="등록진행&lt;br/&gt;포기"
+	    				style="position: absolute ;cursor: pointer;height:49px;text-align: center;width:100px;line-height : 25px;left:828px;font-weight: bold;top:209px;background-image:url(/cm/images/pat/btn_process_type03.png);" ref="" localeRef=""
+	    				for="" tagname="label" escape="false">
+	    			</w2:textbox>
+	    		</xf:group>
+	    		<w2:textbox id="textbox7" style="position: absolute ;height:23px;color: white;text-align: center;line-height : 23px;width:89px;left: 657px;font-weight: bold;top:15px;background-image:url(/cm/images/pat/btn_process_type02.png);"
+	    			label="진행완료" class="" displayFormat="" displayFormatter="" dataType="text" tagname="label">
+	    		</w2:textbox>
+	    		<w2:textbox class="" dataType="text" displayFormat="" displayFormatter="" id="textbox8" label="현재진행"
+	    			style="position: absolute ;height:23px;color: white;text-align: center;line-height : 23px;width: 89px;left:764px;font-weight: bold;background-image:url(/cm/images/pat/btn_process_type01.png);top:15px;" tagname="label">
+	    		</w2:textbox>
+	    		<w2:textbox id="textbox9" dataType="text" style="position: absolute ;height:23px;text-align: center;line-height : 23px;width: 89px;left:869px;font-weight: bold;background-image:url(/cm/images/pat/btn_process_type03.png);top:15px;" class=""
+	    			label="미진행" displayFormat="" displayFormatter="" tagname="label">
+	    		</w2:textbox>
+	    	</xf:group>
+    	</xf:group>
+    </body>
+</html>

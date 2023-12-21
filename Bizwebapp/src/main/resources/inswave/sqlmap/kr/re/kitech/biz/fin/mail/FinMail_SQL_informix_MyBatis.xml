@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.mail">
+<!-- 소액물품 검수결의 결재완료 후 메일발송을 위한 조회 -->
+<select id="selectFspSmlItmCheckupHMail" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.mail.vo.SmlItmCheckMailVo">
+SELECT /* kr.re.kitech.biz.fin.mail.selectFspSmlItmCheckupHMail */
+       a.check_no
+     , a.check_amt
+     , a.rmk
+     , a.accnt_no||'/'||a.expns_cd AS accnt_expns
+     , a.delvr_ymd
+     , a.check_ymd
+     , a.expns_cd
+     , b.email AS check_psn_email
+     , c.email AS entsch_check_psn_email
+     , group_concat(fun_humbasicinfo_cd_nm(f.syspayno, 11)) AS chgr_psn_email
+  FROM fspsmlitmcheckuph a 
+  JOIN humbasicinfo b ON a.check_psn = b.syspayno
+  JOIN humbasicinfo c ON a.entsch_check_psn = c.syspayno
+  JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+  JOIN humbasicinfo h ON r.accnt_rspns = h.syspayno
+  LEFT JOIN xodrdeptpurman f ON h.dept_cd = f.dept_cd AND h.dept_new_ymd = f.dept_new_ymd AND f.role_type = 'ASS'
+ WHERE a.unslip_no = #{unslip_no} 
+   AND a.aset_reg='Y'
+ GROUP BY 1,2,3,4,5,6,7,8,9
+</select>
+
+<!-- 매출계산서(관) 미처리이메일전송을 위한 조회 -->
+<select id="selectFtxBillForEmail" parameterType="kr.re.kitech.biz.fin.tax.vo.FinTaxSearchVo" resultType="kr.re.kitech.biz.fin.mail.vo.FinBillEmailSendVo">
+SELECT /* kr.re.kitech.biz.fin.mail.selectFtxBillForEmail */
+       TRIM(a.tax_bill_no) AS bill_no
+     , a.unslip_no 
+     , a.accnt_no
+     , TO_CHAR(TO_DATE(a.issu_ymd, '%Y%m%d'), '%Y-%m-%d') AS issu_ymd                     
+     , c.bsns_psn_regst_no
+     , TRIM(c.vend_abbr) AS vend_abbr            
+     , NVL(a.suply_value, 0) AS suply_value 
+     , DECODE(b.work_clsf, 'HAG010', trim(b.email), DECODE(NVL(d.work_clsf, ''), '', '', trim(d.email))) AS email
+     , DECODE(b.work_clsf, 'HAG010', a.wrte_psn, DECODE(NVL(d.work_clsf, ''), '', '', d.syspayno)) AS wrte_psn
+     , DECODE(b.work_clsf, 'HAG010', b.nm, DECODE(NVL(d.work_clsf, ''), '', '', d.nm)) AS wrte_psn_nm                 
+  FROM ftxbillh a
+  JOIN xodfvend c ON a.sude_psn = c.vend_cd
+  JOIN humbasicinfo b ON a.wrte_psn = b.syspayno 
+  LEFT JOIN fspsliph e ON a.unslip_no = e.unslip_no
+  LEFT JOIN humbasicinfo d ON a.updt_syspayno = d.syspayno 
+ WHERE a.issu_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+   AND a.tax_bill_no IN
+  <foreach item="bill_no" index="index" collection="bill_no_list.split(',')" open="(" separator="," close=")"> '${bill_no}' </foreach>
+   AND NVL(e.decsn_ex, 'N') = 'N'
+   AND nvl(a.prcs_clsf, '') NOT IN ('D','U')
+ ORDER BY a.wrte_psn
+</select>
+
+<!-- 매입계산서(관) 미처리이메일전송을 위한 조회 -->
+<select id="selectKtxBillForEmail" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo" resultType="kr.re.kitech.biz.fin.mail.vo.FinBillEmailSendVo">
+SELECT /* kr.re.kitech.biz.fin.mail.selectKtxBillForEmail */
+       a.issu_seqno AS bill_no
+     , TO_CHAR(TO_DATE(a.regs_date, '%Y%m%d'), '%Y-%m-%d') AS issu_ymd
+     , a.issu_id            
+     , a.selr_corp_no AS bsns_psn_regst_no
+     , a.selr_corp_nm AS vend_abbr       
+     , a.chrg_amt AS suply_value 
+     , a.tax_amt AS tax_amt
+     , a.totl_amt         
+     , DECODE(NVL(b.work_clsf,''),'HAG090', x0.email, b.email) AS email
+     , a.wrte_psn
+     , DECODE(NVL(b.work_clsf,''),'HAG090', b.nm||'(퇴직자)', b.nm) AS wrte_psn_nm                
+  FROM ktx_issu_mstr a
+  JOIN humbasicinfo b ON a.wrte_psn = b.syspayno 
+  JOIN (SELECT NVL(MAX(x1.email), 'rimjk@kitech.re.kr') AS email -- 재정운영실 세무담당자(만일을 대비한 임자경 사무원 사번세팅)
+          FROM roleusertable x0
+          JOIN humbasicinfo x1 ON SUBSTRING_INDEX(x1.email, '@', 1) = x0.empcode
+         WHERE x0.rolecode = '1002207' AND x1.retire_ymd = ''
+       ) x0 ON 1=1
+ WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+   AND NVL(a.tax_returns_yn, 'N') = 'N'
+   AND NVL(a.unslip_no, '') = ''
+   AND length(a.issu_id) = 24
+   AND a.company_code = 'KTX'
+   AND a.stat_code IS NOT NULL
+ ORDER BY a.wrte_psn
+</select>
+</mapper>

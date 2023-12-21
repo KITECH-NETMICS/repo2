@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ass.app">
+	<select id="selectAssAppChaReqList" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqSrchVo" resultType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqVo">
+		SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssAppChaReqList */ 
+			t1.req_no,
+			t1.aset_no,
+			t2.aset_nm,
+			t2.intro_ymd,
+			t2.intro_amt,
+			t1.cause,
+			t1.trans_syspayno,
+			t4.nm AS trans_nm,
+			t4.empno AS trans_empno,
+			t1.receipt_syspayno,
+			t5.nm AS receipt_nm,
+			t5.empno AS receipt_empno,
+			t6.apr_state
+		FROM assreceipttrans t1
+		JOIN assmastrh t2 ON t1.aset_no = t2.aset_no
+		JOIN assmastrb t3 ON t1.aset_no = t3.aset_no
+		JOIN humbasicinfo t4 ON t1.trans_syspayno = t4.syspayno
+		JOIN humbasicinfo t5 ON t1.receipt_syspayno = t5.syspayno
+		JOIN xomxintfatab t6 ON t1.req_no = t6.req_no
+		WHERE t2.aset_typ = #{aset_typ}
+		<if test="user_syspayno != null and user_syspayno != ''">
+			<if test='clsf == "Y"'>
+				AND (t1.trans_syspayno = #{user_syspayno} OR t1.wrte_syspayno = #{user_syspayno})
+			</if>
+		</if>
+		<if test="user_syspayno != null and user_syspayno != ''">
+			<if test='clsf == "N"'>
+				AND t1.receipt_syspayno = #{user_syspayno}
+			</if>
+		</if>
+		<if test="req_no != null and req_no != ''">
+			AND t1.req_no = #{req_no}
+		</if>
+		<if test="aset_no != null and aset_no != ''">
+			AND (t1.aset_no = #{aset_no} OR t3.old_aset_no = #{aset_no})
+		</if>
+		<if test="apr_state != null and apr_state != ''">
+			AND t6.apr_state >= 'XAD060'
+		</if>
+		<if test='couse_clsf == "Y"'>
+			AND t1.couse_clsf = 'Y'
+		</if>
+		ORDER BY t1.req_no DESC, t1.aset_no
+	</select>
+	<select id="selectAssAppChaReqDetailList" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqSrchVo" resultType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo">
+		SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssAppChaReqDetail */ 
+				 t1.req_no ,   /* 신청번호  */
+		       t3.couse_clsf ,   /* 공용구분  */
+		       fun_xodxcommst_cd_nm(t3.couse_clsf, 0) AS couse_clsf_n,   /* 공용구분명*/
+		       t10.nm              AS user_nm              ,   /* 사용자이름 */
+		       t10.empno           AS user_empno           ,   /* 사용자개인번호 */
+		       t5.dept_nm          AS trans_dept_nm        ,   /* 인계자 부서명*/
+		       t4.nm               AS trans_nm             ,   /* 인계자 성명*/
+		       t4.empno            AS trans_empno          ,   /* 인계자 개인번호*/
+		       t4.syspayno         AS trans_syspayno       ,
+		       t4.dept_cd          AS trans_dept_cd        ,
+		       t4.dept_new_ymd     AS trans_dept_new_ymd   ,
+		       t4.email            AS trans_email          ,   /* 인계자 이메일*/
+		       t4.ext_no           AS trans_ext_no         ,   /* 인계자 연락처*/
+		       t6.nm               AS trans_respn_nm       ,   /* 인계자 부서장명*/
+		       t6.empno            AS trans_respn_empno    ,   /* 인계자 부서장개인번호*/
+		       t8.dept_nm          AS receipt_dept_nm      ,   /* 인수자 부서명*/
+		       t7.nm               AS receipt_nm           ,   /* 인수자명*/
+		       t7.empno            AS receipt_empno        ,   /* 인수자 개인번호*/
+		       t7.syspayno         AS receipt_syspayno     ,
+		       t7.dept_cd          AS receipt_dept_cd      ,
+		       t7.dept_new_ymd     AS receipt_dept_new_ymd ,
+		       t7.email            AS receipt_email        ,   /* 인수자 이메일*/
+		       t7.ext_no           AS receipt_ext_no       ,   /* 인수자 연락처*/
+		       t9.nm               AS receipt_respn_nm     ,   /* 인수자 부서장명*/
+		       t9.empno            AS receipt_respn_empno  ,   /* 인수자 부서장 개인번호*/
+		    t1.aset_no      ,   /* 자산번호*/
+		       t1.cause    ,   /* 사유*/
+		       t1.attach_file_no,
+		       t2.aset_clsf,   /* 자산분류*/
+		       fun_xodxcommst_cd_nm(t2.aset_clsf, 0) AS aset_clsf_nm ,   /* 자산분류명*/
+		       t2.aset_typ                                           ,   /* 자산구분*/
+		       fun_xodxcommst_cd_nm(t2.aset_typ, 0) AS aset_typ_nm   ,   /* 자산구분명*/
+		       t2.aset_nm      ,   /* 품명*/
+		       t3.old_aset_no  ,   /* 구자산번호*/
+		       t3.main_sub_clsf,   /* 메인서브구분*/
+		       fun_xodxcommst_cd_nm(t3.main_sub_clsf, 0) AS main_sub_clsf_nm   ,   /* 메인서브구분명*/
+		       t2.intro_ymd    ,   /* 도입일자*/
+		       t2.intro_amt    ,   /* 도입금액*/
+		       t3.posi_region  ,   /* 위치지역*/
+		       fun_xodxcommst_cd_nm(t3.posi_region, 0) AS posi_region_nm,   /* 위치지역명*/
+		       t3.posi_build ,   /* 위치건물*/
+		       fun_xodxcommst_cd_nm(t3.posi_build, 0)  AS posi_build_nm ,   /* 위치건물명*/
+		       t3.posi_floor ,   /* 위치층*/
+		       t3.posi_detls,   /* 위치상세*/
+		       a.apr_state,
+		       t5.fomat_unit AS fomatUnit1, -- 인계자 편성단위
+		       t8.fomat_unit AS fomatUnit2,
+		       t1.posi_region AS receipt_posi_region,
+		       fun_xodxcommst_cd_nm(t1.posi_region, 0) AS receipt_posi_region_nm, 
+		       t1.posi_build AS receipt_posi_build,
+		       fun_xodxcommst_cd_nm(t1.posi_build, 0) AS receipt_posi_build_nm, 
+		       t1.posi_floor AS receipt_posi_floor,
+		       t1.posi_detls AS receipt_posi_detls
+		FROM assreceipttrans t1
+		JOIN assmastrh t2 ON t1.aset_no = t2.aset_no
+		JOIN assmastrb t3 ON t1.aset_no = t3.aset_no
+		JOIN humbasicinfo t4 ON t1.trans_syspayno = t4.syspayno  -- 인계자
+		JOIN xodhdeptinfo t5 ON t4.dept_cd = t5.dept_cd AND t4.dept_new_ymd = t5.dept_new_ymd -- 인계자 부서
+		JOIN humbasicinfo t7 ON t1.receipt_syspayno = t7.syspayno -- 인수자
+		JOIN xodhdeptinfo t8 ON t7.dept_cd = t8.dept_cd AND t7.dept_new_ymd = t8.dept_new_ymd
+		JOIN humbasicinfo t10 ON t3.user_syspayno = t10.syspayno
+		JOIN xomxintfatab a ON t1.req_no = a.req_no
+		LEFT JOIN humbasicinfo t6 ON t5.depthed = t6.syspayno
+		LEFT JOIN humbasicinfo t9 ON t8.depthed = t9.syspayno
+		WHERE t1.req_no = #{req_no}
+		ORDER BY t2.aset_clsf, t1.aset_no
+	</select>
+	<select id="selectAssAppChaReqRgstChk" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo" resultType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo">
+SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssAppChaReqRgstChk */ 
+			COUNT(req_no) AS cnt
+		FROM assreceipttrans
+		WHERE req_no  = #{req_no}
+		<if test="aset_no != null and aset_no != ''">
+			AND aset_no = #{aset_no}
+		</if>
+</select>
+	<select id="selectAssAppChaReqExstChk" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo" resultType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo">
+SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssAppChaReqExistChk */ 
+			COUNT(a.req_no) AS cnt
+		FROM assreceipttrans a
+		INNER JOIN xomxintfatab b ON a.req_no = b.req_no
+		WHERE a.aset_no = #{aset_no}
+		AND b.apr_state <![CDATA[ <> ]]> 'XAD100'
+</select>
+	<insert id="insertAssAppChaReq" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo">
+		INSERT /* QueryID : kr.re.kitech.biz.ass.app.insertAssReceiptTrans */ 
+		INTO assreceipttrans(
+			req_no
+			, aset_no
+			, wrte_syspayno
+			, trans_syspayno
+			, trans_dept_cd
+			, trans_dept_cd_new_ymd
+			, receipt_syspayno
+			, receipt_dept_cd
+			, receipt_dept_cd_new_ymd
+			, receipt_affir_syspayno
+			, receipt_affir_ymd
+			, posi_region
+			, posi_build
+			, posi_floor
+			, posi_detls
+			, mngmt_mbody_affir_syspayno
+			, mngmt_mbody_affir_ymd
+			, cause
+			, attach_file_no
+			, decidarb_item
+			, couse_clsf
+			, regst_syspayno
+			, regst_daytm
+		) VALUES (
+			#{req_no}
+			, #{aset_no}
+			, #{wrte_syspayno}
+			, #{trans_syspayno}
+			, #{trans_dept_cd}
+			, #{trans_dept_cd_new_ymd}
+			, #{receipt_syspayno}
+			, #{receipt_dept_cd}
+			, #{receipt_dept_cd_new_ymd}
+			, #{receipt_affir_syspayno}
+			, #{receipt_affir_ymd}
+			, #{posi_region}
+			, #{posi_build}
+			, #{posi_floor}
+			, #{posi_detls}
+			, #{mngmt_mbody_affir_syspayno}
+			, #{mngmt_mbody_affir_ymd}
+			, #{cause}
+			, #{attach_file_no}
+			, #{decidarb_item}
+			, #{couse_clsf}
+			, #{regst_syspayno}
+			, CURRENT
+		)
+	</insert>
+	<update id="updateAssAppChaReq" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo">
+		UPDATE /* QueryID : kr.re.kitech.biz.ass.app.updateAssAppChaReq */
+			assreceipttrans
+		SET
+			<if test="wrte_syspayno != null and wrte_syspayno != ''">
+				wrte_syspayno = #{wrte_syspayno}
+			</if>
+			<if test="trans_syspayno != null and trans_syspayno != ''">
+				, trans_syspayno = #{trans_syspayno}
+			</if>
+			<if test="trans_dept_cd != null and trans_dept_cd != ''">
+				, trans_dept_cd = #{trans_dept_cd}
+			</if>
+			<if test="trans_dept_cd_new_ymd != null and trans_dept_cd_new_ymd != ''">
+				, trans_dept_cd_new_ymd = #{trans_dept_cd_new_ymd}
+			</if>
+			<if test="receipt_syspayno != null and receipt_syspayno != ''">
+				, receipt_syspayno = #{receipt_syspayno}
+			</if>
+			<if test="receipt_dept_cd != null and receipt_dept_cd != ''">
+				, receipt_dept_cd = #{receipt_dept_cd}
+			</if>
+			<if test="receipt_dept_cd_new_ymd != null and receipt_dept_cd_new_ymd != ''">
+				, receipt_dept_cd_new_ymd = #{receipt_dept_cd_new_ymd}
+			</if>
+			<if test="receipt_affir_syspayno != null and receipt_affir_syspayno != ''">
+				, receipt_affir_syspayno = #{receipt_affir_syspayno}
+			</if>
+			<if test="receipt_affir_ymd != null and receipt_affir_ymd != ''">
+				, receipt_affir_ymd = #{receipt_affir_ymd}
+			</if>
+			<if test="posi_region != null and posi_region != ''">
+				, posi_region = #{posi_region}
+			</if>
+			<if test="posi_build != null and posi_build != ''">
+				, posi_build = #{posi_build}
+			</if>
+			<if test="posi_floor != null and posi_floor != ''">
+				, posi_floor = #{posi_floor}
+			</if>
+			<if test="posi_detls != null and posi_detls != ''">
+				, posi_detls = #{posi_detls}
+			</if>
+			<if test="mngmt_mbody_affir_syspayno != null and mngmt_mbody_affir_syspayno != ''">
+				, mngmt_mbody_affir_syspayno = #{mngmt_mbody_affir_syspayno}
+			</if>
+			<if test="mngmt_mbody_affir_ymd != null and mngmt_mbody_affir_ymd != ''">
+				, mngmt_mbody_affir_ymd = #{mngmt_mbody_affir_ymd}
+			</if>
+			<if test="cause != null and cause != ''">
+				, cause = #{cause}
+			</if>
+			<if test="attach_file_no != null and attach_file_no != ''">
+				, attach_file_no = #{attach_file_no}
+			</if>
+			<if test="decidarb_item != null and decidarb_item != ''">
+				, decidarb_item = #{decidarb_item}
+			</if>
+			, updt_syspayno = #{updt_syspayno}
+			, regst_daytm = CURRENT
+		WHERE req_no  = #{req_no}
+		AND aset_no = #{aset_no}
+	</update>
+	<delete id="deleteAssAppChaReq" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo">
+		DELETE /* QueryID : kr.re.kitech.biz.ass.app.deleteAssAppChaReq */ 
+		FROM assreceipttrans
+		WHERE req_no = #{req_no}
+		<if test="aset_no != null and aset_no != ''">
+			AND aset_no = #{aset_no}
+		</if>
+	</delete>
+	<select id="selectDeptManager" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqSrchVo" resultType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqVo">
+		SELECT /* QueryID : kr.re.kitech.biz.epu.com.selectDeptManager */ 
+		    A.syspayno AS syspayno,
+		    C.empno AS empno,
+		    C.nm AS nm
+		FROM xodrdeptpurman A
+		JOIN humbasicinfo B
+		ON A.dept_cd = B.dept_cd 
+		AND A.dept_new_ymd = B.dept_new_ymd
+		JOIN humbasicinfo C
+		ON A.syspayno = C.syspayno
+		WHERE A.role_type = #{role_type}
+		AND B.syspayno = #{syspayno}
+	</select>
+	<update id="updateAssReceiptTransPosi" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo">
+		UPDATE /* QueryID : kr.re.kitech.biz.ass.app.updateAssReceiptTrans */
+			assreceipttrans
+		SET
+		<if test="wrte_syspayno != null and wrte_syspayno != ''">
+			wrte_syspayno               = #{wrte_syspayno},
+		</if>
+		<if test="trans_syspayno != null and trans_syspayno != ''">
+			trans_syspayno              = #{trans_syspayno},
+		</if>
+		<if test="trans_dept_cd != null and trans_dept_cd != ''">
+			trans_dept_cd               = #{trans_dept_cd},
+		</if>
+		<if test="trans_dept_cd_new_ymd != null and trans_dept_cd_new_ymd != ''">
+			trans_dept_cd_new_ymd       = #{trans_dept_cd_new_ymd},
+		</if>
+		<if test="receipt_syspayno != null and receipt_syspayno != ''">
+			receipt_syspayno            = #{receipt_syspayno},
+		</if>
+		<if test="receipt_dept_cd != null and receipt_dept_cd != ''">
+			receipt_dept_cd             = #{receipt_dept_cd},
+		</if>
+		<if test="receipt_dept_cd_new_ymd != null and receipt_dept_cd_new_ymd != ''">
+			receipt_dept_cd_new_ymd     = #{receipt_dept_cd_new_ymd},
+		</if>
+		<if test="receipt_affir_syspayno != null and receipt_affir_syspayno != ''">
+			receipt_affir_syspayno      = #{receipt_affir_syspayno},
+		</if>
+		<if test="receipt_affir_ymd != null and receipt_affir_ymd != ''">
+			receipt_affir_ymd           = #{receipt_affir_ymd},
+		</if>
+		<if test="posi_region != null and posi_region != ''">
+			posi_region                 = #{posi_region},
+		</if>
+		<if test="posi_build != null and posi_build != ''">
+			posi_build                  = #{posi_build},
+		</if>
+		<if test="posi_floor != null and posi_floor != ''">
+			posi_floor                  = #{posi_floor},
+		</if>
+		<if test="posi_detls != null and posi_detls != ''">
+			posi_detls                  = #{posi_detls},
+		</if>
+		<if test="mngmt_mbody_affir_syspayno != null and mngmt_mbody_affir_syspayno != ''">
+			mngmt_mbody_affir_syspayno  = #{mngmt_mbody_affir_syspayno},
+		</if>
+		<if test="mngmt_mbody_affir_ymd != null and mngmt_mbody_affir_ymd != ''">
+			mngmt_mbody_affir_ymd       = #{mngmt_mbody_affir_ymd},
+		</if>
+		<if test="cause != null and cause != ''">
+			cause                       = #{cause},
+		</if>
+		<if test="decidarb_item != null and decidarb_item != ''">
+			decidarb_item               = #{decidarb_item},
+		</if>
+		updt_syspayno               = #{updt_syspayno},
+		regst_daytm                 = CURRENT
+		WHERE req_no  = #{req_no}
+		AND aset_no = #{aset_no}
+	</update>
+	<update id="updateCntReceptTransProc" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppChaReqDetailVo">
+		UPDATE /* QueryID : kr.re.kitech.biz.ass.reg.updateAssMastrB */ 
+			assmastrb
+		SET
+		<if test="aset_nm != null and aset_nm != ''">
+			aset_nm             = #{aset_nm},
+		</if>   /* 자산명               */ 
+		<if test="couse_clsf != null and couse_clsf != ''">
+			couse_clsf          = #{couse_clsf},
+		</if>   /* 공용구분             */ 
+		<if test="equip_cd != null and equip_cd != ''">
+			equip_cd            = #{equip_cd},
+		</if>   /* 장비코드             */ 
+		<if test="user_syspayno != null and user_syspayno != ''">
+			user_syspayno       = #{user_syspayno},
+		</if>   /* 사용자시스템개인번호 */         
+		<if test="model_nm != null and model_nm != ''">
+			  model_nm            = #{model_nm},
+		</if>   /* 모델명               */ 
+		    <if test="tech_equip_nm != null and tech_equip_nm != ''">
+			  tech_equip_nm       = #{tech_equip_nm},
+		</if>   /* 기술장비명           */ 
+		    <if test="equip_state != null and equip_state != ''">
+			  equip_state         = #{equip_state},
+		</if>   /* 장비상태             */ 
+		    <if test="mfg_natn != null and mfg_natn != ''">
+			  mfg_natn            = #{mfg_natn},
+		</if>   /* 제조국가             */ 
+		    <if test="contrct_vend != null and contrct_vend != ''">
+			  contrct_vend        = #{contrct_vend},
+		</if>   /* 계약업체             */ 
+		    <if test="suply_vend != null and suply_vend != ''">
+			  suply_vend          = #{suply_vend},
+		</if>   /* 공급업체             */ 
+		    <if test="mfg_vend != null and mfg_vend != ''">
+			  mfg_vend            = #{mfg_vend},
+		</if>   /* 제조업체             */ 
+		    <if test="finnc != null and finnc != ''">
+			  finnc               = #{finnc},
+		</if>   /* 재원                 */ 
+		    <if test="curncy_unit != null and curncy_unit != ''">
+			  curncy_unit         = #{curncy_unit},
+		</if>   /* 통화단위             */ 
+		    <if test="unit != null and unit != ''">
+			  unit                = #{unit},
+		</if>   /* 단위                 */ 
+		    <if test="qty != null and qty != ''">
+			  qty                 = #{qty},
+		</if>   /* 수량                 */ 
+		    <if test="move_clsf != null and move_clsf != ''">
+			  move_clsf           = #{move_clsf},
+		</if>   /* 이동구분             */ 
+		    <if test="equip_region != null and equip_region != ''">
+			  equip_region        = #{equip_region},
+		</if>   /* 장비지역             */ 
+		    <if test="intro_way != null and intro_way != ''">
+			  intro_way           = #{intro_way},
+		</if>   /* 도입방법             */ 
+		    <if test="mngmt_start_ymd != null and mngmt_start_ymd != ''">
+			  mngmt_start_ymd     = #{mngmt_start_ymd},
+		</if>   /* 관리시작일자         */ 
+		    <if test="mngmt_cls_ymd != null and mngmt_cls_ymd != ''">
+			  mngmt_cls_ymd       = #{mngmt_cls_ymd},
+		</if>   /* 관리종료일자         */ 
+		    <if test="acq_yr != null and acq_yr != ''">
+			  acq_yr              = #{acq_yr},
+		</if>   /* 취득년도             */ 
+		    <if test="contnt_yrs != null and contnt_yrs != ''">
+			  contnt_yrs          = #{contnt_yrs},
+		</if>   /* 내용년수             */ 
+		    <if test="equip_use_fee != null and equip_use_fee != ''">
+			  equip_use_fee       = #{equip_use_fee},
+		</if>   /* 장비사용료           */ 
+		    <if test="use_esti_time != null and use_esti_time != ''">
+			  use_esti_time       = #{use_esti_time},
+		</if>   /* 사용추정시간         */ 
+		    <if test="keep_clsf != null and keep_clsf != ''">
+			  keep_clsf           = #{keep_clsf},
+		</if>   /* 미보유자산구분       */         
+		    <if test="slip_no != null and slip_no != ''">
+			  slip_no             = #{slip_no},
+		</if>   /* 결의번호             */ 
+		    <if test="slip_odr != null and slip_odr != ''">
+			  slip_odr            = #{slip_odr},
+		</if>   /* 결의순번             */ 
+		    <if test="techsup_clsf != null and techsup_clsf != ''">
+			  techsup_clsf        = #{techsup_clsf},
+		</if>   /* 기술지원구분         */ 
+		    <if test="usg_desc != null and usg_desc != ''">
+			  usg_desc            = #{usg_desc},
+		</if>   /* 용도설명             */ 
+		    <if test="attach_file_no != null and attach_file_no != ''">
+			  attach_file_no      = #{attach_file_no},
+		</if>   /* 첨부파일번호         */ 
+		    <if test="homepg_link_clsf != null and homepg_link_clsf != ''">
+			  homepg_link_clsf    = #{homepg_link_clsf},
+		</if>   /* 홈페이지연계구분     */ 
+		    <if test="cptl_clsf != null and cptl_clsf != ''">
+			  cptl_clsf           = #{cptl_clsf},
+		</if>   /* 자금구분             */ 
+		    <if test="posi_region != null and posi_region != ''">
+			  posi_region         = #{posi_region},
+		</if>   /* 위치지역             */ 
+		    <if test="posi_build != null and posi_build != ''">
+			  posi_build          = #{posi_build},
+		</if>   /* 위치건물             */ 
+		    <if test="posi_floor != null and posi_floor != ''">
+			  posi_floor          = #{posi_floor},
+		</if>   /* 위치층               */ 
+		    <if test="posi_detls != null and posi_detls != ''">
+			  posi_detls          = #{posi_detls},
+		</if>   /* 위치상세             */ 
+		    <if test="main_sub_clsf != null and main_sub_clsf != ''">
+			  main_sub_clsf       = #{main_sub_clsf},
+		</if>   /* 메인부속구분         */ 
+		    <if test="relat_aset_no != null and relat_aset_no != ''">
+			  relat_aset_no       = #{relat_aset_no},
+		</if>   /* 관련자산번호         */ 
+		    <if test="sub_aset_intro_ymd != null and sub_aset_intro_ymd != ''">
+			  sub_aset_intro_ymd  = #{sub_aset_intro_ymd},
+		</if>   /* 부자산도입일자       */ 
+		    <if test="old_aset_no != null and old_aset_no != ''">
+			  old_aset_no         = #{old_aset_no},
+		</if>   /* 구자산번호           */ 
+		    <if test="upgrade_clsf != null and upgrade_clsf != ''">
+			  upgrade_clsf        = #{upgrade_clsf},
+		</if>   /* 업그레이드구분       */ 
+		    <if test="tag_issu_ex != null and tag_issu_ex != ''">
+			  tag_issu_ex         = #{tag_issu_ex},
+		</if>   /* 태그발행유무         */ 
+		    <if test="mngmt_mbody != null and mngmt_mbody != ''">
+			  mngmt_mbody         = #{mngmt_mbody},
+		</if>   /* 관리주체             */ 
+		    <if test="rmk != null and rmk != ''">
+			  rmk                 = #{rmk},
+		</if>   /* 비고                 */ 
+		    <if test="pda_send_yn != null and pda_send_yn != ''">
+			  pda_send_yn         = #{pda_send_yn},
+		</if>   /* PDA전송여부          */ 
+		    <if test="model_yn != null and model_yn != ''">
+			  model_yn            = #{model_yn},
+		</if>   /* 모델명 유무         */ 
+		    <if test="compu_equip_yn != null and compu_equip_yn != ''">
+			  compu_equip_yn      = #{compu_equip_yn},
+		</if>   /* 전산장비 해당여부   */ 
+		    <if test="compu_equip_cd != null and compu_equip_cd != ''">
+			  compu_equip_cd      = #{compu_equip_cd},
+		</if>   /* 전산장비 세부구분  */ 
+		    <if test="regst_daytm != null and regst_daytm != ''">
+			  regst_daytm         = TO_DATE(#{regst_daytm},'%Y%m%d'),
+		</if>   /* 자산등록일자 임시수정 조치 */
+		    <if test="kbcc_yn != null and kbcc_yn != ''">
+			  kbcc_yn             = #{kbcc_yn},
+		</if>   /* KBCC 유무 */
+		    updt_syspayno = #{updt_syspayno},    /* 수정시스템개인번호   */ 
+		    updt_daytm = CURRENT  /* 수정일시             */ 
+		WHERE aset_no = #{aset_no}
+	</update>
+<select id="selectAssMngmtBody" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.ass.com.selectAssMngmtBody */
+       DECODE(SUBSTR(t2.dept_cd, 1, 2)
+              , 'C0', 'ARB010'					/* 사업지원실(융합생산) */
+              , 'E0', 'ARB020'					/* 사업지원실(서남) */
+              , 'D0', 'ARB030'					/* 사업지원실(청정생산) */
+              , 'B0', 'ARB040', 'N0', 'ARB040'	/* 사업지원실(뿌리산업) */
+              , 'L0', 'ARB050'					/* 사업운영실(국가청정) */
+              , 'G0', 'ARB070'					/* 사업지원실(동남) */
+              , 'F0', 'ARB080'					/* 사업지원실(대경) */
+              , 'K0', 'ARB100'					/* 사업운영실(국가뿌리) */
+              , 'J0', 'ARB110'					/* 사업지원실(강원) */
+              , 'M0', 'ARB120', 'P0', 'ARB120'	/* 사업운영실(국가산업) */
+              , 'R0', 'ARB130'					/* 사업지원실(울산) */
+              , 'S0', 'ARB140'					/* 사업지원실(전북) */
+              , 'V0', 'ARB001'					/* 사업지원실(제주) */
+              , 'ARB900') AS mngmt_mbody
+FROM humbasicinfo t1
+JOIN xodhdeptinfo t2 ON t1.dept_cd = t2.dept_cd AND t1.dept_new_ymd = t2.dept_new_ymd
+WHERE t1.syspayno = #{syspayno}
+</select>
+<select id="selectAssetList" parameterType="kr.re.kitech.biz.ass.app.vo.AssMastrVo" resultType="kr.re.kitech.biz.ass.app.vo.AssMastrVo">
+SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssMastrB */ 
+		 t1.aset_typ,   /* 자산 구분                */
+       fun_xodxcommst_cd_nm(t1.aset_typ , 0) AS aset_typ_nm,       /* 자산 구분 명             */
+       t1.aset_clsf,    /* 자산 분류                */
+       fun_xodxcommst_cd_nm(t1.aset_clsf, 0) AS aset_clsf_nm,      /* 자산 분류 명             */
+       t2.couse_clsf,    /* 개안/공용 구분           */
+       fun_xodxcommst_cd_nm(t2.couse_clsf, 0) AS couse_clsf_nm,    /* 개인/공용 구분 명        */
+       t2.aset_no,                 /* 자산 번호                */
+       t2.aset_nm,                 /* 자산 명                  */
+       t2.old_aset_no,             /* 구자산 번호              */
+       t1.intro_ymd,               /* 도입 일자                */
+       t1.intro_amt,               /* 도입 금액                */
+       t2.user_syspayno,           /* 사용자 시스템 개인번호   */
+       t3.empno AS user_empno,     /* 사용자 개인번호          */
+       t3.nm AS user_nm,           /* 사용자 성명              */
+       t4.dept_nm,                 /* 사용자 부서명            */
+       t5.empno AS respn_empno,    /* 사용 부서장 개인번호     */
+       t5.nm AS respn_nm,          /* 사용 부서장 성명         */
+       fun_xodxcommst_cd_nm(t2.posi_region , 0)    AS posi_region_nm,
+       fun_xodxcommst_cd_nm(t2.posi_build, 0)      AS posi_build_nm,
+       t2.posi_floor,
+       t2.posi_detls,
+       p1.impt_notf_repay_ymd, 
+       p1.aftr_mngmt_start_ymd, 
+       p1.aftr_mngmt_cls_ymd 
+FROM assmastrh t1
+JOIN assmastrb t2 ON t1.aset_no = t2.aset_no
+JOIN humbasicinfo t3 ON t2.user_syspayno = t3.syspayno
+JOIN xodhdeptinfo t4 ON t3.dept_cd = t4.dept_cd AND t3.dept_new_ymd = t4.dept_new_ymd
+LEFT JOIN humbasicinfo t5 ON t4.depthed = t5.syspayno
+LEFT OUTER JOIN epucontrctmastr e1 ON t1.pur_req_no = e1.contrct_no 
+LEFT OUTER JOIN purfocptaftr p1 ON e1.contrct_no = p1.contrct_no AND e1.chng_seq = p1.chng_seq
+WHERE t1.aset_state IN ( 'AAI010','AAI040') -- AAI010 등재완료, AAI040 불용신청
+<if test="aset_no != null and aset_no != ''">
+AND (t1.aset_no like '%' || #{aset_no} ||'%' OR t1.aset_nm like '%' || #{aset_no} || '%') 
+</if>
+<if test="aset_typ != null and aset_typ != ''">
+AND t1.aset_typ = #{aset_typ}
+</if>
+<if test="couse_clsf != null and couse_clsf != ''">
+AND t2.couse_clsf = #{couse_clsf}
+</if>
+<if test="user_syspayno != null and user_syspayno != ''">
+AND t2.user_syspayno = #{user_syspayno}
+</if>
+<if test="intro_ymd_st != null and intro_ymd_st != ''">
+AND t1.intro_ymd <![CDATA[ >= ]]> #{intro_ymd_st}
+</if>
+<if test="aset_no_not_in != null and aset_no_not_in != ''">
+	 and t2.aset_no NOT IN (#{aset_no_not_in})
+</if>
+ORDER BY t1.aset_typ, t1.aset_clsf, t2.aset_no
+</select>
+</mapper>

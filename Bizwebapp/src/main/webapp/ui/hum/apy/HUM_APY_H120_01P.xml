@@ -1,0 +1,693 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="증명서발급">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="req_no" name="신청번호" dataType="text"></w2:key>
+            			<w2:key id="syspayno" name="시스템번호" dataType="text"></w2:key>
+            			<w2:key id="empno" name="사번" dataType="text"></w2:key>
+            			<w2:key id="nm" name="성명" dataType="text"></w2:key>
+            			<w2:key id="nm_empno" name="성명사번" dataType="text"></w2:key>
+            			<w2:key id="resid_no" name="resid_no" dataType="text"></w2:key>
+            			<w2:key id="dept_cd" name="부서코드" dataType="text"></w2:key>
+            			<w2:key id="dept_new_ymd" name="부서신설일자" dataType="text"></w2:key>
+            			<w2:key id="dept_nm" name="부서명" dataType="text"></w2:key>
+            			<w2:key id="posi_nm" name="직급명" dataType="text"></w2:key>
+            			<w2:key id="req_ymd" name="신청일자" dataType="text"></w2:key>
+            			<w2:key id="issu_no" name="issu_no" dataType="text"></w2:key>
+            			<w2:key id="issu_knd" name="발급종류" dataType="text"></w2:key>
+            			<w2:key id="usg_cd" name="발급용도" dataType="text"></w2:key>
+            			<w2:key id="issu_qty" name="발급부수" dataType="text"></w2:key>
+            			<w2:key id="issu_usg" name="근거내용" dataType="text"></w2:key>
+            			<w2:key id="issu_dline" name="issu_dline" dataType="text"></w2:key>
+            			<w2:key id="apr_state" name="결재상태" dataType="text"></w2:key>
+            			<w2:key id="apr_state_nm" name="결재상태명" dataType="text"></w2:key>
+            			<w2:key id="language" name="언어" dataType="text"></w2:key>
+            			<w2:key id="eng_univ" name="대학교영문명" dataType="text"></w2:key>
+            			<w2:key id="eng_major" name="전공영문명" dataType="text"></w2:key>
+            			<w2:key id="posi_cd" name="직급구분" dataType="text"></w2:key>
+            			<w2:key id="req_ymd" name="등록일자" dataType="text"></w2:key>
+            			<w2:key id="issu_dline" name="발급일자" dataType="text"></w2:key>
+            			<w2:key id="doc_id" name="doc_id" dataType="text"></w2:key>
+            			<w2:key id="resid_no" name="주민등록번호" dataType="text"></w2:key>
+            			<w2:key id="rowStatus" name="rowStatus" dataType="text"></w2:key>
+            			<w2:key id="apr_state" name="apr_state" dataType="text"></w2:key>
+            			<w2:key id="ui_id" name="ui_id" dataType="text"></w2:key>
+            			<w2:key id="endpoints" name="endpoints" dataType="text"></w2:key>
+            			<w2:key id="regst_syspayno" name="regst_syspayno" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref="data:json,dma_search" target="data:json,dma_search" action="SvcHUMAPYCRTR02.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<!-- 저장 -->
+			<xf:submission id="sbm_saveData" ref="data:json,dma_search" target='' action="SvcHUMAPYCRTAI01.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    var now = new Date();
+	var defalutday = gcm.date.formatDateTime(now, "yyyyMMddHHmm"); // yyyyMMddHHmm
+	var ymd = gcm.date.formatDateTime(now); // yyyyMMdd 
+	var req_no = "";
+	var issuKnd = "";
+	
+	scwin.onpageload = function() {
+		var admin_yn = com.getParameter("admin_yn");
+		var sn = com.getParameter("sn");
+		var uid = com.getParameter("uid");
+		var service_id = com.getParameter("service_id");
+		var disp_no = com.getParameter("disp_no");
+		var role_code = com.getParameter("role_code");
+		var syspayno = com.getParameter("syspayno");
+		var language = com.getParameter("language");
+		issuKnd = com.getParameter("issu_knd");
+		req_no = com.getParameter("req_no");
+		
+		com.setEnterKeyEvent(grp_hum_search, scwin.btn_hum_search_onclick);
+		
+		var codeOptions = [ 
+							{code : "HCD", compID : "sbx_issu_knd"}, //발급종류
+							{code : "HCI", compID : "sbx_usg_cd"} //발급용도
+		               	  ];		
+		com.setCmnCd(codeOptions, function(){
+		});
+		
+		if(disp_no == "1"){
+			btn_print.setDisabled(true);
+		}else{
+			btn_print.setDisabled(false);
+		}
+		
+		if(req_no != ""){
+			scwin.disable_mod();
+		}else{
+			inp_nmempno.setDisabled(false);
+			btn_hum_search.setDisabled(false);
+			inp_dept.setDisabled(false);
+			sbx_issu_knd.setDisabled(false);
+			rdo_language.setDisabled(false);
+			sbx_issu_qty.setDisabled(false);
+			sbx_usg_cd.setDisabled(false);
+			inp_issu_usg.setDisabled(false);
+			btn_save.setDisabled(false);
+		}
+		
+		if(req_no != ""){
+			dma_search.set("req_no", req_no);
+			scwin.search();
+		}
+	};
+	
+	scwin.onpageunload = function() {
+	};
+	
+	scwin.search = function() {
+		com.execute(sbm_selectData, {
+			successCallback : function(e){
+				debugger;
+				console.log(e);
+				// 증명날짜 초기화
+				if(dma_search.get("issu_knd") == "HCD020"){
+					ica_from.setValue("19000101");
+					ica_to.setValue(ymd);
+				}
+			}
+		});
+	}
+	
+	scwin.btn_hum_search_onclick = function(e) {
+		var data = {
+			empno : inp_nmempno.getValue(),
+			work_clsf : "HAG010",
+			ref_yn : (inp_nmempno.getValue() == "")? "Y" : "N"
+		};
+		
+		com.pop.open(com.pop.TYPE.HUM, data, function(ret){
+			if(ret){
+				debugger;
+				dma_search.set("nmempno", ret.nm + "(" + ret.empno + ")");
+				dma_search.set("nm", ret.nm);
+				dma_search.set("empno", ret.empno);
+				dma_search.set("syspayno", ret.syspayno);
+				dma_search.set("dept_cd", ret.dept_cd);
+				dma_search.set("dept_nm", ret.dept_nm);
+				dma_search.set("dept_new_ymd", ret.dept_new_ymd);
+				dma_search.set("posi_cd", ret.posi_cd);
+			}
+		});
+	};
+	
+	scwin.inp_issu_usg_onchange = function(info) {
+		if(dma_search.get("language") == "E"){
+			var issu_usg = dma_search.get("issu_usg");
+			dma_search.set("issu_usg", issu_usg.replace(/[^a-z0-9\-_]/gi,''));
+		}
+	};
+	
+	scwin.sbx_issu_knd_onchange = function(info) {
+		debugger;
+		var issu_knd = dma_search.get("issu_knd");
+		if(issu_knd == "HCD020"){
+			grp_cal.setStyle("display", "");
+			ica_from.setValue("19000101");
+			ica_to.setValue(ymd);
+		}else{
+			grp_cal.setStyle("display", "none");
+			ica_from.setValue("");
+			ica_to.setValue("");
+		}
+		
+		// 영문 대학교/전공명 컨트롤
+		var language = dma_search.get("language");
+		if(issu_knd == "HCD040" || issu_knd == "HCD050"){
+			switch(language) {
+				case "K" :
+					grp_english.hide();
+					break;
+				case "E" :
+					grp_english.show();
+					break;
+			}
+		} else {
+			grp_english.hide();
+		}
+	};
+	
+	scwin.rdo_language_onradioclick = function(index,value) {
+		
+	};
+	
+	scwin.rdo_language_onchange = function(info) {
+		var issu_knd = dma_search.get("issu_knd");
+		var language = dma_search.get("language");
+		var codeOptions = [{code : "HCD", compID : "sbx_issu_knd"}];
+		com.setCmnCd(codeOptions, scwin.setCmnCdCallback);
+
+		if(/HCD040|HCD050/.test(issu_knd)){
+			switch(language) {
+				case "K" :
+					grp_english.hide();
+					break;
+				case "E" :
+					grp_english.show();
+					break;
+			}
+		}
+		
+	};
+	
+	scwin.setCmnCdCallback = function() {
+		
+		if (dma_search.get("language") == "E") {
+			var issu_usg = dma_search.get("issu_usg");
+			dma_search.set("issu_usg", issu_usg.replace(/[^a-z0-9\-_]/gi,''));
+			
+			com.getComponent(gcm.CMNCD_INFO.DATA_PREFIX + "HCD").removeRows([2]);
+			dma_search.set("issu_knd", issuKnd);
+		} else if (dma_search.get("language") == "K"){
+			if(com.getLoginInfo("roleCode").indexOf("1003125") > 0){
+				com.getComponent(gcm.CMNCD_INFO.DATA_PREFIX + "HCD").removeRows([0,1,2]);
+				dma_search.set("issu_knd", issuKnd);
+			} else if (com.getLoginInfo("roleCode").indexOf("1010102") > 0) {
+				// 시스템 관리자 
+				dma_search.set("issu_knd", issuKnd);
+			} else {
+				com.getComponent(gcm.CMNCD_INFO.DATA_PREFIX + "HCD").removeRows([3,4]);
+				dma_search.set("issu_knd", issuKnd);
+			}
+		}
+	}
+
+	scwin.btn_print_onclick = function(e) {
+		if(dma_search.get("req_no").trim() != ""){
+       		scwin.print_oz();
+       	}else{
+       		alert("저장&처리 후 인쇄를 진행하여 주시기 바랍니다.");
+       		return;
+       	}
+	};
+	
+	scwin.print_oz = function() {
+		debugger;
+		var issu_knd = dma_search.get("issu_knd");
+		var icaFrom = ica_from.getValue();
+		var icaTo = ica_to.getValue();
+		var issu_usg = dma_search.get("issu_usg");
+		var syspayno = dma_search.get("syspayno");
+		var resid_no = dma_search.get("resid_no");
+		var language = dma_search.get("language");
+		var usg_cd = dma_search.get("usg_cd");
+		var issu_no = dma_search.get("issu_no");
+		var reportObj = {};
+		
+		if(syspayno == ""){
+			alert("사번을 입력해주세요.");
+			return;
+		}else if(issu_knd == ""){
+			alert("발급종류를 선택해주세요.");
+			return;
+		}else if(usg_cd == ""){
+			alert("발급용도를 선택해주세요.");
+			return;
+		}else if(issu_knd == "HCD020"){
+			if(ica_from == "" || ica_to == ""){
+				alert("증명기간을 입력해주세요.");
+				return;
+			}
+		}
+		
+		if(issu_knd == "HCD020" && language!="E"){ // 경력증명서
+			var node = "req_no=" + req_no + "&syspayno=" + syspayno + "&appont_start_ymd_fr=" + icaFrom + "&appont_start_ymd_to=" + icaTo
+						+ "&docu_no=" + issu_no + "&issu_usg=" + issu_usg + "&resid_no=" + resid_no + "&language=" + language;
+			reportObj = {
+				ozrCode : "H085",
+				param : node
+			};
+			
+		}else if(issu_knd == "HCD010" && language!="E"){ // 재직증명서
+			var node = "req_no=" + req_no + "&docu_no=" + issu_no;
+			reportObj = {
+				ozrCode : "H080",
+				param : node
+			};
+			
+		}else if(issu_knd == "HCD030" && language!="E"){// 근무확인서
+			var node = "req_no=" + req_no + "&docu_no=" + issu_no;
+			reportObj = {
+				ozrCode : "H082",
+				param : node
+			};
+			
+		}else if(issu_knd == "HCD040" && language!="E"){// 수료증명서
+			var node = "req_no=" + req_no;
+			reportObj = {
+				ozrCode : "H083",
+				param : node
+			};
+		
+		}else if(issu_knd == "HCD050" && language!="E"){// 연수증명서
+			var node = "req_no=" + req_no;
+			reportObj = {
+				ozrCode : "H083",
+				param : node
+			};
+			
+		} else  if (issu_knd == "HCD020" && language=="E"){// 영문 경력증명서 
+			var node = "req_no=" + req_no + "&syspayno=" + syspayno + "&appont_start_ymd_fr=" + icaFrom + "&appont_start_ymd_to=" + icaTo
+						+"&docu_no=" + issu_no + "&issu_usg=" + issu_usg + "&resid_no=" + resid_no + "&language=" + language;
+			reportObj = {
+				ozrCode : "H086",
+				param : node
+			};
+			
+		}else if(issu_knd == "HCD010" && language=="E"){// 영문 재직증명서
+			var node = "req_no=" + req_no + "&docu_no=" + issu_no;
+			reportObj = {
+				ozrCode : "H081",
+				param : node
+			};
+			 						
+		}else if((issu_knd == "HCD040" || issu_knd == "HCD050") && language=="E"){ // 영문 수료/연수증명서
+			var node = "req_no=" + req_no + "&docu_no=" + issu_no;
+			reportObj = {
+				ozrCode : "H081",
+				param : node
+			};
+			
+		}
+		
+		com.oz.open(reportObj);
+	}
+	
+	scwin.btn_save_onclick = function(e) {
+		var issu_knd = dma_search.get("issu_knd");
+		var issu_usg = dma_search.get("issu_usg");
+		var language = dma_search.get("language");
+		var usg_cd = dma_search.get("usg_cd");
+		var posi_cd = dma_search.get("posi_cd");
+		var eng_univ = dma_search.get("eng_univ");
+		var eng_major = dma_search.get("eng_major");
+		
+		if(dma_search.get("syspayno") == ""){
+			alert("조회 할 대상을 입력해주세요.");
+			inp_nmempno.focus();
+			return;
+		}else if(issu_knd == ""){
+			alert("발급 종류를 선택해주세요.");
+			sbx_issu_knd.focus();
+			return;
+		}else if(usg_cd == ""){
+			alert("발급 용도를 선택해주세요.");
+			sbx_usg_cd.focus();
+			return;
+		}else if(language == ""){
+			alert("국문 또는 영문을 선택해주세요.");
+			rdo_language.focus();
+			return;
+		}
+		
+		if(/350010|351010/.test(posi_cd)){
+			if(!/HCD040|HCD050/.test(issu_knd)){
+				alert("학생연구원 및 연구생은 해당 증명서 발급이 불가능합니다.");
+				return;
+			}
+		}
+		            
+        if(/HCD040|HCD050/.test(issu_knd)){
+        	var regular = /^[a-zA-Z\s]+$/;
+        	
+        	if(language == "E"){
+        		if(eng_univ == ""){
+        			alert("대학교 영문명을 입력해주세요.");
+        			eng_univ.focus();
+        			return;
+        		}
+        		
+        		if(!regular.test(eng_univ)){
+        			alert("대학교 영문명에 영문만 입력 가능합니다.");
+        			eng_univ.focus();
+        			return;
+        		}
+        		
+        		if(eng_major == ""){
+        			alert("전공 영문명을 입력해주세요.");
+        			eng_univ.focus();
+        			return;
+        		}
+        		
+        		if(!regular.test(eng_major)){
+        			alert("전공 영문명에 영문만 입력 가능합니다.");
+        			eng_univ.focus();
+        			return;
+        		}
+        	}
+        }
+        
+		com.confirm("message.xom.wq.017"/*저장 하시겠습니까?*/, function(ret){
+			if(ret){
+				var myDate = new Date();
+				var toyear = myDate.getFullYear(); 
+				var tomotnh = myDate.getMonth()+1;
+				if (gimonth == "00") gimonth = "12";
+				var today  = myDate.getDate();
+				(""+tomotnh).length==1 ? tomotnh = "0"+tomotnh : tomotnh;
+				(""+today).length==1 ? today = "0"+today : today;				
+				var reqYmd = toyear+""+tomotnh+""+today;
+				myDate.setDate(myDate.getDate() + 10);
+				var giyear=myDate.getFullYear();
+				var gimonth= myDate.getMonth()+1;
+				if (gimonth == "00") gimonth = "12"; 
+				var gidate=myDate.getDate();
+				(""+gimonth).length==1 ? gimonth = "0"+gimonth : gimonth;
+				(""+gidate).length==1 ? gidate = "0"+gidate : gidate;
+				var from_day = giyear +''+ gimonth +''+ gidate;
+		        
+		        dma_search.set("req_ymd", reqYmd);
+		        dma_search.set("issu_dline", from_day);
+		        
+		        dma_search.set("apr_state", "XAD100");
+		        dma_search.set("regst_syspayno", com.getLoginInfo("sn"));
+		        
+				scwin.save();
+			}else{
+				
+			}
+		});
+	};
+	
+	/*
+     * 저장
+     */ 
+	scwin.save = function(){
+		com.execute(sbm_saveData, {
+			successCallback : function(e){
+				com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+					debugger;
+					dma_search.set("req_no", e.responseJSON.elData.req_no);
+					scwin.disable_mod();
+					//scwin.search();
+				});
+			}
+		});
+	};
+	
+	scwin.disable_mod = function(){
+		inp_nmempno.setDisabled(true);
+		btn_hum_search.setDisabled(true);
+		inp_dept.setDisabled(true);
+		sbx_issu_knd.setDisabled(true);
+		rdo_language.setDisabled(true);
+		sbx_issu_qty.setDisabled(true);
+		sbx_usg_cd.setDisabled(true);
+		inp_issu_usg.setDisabled(true);
+		btn_save.setDisabled(true);
+	}
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pop_contents" id="" style="">
+    		<xf:group class="titleSection pt0" id="" style="">
+    			<xf:group class="le" id="">
+    				<w2:textbox class="tit_tbl" id="" label="증명서발급(인쇄설정)" style="" tagname="h3"></w2:textbox>
+    				<w2:span class="note red" id="" label="* 연수/수료증명서는 [현장실습생, 학연협동과정생, UST학생] 직급만 발급" style=""></w2:span>
+    			</xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:group style="" id="" class="btnarea">
+   						<xf:trigger class="btn" id="" style="display: none;" type="button">
+	    					<xf:label><![CDATA[미리보기]]></xf:label>
+	    				</xf:trigger>
+	    				<xf:trigger class="btn icon print" id="btn_print" style="" type="button" ev:onclick="scwin.btn_print_onclick">
+	    					<xf:label><![CDATA[인쇄]]></xf:label>
+	    				</xf:trigger>
+   					</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="차량배차신청서 신청정보 상세정보입력"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:170px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:170px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="성명(개인번호)" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:group id="grp_hum_search" class="flex">
+	    					<xf:input adjustMaxLength="false" class="inp full" id="inp_nmempno" style="" ref="data:dma_search.nm_empno"></xf:input>
+	    					<xf:trigger class="btn glass" id="btn_hum_search" style="" type="button" ev:onclick="scwin.btn_hum_search_onclick">
+	    						<xf:label><![CDATA[검색]]></xf:label>
+	    					</xf:trigger>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="부서" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_dept" style="" title="" ref="data:dma_search.dept_nm"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="발급종류" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="true" appearance="minimal" chooseOption="" class="sel" direction="auto" disabled="false"
+    						disabledClass="w2selectbox_disabled" id="sbx_issu_knd" ref="data:dma_search.issu_knd" style="width:150px;" submenuSize="auto"
+    						title="상태" visibleRowNum="10" ev:onchange="scwin.sbx_issu_knd_onchange" chooseOptionLabel="">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    					<xf:select1 appearance="full" class="radioGroup" cols="" id="rdo_language" ref="data:dma_search.language"
+    						renderType="radiogroup" rows="" selectedIndex="-1" style="" ev:onradioclick="scwin.rdo_language_onradioclick" ev:onchange="scwin.rdo_language_onchange">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[한글]]></xf:label>
+    								<xf:value><![CDATA[K]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[영문]]></xf:label>
+    								<xf:value><![CDATA[E]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="발급부수" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="" class="sel" direction="auto" disabled="false"
+    						disabledClass="w2selectbox_disabled" id="sbx_issu_qty" ref="data:dma_search.issu_qty" style="" submenuSize="auto" title="상태"
+    						visibleRowNum="10" chooseOptionLabel="">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[1]]></xf:label>
+    								<xf:value><![CDATA[1]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[2]]></xf:label>
+    								<xf:value><![CDATA[2]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[3]]></xf:label>
+    								<xf:value><![CDATA[3]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[4]]></xf:label>
+    								<xf:value><![CDATA[4]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[5]]></xf:label>
+    								<xf:value><![CDATA[5]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[6]]></xf:label>
+    								<xf:value><![CDATA[6]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[7]]></xf:label>
+    								<xf:value><![CDATA[7]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[8]]></xf:label>
+    								<xf:value><![CDATA[8]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[9]]></xf:label>
+    								<xf:value><![CDATA[9]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[10]]></xf:label>
+    								<xf:value><![CDATA[10]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="발급용도" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="true" appearance="minimal" chooseOption="" class="sel" direction="auto" disabled="false"
+    						disabledClass="w2selectbox_disabled" id="sbx_usg_cd" ref="data:dma_search.usg_cd" style="width:150px;" submenuSize="auto"
+    						title="상태" visibleRowNum="10" chooseOptionLabel="">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="근거내용" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_issu_usg" style="" title="" ref="data:dma_search.issu_usg" ev:onchange="scwin.inp_issu_usg_onchange"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" id="grp_cal">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="증명기간" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:group class="inpcalWrap" id="" style="">
+   							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal req" focusOnDateSelect="false"
+   								footerDiv="false" id="ica_from" placeholder="시작일" renderDiv="true" rightAlign="false" style="">
+   							</w2:inputCalendar>
+   							<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+   							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal req" focusOnDateSelect="false"
+   								footerDiv="false" id="ica_to" placeholder="종료일" renderDiv="true" rightAlign="false" style="">
+   							</w2:inputCalendar>
+  						</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" id="grp_english">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="대학교영문명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_eng_univ" style="" title="" ref="data:dma_search.eng_univ"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="전공영문명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_eng_major" style="" title="" ref="data:dma_search.eng_major"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="btnGroup" id="" style="">
+    			<xf:group class="le" id="" style="">
+    				<!-- <xf:input adjustMaxLength="false" class="inp" id="" style="width:170px;" title=""></xf:input> -->
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class=" btn pro blue" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장 & 처리]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

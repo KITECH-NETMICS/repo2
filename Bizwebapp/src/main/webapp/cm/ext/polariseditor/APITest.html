@@ -1,0 +1,2286 @@
+<!DOCTYPE html>
+<html>
+    <head>
+		<meta name="filename" content="Title.doc">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <script type="text/javascript" src="testpage.js"></script>
+        <script type="text/javascript" src="polaris.js"></script>
+        <script type="text/javascript" src="api/apis.js"></script>
+        <style type="text/css" media="screen">
+
+        ul.tabs{
+          margin: 0px;
+          padding: 0px;
+          list-style: none;
+        }
+        
+        ul.tabs li{
+          background: none;
+          color: #222;
+          display: inline-block;
+          padding: 10px 10px;
+          cursor: pointer;
+        }
+         
+        ul.tabs li.current{
+          background: #ededed;
+          color: #222;
+          font-weight: bold;
+        }
+         
+        .tab-content{
+          display: none;
+          background: #ededed;
+          padding: 15px;
+        }
+         
+        .tab-content.current{
+          display: inherit;
+          margin-bottom:5px;
+          
+        }
+
+</style>
+    </head>
+
+    <body>
+        <table>
+            <tr>
+                <td style="width:850px; padding-right:30px; vertical-align: top;">
+               	    <div id="editorContainer" >
+	               	    <!-- 탭 -->
+	                    <ul class="tab" id="itemTabs">
+	                    </ul>
+	                    <!-- Polaris Editor 영역 -->
+	                    <textarea id="Document_HwpCtrl">
+	                    </textarea>
+                    </div>
+                </td>
+                <td style="width: 450px; vertical-align: top;" valign=top>
+                     <div id="polaris_api" style="wheight: 100%; overflow:auto;">
+                        <h3 align=center>API 테스트</h3>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">문서열기</li>
+                        </ul>
+                        <div class="tab-content current">
+                            문서열기 : <input type="file" id="files" name="files[]" multiple /><br />
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">문서저장</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="saveDocument();" type="button" value="ODT저장">
+                            <input onclick="savePDFDocument();" type="button" value="PDF저장">
+                            <input onclick="downloadGetTextFile();" type="button" value="HTML저장">
+                            <input onclick="downloadPubdoc();" type="button" value="PUBDOCBODY저장">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">문서삽입</li>
+                        </ul>
+                        <div class="tab-content current">
+                            문서 : <input type="file" id="insertfiles" value="로컬ODT문서삽입"/><br />
+                            TXT : <input type="file" id="insertTextFile" value="로컬TXT문서삽입"/><br />
+                            Pubdoc삽입 : <input type="file" id="insertpubdoc" name="files[]" multiple />
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">문서로딩, SetTextFile/GetTextFile</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <textarea id="TextFile_Text" style="width:410px; height: 50px;"></textarea><br>
+                            <input onclick="SetTextFile();" type="button" value="SetTextFile()">
+                            <input onclick="GetTextFile();" type="button" value="GetTextFile()">
+                            <input onclick="GetTextFile('saveblock');" type="button" value="GetTextFile('saveblock')">
+                            <input onclick="IsDirty();" type="button" value="문서편집여부체크()"><br>
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">입력모드 설정</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="ChangeEditMode(0);" type="button" value="읽기모드">
+                            <input onclick="ChangeEditMode(1);" type="button" value="입력모드">
+                            <input onclick="ChangeEditMode(2);" type="button" value="양식모드">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">내용삽입, PutFieldText</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <span style="font-size: small">* FieldName : <input id="PutFieldText_FieldName" type="text" style="width:120px"></span> <input onclick="testPutFieldText();" type="button" value="PutFieldText()"><br />
+                            <span style="font-size: small; vertical-align: top;">* Text : <textarea id="PutFieldText_Text" style="width:365px"></textarea></span><br>
+                            
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">문서 확대/축소</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <select id="ZoomRatio" name="ZoomRatio" onChange="changeZoomRatio(this)">
+                                <option value="70">70%</option>
+                                <option value="80">80%</option>
+                                <option value="90">90%</option>
+                                <option value="100" selected>100%</option>
+                                <option value="110">110%</option>
+                                <option value="120">120%</option>
+                                <option value="130">130%</option>
+                                <option value="150">150%</option>
+                            </select>
+                            <select id="ZoomType" name="ZoomType" onChange="changeZoomType(this)">
+                                <option value="0">사용자 정의</option>
+                                <option value="1">쪽 맞춤</option>
+                                <option value="2" selected>폭 맞춤</option>
+                                <option value="3">여러 쪽(지원X)</option>
+                            </select>
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">Editor 크기 변경</li>
+                        </ul>
+                        <div class="tab-content current">
+                            width : <input type="number" value=900 id="editorWidth" style="width: 50px;">px<br />
+                            height : <input type="number" value=100 id="editorHeight" style="width: 50px;">px
+                            <input type="button" value="변경" onclick="resizeEditor()">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">Editor Show/Hide</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="showEditor(1);" type="button" value="Show">
+                            <input onclick="showEditor(0);" type="button" value="Hide">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">툴바 제어</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="AboutBox();" type="button" value="AboutBox()">
+                            <input onclick="ShowRibbon();" type="button" value="ShowRibbon()">
+                            <input onclick="ShowMenuBar();" type="button" value="ShowMenubar()">
+                            <input onclick="ShowToolBar();" type="button" value="ShowToolBar()">
+                            <input onclick="ShowStatusBar();" type="button" value="ShowStatusBar()">
+                            <input onclick="SetToolBar();" type="button" value="SetToolBar()">
+                            <input onclick="PreviewCommand();" type="button" value="PreviewCommand()">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">문서편집</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="TestSelectionMode();" type="button" value="SelectionMode">
+                            <input onclick="SelectText();" type="button" value="SelectText()">
+                            <input onclick="GetTableCellAddr();" type="button" value="GetTableCellAddr()">
+                            <input onclick="TestBreakPageAction();" type="button" value="쪽 나누기">
+                            <input onclick="TestPageSetupAction();" type="button" value="문서여백변경">
+                            <input type="button" value="페이지여백설정" onclick="pageSetupAction()">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">셀테두리 설정/해제</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="TestTableBorderAction(1, 1);" type="button" value="셀테두리 설정">
+                            <input onclick="TestTableBorderAction(0, 1);" type="button" value="셀테두리 해제">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">셀보호 설정/해제</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <span style="font-size: small">* FieldName : <input id="protectCellFieldName" type="text" style="width:120px"></span>
+                            <input onclick="protectCell()" type="button" value="셀보호 설정">
+                            <input onclick="unProtectCell()" type="button" value="셀보호 해제">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">하이퍼링크 체크/제거</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="testExistHyperLink();" type="button" value="하이퍼링크 체크">
+                            <input onclick="deleteHyperLink();" type="button" value="하이퍼링크 제거">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">머리글/바닥글 삽입/제거</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="insertHeaderFooter();" type="button" value="머리글/바닥글 삽입">
+                            <input onclick="removeHeaderFooter();" type="button" value="머리글/바닥글 제거">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">하단부테이블 결재 경로 편집</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input type="button" value="검토자 추가" onclick="addReviewers()">
+                            <input type="button" value="검토자 삭제" onclick="removeReviewers()">
+                            <input type="button" value="검토자 내용삭제" onclick="clearApprFields()">
+                            <input type="button" value="검토자 내용추가" onclick="putApprFields()">
+                            <input type="button" value="협조자 추가" onclick="addAssists()">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">이미지 삽입</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <b>로고이미지 삽입 :</b>
+                            <input onchange="testInsertLogo( this );" type="file" /><br />
+                            <b>심볼이미지 삽입 :</b>
+                            <input onchange="testInsertSymbol( this );" type="file" /><br />
+                            <b>관인이미지 삽입 :</b>
+                            <input onchange="testInsertPicture( this );" type="file"/><br />
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">검토자3 셀 병합 및 분할 테스트</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="mergeCell();" type="button" value="셀 병합">
+                            <input onclick="splitCell();" type="button" value="셀 분할">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">기관명 폰트크기 변경</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input type="button" value="기관명 폰트크기 변경" onclick="changeFontSize()">
+                        </div>
+                        <ul class="tabs">
+                            <li class="tab-link current" data-tab="tab-1">표준기안문 내용삽입</li>
+                        </ul>
+                        <div class="tab-content current">
+                            <input onclick="PutFieldText1();" type="button" value="Sample1">
+                            <input onclick="PutFieldText2();" type="button" value="Sample2">
+                            <input onclick="PutFieldText3();" type="button" value="Sample3">
+                            <input onclick="PutFieldText4();" type="button" value="Sample4">
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <script>
+            // 1. 에디터 instance 생성
+            var Editor = new PolarisEditor();
+            var config = {
+                width : '850px', /* 100% */
+                height : '800px',
+                wordprocessor : true,
+                showTitlebar : false,
+                pageBgColor : '#ABABAB',
+                pageBorderColor : '#000000',
+                useDocConvertServer : true,
+                docConvertingUrl: '', // 문서변환서버 Url
+                useImageBase64Encoding : true
+            };
+            
+            // 3. 에디터 생성완료 callback
+            var loadCompleteCallback = function( result ) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // 5. 에디터 문서오픈 완료 callback
+                var openCallback = function( result ) {
+                    editor.SetEditMode( 2 );
+                };
+                
+                // 4. 에디터 문서 오픈 - Open API
+                var path = 'http://localhost/template.html';
+                editor.Open(path, "", [ null, openCallback ]);
+            };
+            
+            // 2. 에디터 생성
+            Editor.CreateEditor("Document_HwpCtrl", config, loadCompleteCallback);
+
+            //[Jake] OnMouseLButtonDown API
+            Editor.OnMouseLButtonDown = function(targetElement) {
+            	//alert(targetElement.getName() + ' clicked!');
+            }
+
+            //[Jake] OnScroll API
+            Editor.OnScroll = function() {
+            	//alert('on scroll');
+            }
+
+            if (document.getElementById('files').addEventListener) {
+                document.getElementById('files').addEventListener('change', handleFileSelect, false);
+                document.getElementById('insertfiles').addEventListener('change', handleInsertFileSelect, false);
+                document.getElementById('insertTextFile').addEventListener('change', insertLocalFile, false);
+                document.getElementById('insertpubdoc').addEventListener('change', insertPubdoc, false);
+            }
+            else {
+                document.getElementById('files').attachEvent('onchange', handleFileSelect, false);
+                document.getElementById('insertfiles').attachEvent('onchange', handleInsertFileSelect, false);
+                document.getElementById('insertTextFile').attachEvent('onchange', insertLocalFile, false);
+                document.getElementById('insertpubdoc').addEventListener('change', insertPubdoc, false);
+            }
+
+            function AboutBox() {
+                var ctrl = document.getElementById("Document_HwpCtrl").AboutBox();
+                // editor.AboutBox();
+            }
+
+            var flag_ShowToolBar = false;
+            function ShowToolBar() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                editor.ShowToolBar(flag_ShowToolBar);
+                flag_ShowToolBar = !flag_ShowToolBar;
+            }
+
+            var flag_ShowStatusBar = false;
+            function ShowStatusBar() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                editor.ShowStatusBar(flag_ShowStatusBar);
+                flag_ShowStatusBar = !flag_ShowStatusBar;
+            }
+
+            var flag_SetToolBar = false;
+            function SetToolBar() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var option = "#0;";
+                option += (flag_SetToolBar ? "1:" : "2:");
+                // Polariseditor.SetToolBar(-1, option + "TOOLBAR_MENU");
+                editor.SetToolBar(-1, option + "TOOLBAR_STANDARD");
+                // Polariseditor.SetToolBar(-1, option + "TOOLBAR_FORMAT");
+                //Polariseditor.SetToolBar(-1, option + "TOOLBAR_TABLE");
+
+                flag_SetToolBar = !flag_SetToolBar;
+            }
+
+            var flag_ShowMenuBar = false;
+            function ShowMenuBar() {
+                var editor = document.getElementById("Document_HwpCtrl");
+            	editor.ShowMenuBar(flag_ShowMenuBar);
+                flag_ShowMenuBar = !flag_ShowMenuBar;
+            }
+
+            var flag_ShowRibbon = false;
+            function ShowRibbon() {
+                var editor = document.getElementById("Document_HwpCtrl");
+            	editor.ShowRibbon(flag_ShowRibbon);
+                flag_ShowRibbon = !flag_ShowRibbon;
+            }
+
+            function PreviewCommand() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                editor.PreviewCommand();
+            }
+
+            var buffer_textFile = '';
+            function GetTextFile(option) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                //var text = editor.GetTextFile("TEXT", option);
+                buffer_textFile = editor.GetTextFile("TEXT", option);
+
+                document.getElementById("TextFile_Text").value = buffer_textFile;
+            }
+
+            function IsDirty(option) {
+                var editor = document.getElementById("Document_HwpCtrl");
+            	var text = editor.GetTextFile("TEXT", option);
+            	if (buffer_textFile == text) {
+            		alert('문서가 변경되지 않았음');
+            	} else {
+            		alert('문서가 변경 되었음');
+            	}
+            }
+
+            function SetTextFile() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var text = document.getElementById("TextFile_Text").value;
+                var result = editor.SetTextFile(text, "HTML", null);
+            }
+
+            function TestInsertTextAction() {
+                var editor = document.getElementById("Document_HwpCtrl");
+            	var action = editor.CreateAction('InsertText');
+            	var set = action.CreateSet();
+            	action.GetDefault(set);
+            	set.SetItem('Text','bravo!!!!');
+            	action.Execute(set);
+            }
+
+            function TestPageSetupAction() {
+                var editor = document.getElementById("Document_HwpCtrl");
+            	var action = editor.CreateAction('PageSetup');
+            	var set = action.CreateSet();
+            	action.GetDefault(set);
+            	//set.SetItem('TextDirection', 200);
+                set.SetItem("ApplyTo", 3);  //적용범위 : 문서전체
+
+                //1mm = 283.465 HWPUNITs
+                var HWPUNIT = 283.465;
+                var leftmargin = HWPUNIT * 20;
+                var rightmargin = HWPUNIT * 20;
+                var topmargin = HWPUNIT * 15;
+                var bottommargin = HWPUNIT * 15;
+                var width = HWPUNIT * 170;
+                var height = HWPUNIT * 120;
+
+                var pageDef = set.CreateItemSet("PageDef","PageDef");
+                pageDef.SetItem("PaperWidth", width);
+                pageDef.SetItem("PaperHeight", height);
+                pageDef.SetItem("LeftMargin", leftmargin);
+                pageDef.SetItem("RightMargin", rightmargin);
+                pageDef.SetItem("TopMargin", topmargin);
+                pageDef.SetItem("BottomMargin", bottommargin);
+
+                var borderSet = set.CreateItemSet("PageBorderFillBoth", "PageBorderFillBoth");
+                var borderMarginH = HWPUNIT * 15;
+                var borderMarginV = HWPUNIT * 10;
+                borderSet.SetItem("OffsetLeft", borderMarginH);
+                borderSet.SetItem("OffsetRight", borderMarginH);
+                borderSet.SetItem("OffsetTop", borderMarginV);
+                borderSet.SetItem("OffsetBottom", borderMarginV);
+
+            	action.Execute(set);
+            }
+
+            function TestTableBorderAction(type, width) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var action = editor.CreateAction("CellBorder");
+                var set = action.CreateSet();
+                action.GetDefault(set);
+
+                // apply selected cell only
+                set.SetItem("ApplyTo", 0);
+                // set border type - 0 : none, 1 : line
+                set.SetItem("BorderTypeLeft", (type) ? 1 : 0);
+                set.SetItem("BorderTypeRight", (type) ? 1 : 0);
+                set.SetItem("BorderTypeTop", (type) ? 1 : 0);
+                set.SetItem("BorderTypeBottom", (type) ? 1 : 0);
+                // set border width - 1 : 1.2
+                set.SetItem("BorderWidthLeft", (width) ? 8 : 0);
+                set.SetItem("BorderWidthRight", (width) ? 8 : 0);
+                set.SetItem("BorderWidthTop", (width) ? 8 : 0);
+                set.SetItem("BorderWidthBottom", (width) ? 8 : 0);
+                // set border color - 0 : black, 16711680 : blue
+                set.SetItem("BorderCorlorLeft", 0);
+                set.SetItem("BorderColorRight", 0);
+                set.SetItem("BorderColorTop", 0);
+                set.SetItem("BorderColorBottom", 0);
+
+                action.Execute(set);
+            }
+
+            function TestParameterSetMergeIntersection() {
+                var editor = document.getElementById("Document_HwpCtrl");
+            	var setA = editor.CreateSet('SampleSetEn');
+            	setA.CreateItemSet('numbers','SampleSetNum1');
+            	var setB = editor.CreateSet('SampleSetKo');
+            	setB.CreateItemSet('numbers','SampleSetNum2');
+            	var isSame = setA.IsEquivalent(setB);
+            	var intersectionSet = setA.GetInterSection(setB);
+            	setA.Merge(setB);
+            }
+
+            function TestBreakPageAction() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                editor.Run("BreakPage");
+            }
+
+            function TestSelectionMode() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                alert(editor.SelectionMode());
+            }
+
+            function changeZoomRatio(selection) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var ZoomType = 0; //사용자 정의
+                var ZoomRatio = selection.value;
+
+                var set = editor.GetViewProperties();
+                set.SetItem("ZoomType", ZoomType);
+                set.SetItem("ZoomRatio", ZoomRatio);
+                editor.SetViewProperties(set);
+
+                document.getElementById("ZoomType").value = 0;
+            }
+
+            function changeZoomType(selection) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var ZoomType = selection.value;
+
+                var set = editor.GetViewProperties();
+                set.SetItem("ZoomType", ZoomType);
+                editor.SetViewProperties(set);
+
+                document.getElementById("ZoomRatio").value = 100;
+            }
+
+            function handleMultiFileSelect(evt) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // Check for the various File API support.
+                if (window.File && window.FileReader && window.FileList && window.Blob) {
+                // Great success! All the File APIs are supported.
+                } else {
+                    alert('The File APIs are not fully supported in this browser.');
+                }
+            
+                var files = evt.target.files; // FileList object
+                var file = files[0];
+            
+                var openCallback = function(result) {
+                    function saveAsCallback(result) {
+                        //Tab추가
+                        var htmlId = result.key;
+                        var itemTabs = document.getElementById("itemTabs");
+                        var itemCount = itemTabs.childElementCount;
+                        var item = document.createElement("li");
+                        item.innerHTML = "<a href='javascript:showDoc("+ itemCount +")'>" + (itemCount+1) + "안</a>";
+                        item.setAttribute("htmlId", htmlId);
+                        itemTabs.appendChild(item);
+                        tabSelect(itemCount);
+                        
+                        
+                        editor.MoveToField("본문", true, true, true);
+                        var text = editor.GetTextFile("TEXT", "saveblock");
+                        editor.MoveToField("본문", true, true, false);
+                        alert(text);
+                        
+                    }
+                    editor.SaveAs("" , "html", [ "lock:TRUE;upload:FALSE;", saveAsCallback, null ]);
+                }
+                editor.Open(file, "", [ null, openCallback ]);
+            }
+
+            function handleFileSelect(evt) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // Check for the various File API support.
+                if (window.File && window.FileReader && window.FileList && window.Blob) {
+                // Great success! All the File APIs are supported.
+                } else {
+                    alert('The File APIs are not fully supported in this browser.');
+                }
+
+                var files = evt.target.files; // FileList object
+                var file = files[0];
+
+                // files is a FileList of File objects. List some properties.
+                // var output = [];
+                //     for (var i = 0, f; f = files[i]; i++) {
+                //     output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ', f.size, ' bytes, last modified: ',
+                //             f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+                //             '</li>');
+                // }
+                // document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+
+				var openCallback = function(result) {
+                    // var viewProp = editor.GetViewProperties();
+                    // viewProp.SetItem("ZoomType",2);
+                    //editor.SetViewProperties(viewProp);
+                    
+                    function saveAsCallback(result) {
+                        //Tab추가
+                        var htmlId = result.key;
+                        function saveAsCallback2(result) {
+                            editor.Open(htmlId, "id", [ null, null ]);
+                            
+                        }
+                        
+                        editor.SaveAs("" , "html", [ "lock:TRUE;upload:FALSE;", saveAsCallback2, null ]);
+                    }
+                    editor.SaveAs("" , "html", [ "lock:TRUE;upload:FALSE;", saveAsCallback, null ]);
+                    
+            	}
+                editor.Open(file, "", [ null, openCallback ]);
+            }
+            
+            function insertPubdoc(evt) {
+                var editor = document.getElementById("Document_HwpCtrl");
+            	
+                if (window.File && window.FileReader && window.FileList && window.Blob) {
+                } else {
+                    alert('The File APIs are not fully supported in this browser.');
+                }
+
+                var files = evt.target.files; // FileList object
+                var file = files[0];
+                
+                var openCallback = function(result) {
+                    var reader = new FileReader();
+    		        reader.onload = function(){
+    		            var text = reader.result;
+                        editor.MoveToField("본문", true, true, false);
+                        editor.SetTextFile(text, "pubdocbody", "insertfile");
+    		        };
+    		        reader.readAsText(file);
+                }
+                var path = "http://localhost/template.html"
+                editor.Open(path, "HTML", [ null, openCallback]);
+            }
+
+            function SelectText() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var spara = 1, spos = 3, epara = 3, epos = 8;
+                editor.SelectText(spara, spos, epara, epos);
+            }
+
+            function GetTableCellAddr() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var row = editor.GetTableCellAddr( 0 );
+                var col = editor.GetTableCellAddr( 1 );
+                alert("result(" + row + ", " + col + ")");
+            }
+
+            var htmlDocuments = [];
+            function OpenDocument(filepath, format, callback) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // [2016.01.01][Jay] HTML Open/Save 동기 처리
+                if (htmlDocuments[filepath] != null) {
+                    var html = htmlDocuments[filepath];
+                    var result = editor.SetTextFile(html, "HTML");
+                    addReviewers();
+                    callback(result);
+                    return result;
+                }
+                else {
+                    return editor.Open(filepath, "", [ null, callback ]);
+                }
+            }
+
+            function SaveAsDocument(filepath, format, callback) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // [2016.01.01][Jay] HTML Open/Save 동기 처리
+                var html = editor.GetTextFile("html");
+                var arg = [ "", "" ];
+                arg[1] = function(param) {
+                    htmlDocuments[param.htmlId] = html;             // { result: result.success, htmlId: id, filePath: path, size: content.length }
+                    callback(param);
+                }
+
+                return editor.SaveAs(filepath, format, arg);
+            }
+            var tabIndex = 1;
+            var tabHtmlList = {};
+            function showEditor( tab ) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                if (tab == tabIndex)
+                    return;
+
+                var html = editor.GetTextFile("html");
+                tabHtmlList[tabIndex] = html;
+
+                var htmlData = tabHtmlList[tab];
+                if (htmlData == null || htmlData == undefined)
+                    htmlData = "";
+
+                editor.SetTextFile(htmlData, "html");
+
+                tabIndex = tab;
+            }
+
+            function insertLocalDocument() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                editor.MoveToField("본문", true, true, false);
+                editor.InsertLocalDocument();
+            }
+
+            function handleInsertFileSelect(evt) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // Check for the various File API support.
+                if (window.File && window.FileReader && window.FileList && window.Blob) {
+                // Great success! All the File APIs are supported.
+                } else {
+                    alert('The File APIs are not fully supported in this browser.');
+                }
+
+                var files = evt.target.files; // FileList object
+                var file = files[0];
+
+                // 쪽을 나눈 다음 추가한다.
+                TestBreakPageAction();
+                setTimeout( function() {
+                    editor.Insert(file, "", "");
+                }, 0);
+            }
+
+            function insertLocalFile(evt) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var files = evt.target.files;
+                var reader = new FileReader();
+                reader.onload = function(event) {
+                    var dact = editor.CreateAction("InsertText");
+                    var dset = dact.CreateSet();
+                    dact.GetDefault(dset);
+                    dset.SetItem("Text", event.target.result);
+                    dact.Execute(dset);
+                }
+                reader.readAsText(files[0]);
+            }
+
+            function addReceiversBig() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var text = "달성군수, 인천광역시 중구청장, 인천광역시 동구청장, 인천광역시 남구청장, 인천광역시 남동구청장, 인천광역시 부평구청장, 인천광역시 계양구청장, 인천광역시 서구청장, 인천광역시 강화군수, 인천광역시 옹진군수, 광주광역시남구청장, 광주광역시북구청장, 광주광역시광산구청장, 대전광역시 동구청장, 대전광역시 중구청장, 대전광역시 서구청장, 대전광역시 유성구청장, 대전광역시 대덕구청장, 울산광역시중구청장, 울산광역시남구청장, 울산광역시동구청장, 울산광역시북구청장, 울주군수, 수원시장, 성남시장, 의정부시장, 안양시장, 부천시장, 광명시장, 평택시장, 동두천시장, 안산시장, 과천시장, 구리시장, 남양주시장, 오산시장, 군포시장, 의왕시장, 하남시장, 용인시장, 파주시장, 시흥시장, 이천시장, 여주시장, 김포시장, 화성시장, 광주시장, 양주시장, 포천시장, 연천군수, 가평군수, 양평군수, 춘천시장, 원주시장, 강릉시장, 동해시장, 태백시장, 속초시장, 삼척시장, 홍천군수, 횡성군수, 영월군수, 평창군수, 정선군수, 철원군수, 화천군수, 양구군수, 고성군수, 양양군수, 제천시장, 청주시장, 보은군수, 옥천군수, 영동군수, 증평군수, 진천군수, 괴산군수, 음성군수, 단양군수, 천안시장, 공주시장, 보령시장, 아산시장, 서산시장, 논산시장, 계룡시장, 당진시장, 금산군수, 부여군수, 서천군수, 청양군수, 홍성군수, 예산군수, 태안군수, 전주시장, 군산시장, 익산시장, 남원시장, 김제시장, 완주군수, 진안군수, 무주군수, 장수군수, 고창군수, 목포시장, 여수시장, 나주시장, 광양시장, 곡성군수, 고흥군수, 보성군수, 장흥군수, 강진군수, 무안군수, 함평군수, 영광군수, 장성군수, 완도군수, 포항시장, 경주시장, 영천시장, 김천시장, 안동시장, 구미시장, 영주시장, 상주시장, 문경시장, 경산시장, 군위군수, 의성군수, 영양군수, 영덕군수, 청도군수, 성주군수, 칠곡군수, 예천군수, 봉화군수, 울진군수, 울릉군수, 창원시장, 진주시장, 사천시장, 김해시장, 밀양시장, 거제시장, 양산시장, 의령군수, 함안군수, 창녕군수, 고성군수, 남해군수, 하동군수, 함양군수, 거창군수, 합천군수, 제주특별자치도 제주시장, 제주특별자치도 서귀포시장, 인천광역시 연수구청장, 고령군수, 해남군수, 화순군수, 부안군수, 인제군수, 광주광역시서구청장, 종로구청장, 서울특별시중구청장, 용산구청장, 성동구청장, 광진구청장, 동대문구청장, 중랑구청장, 성북구청장, 강북구청장, 도봉구청장, 노원구청장, 은평구청장, 서대문구청장, 마포구청장, 양천구청장, 강서구청장, 구로구청장, 금천구청장, 영등포구청장, 동작구청장, 관악구청장, 서초구청장, 강남구청장, 송파구청장, 강동구청장, 부산광역시 중구청장, 부산광역시 서구청장, 부산광역시 동구청장, 영도구청장, 부산진구청장, 부산광역시 동래구청장, 부산광역시남구청장, 부산광역시 북구청장, 해운대구청장, 사하구청장, 금정구청장, 부산광역시 강서구청장, 연제구청장, 수영구청장, 사상구청장, 기장군수, 대구광역시 서구청장, 대구광역시남구청장, 대구광역시 수성구청장달성군수, 인천광역시 중구청장, 인천광역시 동구청장, 인천광역시 남구청장, 인천광역시 남동구청장, 인천광역시 부평구청장, 인천광역시 계양구청장, 인천광역시 서구청장, 인천광역시 강화군수, 인천광역시 옹진군수, 광주광역시남구청장, 광주광역시북구청장, 광주광역시광산구청장, 대전광역시 동구청장, 대전광역시 중구청장, 대전광역시 서구청장, 대전광역시 유성구청장, 대전광역시 대덕구청장, 울산광역시중구청장, 울산광역시남구청장, 울산광역시동구청장, 울산광역시북구청장, 울주군수, 수원시장, 성남시장, 의정부시장, 안양시장, 부천시장, 광명시장, 평택시장, 동두천시장, 안산시장, 과천시장, 구리시장, 남양주시장, 오산시장, 군포시장, 의왕시장, 하남시장, 용인시장, 파주시장, 시흥시장, 이천시장, 여주시장, 김포시장, 화성시장, 광주시장, 양주시장, 포천시장, 연천군수, 가평군수, 양평군수, 춘천시장, 원주시장, 강릉시장, 동해시장, 태백시장, 속초시장, 삼척시장, 홍천군수, 횡성군수, 영월군수, 평창군수, 정선군수, 철원군수, 화천군수, 양구군수, 고성군수, 양양군수, 제천시장, 청주시장, 보은군수, 옥천군수, 영동군수, 증평군수, 진천군수, 괴산군수, 음성군수, 단양군수, 천안시장, 공주시장, 보령시장, 아산시장, 서산시장, 논산시장, 계룡시장, 당진시장, 금산군수, 부여군수, 서천군수, 청양군수, 홍성군수, 예산군수, 태안군수, 전주시장, 군산시장, 익산시장, 남원시장, 김제시장, 완주군수, 진안군수, 무주군수, 장수군수, 고창군수, 목포시장, 여수시장, 나주시장, 광양시장, 곡성군수, 고흥군수, 보성군수, 장흥군수, 강진군수, 무안군수, 함평군수, 영광군수, 장성군수, 완도군수, 포항시장, 경주시장, 영천시장, 김천시장, 안동시장, 구미시장, 영주시장, 상주시장, 문경시장, 경산시장, 군위군수, 의성군수, 영양군수, 영덕군수, 청도군수, 성주군수, 칠곡군수, 예천군수, 봉화군수";
+                editor.PutFieldText("수신처참조", text);
+                editor.MoveToField("본문", true, true, false);
+                //editor.SetEditMode(0);
+                //editor.SetEditMode(2);
+            }
+            
+            function addReceiversLittle() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var text = "달성군수";
+                editor.PutFieldText("수신처참조", text);
+                
+				/*
+                editor.MoveToField("수신자", true, true, false);
+                var cellShape = editor.GetCellShape();
+                var cellInfo = cellShape.Item("Cell");
+                var height = 4.5 * 283.465; //4.5mm to HWPUNIT
+                cellInfo.SetItem("Height", height);
+                editor.SetCellShape(cellShape);                */
+            }
+
+            function addReviewers() {
+            	addReviewer('*검토1', 5, 8);
+            	addReviewer('*검토5', 9, 12);
+            	addReviewer('*검토9', 13, 16);
+            }
+
+            function addAssists() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+                insertNewAssistRows('*협조1', 5, 8);
+                insertNewAssistRows('*협조5', 9, 12);
+                insertNewAssistRows('*협조9', 13, 16);
+
+                //협조자 타이틀 셀 병합
+                var assistRow = 4;
+                if (assistRow > 1) {
+                    editor.MoveToField("*" + "협조" + "1", true, true, true);
+                    editor.Run('TableLeftCell');
+                    editor.Run('TableCellBlockExtend');
+                    for (var i = 1; i < assistRow; i++) {
+                        editor.Run('TableLowerCell');
+                    }
+
+                    editor.Run('TableMergeCell');
+                    editor.MoveToField("협조", true, true, false);
+                    editor.PutFieldText("협조", "협조자");
+                }
+            }
+            
+            function removeAssists() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+            	editor.MoveToField("*협조13", true, true, false);
+            	editor.Run("TableDeleteRow");
+            	editor.MoveToField("*협조9", true, true, false);
+            	editor.Run("TableDeleteRow");
+                editor.MoveToField("*협조5", true, true, false);
+            	editor.Run("TableDeleteRow");
+                
+            	/* var cellShape = editor.GetCellShape();
+                var cellInfo = cellShape.Item("Cell");
+                var height = 8.4 * 283.465; //4.5mm to HWPUNIT
+                cellInfo.SetItem("Height", height);
+                editor.SetCellShape(cellShape); */
+            }
+
+            function removeReviewers() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+                var i = 1;
+                while (true) {
+                    var start = 1 + (i * 4);
+                    var fieldName = "*" + "검토" + start;
+                    if (editor.FieldExist(fieldName)) {
+                        editor.MoveToField(fieldName, true, true, false);
+                        editor.Run("TableDeleteRow");
+
+                        // 공동 결재 - 기관명 row 제거
+                        fieldName = "#" + "검토" + start;
+                        if (editor.FieldExist(fieldName)) {
+                            editor.MoveToField(fieldName, true, true, false);
+                            editor.Run("TableDeleteRow");
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                    i++;
+                }
+
+                //협조자 row 삭제
+                var j = 1;
+                while (true) {
+                    var start = 1 + (j * 4);
+                    var fieldName = "*" + "협조" + start;
+                    if (editor.FieldExist(fieldName)) {
+                        editor.MoveToField(fieldName, true, true, false);
+                        editor.Run("TableDeleteRow");
+
+                        // 공동 결재 - 협조자의 기관명 Row 제거
+                        fieldName = "#" + "협조" + start;
+                        if (editor.FieldExist(fieldName)) {
+                            editor.MoveToField(fieldName, true, true, false);
+                            editor.Run("TableDeleteRow");
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                    j++;
+                }
+            }
+
+            function addReviewer(fieldName, startIndex, endIndex) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+            	//1. 복사할 필드로 이동 - MoveToField
+            	editor.MoveToField(fieldName, true, true, true);
+
+            	//2. 해당 필드 하단에 줄추가 - TableInsertLowerRow
+    			editor.Run('TableInsertLowerRow');
+
+            	//3. 추가한 셀로 커서이동 - TableLowerCell
+    			editor.Run('TableLowerCell');
+
+            	for (var i = startIndex; i <= endIndex; i++) {
+            		//4. 이동한 셀에서 필드 추가 - SetCurFieldName
+                	editor.SetCurFieldName('*검토'+i, 0, "", "");
+
+                	//5. 다음셀로 커서 이동 - TableRightCell
+        			editor.Run('TableRightCell');
+
+                	//6. 셀 분할하기 - TableSplitCell
+        			var action = editor.CreateAction('TableSplitCell');
+    	        	var set = action.CreateSet();
+    	        	action.GetDefault(set);
+    	        	set.SetItem('Rows', 2);
+    	        	set.SetItem('Cols', 0);
+    	        	action.Execute(set);
+
+        			editor.MoveToField('*검토'+i, true, true, true);
+        			editor.Run('TableRightCell');
+
+        			//7. 분할한 셀에 필드추가 - SetCurFieldName
+        			editor.SetCurFieldName('@검토'+i, 0, "", "");
+
+        			//8. 다음줄로 커서 이동 - TableLowerCell
+        			editor.MoveToField('@검토'+i, true, true, true);
+        			editor.Run('TableLowerCell');
+
+        			//9. 분할한 셀에 필드추가 - SetCurFieldName
+        			editor.SetCurFieldName('검토'+i, 0, "", "");
+        			editor.Run('TableRightCell');
+            	}
+            	editor.MoveToField("*검토"+startIndex, true, true, false);
+            }
+
+            function insertNewAssistRows(fieldName, start, end) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+                //1. 복사할 필드로 이동 - MoveToField
+                editor.MoveToField(fieldName, true, true, true);
+
+                //2. 해당 필드 하단에 줄추가 - TableInsertLowerRow
+                editor.Run('TableInsertLowerRow');
+
+                editor.MoveToField(fieldName, true, true, true);
+
+                //3. 추가한 셀로 커서이동 - TableLowerCell
+                editor.Run('TableLowerCell');
+
+                for (var i = start; i <= end; i++) {
+                    //1. 이동한 셀에서 필드 추가 - SetCurFieldName
+                    editor.SetCurFieldName('*' + '협조' + i, 0, "", "");
+
+                    //2. 다음셀로 커서 이동 - TableRightCell
+                    editor.Run('TableRightCell');
+
+                    //3. 분할한 셀에 필드추가 - SetCurFieldName
+                    editor.SetCurFieldName('협조' + i, 0, "", "");
+                    editor.Run('TableRightCell');
+                }
+
+                editor.MoveToField('*' + '협조' + start, true, true, false);
+            }
+
+            function tabSelect(index) {
+            	//var itemTabs = document.getElementById("itemTabs");
+            	var item = itemTabs.getElementsByTagName("a");
+            	for(var i = 0; i < item.length; i++) {
+        			var tab = item[i];
+        			if(index == i) {
+        				tab.className = "active";
+        				selectedTabIndex = index;
+            		}
+            		else {
+            			tab.className = "";
+                        tab.removeAttribute("class");
+            		}
+            	}
+            }
+
+            var selectedTabIndex = -1;
+            function addDoc() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+                function saveAsCallback(result) {
+                    //Tab추가
+                    var htmlId = result.key;
+                    var itemTabs = document.getElementById("itemTabs");
+                	var itemCount = itemTabs.childElementCount;
+                    var item;
+                	if (itemCount === 0) {
+                		item = document.createElement("li");
+                    	item.innerHTML = "<a href='javascript:showDoc("+ itemCount +")'>" + (itemCount+1) + "안</a>";
+                        item.setAttribute("htmlId", htmlId);
+                    	itemTabs.appendChild(item);
+                	}
+                    else {
+                        item = getItem(selectedTabIndex);
+                        item.setAttribute("htmlId", htmlId);
+                    }
+                    
+                    itemCount = itemTabs.childElementCount;
+                    item = document.createElement("li");
+                    item.innerHTML = "<a href='javascript:showDoc("+ itemCount +")'>" + (itemCount+1) + "안</a>";
+                	itemTabs.appendChild(item);
+                    
+                    //탭추가후 문서 Open
+                	var openCallback = function(result) {
+                        tabSelect(itemCount);
+                	}
+                	editor.Open("기안문테스트", "", [ null, openCallback, null ]);
+                }
+                
+                var itemTabs = document.getElementById("itemTabs");
+                var itemCount = itemTabs.childElementCount;
+                var htmlId = itemCount && itemCount > 0 ? getItem(selectedTabIndex).getAttribute("htmlId") : "";
+                editor.SaveAs(htmlId , "html", [ null, saveAsCallback, null ]);
+            }
+
+            function showDoc(index) {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+                var saveAsCallback = function(result) {
+                    item.setAttribute("htmlId", result.key);
+                    
+                    var showDoc = getItem(index);
+                    var showDocHtmlId = showDoc ? showDoc.getAttribute("htmlId") : "";
+                	//탭추가후 문서 Open
+                	var openCallback = function(result) {
+                        tabSelect(index);
+                	};
+                	editor.Open(showDocHtmlId, "", [ null, openCallback ]);
+        		};
+                var itemTabs = document.getElementById("itemTabs");
+                var itemCount = itemTabs.childElementCount;
+                var item = getItem(selectedTabIndex);
+                var htmlId = item ? item.getAttribute("htmlId") : "";
+        		editor.SaveAs(htmlId , "html", [ "lock:TRUE;upload:FALSE;", saveAsCallback, null ]);
+            }
+
+            function getItem(selectedTabIndex) {
+            	var itemTabs = document.getElementById("itemTabs");
+            	for (var i = 0; i < itemTabs.childElementCount; i++) {
+        			if (i == selectedTabIndex) {
+        				return itemTabs.getElementsByTagName("li")[i];
+        			}
+            	}
+            }
+            
+            function saveAllDocs() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+                var selectedItem = getItem(selectedTabIndex);
+                var selectedHtmlId = selectedItem ? selectedItem.getAttribute("htmlId") : "";
+                var saveAsCallback = function(result) {
+                    selectedItem.setAttribute("htmlId", result.key);
+                    
+                    var itemTabs = document.getElementById("itemTabs");
+                    var htmlIds = [];
+                    var htmlId = '';
+                	for (var i = 0; i < itemTabs.childElementCount; i++) {
+                        var item = getItem(i);
+                        htmlIds.push(item.getAttribute("htmlId"));
+                    }
+                    
+                    htmlId = htmlIds.pop();
+                    openAndSave(htmlId);
+                    
+                    function openAndSave(htmlId) {
+                        if (htmlId) {
+                            var openCallback = function(result) {
+                                var saveAsCallback = function(result) {
+                                    if (window.navigator.msSaveBlob) { // IE
+                                        var xhr = new XMLHttpRequest();
+                                        xhr.open('GET', result.downloadUrl);
+                                        xhr.responseType = 'blob';
+                                        xhr.onload = function() {
+                                            if (this.status == 200) {
+                                                var blob = new Blob([xhr.response], 'application/vnd.oasis.opendocument.text');
+                                                window.navigator.msSaveOrOpenBlob(blob, result.fileName)
+                                            }
+                                        }
+                                        xhr.send();
+                                    } else {
+                                        var element = document.createElement('a');
+                                        element.setAttribute('href', result.downloadUrl);
+                                        element.setAttribute('download', result.fileName);
+                                        element.setAttribute('target', '_blank');
+                                        element.style.display = 'none';
+                                        document.body.appendChild(element);
+                                        element.click();
+                                        document.body.removeChild(element);
+                                    }
+                                    
+                                    openAndSave(htmlIds.pop());
+                                };
+                                editor.SaveAs(htmlId, "odt", [ null, saveAsCallback, null ]);
+                        	}
+                        	editor.Open(htmlId, "", [ null, openCallback ]);
+                        }
+                        else {
+                            showDoc(0);
+                        }
+                    }
+                }
+                
+                editor.SaveAs(selectedHtmlId , "html", [ "lock:TRUE;upload:FALSE;", saveAsCallback, null ]);
+            }
+
+            function resizeEditor() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+                var editorWidth = document.getElementById("editorWidth").value;
+                var editorHeight = document.getElementById("editorHeight").value;
+
+                editor.ResizeEditor(editorWidth, editorHeight, true);
+            }
+
+            function saveDocument() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var saveAsCallback = function(result) {
+                    if (window.navigator.msSaveBlob) { // IE
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('GET', result.downloadUrl);
+                        xhr.responseType = 'blob';
+                        xhr.onload = function() {
+                            if (this.status == 200) {
+                                var blob = new Blob([xhr.response], 'application/vnd.oasis.opendocument.text');
+                                window.navigator.msSaveOrOpenBlob(blob, result.fileName)
+                            }
+                        }
+                        xhr.send();
+                    } else {
+                        var element = document.createElement('a');
+                        element.setAttribute('href', result.downloadUrl);
+                        element.setAttribute('download', result.fileName);
+                        element.setAttribute('target', '_blank');
+                        element.style.display = 'none';
+                        document.body.appendChild(element);
+                        element.click();
+                        document.body.removeChild(element);
+                    }
+                }
+
+                var path = "";
+                editor.SaveAs(path, "odt", [ null, saveAsCallback, null ]);
+            }
+
+            function savePDFDocument() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var saveAsCallback = function(result) {
+                    var element = document.createElement('a');
+                    element.setAttribute('href', result.downloadUrl);
+                    element.setAttribute('download', result.fileName);
+                    element.setAttribute('target', '_blank');
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                }
+
+                var path = "";
+                editor.SaveAs(path, "pdf", [ null, saveAsCallback, null ]);
+            }
+
+
+            var docIds = [];
+            var currentDocId;
+            function testSpellingCheck() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var callback = function(result) {
+
+                    var body = "<p> 오일쇼크 오일 오일쇼크 오일 동선 고참 견출지</p> <p>공사 <span>오일쇼크</span><span>오일</span><span>오일쇼크</span><span>오일</span>다망중 내구 연한 심득 사항 쓰레기 하치장 공사 내구도  쓰레기장 </p>";
+                    body += "<br><br><p>아나고 갤러리 견사 경구투여 고가차 근일 낙뢰 가금류  </p><br><br><p>넘버 노이로제 노후한 누일 다년생 동선 고참 견출지</p> <p>공사 다망중 내구 연한 심득 사항 쓰레기 하차장 공사다망중 내구연한 심득사항 쓰레기하차장 </p>";
+                    //body += "<br><br><p>아나고 갤러리 견사 경구투여 고가차 근일 낙뢰 가금류  </p><br><br><p>넘버 노이로제 노후한 누일 다년생 동선 고참 견출지</p> <p>공사 다망중 내구 연한 심득 사항 쓰레기 하차장 공사다망중 내구연한 심득사항 쓰레기하차장 </p>";
+                    //body += "<br><br><p>아나고 갤러리 견사 경구투여 고가차 근일 낙뢰 가금류  </p><br><br><p>넘버 노이로제 노후한 누일 다년생 동선 고참 견출지</p> <p>공사 다망중 내구 연한 심득 사항 쓰레기 하차장 공사다망중 내구연한 심득사항 쓰레기하차장 </p>";
+                    //body += "<br><br><p>아나고 갤러리 견사 경구투여 고가차 근일 낙뢰 가금류  </p><br><br><p>넘버 노이로제 노후한 누일 다년생 동선 고참 견출지</p> <p>공사 다망중 내구 연한 심득 사항 쓰레기 하차장 공사다망중 내구연한 심득사항 쓰레기하차장 </p>";
+
+                    editor.PutFieldText("제목", "행정순화필터 테스트 아나고, 고참");
+                    editor.MoveToField("본문", true, true, false);
+                    editor.SetTextFile(body, "HTML", "insertfile");
+                    for (var i = 0; i < 3; i++) {
+                        editor.SaveAs("", "html", [ "lock:TRUE;upload:FALSE;", function (result) {
+                            var docId = new Object();
+                            docId.id = result.key;
+                            docId.isSpellCheckCompleted = false;
+                            docIds[i] = docId;
+                        }]);
+                    }
+                    spellingCheck();
+
+                }
+                editor.OpenBmsEnforceForm(callback);
+            }
+
+            function spellingCheck() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                for (var i = 0; i < docIds.length; i++) {
+                    if (!docIds[i].isSpellCheckCompleted) {
+                        currentDocId = docIds[i].id;
+                    	editor.Open(docIds[i].id, "HTML", [ null, function() {
+                            chkIsComplete(editor);
+                        }]);
+                    	break;
+                    }
+                }
+            }
+
+            function chkIsComplete(hwpCtrl) {
+                var isCheckComplete = hwpCtrl.IsSpellCheckCompleted();
+                // 맞춤법 검사 완료 여부를 체크한다.
+                if ( !isCheckComplete ) {
+                    // 맞춤법 액션을 실행하기 위해서 포커스를 컨트롤로 이동한다.
+                    try {
+                        hwpCtrl.focus();
+                    } catch(e) {
+                    }
+
+                    // 맞춤법 검사 액션을 실행한다.
+                    var act = hwpCtrl.CreateAction("SpellingCheck");
+                    var set = act.CreateSet();
+                    act.GetDefault(set);
+
+                    // 결과를 통보받을지 여부를 설정 (결과는 HwpCtrl_NotifyMessage 로 통보 됨)
+                    set.SetItem("NotifyResult", 1);
+                    // 맞춤법 대화상자가 표시되면서 맞춤법 검사가 시작되는 옵션
+                    set.SetItem("CheckStart", 1);
+                    act.PopupDialog(set);
+                    return;
+                }
+            }
+
+            function fnSpellingCheck() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // 맞춤법 액션을 실행하기 위해서 포커스를 컨트롤로 이동한다.
+                try {
+                    editor.focus();
+                } catch(e) {
+                }
+
+                // 맞춤법 검사 액션을 실행한다.
+                var act = editor.CreateAction("SpellingCheck");
+                var set = act.CreateSet();
+                act.GetDefault(set);
+
+                // 맞춤법 대화상자가 표시되면서 맞춤법 검사가 시작되는 옵션
+                set.SetItem("CheckStart", 1);
+                act.PopupDialog(set);
+            }
+
+            Editor.NotifyMessage = function(msg, wparam, lparam) {
+                if (msg == "SpellCheckCompleted") {
+        			//docIds[currentDocId].isSpellCheckCompleted = true;
+        				alert("SpellCheckCompleted WParam = " + wparam);
+        			if (wparam == 0) {
+        				//spellingCheck();
+        			} else {
+        			    //spellingCheck();
+        			}
+        		}
+            }
+
+            function testPutFieldText() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var fieldName = document.getElementById("PutFieldText_FieldName").value;
+                var text = document.getElementById("PutFieldText_Text").value;
+
+                if ( fieldName ) {
+                    editor.PutFieldText(fieldName, text);
+                } else {
+                    alert('fieldName을 입력하세요');
+                }
+            }
+
+            function testSetTextFile() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                //editor.MovePos(2);
+
+				var saveAsCallback = function(result) {
+				    var key = result.key;
+				    var callback = function (result) {
+				        editor.SaveAs(key, "html", [ "lock:TRUE;upload:FALSE", function(result) {
+				            editor.Open(result.key, "", ["", function(result) {
+
+				            }]);
+				        } ]);
+				    }
+	                editor.Open(key, "", ["", callback]);
+                }
+				editor.SaveAs("", "html", [ "lock:TRUE;upload:FALSE", saveAsCallback ]);
+            }
+
+            function PutFieldText1() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var delimiter = '\u0002';
+                var fields = '';
+                var value = '';
+
+                fields += "머리말" + delimiter;
+                value += "상부캠페인" + delimiter;
+
+                fields += "기관명" + delimiter;
+                value += "행 정 안 전 부" + delimiter;
+
+                fields += "수신" + delimiter;
+                value += "행정자치부(인사기획장관)" + delimiter;
+
+                fields += "경유" + delimiter;
+                value += "" + delimiter;
+
+                fields += "제목" + delimiter;
+                value += "문서 작성 테스트 입니다.." + delimiter;
+
+                fields += "발신명의" + delimiter;
+                value += "행 정 안 전 부 장" + delimiter;
+
+                fields += "수신자" + delimiter;
+                value += "수신자" + delimiter;
+
+                fields += "수신처참조" + delimiter;
+                value += "수신처참조" + delimiter;
+
+                fields += "*검토1" + delimiter;
+                value += "교위" + delimiter;
+
+                fields += "*검토2" + delimiter;
+                value += "교위" + delimiter;
+
+                fields += "*검토3" + delimiter;
+                value += "교위" + delimiter;
+
+                fields += "*검토4" + delimiter;
+                value += "교위" + delimiter;
+
+                fields += "@검토1" + delimiter;
+                value += "2016.03.01" + delimiter;
+
+                fields += "@검토2" + delimiter;
+                value += "2016.03.01" + delimiter;
+
+                fields += "@검토3" + delimiter;
+                value += "2016.03.01" + delimiter;
+
+                fields += "@검토4" + delimiter;
+                value += "2016.03.01" + delimiter;
+
+                fields += "검토1" + delimiter;
+                value += "김기안" + delimiter;
+
+                fields += "검토2" + delimiter;
+                value += "김검토" + delimiter;
+
+                fields += "검토3" + delimiter;
+                value += "김서무" + delimiter;
+
+                fields += "검토4" + delimiter;
+                value += "김결재" + delimiter;
+
+                fields += "*협조1" + delimiter;
+                value += "교위" + delimiter;
+
+                fields += "*협조2" + delimiter;
+                value += "교위" + delimiter;
+
+                fields += "*협조3" + delimiter;
+                value += "기타" + delimiter;
+
+                fields += "*협조4" + delimiter;
+                value += "기타" + delimiter;
+
+                fields += "협조1" + delimiter;
+                value += "박기안" + delimiter;
+
+                fields += "협조2" + delimiter;
+                value += "박검토" + delimiter;
+
+                fields += "협조3" + delimiter;
+                value += "박협조" + delimiter;
+
+                fields += "협조4" + delimiter;
+                value += "박결재" + delimiter;
+
+                fields += "시행번호" + delimiter;
+                value += "1234567890" + delimiter;
+
+                fields += "시행일자" + delimiter;
+                value += "2015.12.12" + delimiter;
+
+                fields += "접수번호" + delimiter;
+                value += "2015-00001" + delimiter;
+
+                fields += "접수일자" + delimiter;
+                value += "2015/12/12" + delimiter;
+
+                fields += "우편번호" + delimiter;
+                value += "000-000" + delimiter;
+
+                fields += "주소" + delimiter;
+                value += "서울특별시 관악구 남부순환로 2004, (남현동)" + delimiter;
+
+                fields += "홈페이지" + delimiter;
+                value += "http://infraware-global.com" + delimiter;
+
+                fields += "전화번호" + delimiter;
+                value += "02-123-4567" + delimiter;
+
+                fields += "전송" + delimiter;
+                value += "02-000-0000" + delimiter;
+
+                fields += "전자우편" + delimiter;
+                value += "test001@domain.com" + delimiter;
+
+                fields += "공개여부" + delimiter;
+                value += "대국민 공개" + delimiter;
+
+                fields += "꼬리말" + delimiter;
+                value += "하부캠페인" + delimiter;
+                editor.PutFieldText(fields, value);
+            }
+
+            function showEditor(isVisible) {
+                var editorContainer = document.getElementById("editorContainer");
+
+                if(isVisible) {
+                    editorContainer.style.left = "0px";
+                    editorContainer.style.top = "0px";
+                    editorContainer.style.position = "";
+        	    }else {
+        	        editorContainer.style.left = "-999px";
+        	        editorContainer.style.top = "-999px";
+        	        editorContainer.style.position = "absolute";
+        	    }
+            }
+
+			function ChangeEditMode(mode) {
+				var editor = document.getElementById("Document_HwpCtrl");
+				editor.SetEditMode(mode);
+			}
+			
+			function removeHeaderFooter() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+				var act = editor.CreateAction("HeaderFooter");
+				var set = act.CreateSet();
+				act.GetDefault(set);
+				set.SetItem("HeaderFooterCtrlType", 0); //머리말/꼬리말 종류 : 0 = 머리말, 1 = 꼬리말
+				act.Execute(set);
+				
+				act = editor.CreateAction("InsertText");
+				set = act.CreateSet();
+				act.GetDefault(set);
+				set.SetItem( "Text", "" );
+				act.Execute(set);
+				editor.Run("Close");
+				
+				var act = editor.CreateAction("HeaderFooter");
+				var set = act.CreateSet();
+				act.GetDefault(set);
+				set.SetItem("HeaderFooterCtrlType", 1); //머리말/꼬리말 종류 : 0 = 머리말, 1 = 꼬리말
+				act.Execute(set);
+				
+				act = editor.CreateAction("InsertText");
+				set = act.CreateSet();
+				act.GetDefault(set);
+				set.SetItem( "Text", "" );
+				act.Execute(set);
+				editor.Run("Close");
+			}
+			
+			function insertHeaderFooter(ctrlType, alignType, pDisplaypage, contents){
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+				ctrlType = 0;
+				alignType = 1;
+				contents = "폴라리스";
+				pDisplaypage = true;
+
+				var act = editor.CreateAction("HeaderFooter");
+				var set = act.CreateSet();
+				act.GetDefault(set);
+
+				//set.SetItem("Type",0); //머리말/꼬리말 위치 : 0 = 양쪽, 1 = 짝수쪽, 2 = 홀수쪽
+				set.SetItem("HeaderFooterStyle", 0); //머리말/꼬리말 마당 스타일
+				set.SetItem("HeaderFooterCtrlType", ctrlType); //머리말/꼬리말 종류 : 0 = 머리말, 1 = 꼬리말
+				act.Execute(set);
+
+				// 0. 가운데 정렬 : ParagraphShapeAlignCenter
+				// 1. 왼쪽 정렬   : ParagraphShapeAlignLeft
+				// 2. 오른쪽 정렬 : ParagraphShapeAlignRight
+				// 3. 양쪽 정렬   : ParagraphShapeAlignJustify
+				if ( alignType == 0 ) {
+					editor.Run("ParagraphShapeAlignCenter");
+				} else if ( alignType == 1 ) {
+					editor.Run("ParagraphShapeAlignLeft");
+				} else if ( alignType == 2 ) {
+					editor.Run("ParagraphShapeAlignRight");
+				} else if ( alignType == 3 ) {
+					editor.Run("ParagraphShapeAlignJustify");
+				}
+
+				act = editor.CreateAction("InsertText");
+				set = act.CreateSet();
+				act.GetDefault(set);
+
+				if ( pDisplaypage ) {
+					set.SetItem( "Text", contents + "  " );
+				} else {
+					set.SetItem( "Text", contents );
+				}
+				act.Execute(set);
+
+				// 쪽수 표시 여부
+				if ( pDisplaypage ) {
+					editor.Run("InsertCpTpNo");
+				}
+
+				editor.Run("Close");
+			}
+
+             function PutFieldText2() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var delimiter = '\u0002';
+                var fields = '';
+                var value = '';
+
+                fields += "머리말" + delimiter;
+                value += "3년의 혁신, 30년의 성장" + delimiter;
+
+                fields += "기관명" + delimiter;
+                value += "미래창조과학부" + delimiter;
+
+                fields += "수신" + delimiter;
+                value += "기업 CEO" + delimiter;
+
+                fields += "경유" + delimiter;
+                value += "" + delimiter;
+
+                fields += "제목" + delimiter;
+                value += "정보보호가 기본이 되는 사이버 안심국가 구현을 위해 대표님께 드리는 글" + delimiter;
+
+                fields += "발신명의" + delimiter;
+                value += "미래창조과학부장관" + delimiter;
+
+                fields += "수신자" + delimiter;
+                value += "" + delimiter;
+
+                fields += "수신처참조" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*검토1" + delimiter;
+                value += "행정사무관" + delimiter;
+
+                fields += "*검토2" + delimiter;
+                value += "정보보호기획 과장" + delimiter;
+
+                fields += "*검토3" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*검토4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "@검토1" + delimiter;
+                value += "" + delimiter;
+
+                fields += "@검토2" + delimiter;
+                value += "전결 2016. 2. 3." + delimiter;
+
+                fields += "@검토3" + delimiter;
+                value += "" + delimiter;
+
+                fields += "@검토4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "검토1" + delimiter;
+                value += "송창종" + delimiter;
+
+                fields += "검토2" + delimiter;
+                value += "홍진배" + delimiter;
+
+                fields += "검토3" + delimiter;
+                value += "" + delimiter;
+
+                fields += "검토4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*협조1" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*협조2" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*협조3" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*협조4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "협조1" + delimiter;
+                value += "" + delimiter;
+
+                fields += "협조2" + delimiter;
+                value += "" + delimiter;
+
+                fields += "협조3" + delimiter;
+                value += "" + delimiter;
+
+                fields += "협조4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "시행번호" + delimiter;
+                value += "정보보호기획과-226" + delimiter;
+
+                fields += "시행일자" + delimiter;
+                value += "(2016. 2. 3.)" + delimiter;
+
+                fields += "접수번호" + delimiter;
+                value += "" + delimiter;
+
+                fields += "접수일자" + delimiter;
+                value += "" + delimiter;
+
+                fields += "우편번호" + delimiter;
+                value += "13809" + delimiter;
+
+                fields += "주소" + delimiter;
+                value += "경기도 과천시 관문로 47, (중앙동, 정부과천청사)" + delimiter;
+
+                fields += "홈페이지" + delimiter;
+                value += "http://www.msip.go.kr" + delimiter;
+
+                fields += "전화번호" + delimiter;
+                value += "02-2110-2913" + delimiter;
+
+                fields += "전송" + delimiter;
+                value += "02-2110-0218" + delimiter;
+
+                fields += "전자우편" + delimiter;
+                value += "changjong@msip.gokr" + delimiter;
+
+                fields += "공개여부" + delimiter;
+                value += "대국민 공개" + delimiter;
+
+                fields += "꼬리말" + delimiter;
+                value += "대한민국의 모든 아이디어 \"creativekorea.or.kr\"" + delimiter;
+                editor.PutFieldText(fields, value);
+
+
+                var InsertPicture = function() {
+                    var editor = document.getElementById("Document_HwpCtrl");
+                    
+                    var fieldName = '로고';
+                    var result = editor.FieldExist(fieldName);
+                    if (result) {
+                        editor.MoveToField(fieldName, true, true, false);
+                        editor.InsertPicture("", false, 2);
+                    }
+
+                    fieldName = '심볼';
+                    result = editor.FieldExist(fieldName);
+                    if (result) {
+                        editor.MoveToField(fieldName, true, true, false);
+                        editor.InsertPicture("", false, 2);
+                    }
+
+                    fieldName = '인';
+                    result = editor.FieldExist(fieldName);
+                    if (result) {
+                        editor.MoveToField(fieldName, true, true, false);
+                        editor.InsertPicture("", false, 2);
+
+                        // adjustSealPos
+
+                        var sourcefield = '발신명의';
+                        editor.MoveToField(sourcefield, true, true, false);
+                        var sendername = editor.GetFieldText(sourcefield).trim(); // replaceAll( "\\s", "" );
+
+                        var textsize = 0;
+                        for ( var i = 0; i < sendername.length; i++ ) {
+                            if ( ( sendername.charCodeAt(i) & 0xff00 ) != 0 ) {
+                                textsize += 2;
+                            } else {
+                                textsize += 0.7;
+                            }
+                        }
+
+                        var charOffset       = ((textsize > 34) ? 34 : textsize) / 2 - 0.2 ;
+                        var fontWidth        = 11;//767.2;
+                        var horizontalAdjust = charOffset * fontWidth;
+
+                        editor.MoveToField(fieldName, true, true, false);
+
+                        var tableAction = editor.CreateAction("TablePropertyDialog");
+
+                        var tableSet = tableAction.CreateSet();
+
+                        if ( tableSet != null ) {
+                            tableAction.GetDefault(tableSet);
+
+                            // horizontal align relative to enclosing table
+                            if ( tableSet.Item("HorzRelTo") != 3 ) {
+                                tableSet.SetItem("HorzRelTo", 3);
+                            }
+
+                            // center alignment
+                            tableSet.SetItem("HorzAlign", 1);
+
+                            // System.out.println( "horizontalAdjust2 : " +  (int) horizontalAdjust/HWPUNITS );
+                            tableSet.SetItem("HorzOffset", horizontalAdjust );
+
+                            tableAction.Execute(tableSet);
+                        }
+                    }
+                }
+
+                // InsertPicture();
+            }
+
+             function PutFieldText3() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var delimiter = '\u0002';
+                var fields = '';
+                var value = '';
+
+                fields += "머리말" + delimiter;
+                value += "국민행복 대한민국, 정부3.0" + delimiter;
+
+                fields += "기관명" + delimiter;
+                value += "행&nbsp;&nbsp;정&nbsp;&nbsp;자&nbsp;&nbsp;치&nbsp;&nbsp;부" + delimiter;
+
+                fields += "수신" + delimiter;
+                value += "내부결재" + delimiter;
+
+                fields += "경유" + delimiter;
+                value += "" + delimiter;
+
+                fields += "제목" + delimiter;
+                value += "2015 행정자치부 국제행정 협력 자료집 발간 관련 관계관 간담회 비용 집행" + delimiter;
+
+                fields += "발신명의" + delimiter;
+                value += "" + delimiter;
+
+                fields += "수신자" + delimiter;
+                value += "" + delimiter;
+
+                fields += "수신처참조" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*검토1" + delimiter;
+                value += "주무관" + delimiter;
+
+                fields += "*검토2" + delimiter;
+                value += "서기관" + delimiter;
+
+                fields += "*검토3" + delimiter;
+                value += "행정한류담당관" + delimiter;
+
+                fields += "*검토4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "@검토1" + delimiter;
+                value += "" + delimiter;
+
+                fields += "@검토2" + delimiter;
+                value += "" + delimiter;
+
+                fields += "@검토3" + delimiter;
+                value += "전결 2016. 2. 24." + delimiter;
+
+                fields += "@검토4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "검토1" + delimiter;
+                value += "김웅기" + delimiter;
+
+                fields += "검토2" + delimiter;
+                value += "김현숙" + delimiter;
+
+                fields += "검토3" + delimiter;
+                value += "김헌준" + delimiter;
+
+                fields += "검토4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*협조1" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*협조2" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*협조3" + delimiter;
+                value += "" + delimiter;
+
+                fields += "*협조4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "협조1" + delimiter;
+                value += "" + delimiter;
+
+                fields += "협조2" + delimiter;
+                value += "" + delimiter;
+
+                fields += "협조3" + delimiter;
+                value += "" + delimiter;
+
+                fields += "협조4" + delimiter;
+                value += "" + delimiter;
+
+                fields += "시행번호" + delimiter;
+                value += "행정한류담당관-474" + delimiter;
+
+                fields += "시행일자" + delimiter;
+                value += "" + delimiter;
+
+                fields += "접수번호" + delimiter;
+                value += "" + delimiter;
+
+                fields += "접수일자" + delimiter;
+                value += "" + delimiter;
+
+                fields += "우편번호" + delimiter;
+                value += "03171" + delimiter;
+
+                fields += "주소" + delimiter;
+                value += "서울특별시 종로구 세종대로 209 (세종로)" + delimiter;
+
+                fields += "홈페이지" + delimiter;
+                value += "http://www.moi.go.kr" + delimiter;
+
+                fields += "전화번호" + delimiter;
+                value += "02-2110-3375" + delimiter;
+
+                fields += "전송" + delimiter;
+                value += "02-2110-3366" + delimiter;
+
+                fields += "전자우편" + delimiter;
+                value += "somnus@mmoi.gokr" + delimiter;
+
+                fields += "공개여부" + delimiter;
+                value += "대국민 공개" + delimiter;
+
+                fields += "꼬리말" + delimiter;
+                value += "국민이 주인이 되는 정부, 정부3.0이 만들어갑니다." + delimiter;
+                editor.PutFieldText(fields, value);
+
+
+                var InsertPicture = function() {
+                    var editor = document.getElementById("Document_HwpCtrl");
+                    
+                    var fieldName = '로고';
+                    var result = editor.FieldExist(fieldName);
+                    if (result) {
+                        editor.MoveToField(fieldName, true, true, false);
+                        editor.InsertPicture("", false, 2);
+                    }
+
+                    fieldName = '심볼';
+                    result = editor.FieldExist(fieldName);
+                    if (result) {
+                        editor.MoveToField(fieldName, true, true, false);
+                        editor.InsertPicture("", false, 2);
+                    }
+
+                    fieldName = '인';
+                    result = editor.FieldExist(fieldName);
+                    if (result) {
+                        editor.MoveToField(fieldName, true, true, false);
+                        editor.InsertPicture("", false, 2);
+
+                        // adjustSealPos
+
+                        var sourcefield = '발신명의';
+                        editor.MoveToField(sourcefield, true, true, false);
+                        var sendername = editor.GetFieldText(sourcefield).trim(); // replaceAll( "\\s", "" );
+
+                        var textsize = 0;
+                        for ( var i = 0; i < sendername.length; i++ ) {
+                            if ( ( sendername.charCodeAt(i) & 0xff00 ) != 0 ) {
+                                textsize += 2;
+                            } else {
+                                textsize += 0.7;
+                            }
+                        }
+
+                        var charOffset       = ((textsize > 34) ? 34 : textsize) / 2 - 0.2 ;
+                        var fontWidth        = 11;//767.2;
+                        var horizontalAdjust = charOffset * fontWidth;
+
+                        editor.MoveToField(fieldName, true, true, false);
+
+                        var tableAction = editor.CreateAction("TablePropertyDialog");
+
+                        var tableSet = tableAction.CreateSet();
+
+                        if ( tableSet != null ) {
+                            tableAction.GetDefault(tableSet);
+
+                            // horizontal align relative to enclosing table
+                            if ( tableSet.Item("HorzRelTo") != 3 ) {
+                                tableSet.SetItem("HorzRelTo", 3);
+                            }
+
+                            // center alignment
+                            tableSet.SetItem("HorzAlign", 1);
+
+                            // System.out.println( "horizontalAdjust2 : " +  (int) horizontalAdjust/HWPUNITS );
+                            tableSet.SetItem("HorzOffset", horizontalAdjust );
+
+                            tableAction.Execute(tableSet);
+                        }
+                    }
+                }
+                // InsertPicture();
+            }
+             
+             function testTablePropertyDialog() {
+ 				
+ 				var editor = document.getElementById("Document_HwpCtrl");
+ 			    
+ 				editor.MoveToField("직인이미지", true, true, false);
+ 			    var imgStream = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAA8UExURe0cJO0cUO0cdu1Km+1yvfEcJPGY3vMcJPO7//dKJPfd//lyJPn///yYUPz///+7dv/dm///vf//3v////AJIdgAAAQOSURBVHja7d3NepwgFABQ006nNpOpbef937WLDg4qqEkTQXPuLi7i/U74Ewg0N7E6GgSwYMGCdWisRswGLFiwYMGCJWD9L5aB52gYCgsWrOqxNOcPDFiwYME6HpZeEBYsWLBgwYIFCxYsWLBgwYIFCxYsWLBgwYIFCxYsWLBgwYIFCxYsWLBgwYIFCxYsWLBgwYIFCxYsWLA+Cdbl/rvaGhV+f/+X3AkWrNfGr29NHmQ7rPCmTHx5KY81SvEMKxt/fkySamGlo0tldYK12qppvv6EtdZqqFUN1j2pQlh9JziNM6xs2/70PMijf1DFOCskUBSrm8o8/B4VEVYMc284h+PjByCsqMWKalxMeIYVxTX9idON62E1WKeC34aXVMF6FK3+eXGsUAUKYgWUQYsVlThYCazBaD2uh20xrJFO+PFcDitrUB1W18B6NVZ7G42c043u566G13qwcg18dVgBpQRWxUOHdPdXFCszKA2ZFhyUprFCFSiCtfC5c7rVgnX/uxbFqvdDeoKVaj62xap3imYdlsm/arGqm1aew7pn8eXFgkU+k+kKj6WwmUI+bs0tsu4Cq5bl+4VVsEqwKtkYkvibpaO15WhPWG+b+HrXocNlXqj8OKsmrFfPlsCCdSisrpnV2BjrsjSXAAsWLFhrNG6w9odVNmDBggULFixYVWKtWugpiLUUk51csGDBggULFqwPwfoUAQsWLFiwYMGCBQsWLFiwYMGCBQsWLFiwYMGCBQsWLFiwYMGCBQsWLFiwYMGCBQsWLFiwYMGCBQsWLFiwYMGCBQsWLFiwUjF/xQWsfWBlbxSDBWuPWOEg2eRrYcVxyd8+Aittkb0LrATW7LUR4dyZ7bGus9dLwVqwGmvBuke34sYPWMNecPasLFjjfvA0rJMnWNmOMLyuL2lxlwhrULCmd5zGMiWxZk+n2xSrL1jttMWPEoAVN1FxRn35b2El24U2NZg4wVr+ep5mACuPMDnzHFZU4dqFx7Ae7ft4liHYnGFN69v4VZMbpWDlsUIKsFbkM3kO60hYyyeLw4IFa/9Yx+kNC2Ltb5y1BdZhRvBbYHXpZULfhmYdPmQ+a/oUVlSGzJSuwerm5uDPsJL1MG7ire6sXzfsV8cqXje8Bp9CK9JBa/KgNFYunp5vpfc6XPax16EQ1j530YQe3P6slVjnAlhprcp3/hXDSmnVvqc0JFPBbuXxomt1WP1wosg++Kt98P7D4oOwZgMWLFiwYMGCBQsWLFiwYMGCBcspR7BgwYIFCxYsWLBgwYIFCxYsWLBgwYIFCxYsWLBgwYIFCxYsWLBgwYIFCxYsWLBgvQuWgAULFqzjYYlRrwgL1rZYItt8wYIFCxYsWLBgvQlLrBqiIoAFCxasY8ZfWyeAw7XzTssAAAAASUVORK5CYII=";
+ 			    //editor.InsertPicture(imgStream, true, 2);
+ 			    editor.InsertPicture(imgStream, true, 1, false, false, 0, 30, 30);
+ 				
+ 			    var HWPUINts = 283.465;
+                 
+ 			     editor.MoveToField("직인이미지", true, true, false);
+                 var sendername = editor.GetFieldText("발신명의");
+                 //sendername.replace(/[ \t]*$/, "");
+                 var textsize = 0;
+                 var textCount = 0;
+                 var spaceCount = 0;		
+                 for (var i = 0; i < sendername.length; i++)
+                 {
+                     if ((sendername.charCodeAt(i) & 0xff00) != 0)
+                     	textCount += 1;
+                     else
+                     	spaceCount += 1;
+                 }
+                 var fontWidth = 20;	//15pt
+                 var spaceWidth = 10;
+                 var horizontalAdjust = ((textCount * fontWidth + spaceCount * spaceWidth) / 2); 
+                 horizontalAdjust = (horizontalAdjust * 0.264583)  * HWPUINts;
+                 //관인 위치 조정
+                 var tableAction = editor.CreateAction("TablePropertyDialog");
+                 var tableSet = tableAction.CreateSet();
+                 if (tableSet == null)
+                     return false;
+
+                 tableAction.GetDefault(tableSet);
+
+                 // horizontal align relative to enclosing table
+                 if (tableSet.Item("HorzRelTo") != 3)
+                     tableSet.SetItem("HorzRelTo", 3);
+                 // center alignment
+                 tableSet.SetItem("HorzAlign", 1);
+                 tableSet.SetItem("HorzOffset", parseInt(horizontalAdjust));
+                 tableAction.Execute(tableSet);
+ 			}
+             
+             
+            function pageSetupAction() {
+                var editor = document.getElementById("Document_HwpCtrl");
+               	var action = editor.CreateAction('PageSetup');
+               	var set = action.CreateSet();
+               	action.GetDefault(set);
+               	set.SetItem('TextDirection', 200);
+                set.SetItem("ApplyTo", 3);  //적용범위 : 문서전체
+
+                //1mm = 283.465 HWPUNITs
+                var HWPUNIT = 283.465;
+                var leftmargin = HWPUNIT * 10;
+                var rightmargin = HWPUNIT * 10;
+                var topmargin = HWPUNIT * 10;
+                var bottommargin = HWPUNIT * 10;
+
+                var width = HWPUNIT * 210;
+
+                var pageDef = set.CreateItemSet("PageDef","PageDef");
+                pageDef.SetItem("PaperWidth", width);
+                pageDef.SetItem("LeftMargin", leftmargin);
+                pageDef.SetItem("RightMargin", rightmargin);
+                pageDef.SetItem("TopMargin", topmargin);
+                pageDef.SetItem("BottomMargin", bottommargin);
+
+                pageDef.SetItem("HeaderLen", 0);
+                pageDef.SetItem("FooterLen", 0);
+
+               	action.Execute(set);
+            }
+
+            function PutFieldText4() {
+             	// transfer RC
+                var typeOfRC = function(value) {
+                    var pos = value.indexOf("\u0003");
+                    while(pos != -1) {
+                        value = value.replace("\u0003", "\r\n");
+                        pos = value.indexOf("\u0003");
+                    }
+
+                    return value;
+                };
+
+                var editor = document.getElementById("Document_HwpCtrl");
+                editor.MoveToField("제목");
+                editor.PutFieldText("제목", typeOfRC("\u0002"));
+
+                editor.MoveToField("로고");
+                editor.PutFieldText("로고", typeOfRC("\u0002"));
+
+                editor.MoveToField("심볼");
+                editor.PutFieldText("심볼", typeOfRC("\u0002"));
+
+                editor.MoveToField("머리말");
+                editor.PutFieldText("머리말", typeOfRC("CPOS 프로젝트 파이팅"));
+
+                editor.MoveToField("꼬리말");
+                editor.PutFieldText("꼬리말", typeOfRC("하부캠페인"));
+
+                editor.MoveToField("공개여부");
+                editor.PutFieldText("공개여부", typeOfRC("\u0002"));
+
+                editor.MoveToField("기관명");
+                editor.PutFieldText("기관명", typeOfRC("행정안전부"));
+
+                editor.MoveToField("발신명의");
+                editor.PutFieldText("발신명의", typeOfRC("\u0002"));
+
+                editor.MoveToField("우편번호");
+                editor.PutFieldText("우편번호", typeOfRC("08803"));
+
+                editor.MoveToField("주소");
+                editor.PutFieldText("주소", typeOfRC("서울특별시 관악구 남부순환로 2004, (남현동) "));
+
+                editor.MoveToField("홈페이지");
+                editor.PutFieldText("홈페이지", typeOfRC("http://www.onnara.com"));
+
+                editor.MoveToField("전화번호");
+                editor.PutFieldText("전화번호", typeOfRC("02-111-1111"));
+
+                editor.MoveToField("전송");
+                editor.PutFieldText("전송", typeOfRC("02-222-2222"));
+
+                editor.MoveToField("전자우편");
+                editor.PutFieldText("전자우편", typeOfRC("test002@korea.kr"));
+
+                editor.MoveToField("공개여부");
+                editor.PutFieldText("공개여부", typeOfRC("\u0002"));
+
+                editor.MoveToField("수신");
+                editor.PutFieldText("수신", typeOfRC("내부결제"));
+
+                editor.MoveToField("수신처참조");
+                editor.PutFieldText("수신처참조", typeOfRC("\u0002"));
+
+                editor.MoveToField("수신자");
+                editor.PutFieldText("수신자", typeOfRC("\u0002"));
+
+                editor.MoveToField("*검토1");
+                editor.PutFieldText("*검토1", typeOfRC("교위"));
+
+                editor.MoveToField("@검토1");
+                editor.PutFieldText("@검토1", typeOfRC(" "));
+
+                editor.MoveToField("검토1");
+                editor.PutFieldText("검토1", typeOfRC("\u0002"));
+
+                editor.MoveToField("경유");
+                editor.PutFieldText("경유", typeOfRC("\u0002"));
+            }
+
+            function testExistHyperLink() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var result = false;
+                var ctrlcode = editor.GetHeadCtrl();
+                while(ctrlcode != null) {
+                    if (ctrlcode.CtrlID == "%hlk") {
+                        result = true;
+                        break;
+                    }
+                    ctrlcode = ctrlcode.next;
+                }
+
+                alert("result = " + result);
+            }
+
+            //로고이미지 삽입코드 - myung
+            function testInsertLogo(file){
+                var editor = document.getElementById('Document_HwpCtrl');
+
+                var files = file.files;
+
+                 if(files && files.length > 0){
+                     var reader = new FileReader();
+
+                     reader.readAsDataURL(files[0]);
+
+                     var wait = setInterval(function (){
+                       if(reader.readyState === reader.DONE){
+                         editor.MoveToField('로고', true, true, false);
+                         editor.InsertPicture(reader.result, true, 2);
+
+                         clearInterval( wait );
+                         file.value = '';
+                       }
+                     }, 100 );
+                 }
+            }
+			
+			function testInsertSymbol(file){
+                var editor = document.getElementById('Document_HwpCtrl');
+
+                var files = file.files;
+
+                 if(files && files.length > 0){
+                     var reader = new FileReader();
+
+                     reader.readAsDataURL(files[0]);
+
+                     var wait = setInterval(function (){
+                       if(reader.readyState === reader.DONE){
+                         editor.MoveToField('심볼', true, true, false);
+                         editor.InsertPicture(reader.result, true, 2);
+
+                         clearInterval( wait );
+                         file.value = '';
+                       }
+                     }, 100 );
+                 }
+            }
+
+
+            //관인이미지 삽입코드 - myung
+            function testInsertPicture( file ) {
+	            var editor = document.getElementById("Document_HwpCtrl");
+
+                 //관인이미지 삽입코드 - myung
+                 var files = file.files;
+
+                  if(files && files.length > 0){
+                      var reader = new FileReader();
+
+                      reader.readAsDataURL(files[0]);
+
+                      var wait = setInterval(function (){
+                        if(reader.readyState === reader.DONE){
+                          editor.MoveToField('인', true, true, false);
+                          editor.InsertPicture(reader.result, true, 2);
+
+                          fix();
+
+                          clearInterval( wait );
+                        }
+                      }, 100 );
+                  }
+
+                  function fix(){
+                    var magicNumber = 430;
+                    var sender, picture, doc;
+
+                    doc = editor.editor.document;
+
+                    sender = doc.findOne( '[doc-data-field="발신명의"]').findOne('span');
+                    picture = doc.findOne('[doc-data-field="인"]').getAscendant('div');
+
+                    var senderOffsetWidth, senderOffsetLeft;
+
+                    senderOffsetWidth = sender.$.offsetWidth;
+                    senderOffsetLeft = sender.$.offsetLeft;
+
+                    var pictureOffsetLeft = picture.$.offsetLeft;
+
+                    picture.setStyle('margin-left', (pictureOffsetLeft - (magicNumber - (senderOffsetWidth + senderOffsetLeft))) + 'px');
+                  }
+			}
+
+            function getBodyContents() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                editor.MoveToField("본문", true, true, true);
+                text = editor.GetTextFile("TEXT", "saveblock");
+                editor.MoveToField("본문", true, true, false);
+
+                alert(text);
+            }
+
+            function clearApprFields() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                for(var i = 1 ; i < 17; i++) {
+                    editor.PutFieldText("#검토" + i, "\u0002");
+                	editor.PutFieldText("*검토" + i, "\u0002");
+                	editor.PutFieldText("@검토" + i, "\u0002");
+                	editor.PutFieldText("검토" + i, "\u0002");
+
+                    editor.PutFieldText("#협조" + i, "\u0002");
+                    editor.PutFieldText("*협조" + i, "\u0002");
+                    editor.PutFieldText("협조" + i, "\u0002");
+                }
+            }
+
+            function putApprFields() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                for(var i = 1 ; i < 17; i++) {
+                    editor.PutFieldText("#검토" + i, "#검토" + i);
+                	editor.PutFieldText("*검토" + i, "*검토" + i);
+                	editor.PutFieldText("@검토" + i, "@검토" + i);
+                	editor.PutFieldText("검토" + i, "검토" + i);
+
+                    editor.PutFieldText("#협조" + i, "#협조" + i);
+                    editor.PutFieldText("*협조" + i, "협조" + i);
+                    editor.PutFieldText("협조" + i, "협조" + i);
+                }
+            }
+
+            function changeFontSize() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // select
+                editor.MoveToField("기관명", true, true, true);
+
+                // change font size
+                var fontsize = 1400;
+                var act = editor.CreateAction("CharShape");
+                var set = editor.CreateSet("CharShape");
+                set.SetItem("Height", fontsize);
+                act.Execute(set);
+
+                //
+                editor.MoveToField("기관명", true, true, false);
+            }
+
+            function deleteHyperLink() {
+                var editor = document.getElementById("Document_HwpCtrl");
+            	editor.Run("DeleteHyperLink");
+            }
+
+            function editorKeyEvent(e) {
+                if (e.ctrlKey && e.keyCode == 82) {
+                    // if(confirm('이 사이트를 새로고침하시겠습니까?\n변경사항이 저장되지 않을 수 있습니다.')) {
+                    //     window.location.reload();
+                    // }
+                } else if((e.ctrlKey && e.keyCode == 82) || (e.keyCode == 37 && e.altKey) || (e.keyCode == 39 && e.altKey) || (e.keyCode == 81 && e.ctrlKey && e.shiftKey) || (e.keyCode == 87 && e.ctrlKey && e.shiftKey)) {
+                    var confirmationMessage = '변경사항이 저장되지 않을 수 있습니다1.';
+                    e.cancelBuble = true;
+                    e.returnValue = confirmationMessage;
+                    return confirmationMessage;
+                    // e.returnValue = false;
+                    // e.cancelBuble = true;
+                    // e.preventDefault();
+                    // return false;
+                }
+                return true;
+            }
+            document.addEventListener('keydown', editorKeyEvent);
+            window.addEventListener('beforeunload', function (e) {
+                 var confirmationMessage = '변경사항이 저장되지 않을 수 있습니다1.';
+                 e.cancelBuble = true;
+                 e.returnValue = confirmationMessage;
+                 return confirmationMessage;
+             });
+             function disabledEventPropagation(e){
+                if(e){
+                    if(e.stopPropagation){
+                    e.stopPropagation();
+                    } else if(window.event){
+                    window.event.cancelBubble = true;
+                    }
+                }
+            }
+            
+            function downloadPubdoc() {
+                
+                var editor = document.getElementById("Document_HwpCtrl");
+	        	// 1. HTML 포맷으로 데이터 저장시
+                var html = editor.GetTextFile("HTML");
+                
+                // 2. PUBDOC 포맷으로 데이터 저장시
+	            editor.MoveToField("본문", true, true, false);
+	        	var pubdocbody = editor.GetTextFile("PUBDOCBODY");
+	        	
+	        	if (navigator.msSaveBlob) {
+	            	var data = new Blob([pubdocbody], {type: 'data:text/xml;charset=utf-8;'});
+	        		navigator.msSaveBlob(data, "pubdocbody.xml");
+	        	}
+	        	else {            		
+	            	var element = document.createElement('a');
+	            	element.setAttribute('href', 'data:text/xml;charset=utf-8,' + encodeURIComponent(pubdocbody));
+	            	element.setAttribute('download', "pubdocbody");
+	            	element.style.display = 'none';
+	            	document.body.appendChild(element);
+	            	element.click();
+	           	    document.body.removeChild(element);
+	        	}
+            }
+            
+            //셀 머지
+            function mergeCell() {
+                var editor = document.getElementById("Document_HwpCtrl");
+            	editor.MoveToField("@검토3", true, true, true);
+                editor.Run('TableCellBlockExtend');
+                editor.Run('TableLowerCell');
+                editor.Run('TableMergeCell');
+                editor.PutFieldText("@검토3", "전대결");
+                
+                editor.MoveToField("@검토3", true, true, false);
+            }
+            
+            //셀 분할
+            function splitCell() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                editor.MoveToField("@검토3", true, true, true);
+                var action = editor.CreateAction('TableSplitCell');
+                var set = action.CreateSet();
+                action.GetDefault(set);
+                set.SetItem('Rows', 2);
+                set.SetItem('Cols', 0);
+                action.Execute(set);
+                
+                editor.MoveToField("@검토3", true, true, false);
+            }
+            
+            function downloadGetTextFile() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                var text = editor.GetTextFile("html");
+                
+                if (navigator.msSaveBlob) {
+                    var data = new Blob([text], {type: 'data:text/html;charset=utf-8;'});
+                    navigator.msSaveBlob(data, "preview.html");
+                }
+                else {
+                    var element = document.createElement('a');
+                    element.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(text));
+                    element.setAttribute('download', "preview.html");
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                }
+            }
+            
+            function insertHtml() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                
+                // var html = "<p>" +
+                // "<span style='font-family: SpoqaHanSans;'>스포카한산스</span>" + 
+                // "</p>";
+                var html = "<p style=\"line-height: 1.6; font-size: 12pt;\"><font face=\"굴림\"><span style=\"font-family: 돋움체; font-size: 12pt;\">스포카한산스</span><br></font></p><p style=\"line-height: 1.6; font-size: 12pt;\"><span style=\"font-family: SpoqaHanSans;\"><span style=\"font-size: 12pt;\"><font face=\"굴림\">스포카한산스</font></span></span></p>";
+                editor.InsertHtml(html);
+            }
+            
+            // 셀 입력제한
+            function protectCell() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // 커서이동
+                editor.MoveToField('제목', true, true, false);
+                // 현재 커서위치의 셀에 셀보호 설정
+                editor.SetCurCellProtect(protectCellFieldName, true);
+            }
+            
+            // 셀 입력제한 해제
+            function unProtectCell() {
+                var editor = document.getElementById("Document_HwpCtrl");
+                // 커서이동
+                editor.MoveToField('제목', true, true, false);
+                // 현재 커서위치의 셀에 셀보호 설정해제
+                editor.SetCurCellProtect(protectCellFieldName, false);
+            }
+            
+        </script>
+    </body>
+</html>

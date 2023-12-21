@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+  <select id="selectHumApyAnutyList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAnutyList */ 
+    a.req_no    --신청번호
+    ,a.req_ymd  --신청일
+    ,a.syspayno
+    ,b.empno    --개인번호
+    ,b.nm       --성명
+    ,b.dept_cd  --부서코드
+    ,b.dept_nm  --부서명
+    ,b.posi_cd  --직급코드
+    ,b.posi_nm  --직급명
+    ,b.entr_ymd --입원일
+    ,a.req_typ  --발급종류
+    ,c.cd_nm AS req_typ_nm     --발급종류 이름
+    ,a.retire_mny_cntfr_ymd    --퇴직금기산일(연금가입일)
+    ,a.retire_middle_cntfr_ymd --퇴직금중간기산일
+    ,a.add_pay_amt             --추가납부액
+    ,d.apr_state               --결제상태
+    ,e.cd_nm AS apr_state_nm   --결제상태 이름
+FROM humapyanuty a
+INNER JOIN v_humbasicinfo b ON a.syspayno = b.syspayno
+INNER JOIN xodxcommst c ON a.req_typ = c.cd
+INNER JOIN xomxintfatab d ON a.req_no = d.req_no
+INNER JOIN xodxcommst e ON d.apr_state = e.cd AND d.state_inform_flag = '1'
+WHERE 1 = 1
+    <if test="syspayno != null and syspayno != ''">
+	 and a.syspayno = #{syspayno}
+</if>
+    <if test="req_no != null and req_no != ''">
+	 and a.req_no LIKE '%'||#{req_no}||'%'
+</if>
+    <if test="dept_cd != null and dept_cd != ''">
+	 and b.dept_cd = #{dept_cd}
+</if>
+    <if test="req_typ != null and req_typ != ''">
+	 and a.req_typ = #{req_typ}
+</if>
+    <if test="apr_state != null and apr_state != ''">
+	 and d.apr_state = #{apr_state}
+</if>
+    <if test="req_ymd_from != null and req_ymd_from != ''">
+	 and a.req_ymd  >=  #{req_ymd_from}
+</if>
+    <if test="req_ymd_to != null and req_ymd_to != ''">
+	 and a.req_ymd  <![CDATA[ <= ]]>  #{req_ymd_to}
+</if>
+ORDER BY a.req_no DESC
+  </select>
+
+
+  <select id="selectHumApyAnutyEmpBasicInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAnutyEmpBasicInfo */ 
+ FIRST 1
+ a.nm,
+ fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm,
+ a.posi_cd,
+ fun_posi_nm(a.posi_cd) AS posi_nm,
+ a.empno,
+ a.dept_cd,
+ a.dept_new_ymd,
+ a.home_tel,
+ a.ext_no,
+ a.mobile,
+ a.email,
+ REPLACE(a.email,'@kitech.re.kr','') AS id,
+ a.addr_postmt_no as postmt_no,
+ a.addr_base as base_addr,
+ a.addr_detls as detls_addr,
+ a.entr_ymd,
+ a.appont_contrct_ymd,
+ a.appont_cls_ymd,
+ b.longwk_cntfr_ymd,
+ a.resid_no,
+ b.sci_tech_anuty,
+ b.savng_shape_dedct,
+ b.own_driv_sub_pay,
+ a.syspayno,
+ DECODE(NVL(b.tot_bankaccnt_no,''),'','0',TO_CHAR(b.tot_bankaccnt_no)) AS tot_bankaccnt_no,
+ fun_sema_dect_yymm(a.syspayno, c.req_ymd) AS sema_mm,
+ a.occutyp_cd,
+ a.occugrp_cd, --직종코드 추가
+ DECODE(NVL(d.keep_charg,''),d.keep_charg,'Y','','N') AS card_keeper,
+ NVL(e.contrct_cls_ymd,'') AS contrct_cls_ymd,
+ f.carmdl,
+ f.car_no,
+ f.car_clr,
+ a.pruse_respn_psn,
+ fun_emp_nm(a.pruse_respn_psn) AS pruse_respn_psn_nm,
+ TO_CHAR(TO_DATE(dd.birth_ymd,'%Y%m%d') + 62 UNITS  YEAR - 1 UNITS DAY,'%Y%m%d') AS exp_retire_hope_ymd,  -- 퇴직사유: 정년퇴직의 경우 정년퇴직일로 자동설정(만62세-1일)
+ g.fomat_unit  -- 지역별 보안안전담당자 찾기위함  200831
+FROM humbasicinfo a
+JOIN humslbasinfo b ON a.syspayno = b.syspayno
+JOIN xodhdeptinfo g ON g.dept_cd = a.dept_cd and g.dept_new_ymd = a.dept_new_ymd
+JOIN (SELECT CASE WHEN SUBSTR(resid_no,8,1) IN ('1','2','5','6') THEN '19'
+                  WHEN SUBSTR(resid_no,8,1) IN ('9','0') THEN '18'  
+                  WHEN SUBSTR(resid_no,8,1) IN ('3','4','7','8') THEN '20' END || LEFT(resid_no,6) as birth_ymd, syspayno
+      FROM humbasicinfo) dd ON a.syspayno = dd.syspayno
+LEFT JOIN humapysema c ON a.syspayno = c.syspayno
+LEFT JOIN (SELECT FIRST 1 keep_charg FROM fbacard WHERE card_clsf = 'FAI001' AND keep_charg = #{syspayno}  AND NVL(retrn_ymd,'') = '') d ON a.syspayno = d.keep_charg --법인카드 소지구분
+LEFT JOIN (SELECT a.contrct_cls_ymd ,a.syspayno
+                 FROM humrctbasinfo a
+                 INNER JOIN (SELECT syspayno, MAX(req_ymd) AS req_ymd, MAX(req_no) AS req_no
+                             FROM humrctbasinfo
+                             GROUP BY syspayno) b ON a.req_no = b.req_no) e ON a.syspayno = e.syspayno --별정직 계약종료일
+LEFT JOIN humetcinfo f ON a.syspayno = f.syspayno
+WHERE a.syspayno = #{syspayno}
+  </select>
+
+ <select id="selectHumApyAnuty" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+select /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAnuty */ 
+		a.syspayno
+      , a.empno
+      , fun_xodxcommst_cd_nm(d.apr_state, 0) apr_state_nm
+      , apr_state
+      , a.nm
+      , fun_dept_nm(a.dept_cd, a.dept_new_ymd) dept_nm
+      , fun_posi_nm(a.posi_cd) posi_nm
+      , a.dept_cd
+      , a.dept_new_ymd
+      , req_ymd                     --신청일
+      , a.entr_ymd                  --입사일
+      , b.longwk_cntfr_ymd          --퇴직금중간기산일
+      , a.resid_no
+      , req_typ                     --신청유형
+      , retire_middle_cntfr_ymd     --퇴직중간기산일
+      , postmt_no    				--우편번호
+      , base_addr         			--기본주소
+      , detls_addr       			--상세주소
+      , cmpy_postmt_no              --회사우편번호
+      , cmpy_base_addr              --회사기본주소
+      , cmpy_detls_addr             --회사상세주소
+      , c.home_tel                  --집전화
+      , c.mobile                    --핸드폰
+      , c.ext_no                    --내선
+      , c.email                     --email
+      , retire_mny_cntfr_ymd        --퇴직금기산일
+      , retire_incl_yn              --퇴직포함여부
+      , add_pay_yn                  --추가납부여부
+      , decode(nvl(c.add_pay_amt,''),'',0, c.add_pay_amt) add_pay_amt --추가납부금액
+      , req_cause                   --신청사유          
+      , attach_file_no              --첨부파일번호  
+      , nvl(d.mngmt_item_3, '') as cole_yn
+      , b.sci_tech_anuty
+      , c.init_indict_mp100_yn  --최초운용지시 MP100
+      , c.init_indict_mp70_yn   --최초운용지시 MP70
+      , c.init_indict_mp50_yn   --최초운용지시 MP50
+      , c.init_indict_mp30_yn   --최초운용지시 MP30
+      , c.init_indict_retireamt_yn --최초운용지시 과학기술인공제회 퇴직연금 정기예금 1년
+      , c.init_indict_etc_yn    --최초운용지시 기타
+      , c.apart_indict_mp100_yn --기존퇴직금별도운용지시 MP100
+      , c.apart_indict_mp70_yn  --기존퇴직금별도운용지시 MP70
+      , c.apart_indict_mp50_yn  --기존퇴직금별도운용지시 MP50
+      , c.apart_indict_mp30_yn  --기존퇴직금별도운용지시 MP30
+      , c.apart_indict_retireamt_yn --기존퇴직금별도운용지시 과학기술인공제회 퇴직연금 정기예금 1년
+      , c.apart_indict_etc_yn   --기존퇴직금별도운용지시 기타
+      , c.req_no  				-- 신청번호
+  from  humbasicinfo a
+      , humslbasinfo b 
+      , humapyanuty c
+      , xomxintfatab d
+ where  c.req_no = #{req_no}
+   and  c.syspayno = a.syspayno
+   and  a.syspayno = b.syspayno
+   and  c.req_no = d.req_no
+   and  d.state_inform_flag = '1'
+  </select>
+ 
+  <select id="selectHumApyAnutyXodhSlCode" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAnutyXodhSlCode */ 
+		 TRUNC(calc_base,1) AS calc_base
+     , DECODE(fretax_yn,'Y',fretax_amt,0) AS fretax_amt
+     , TO_NUMBER(calc_base) AS calc_base_2
+FROM xodhslcode 
+WHERE salry_cd = #{salry_cd} 
+<choose>
+	<when test="base_ymd != null and base_ymd != ''">
+	 and base_ymd = #{base_ymd}	
+	</when>
+	<otherwise>
+	 and base_ymd = (SELECT MAX(base_ymd) FROM xodhslcode)
+	</otherwise>
+</choose>
+  </select> 
+  
+  <insert id="insertHumApyAnuty" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+insert /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyAnuty */ 
+		 into humapyanuty (
+        req_no                --신청번호
+      , req_ymd               --신청일
+      , syspayno              --시스템개인번호
+      , dept_cd               --부서코드
+      , dept_new_ymd          --부서신설일
+      , req_typ               --신청유형
+      , retire_middle_cntfr_ymd --퇴직중간기산일
+      , postmt_no             --우편번호
+      , base_addr             --기본주소
+      , detls_addr            --상세주소
+      , cmpy_postmt_no        --회사우편번호
+      , cmpy_base_addr        --회사기본주소
+      , cmpy_detls_addr       --회사상세주소
+      , home_tel              --자택전화번호
+      , mobile                --휴대폰
+      , ext_no                --회사전화번호
+      , email                 --이메일
+      , retire_mny_cntfr_ymd  --퇴직금기산일
+      , retire_incl_yn        --퇴직포함여부
+      , psn_burdn             --개인부담
+      , cmpy_burdn            --회사부담
+      , add_pay_yn            --추가납부여부
+      , add_pay_amt           --추가납부금액
+      , req_cause             --신청사유
+      , attach_file_no        --첨부파일번호
+      , docu_no               --문서번호
+      , regst_syspayno        --등록시스템개인번호
+      , regst_daytm           --등록일시
+      , init_indict_retireamt_yn --최초운용지시 과학기술인공제회 퇴직연금 정기예금 1년
+      , init_indict_etc_yn    --최초운용지시 기타
+      , apart_indict_retireamt_yn   --기존퇴직금별도운용지시 과학기술인공제회 퇴직연금 정기예금 1년
+      , apart_indict_etc_yn   --기존퇴직금별도운용지시 기타
+ ) values (
+        #{req_no}     --신청번호
+      , #{req_ymd}     --신청일
+      , #{syspayno}     --시스템개인번호
+      , #{dept_cd}     --부서코드
+      , #{dept_new_ymd}     --부서신설일
+      , #{req_typ}     --신청유형
+      , #{retire_middle_cntfr_ymd}     --퇴직중간기산일
+      , #{postmt_no}     --우편번호
+      , #{base_addr}     --기본주소
+      , #{detls_addr}     --상세주소
+      , #{cmpy_postmt_no}     --회사우편번호
+      , #{cmpy_base_addr}     --회사기본주소
+      , #{cmpy_detls_addr}     --회사상세주소
+      , #{home_tel}     --자택전화번호
+      , #{mobile}     --휴대폰
+      , #{ext_no}     --회사전화번호
+      , #{email}     --이메일
+      , #{retire_mny_cntfr_ymd}     --퇴직금기산일
+      , #{retire_incl_yn}     --퇴직포함여부
+      , #{psn_burdn}     --개인부담
+      , (SELECT calc_base FROM xodhslcode WHERE salry_cd = '815' AND base_ymd = (SELECT MAX(base_ymd) FROM xodhslcode WHERE salry_cd = '815'))  --회사부담
+      , #{add_pay_yn}     --추가납부여부
+      , #{add_pay_amt}     --추가납부금액
+      , #{req_cause}     --신청사유
+      , #{attach_file_no}     --첨부파일번호
+      , #{docu_no}     --문서번호
+      , #{regst_syspayno}     --등록시스템개인번호
+      , CURRENT --등록일시
+      , #{init_indict_retireamt_yn}     --최초운용지시 과학기술인공제회 퇴직연금 정기예금 1년
+      , #{init_indict_etc_yn}     --최초운용지시 기타
+      , #{apart_indict_retireamt_yn}     --기존퇴직금별도운용지시 과학기술인공제회 퇴직연금 정기예금 1년
+      , #{apart_indict_etc_yn}     --기존퇴직금별도운용지시 기타
+ )
+  </insert>
+  
+   <update id="updateHumApyAnuty" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+update /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyAnuty */ 
+		 humapyanuty set
+      req_typ = #{req_typ}                 --신청유형
+    , retire_middle_cntfr_ymd = #{retire_middle_cntfr_ymd} --퇴직중간기산일
+    , postmt_no = #{postmt_no}               --우편번호
+    , base_addr = #{base_addr}               --기본주소
+    , detls_addr = #{detls_addr}              --상세주소
+    , cmpy_postmt_no = #{cmpy_postmt_no}          --회사우편번호
+    , cmpy_base_addr = #{cmpy_base_addr}          --회사기본주소
+    , cmpy_detls_addr = #{cmpy_detls_addr}         --회사상세주소
+    , home_tel = #{home_tel}                --자택전화번호
+    , mobile = #{mobile}                  --휴대폰
+    , ext_no = #{ext_no}                  --회사전화번호
+    , email = #{email}                   --이메일
+    , retire_mny_cntfr_ymd = #{retire_mny_cntfr_ymd}    --퇴직금기산일
+    , retire_incl_yn = #{retire_incl_yn}          --퇴직포함여부
+    , add_pay_yn = #{add_pay_yn}              --추가납부여부
+    , add_pay_amt = #{add_pay_amt}             --추가납부금액
+    , req_cause = #{req_cause}               --신청사유
+    , attach_file_no  = #{attach_file_no}         --첨부파일번호
+    , updt_syspayno = #{updt_syspayno}           --수정자
+    , updt_daytm = CURRENT      --수정일시
+    , init_indict_retireamt_yn = #{init_indict_retireamt_yn} --최초운용지시 과학기술인공제회 퇴직연금 정기예금 1년
+    , init_indict_etc_yn = #{init_indict_etc_yn}      --최초운용지시 기타
+    , apart_indict_retireamt_yn = #{apart_indict_retireamt_yn}   --기존퇴직금별도운용지시 과학기술인공제회 퇴직연금 정기예금 1년
+    , apart_indict_etc_yn = #{apart_indict_etc_yn}     --기존퇴직금별도운용지시 기타
+ where  req_no = #{req_no}
+  </update>
+
+  <delete id="deleteHumApyAnuty" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyAnuty */ 
+		 FROM humapyanuty WHERE req_no = #{req_no}
+  </delete>
+    
+  <insert id="insertHumApyAnutyRet" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyAnutyRet */ 
+		 INTO imis.humapyanutyret(app_yrmon, syspayno, retonum, rmk) 
+ VALUES(#{app_yrmon}, #{syspayno}, #{retonum}, #{rmk})
+  </insert>  
+  
+  <update id="updateHumApyAnutyEmpBasicInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyAnutyEmpBasicInfo */ 
+		 humbasicinfo SET
+  email = #{email},
+  home_tel = #{home_tel},          
+  mobile = #{mobile},
+  ext_no = #{ext_no},
+  addr_postmt_no = #{addr_postmt_no},
+  addr_base = #{addr_base},
+  addr_detls = #{addr_detls}
+WHERE
+ syspayno = #{syspayno}
+  </update>
+  
+  <update id="updateHumApyAnutySlBasInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyAnutySlBasInfo */ 
+		 humslbasinfo SET
+updt_syspayno = #{updt_syspayno},
+updt_daytm = CURRENT
+<if test="add_pay_amt != null and add_pay_amt != ''">
+	 , add_pay_amt = add_pay_amt + #{add_pay_amt}
+</if>
+WHERE
+ syspayno = #{syspayno}
+  </update> 
+  
+ <!-- kitech.hum.apy.xda.HumSlBasInfoSU01 -->
+  <update id="updateHumApyAntySlBasInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAnutyInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyAntySlBasInfo */ 
+		 humslbasinfo SET
+updt_syspayno = #{updt_syspayno},
+updt_daytm = CURRENT
+  <if test="salry_bank != null and salry_bank != ''">
+	 , salry_bank = #{salry_bank}
+</if>
+  <if test="bankaccnt_no != null and bankaccnt_no != ''">
+	 , bankaccnt_no = #{bankaccnt_no}
+</if>
+  <if test="depstr != null and depstr != ''">
+	 , depstr = #{depstr}
+</if>
+  <if test="savng_shape_dedct != null and savng_shape_dedct != ''">
+	 , savng_shape_dedct = #{savng_shape_dedct}
+</if>
+  <if test="sci_tech_anuty != null and sci_tech_anuty != ''">
+	 , sci_tech_anuty = #{sci_tech_anuty}
+</if>
+  <if test="add_pay_amt != null and add_pay_amt != ''">
+	 , add_pay_amt = add_pay_amt + #{add_pay_amt}
+</if>
+  <if test="tot_bankaccnt_no != null and tot_bankaccnt_no != ''">
+	 , tot_bankaccnt_no = #{tot_bankaccnt_no}
+</if>
+  <if test="own_driv_sub_pay != null and own_driv_sub_pay != ''">
+	 , own_driv_sub_pay = #{own_driv_sub_pay}
+</if>
+WHERE
+ syspayno = #{syspayno}
+  </update>   
+</mapper>

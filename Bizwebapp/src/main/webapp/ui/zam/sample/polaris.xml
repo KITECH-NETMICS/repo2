@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="폴라리스 에디터">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+
+			scwin.onpageload = function() {
+				// 공통에서 설정
+		//		POLARIS.basePath = "/cm/ext/polariseditor/";
+		       	scwin.editor = new PolarisEditor();
+		       	var config = {
+				    width : '100%',
+				    height : '600px',
+				    showTitlebar : false,
+				    useDocConvertServer : false
+		        };
+		       	var loadCompleteCallback = function() {
+		        	scwin.editor.SetTextFile("<html><body>이것은 <strong style='color:red'>loadCompleteCallback 에서 입력된 메시지 !!</strong> <br/>html 헤헤헤</body></html>", "html");
+		        	
+				    /**
+				     * 기술문의로 요청한 라이선스 문제가 처리될때까지 임시로 라이선스 경고 레이어를 삭제한다.
+				     *
+				     * @date 2022. 03. 17
+				     * @author James
+				     */
+		        	(function(){
+						const delay = 1;
+						let timerId = setTimeout(function remove() {
+				        	let cover = document.getElementById('polaris_progress_cover');
+				        	if (cover) {
+				        		cover.style.cssText += 'display:none;';
+				        		clearTimeout(timerId);
+				        	} else {
+				        		timerId = setTimeout(remove, delay);
+				        	}
+						}, delay);
+				    })();
+		       	};
+		       	scwin.editor.CreateEditor(pleContent.getID(), config, loadCompleteCallback);
+			};
+			
+			scwin.btn_set_onclick = function(e) {
+				scwin.editor.SetTextFile("<html><body>가나다라 <strong style='color:red' >마바사</strong> <br/>아자차카11  타파하11</body></html>", "html");
+			};
+			
+			scwin.btn_get_onclick = function(e) {
+				var content = scwin.editor.GetTextFile("html");
+				console.log(content);
+			};
+		]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="" style=""></xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class="btn" id="btn_set" style="" type="button" ev:onclick="scwin.btn_set_onclick">
+    					<xf:label><![CDATA[넣기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn blue" id="btn_get" style="" type="button" ev:onclick="scwin.btn_get_onclick">
+    					<xf:label><![CDATA[빼기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	<xf:group id="" class=""><xf:textarea id="pleContent"></xf:textarea></xf:group></xf:group></body>
+</html>

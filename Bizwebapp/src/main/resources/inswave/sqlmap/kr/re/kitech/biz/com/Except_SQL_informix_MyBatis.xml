@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.com">
+
+	<!-- 예외처리 유효여부 조회 -->
+	<select id="getExceptTargetCount" resultType="integer" parameterType="kr.re.kitech.biz.com.vo.ExceptItemVo"><![CDATA[
+		SELECT /* kr.re.kitech.biz.com.getExceptTargetCount */
+			 COUNT(*) AS exceptCount
+		FROM xomexceptitem AS x1
+		WHERE x1.start_date <= TODAY AND x1.close_date >= TODAY
+		AND x1.kind_cd = #{kind_cd}
+		AND x1.service_id = #{service_id}
+		AND x1.value LIKE '%' || #{value} || '%'
+		AND x1.allow_yn = #{allow_yn}
+	]]></select>
+
+
+	<!-- 예외처리 유효여부 조회 -->
+	<select id="getExceptValues" resultType="java.lang.String" parameterType="kr.re.kitech.biz.com.vo.ExceptItemVo"><![CDATA[
+		SELECT /* kr.re.kitech.biz.com.getExceptValues */
+			 x1.value AS exceptValues
+		FROM xomexceptitem AS x1
+		WHERE x1.start_date <= TODAY AND x1.close_date >= TODAY
+		AND x1.kind_cd = #{kind_cd}
+		AND x1.service_id = #{service_id}
+		AND x1.allow_yn = #{allow_yn}
+	]]></select>
+	
+	<!-- 예외처리 라스트 조회 -->
+	<select id="selectExceptItemList" resultType="kr.re.kitech.biz.com.vo.ExceptItemVo" parameterType="kr.re.kitech.biz.com.vo.ExceptItemVo">
+		SELECT seq
+			 , kind_cd
+			 , TRIM(value_cd) as value_cd
+			 , value
+			 , service_id
+			 , allow_yn
+			 , TO_CHAR(start_date, '%Y%m%d') as start_date
+			 , TO_CHAR(close_date, '%Y%m%d') as close_date
+			 , rmk 
+		  FROM xomexceptitem AS x1
+		 WHERE 1=1
+		<if test="kind_cd != null and kind_cd != ''">
+		   AND kind_cd = #{kind_cd}
+		</if>
+		<if test="value_cd != null and value_cd != ''">
+		   AND value_cd = #{value_cd}
+		</if>
+		<if test="value != null and value != ''">
+		   AND value like '%' || #{value} || '%'
+		</if>
+		<if test="service_id != null and service_id != ''">
+		   AND service_id = #{service_id}
+		</if>
+		<if test="allow_yn != null and allow_yn != ''">
+		   AND allow_yn = #{allow_yn}
+		</if>
+		<if test="start_date != null and start_date != ''">
+		   AND close_date <![CDATA[>=]]> #{start_date}
+		</if>
+		<if test="close_date != null and close_date != ''">
+		   AND start_date <![CDATA[<=]]> #{close_date}
+		</if>
+		<if test="rmk != null and rmk != ''">
+		   AND rmk like '%' || #{rmk} || '%'
+		</if>
+	</select>
+	
+<insert id="insertExceptItem" parameterType="kr.re.kitech.biz.com.vo.ExceptItemVo">
+INSERT /* kr.re.kitech.biz.com.insertExceptItem */
+   INTO xomexceptitem(
+			  seq
+			, kind_cd
+			, value_cd
+			, value
+			, service_id
+			, allow_yn
+			, start_date
+		<if test="close_date != null and close_date != ''">
+			, close_date
+		</if>
+			, rmk
+			, regst_syspayno
+			, regst_daytm
+		) VALUES (
+			  (SELECT MAX(seq) + 1 as seq FROM xomexceptitem)
+			, #{kind_cd}
+			, #{value_cd}
+			, #{value}
+			, #{service_id}
+			, #{allow_yn}
+			, TO_DATE(#{start_date}, '%Y%m%d')
+		<if test="close_date != null and close_date != ''">
+			, TO_DATE(#{close_date}, '%Y%m%d')
+		</if>
+			, #{rmk}
+			, #{regst_syspayno}
+			, CURRENT
+		)
+</insert>
+	
+<update id="updateExceptItem" parameterType="kr.re.kitech.biz.com.vo.ExceptItemVo">
+UPDATE /* kr.re.kitech.biz.com.updateExceptItem */
+        xomexceptitem
+   SET kind_cd = #{kind_cd}
+      , value_cd = #{value_cd}
+      , value = #{value}
+      , service_id = #{service_id}
+      , allow_yn = #{allow_yn}
+      , start_date = TO_DATE(#{start_date}, '%Y%m%d')
+      , close_date = TO_DATE(#{close_date}, '%Y%m%d')
+      , rmk = #{rmk}
+ WHERE seq = #{seq}
+</update>
+	
+	<update id="updateExceptItemAllowN" parameterType="kr.re.kitech.biz.com.vo.ExceptItemVo">
+		UPDATE xomexceptitem
+		   SET allow_yn = 'N'
+		 WHERE seq = #{seq}
+	</update>
+	
+	<delete id="deleteExceptItem" parameterType="kr.re.kitech.biz.com.vo.ExceptItemVo">
+		DELETE xomexceptitem
+		 WHERE seq = #{seq}
+	</delete>
+</mapper>

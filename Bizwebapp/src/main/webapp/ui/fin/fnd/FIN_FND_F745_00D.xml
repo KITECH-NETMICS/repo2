@@ -1,0 +1,797 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="법인카드발급신청서">
+    	<w2:type>DEFAULT</w2:type>
+    	<w2:buildDate />
+    	<xf:model>
+    		<xf:instance>
+    			<data xmlns="" />
+    		</xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_card">
+            		<w2:keyInfo>
+            			<w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+            			<w2:key id="req_ymd" name="신청일자" dataType="text"></w2:key>
+            			<w2:key id="req_psn" name="신청자 정보" dataType="text"></w2:key>
+            			<w2:key id="req_dept" name="req_dept" dataType="text"></w2:key>
+            			<w2:key id="posi_cd" name="posi_cd" dataType="text"></w2:key>
+            			<w2:key id="mobile" name="mobile" dataType="text"></w2:key>
+            			<w2:key id="eng_nm" name="eng_nm" dataType="text"></w2:key>
+            			<w2:key id="addr" name="카드수령지" dataType="text"></w2:key>
+            			<w2:key id="issu_clsf" name="issu_clsf" dataType="text"></w2:key>
+            			<w2:key id="accnt_no" name="계정번호" dataType="text"></w2:key>
+            			<w2:key id="issu_cause" name="issu_cause" dataType="text"></w2:key>
+            			<w2:key id="card_no" name="card_no" dataType="text"></w2:key>
+            			<w2:key id="rmk" name="rmk" dataType="text"></w2:key>
+            			<w2:key id="agrmt_yn" name="법인카드발급신청서약서" dataType="text"></w2:key>
+            			<w2:key id="attach_file_no" name="attach_file_no" dataType="text"></w2:key>
+            			<w2:key id="card_use_yn" name="법인카드사용안내" dataType="text"></w2:key>
+            			<w2:key id="card_return_yn" name="법인카드반납안내" dataType="text"></w2:key>
+            			<w2:key id="regst_syspayno" name="regst_syspayno" dataType="text"></w2:key>
+            			<w2:key id="rowStatus" name="상태" dataType="text"></w2:key>
+            			<w2:key id="apr_state" name="결재상태" dataType="text"></w2:key>
+            			<w2:key id="isApproval" name="결재신청유무" dataType="text"></w2:key>
+            			<w2:key id="issu_cause_nm" name="issu_cause_nm" dataType="text"></w2:key>
+            			<w2:key id="issu_clsf_nm" name="issu_clsf_nm" dataType="text"></w2:key>
+            			<w2:key id="empno" name="개인번호" dataType="text"></w2:key>
+            			<w2:key id="req_dept_nm" name="부서명" dataType="text"></w2:key>
+            			<w2:key id="req_posi_nm" name="직급명" dataType="text"></w2:key>
+            			<w2:key id="req_emp_nm" name="신청자명" dataType="text"></w2:key>
+            			<w2:key id="ext_no" name="연락처" dataType="text"></w2:key>
+            			<w2:key id="resid_no" name="주민번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <xf:submission id="sbm_selectCard" ref="data:json,dma_card" encoding="UTF-8" mode="asynchronous"
+    			target='data:json,dma_card' action="SvcFINFNDCADR02.pwkjson" method="post" mediatype="application/json">
+    		</xf:submission>
+    		<xf:submission id="sbm_saveCard" ref="data:json,dma_card" action="SvcFINFNDCADM01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    		<xf:submission id="sbm_deleteCard" ref="data:json,dma_card" action="SvcFINFNDCADD01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    	</xf:model>
+    	<script type="text/javascript" lazy="false"><![CDATA[
+	/**************************************************************
+	*						
+	*						정의함수
+	*
+	***************************************************************/
+	
+	//	페이지 로드
+	scwin.onpageload = function() {
+		com.file.init();
+		com.setEnterKeyEvent(grpSchAccnt, scwin.schAccnt);
+		var codeOptions = [ { code : "FEB", compID : "sbx_issuCause"} ];
+		
+		com.setCmnCd(codeOptions, function() {
+			scwin.initForm();
+		});
+	};
+	
+	
+	scwin.onpageunload = function() {
+		
+	};	
+	
+	// 페이지 초기화
+	scwin.initForm = function() {
+		var params      = com.getParameter();
+		
+		if (com.isEmpty(params.req_no)) {
+			com.initDataMap(dma_card);
+			com.file.create(upload_A.getID(), {fileKey: 'F745', mode: 'edit'});
+			cal_reqYmd.setValue(com.getServerDateTime());
+			dma_card.set("empno", com.getLoginInfo("empno"));
+			scwin.schHum();
+			
+			com.biz.disabledButtons();
+		} else {
+			scwin.selectData(params.req_no);
+		}
+	};
+	
+	// 데이터 조회
+	scwin.selectData = function(req_no) {
+		dma_card.set("rowStatus", "U"); // 상태 : 수정
+		dma_card.set("req_no", req_no); // 키 셋팅 및 조회
+		
+		com.execute(sbm_selectCard, {
+			successCallback : function(e) { 
+				scwin.schHum();
+				scwin.schAccnt();
+				
+				var retReqNo = dma_card.get("req_no");
+				var retAprSt = dma_card.get("apr_state");
+				var cardNo   = dma_card.get("card_no");
+				var fileKey = e.responseJSON.elData.attach_file_no;
+					
+				fileKey = (null == fileKey || '' == fileKey.trim()) ? 'F745' : fileKey;
+				com.file.create(upload_A.getID(), {fileKey: fileKey, mode: 'edit'});
+				
+				com.biz.disabledButtons(retAprSt, retReqNo);
+				inp_cardNo.setValue(cardNo);
+			}
+		});
+	};
+	
+	// 저장
+	scwin.save = function(isApproval) {
+		com.confirm("message.xom.wq.017", function(ret) {
+			if (ret) {
+				com.file.transport( function( attachObj) {
+					dma_card.set("isApproval", isApproval || false);
+					dma_card.set("attach_file_no", attachObj.upload_A);
+					dma_card.set("issu_cause_nm", sbx_issuCause.getText());
+					dma_card.set("issu_clsf_nm", sbx_issuClsf.getText());
+					com.execute(sbm_saveCard, {
+						successCallback : function(e) { // 성공 콜백
+							if (isApproval && isApproval === "Y") {
+								com.movePageMenu("A001", { "reqNo" :  dma_card.get("req_no")});	
+							} else {
+								com.alert("message.xom.wq.023" /*정상적으로 처리되었습니다.*/, function () {
+										scwin.selectData(e.responseJSON.elData.req_no);
+								});
+							}
+						}
+					});
+				});	
+			}
+		});
+	};
+	
+	// 삭제
+	scwin.del = function() {
+		com.confirm("message.xom.wq.022", function(ret) {
+			if (ret) {
+				com.file.deleteAll( function(){
+					com.execute(sbm_deleteCard, {
+						successCallback : function(e) { // 성공 콜백
+							com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+								scwin.checkList = [];
+								var param4 = com.getParameter("param4");
+								var param1 = com.getParameter("param1");
+								if (com.isEmpty(param1) && param4 === "apr") {
+									scwin.$w.getFrame().getScopeWindow().btn_inst_search.click();
+									scwin.$w.getFrame().setSrc("/websquare/blank.xml")
+								} else {
+									com.moveList("F744", {});
+								}
+							});
+						}
+					});
+				});
+			}
+		});
+	};
+
+	// 주소검색
+	scwin.schAddr = function() {
+		com.pop.open( com.pop.TYPE.ADDR, null, function(ret) {
+			if (ret) {
+				let retAddr = `(${ret.zipNo}) ${ret.addrPart1} ${ret.addrPart2}`;
+				dma_card.set("addr", retAddr);		
+			}
+		});
+	};
+	
+	// 사원검색
+	scwin.schHum = function() {
+		var data = { empno : dma_card.get("empno"), work_clsf : "HAG010" };
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret) {
+			if (ret) {
+				let residNo = ret.resid_no.split('-');
+				let residNoFr = residNo[0];
+				let residNoBk = residNo[1];
+				
+				inp_residFr.setValue(residNoFr);
+				inp_residBk.setValue(residNoBk);
+				
+				dma_card.set("req_psn", ret.syspayno );
+				dma_card.set("req_dept", ret.dept_cd);
+				dma_card.set("posi_cd", ret.posi_cd);
+				dma_card.set("mobile", ret.mobile);
+				dma_card.set("eng_nm", ret.nm_eng);
+				dma_card.set("empno", ret.empno);
+				dma_card.set("req_dept_nm", ret.dept_nm);
+				dma_card.set("req_emp_nm", ret.nm);
+				dma_card.set("req_posi_nm", ret.posi_nm);
+				dma_card.set("ext_no", ret.ext_no);
+				dma_card.set("resid_no", ret.resid_no);
+			}
+		});
+	};
+	
+	// 계정검색
+	scwin.schAccnt = function() {
+		if(dma_card.get("req_ymd").trim() == ""){
+			com.alert(com.getMsg("message.xom.co.com.0009", "신청일자"));
+			return false;
+		}
+
+		var data = { accnt_no : dma_card.get("accnt_no"), cls_ymd : dma_card.get("req_ymd") };
+		
+		com.pop.open( com.pop.TYPE.ACNNO, data, function(ret) {
+			if (ret) {
+				dma_card.set("accnt_no", ret.accnt_no);
+			}
+		});
+	};
+	
+	// 유효성 체크
+	scwin.validateData = function() {
+		// 동의 내용 체크
+		var checkYn = function(value) {
+			if (value != "Y") return "동의 항목을 확인 해주세요.";
+		}
+		
+		// 발급 구분 체크
+		var checkIssu = function(value) {
+			var cardNo    = dma_card.get("card_no");
+			var issuCause = dma_card.get("issu_cause");
+			var rmk		  = dma_card.get("rmk");
+			
+			if (value === "03") {
+				if(cardNo == "") {
+					return "발급구분이 [재발급]일때에는 기존의 보유카드번호를 입력하셔야 합니다.";
+				}
+				
+				if(issuCause == "FEB001" || issuCause == "FEB002" ||issuCause == "FEB006" || issuCause == "FEB007") {
+					return "발급구분이 [재발급]일 경우에는 발급사유는 [카드유효기간만료],[카드훼손],[카드분실] 중에서 선택해야합니다.";
+				}
+			} else if(value == "01") {
+				if(issuCause == "FEB003" || issuCause == "FEB004" || issuCause == "FEB005") {
+					return "발급구분이 [신규]일 경우에 발급사유는 [과제책임자], [보직발령] 중에서 선택해야합니다.";
+				}
+			}
+			
+			if(issuCause == "FEB006") {
+				if(rmk.trim() == "") {
+					return "발급사유가 [기타]일때에는 비고를 입력해야 합니다.";
+				}
+			}
+		} 
+		
+		return com.validateData(dma_card, [
+			{ id : "req_ymd"	   , mandatory : true },
+			{ id : "req_psn"	   , mandatory : true },
+			{ id : "accnt_no"	   , mandatory : true },
+			{ id : "addr"		   , mandatory : true },
+			{ id : "card_use_yn"   , mandatory : true, valFunc   : function(value) {
+					if (value != "Y") return "동의 항목을 확인 해주세요.";
+				} 
+			},
+			{ id : "card_return_yn", mandatory : true, valFunc   : checkYn },
+			{ id : "agrmt_yn"	   , mandatory : true, valFunc   : checkYn },
+			{ id : "issu_clsf"	   , mandatory : true, valFunc   : checkIssu }
+		], false);
+	};
+	
+	/**************************************************************
+	*						
+	*						컴포넌트 이벤트
+	*
+	***************************************************************/
+	
+	// 목록버튼 이벤트
+	scwin.btn_list_onclick = function(e) {
+		com.moveList("F744", {});
+	};
+	
+	// 저장버튼 이벤트
+	scwin.btn_save_onclick = function(e) {
+		if (!com.biz.isAllowModify(dma_card.get("apr_state"))) {
+			com.warn("message.alert.ccs.cws.0006");
+		} else if (!scwin.validateData()) {
+			// ignore..
+		} else {
+			// 저장
+			scwin.save();
+		}
+	};
+	
+	// 주소찾기 팝업 버튼 이벤트
+	scwin.btn_schAddr_onclick = function(e) {
+		scwin.schAddr();
+	};
+	
+	// 직원찾기 팝업 버튼 이벤트
+	scwin.btn_search_hum_onclick = function(e) {
+		scwin.schHum();
+	};
+	
+	// 계정번호 찾기 버튼 이벤트
+	scwin.btn_schAccnt_onclick = function(e) {
+		scwin.schAccnt();
+	};
+	
+	// 결재신청 클릭 이벤트
+	scwin.btn_approve_onclick = function(e) {
+		if (!com.biz.isAllowModify(dma_card.get("apr_state"))) {
+			com.warn("message.alert.ccs.cws.0006");
+		} else if (!scwin.validateData()) {
+			// ignore..
+		} else {
+			// 저장
+			scwin.save("Y");
+		}
+	};
+	
+	// 삭제 버튼 클릭 이벤트
+	scwin.btn_del_onclick = function(e) {
+		scwin.del();
+	};
+	
+	// 발급구분 변경 이벤트
+	scwin.sbx_issuClsf_onchange = function(info) {
+		var value = this.getValue();
+		
+		inp_cardNo.setDisabled(value != "03");
+	};
+	
+	// 카드번호의 인풋박스 값이 변경될 때마다 DataMap에 Set 한다.
+	scwin.inp_cardNo_onchange = function(info) {
+		dma_card.set("card_no", this.getDisplayValue());
+	};
+	]]></script>
+	<style>
+		.tit_tbl .title {
+			font-size : 15px;
+		}
+	</style>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection step">
+    			<xf:group class="le" id="" style="">
+    				<xf:trigger class="btn" ev:onclick="scwin.btn_list_onclick" id="btn_list" style="" type="button">
+    					<xf:label><![CDATA[목록]]></xf:label>
+    				</xf:trigger>
+    				<w2:textbox class="red" id="" label="* 반드시 사용자 본인이 신청" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="ri">
+    				<xf:group id="" class="btnbox">
+    					<xf:trigger class="btn blue" ev:onclick="scwin.btn_approve_onclick" id="btn_apr" style="" type="button">
+    						<xf:label><![CDATA[결재신청]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="grp_report" style="margin-top:20px;">
+		    	<xf:group class="w2tb tbl" id="" style="" tagname="table">
+	    			<w2:attributes>
+	    				<w2:summary></w2:summary>
+	    			</w2:attributes>
+	    			<xf:group tagname="caption" text="연구보고서  상세정보"></xf:group>
+	    			<xf:group tagname="colgroup">
+	    				<xf:group style="width:140px;" tagname="col"></xf:group>
+	    				<xf:group style="" tagname="col"></xf:group>
+	    				<xf:group style="width:140px;" tagname="col"></xf:group>
+	    				<xf:group style="" tagname="col"></xf:group>
+	    				<xf:group style="width:140px;" tagname="col"></xf:group>
+	    				<xf:group style="" tagname="col"></xf:group>
+	    			</xf:group>
+	    			<xf:group tagname="tr">
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="신청번호" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes></w2:attributes>
+	    					<xf:input adjustMaxLength="false" class="inp full" id="inp_reqNo" style="" title="등록번호" readOnly="true" disabled="true" ref="data:dma_card.req_no"></xf:input>
+	    				</xf:group>
+	    				<xf:group class="w2tb_th" tagname="th" style="">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+	    					<w2:textbox id="" label="신청일자" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td" style="">
+	    					<w2:attributes>
+	    						<w2:colspan>3</w2:colspan>
+	    						<w2:rowspan>1</w2:rowspan>
+	    					</w2:attributes>
+	    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal req" focusOnDateSelect="false" footerDiv="false" id="cal_reqYmd"
+	    						placeholder="시작일" renderDiv="true" rightAlign="false" style="width:150px;" title="등록일자" readOnly="false" ref="data:dma_card.req_ymd">
+	    					</w2:inputCalendar>
+	    				</xf:group>
+	    			</xf:group>
+	    			<xf:group tagname="tr" style="">
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+	    					<w2:textbox id="" label="신청자" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes></w2:attributes>
+							<xf:input adjustMaxLength="false" style="width:80px;" id="inp_empno" class="inp" title="근무자명" ref="data:dma_card.empno" disabled="true">
+							</xf:input>
+   							<xf:input adjustMaxLength="false" style="width:80px;" id="inp_nm" class="inp" title="근무자 상세 "
+   								disabled="true" ref="data:dma_card.req_emp_nm">
+   							</xf:input>
+	    				</xf:group>
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+	    					<w2:textbox id="" label="신청부서" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes>
+	    					</w2:attributes>
+	    					<xf:input adjustMaxLength="false" class="inp full" id="inp_deptNm" style="" title="참여연구원" disabled="true" ref="data:dma_card.req_dept_nm"></xf:input>
+	    				</xf:group>
+	    				<xf:group class="w2tb_th" style="" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="직급" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" style="" tagname="td">
+	    					<w2:attributes></w2:attributes>
+	    					<xf:input adjustMaxLength="false" class="inp full" id="inp_posiNm" style="" title="발행년도" disabled="true" ref="data:dma_card.req_posi_nm"></xf:input>
+	    				</xf:group>
+	    			</xf:group>
+	    			<xf:group tagname="tr" style="">
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+	    					<w2:textbox id="" label="모바일" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes></w2:attributes>
+	    					<xf:input adjustMaxLength="false" class="inp full" id="inp_mobile" style="" title="과제번호" ref="data:dma_card.mobile" disabled="true"></xf:input>
+	    				</xf:group>
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+	    					<w2:textbox id="" label="연락처" style="" tagname="span" class="req"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes></w2:attributes>
+	    					<xf:input adjustMaxLength="false" class="inp full" id="inp_extNo" style="" title="연락처" disabled="true" ref="data:dma_card.ext_no"></xf:input>
+	    				</xf:group>
+	    				<xf:group class="w2tb_th" style="" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+	    					<w2:textbox id="" label="계정번호" style="" tagname="span" class="req"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" style="" tagname="td">
+	    					<w2:attributes></w2:attributes>
+	    					<xf:group style="" id="grpSchAccnt" class="inpSch full">
+   								<xf:input adjustMaxLength="false" class="inp full" id="inp_AccntNo" style="" title="발행년도" ref="data:dma_card.accnt_no" disabled="true"></xf:input>
+   								<xf:trigger style="" id="btn_schAccnt" type="button" class="btn" title="주소 검색"
+   									ev:onclick="scwin.btn_schAccnt_onclick">
+   									<xf:label><![CDATA[검색]]></xf:label>
+   								</xf:trigger>
+   							</xf:group>
+	    				</xf:group>
+	    			</xf:group>
+	    			<xf:group tagname="tr" style="">
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="영문성명" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes></w2:attributes>
+	    					<xf:input adjustMaxLength="false" class="inp full" id="inp_engNm" ref="data:dma_card.eng_nm" style="" title="영문성명" disabled="true"></xf:input>
+	    				</xf:group>
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="카드번호" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes></w2:attributes>
+	    					<xf:input adjustMaxLength="false" class="inp full" id="inp_cardNo" style=""
+	    						title="카드번호" disabled="true" displayFormat="####-####-####-####" allowChar="0-9" ev:onchange="scwin.inp_cardNo_onchange">
+	    					</xf:input>
+	    				</xf:group>
+	    				<xf:group class="w2tb_th" style="" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="발급구분" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" style="" tagname="td">
+	    					<w2:attributes></w2:attributes>
+	    					<xf:select1 allOption="" appearance="minimal" chooseOption="" chooseOptionLabel="- 선택 -" class="sel full"
+	    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_issuClsf" style="" submenuSize="auto" title="전담기관"
+	    						ref="data:dma_card.issu_clsf" ev:onchange="scwin.sbx_issuClsf_onchange">
+	    						<xf:choices>
+	    							<xf:item>
+	    								<xf:label><![CDATA[신규]]></xf:label>
+	    								<xf:value><![CDATA[01]]></xf:value>
+	    							</xf:item>
+	    							<xf:item>
+	    								<xf:label><![CDATA[재발급]]></xf:label>
+	    								<xf:value><![CDATA[03]]></xf:value>
+	    							</xf:item>
+	    						</xf:choices>
+	    					</xf:select1>
+	    				</xf:group>
+	    			</xf:group>
+	    			<xf:group tagname="tr" style="">
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="주민번호" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes>
+	    						<w2:colspan>3</w2:colspan>
+	    						<w2:rowspan>1</w2:rowspan>
+	    					</w2:attributes>
+	    					<xf:input adjustMaxLength="false" class="inp" id="inp_residFr" ref="" style="width:100px;" title="주민번호 앞자리"
+	    						disabled="true">
+	    					</xf:input>
+	    					<w2:textbox id="" label="-" style="margin:0 10px 0 10px" tagname="span"></w2:textbox>
+	    					<xf:input adjustMaxLength="false" class="inp" disabled="true" id="inp_residBk" ref="" style="width:100px;"
+	    						title="주민번호 앞자리" type="password">
+	    					</xf:input>
+	    				</xf:group>
+	    				<xf:group class="w2tb_th" style="" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="발급사유" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" style="" tagname="td">
+	    					<w2:attributes></w2:attributes>
+	    					<xf:select1 allOption="" appearance="minimal" chooseOption="" chooseOptionLabel="- 선택 -" class="sel full"
+	    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_issuCause" style="" submenuSize="auto"
+	    						title="내외부구분" ref="data:dma_card.issu_cause">
+	    						<xf:choices></xf:choices>
+	    					</xf:select1>
+	    				</xf:group>
+	    			</xf:group>
+	    			<xf:group style="" tagname="tr">
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="카드수령지" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes>
+	    						<w2:colspan>5</w2:colspan>
+	    						<w2:rowspan>1</w2:rowspan>
+	    					</w2:attributes>
+	    					<xf:group style="" id="" class="inpSch full">
+   								<xf:input adjustMaxLength="false" style="" id="inp_addr" class="inp" title="근무자명" ev:onkeypress="scwin.tb_empno_onkeypress" ev:onchange="scwin.tb_empno_onchange" ref="data:dma_card.addr">
+   								</xf:input>
+   								<xf:trigger style="" id="btn_schAddr" type="button" class="btn" title="주소 검색"
+   									ev:onclick="scwin.btn_schAddr_onclick">
+   									<xf:label><![CDATA[검색]]></xf:label>
+   								</xf:trigger>
+   							</xf:group>
+	    				</xf:group>
+	    			</xf:group>
+	    			<xf:group style="" tagname="tr">
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="첨부파일" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes>
+	    						<w2:colspan>5</w2:colspan>
+	    						<w2:rowspan>1</w2:rowspan>
+	    					</w2:attributes>
+	    					<xf:group class="full" id="upload_A" style="height:150px;"></xf:group>
+	    				</xf:group>
+	    			</xf:group>
+	    			<xf:group tagname="tr" style="">
+	    				<xf:group class="w2tb_th" tagname="th">
+	    					<w2:attributes>
+	    						<w2:scope>row</w2:scope>
+	    					</w2:attributes>
+	    					<w2:textbox id="" label="비고" style="" tagname="span"></w2:textbox>
+	    				</xf:group>
+	    				<xf:group class="w2tb_td" tagname="td">
+	    					<w2:attributes>
+	    						<w2:colspan>5</w2:colspan>
+	    						<w2:rowspan>1</w2:rowspan>
+	    					</w2:attributes>
+	    					<xf:textarea id="inp_rmk" style="height: 40px;" title="목차" ref="data:dma_card.rmk"></xf:textarea>
+	    				</xf:group>
+	    			</xf:group>
+	    		</xf:group>
+	    		<xf:group>
+	    			<xf:group class="titleSection" id="" style="">
+	    				<w2:textbox class="tit_tbl red" id="" label="법인카드발급신청서약서" style="" tagname="h2"></w2:textbox>
+	    			</xf:group>
+	    			<xf:group class="area" id="" style="">
+		    			<xf:group class="helparea no" id="" style="">
+		    				<w2:textbox class="helptitle" id="" label="본인은 상기 법인카드를 수령하여 사용함에 있어 다음 사항을 준수할 것을 서약합니다." style=""></w2:textbox>
+		    				<xf:group id="" style="" tagname="ol">
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="법인카드를 사용함에 있어 연구원의 『법인신용카드 관리 및 사용지침』을 철저히 준수한다." style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="법인카드는 연구원의 업무상 경비집행에 한하여 사용한다." style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="카드의 보관, 사용에 관리자로서의 성실한 주의의무를 다하여야 한다." style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="카드관리상의 부주의로 인한 손실과 확인되지 않은 집행건에 대하여는 변상책임을 진다." style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="신분변동, 퇴직등으로 볍인카드의 필요성이 없어진 경우에는 즉시 카드관리총괄부서(재정운영실)에 반납하여야 한다." style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="분실, 도난등의 사유가 발생했을 경우에는 즉시 BC카드회사(Tel. 1588-4000)로 신고하며, 카드관리총괄부서에 통보하여야 한다." style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    				</xf:group>
+		   				</xf:group>
+		   				<xf:group style="" class="ri">
+		   					<xf:select1 appearance="full" class="radioGroup" cols="" id="rbx_agrmntYn" ref="data:dma_card.agrmt_yn" renderType="radiogroup"
+		   						rows="1" style="" title="법인카드발급신청서약서">
+		   						<xf:choices>
+		   							<xf:item>
+		   								<xf:label><![CDATA[동의합니다.]]></xf:label>
+		   								<xf:value><![CDATA[Y]]></xf:value>
+		   							</xf:item>
+		   							<xf:item>
+		   								<xf:label><![CDATA[동의하지 않습니다.]]></xf:label>
+		   								<xf:value><![CDATA[N]]></xf:value>
+		   							</xf:item>
+		   						</xf:choices>
+		   					</xf:select1>
+		   				</xf:group>
+	    			</xf:group>
+	    		</xf:group>
+	    		<xf:group>
+	    			<xf:group class="titleSection" id="" style="">
+	    				<w2:textbox class="tit_tbl red" id="" label="법인 카드 사용 안내" style="" tagname="h2"></w2:textbox>
+	    			</xf:group>
+	    			<xf:group class="area" id="" style="">
+		    			<xf:group class="helparea no circle" id="" style="">
+		    				<xf:group id="" style="" tagname="ol">
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="법인카드 사용금액 결제일은 매월 23일, 결제일 전에 사용금액을 처리완료&lt;br/&gt; &amp;nbsp;→ 미처리시 법인카드 일시 사용중지(처리 완료시 중지해지)" style="color:black;"
+		    							tagname="span" escape="false">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="집행제한 사항&lt;br/&gt; &amp;nbsp;→ 업무목적외 사용(출장비 이중지급 - 식대, 휴일날 공용차량 주유, 사우나 이용, 영화, 공연관람, 화환 등은 처리불가능)&lt;br/&gt; &amp;nbsp;(사용시 개인입금 처리)&lt;br/&gt; &amp;nbsp;→ 식대(회의비)등의 집행시 유흥업소(단란, 유흥주점, 노래방, 호프, 카페 등)는 이용할 수 없으며,&lt;br/&gt; &amp;nbsp; &amp;nbsp; &amp;nbsp;밤 12시 이후 이용한 영수증은 처리 불가능(사용시 개인입금처리)" style="color:black;"
+		    							tagname="span" escape="false">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label=" 출장, 주말, 명절연휴 또는 개인휴가 중 사용 자제 요망(감사시 사유서, 소명서 제출 또는 개인반납 조치됨)" style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="재발급시 기존카드 사용내역 처리 완료 후 신규카드 발급" style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="직급이 전문가인 경우 과제 종료시 카드 반납" style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    				</xf:group>
+		    				<xf:group style="" class="ri">
+			   					<xf:select1 appearance="full" class="radioGroup" cols="" id="rbx_cardUseYn" ref="data:dma_card.card_use_yn" renderType="radiogroup"
+			   						rows="1" style="" title="법인카드사용안내">
+			   						<xf:choices>
+			   							<xf:item>
+			   								<xf:label><![CDATA[동의합니다.]]></xf:label>
+			   								<xf:value><![CDATA[Y]]></xf:value>
+			   							</xf:item>
+			   							<xf:item>
+			   								<xf:label><![CDATA[동의하지 않습니다.]]></xf:label>
+			   								<xf:value><![CDATA[N]]></xf:value>
+			   							</xf:item>
+			   						</xf:choices>
+			   					</xf:select1>
+			   				</xf:group>
+		   				</xf:group>
+	    			</xf:group>
+	    		</xf:group>
+	    		<xf:group>
+	    			<xf:group class="titleSection" id="" style="">
+	    				<w2:textbox class="tit_tbl red" id="" label="법인 카드 반납 안내" style="" tagname="h2"></w2:textbox>
+	    			</xf:group>
+	    			<xf:group class="area" id="" style="">
+		    			<xf:group class="helparea no circle" id="" style="">
+		    				<xf:group id="" style="" tagname="ol">
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label='퇴직 : "퇴직신청"시 법인카드 반납 및 사용내역 처리 완료 후 "법인카드 담당자" 확인에 서명' style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label='과제종료 : 직급이 "전문가"로 발급 받은 경우 수행하는 모든 과제 종료시, 사용내역 처리 완료 후 법인카드 반납' style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="보직해임 : 행정부서에서 보직해임시, 사용내역 처리 완료 후 법인카드 반납" style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="파견 : 타 기관등에 파견시, 사용내역 처리 완료 후 법인카드 반납" style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    					<xf:group id="" tagname="li">
+		    						<w2:textbox class="" id="" label="재발급 : 사용중 카드가 훼손되었을 경우, 사용내역 처리완료 후 법인카드 반납" style="color:black;"
+		    							tagname="span">
+		    						</w2:textbox>
+		    					</xf:group>
+		    				</xf:group>
+		    				<xf:group class="ri" style="">
+			   					<xf:select1 appearance="full" class="radioGroup" cols="" id="rbx_cardReturnYn" ref="data:dma_card.card_return_yn" renderType="radiogroup"
+			   						rows="1" style="" title="법인카드반납안내">
+			   						<xf:choices>
+			   							<xf:item>
+			   								<xf:label><![CDATA[동의합니다.]]></xf:label>
+			   								<xf:value><![CDATA[Y]]></xf:value>
+			   							</xf:item>
+			   							<xf:item>
+			   								<xf:label><![CDATA[동의하지 않습니다.]]></xf:label>
+			   								<xf:value><![CDATA[N]]></xf:value>
+			   							</xf:item>
+			   						</xf:choices>
+			   					</xf:select1>
+			   				</xf:group>
+		   				</xf:group>
+	    			</xf:group>
+	    		</xf:group>
+	    		<xf:group style="" id="" class="btnGroup">
+	    			<xf:group style="" id="" class="le"></xf:group>
+	    			<xf:group id="" class="ri">
+		    			<xf:trigger style="" id="btn_del" type="button" class="btn pro" ev:onclick="scwin.btn_del_onclick">
+							<xf:label><![CDATA[삭제]]></xf:label>
+						</xf:trigger>
+	    				<xf:trigger class=" btn pro conf" ev:onclick="scwin.btn_save_onclick" id="btn_save" style="" type="button">
+		    				<xf:label><![CDATA[저장]]></xf:label>
+		    			</xf:trigger>
+	    			</xf:group>
+	    		</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

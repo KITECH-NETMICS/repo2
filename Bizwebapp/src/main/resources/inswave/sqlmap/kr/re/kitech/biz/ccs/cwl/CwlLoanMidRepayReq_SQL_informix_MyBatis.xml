@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.cwl">
+  <select id="selectListCwlLoanMidRepayReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo">
+	select /* QueryID : kr.re.kitech.biz.ccs.cwl.selectListCwlLoanMidRepayReq */ 
+	    a.req_no, 
+	    a.req_ymd, 
+	    a.req_syspayno, 
+	    fun_emp_no(a.req_syspayno) as req_empno,
+	    fun_emp_nm(a.req_syspayno) as req_nm,
+	    a.req_dept_cd, 
+	    a.req_dept_new_ymd, 
+	    a.req_midway_repay_ymd,
+	    a.midway_repay_ymd,     
+	    a.midway_repay_amt, 
+	    a.midway_repay_intrst, 
+	    a.dedct_clsf, 
+	    decode(a.dedct_clsf, '1', '직접공제', '2', '급여공제', '') as dedct_clsf_nm,
+	    a.loan_rts, 
+	    a.midway_repay_aft_amt, 
+	    a.biz_proc_cd, 
+	    decode(nvl(a.biz_proc_cd, ''), 'Y', '확정', '미확정') as biz_proc_nm,    
+	    a.loan_cd, 
+	    decode(a.loan_cd, '507', '상조회대출', '525', '학자융자금', '') as loan_nm,
+	    a.loan_ymd, 
+	    a.loan_syspayno, 
+	    a.loan_tot_amt,
+	    a.loan_ramt,
+	    (a.loan_tot_amt - a.loan_ramt) as loan_repay_amt,
+	    a.tot_repay_amt,
+	    a.tot_repay_intrst,
+	    a.tot_midway_repay_amt,
+	    a.tot_midway_repay_intrst,
+	    a.rmk, 
+	    a.cofm_syspayno, 
+	    a.regst_psn_syspayno, 
+	    a.regst_daytm, 
+	    a.updt_psn_syspayno, 
+	    a.updt_daytm ,
+	    b.apr_state,
+	    fun_xodxcommst_cd_nm(b.apr_state, 0) as apr_state_nm
+	from cwlloanmidrepayreq a, outer xomxintfatab b
+	where a.req_no = b.req_no
+	and a.req_ymd between #{req_start_ymd} and #{req_end_ymd}
+	and a.req_syspayno like decode(#{req_syspayno}, '', '%', #{req_syspayno})
+	order by a.req_ymd desc
+  </select>
+  
+  <select id="selectCwlLoanMidRepayReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo">
+	select /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlLoanMidRepayReq */ 
+	    a.req_no, 
+	    d.apr_state,
+	    a.req_ymd, 
+	    a.req_syspayno, 
+	    fun_emp_no(a.req_syspayno) as req_empno,
+	    fun_emp_nm(a.req_syspayno) as req_nm,
+	    c.mobile,
+	    a.req_dept_cd, 
+	    a.req_dept_new_ymd, 
+	    fun_dept_nm(a.req_dept_cd, a.req_dept_new_ymd) as req_dept_nm,
+	    fun_divsn_dept_nm(a.req_dept_cd, a.req_dept_new_ymd, 'C') as centr_nm,
+	    a.req_midway_repay_ymd, 
+	    a.midway_repay_ymd, 
+	    a.midway_repay_amt, 
+	    a.midway_repay_intrst, 
+	    a.dedct_clsf, 
+	    a.loan_rts, 
+	    a.midway_repay_aft_amt, 
+	    nvl(trim(a.biz_proc_cd), '') as biz_proc_cd, 
+	    a.loan_cd, 
+	    decode(a.loan_cd, '507', '상조회대출', '525', '학자금대출', '') as loan_nm,
+	    a.loan_ymd, 
+	    a.loan_syspayno, 
+	    fun_emp_nm(a.loan_syspayno) as loan_psn_nm,
+	    a.loan_tot_amt, 
+	    a.loan_ramt, 
+	    a.tot_repay_amt, 
+	    a.tot_repay_intrst, 
+	    a.tot_midway_repay_amt, 
+	    a.tot_midway_repay_intrst,     
+	    nvl(a.tot_repay_amt, 0) + nvl(a.tot_midway_repay_amt, 0) as sum_repay_amt,
+	    a.rmk, 
+	    a.cofm_ymd,
+	    a.cofm_syspayno,
+	    fun_emp_nm(a.cofm_syspayno) as cofm_psn_nm,
+	    b.midway_repay_ymd as pre_midway_repay_ymd,
+	    b.midway_repay_times,
+	    c.email
+	from cwlloanmidrepayreq a
+		,outer cwlloan b
+		,outer humbasicinfo c
+		,outer xomxintfatab d
+	where a.loan_cd = b.loan_cd
+	and a.loan_ymd = b.loan_ymd
+	and a.loan_syspayno = b.syspayno
+	and a.req_syspayno = c.syspayno
+	and a.req_no = d.req_no
+	and a.req_no = #{req_no}
+  </select>
+  
+  <!-- 대출금마스터 상세조회(이자계산에 사용) -->
+  <select id="selectCwlLoanForCalculate" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlLoanForCalculate */ 
+	     a.syspayno ,
+	     c.empno,
+	     c.nm,
+	     c.posi_nm,
+	     c.occutyp_nm,
+	     c.dept_nm,
+	     c.work_clsf_nm,
+	     a.loan_cd ,
+	     b.item_name as loan_nm,
+	     a.loan_ymd ,
+	     a.loan_tot_liq ,
+	     a.loan_ramt ,
+	     ROUND(a.loan_rts,1) as loan_rts,
+	     nvl(a.tot_repay_amt,0) tot_repay_amt,
+	     nvl(a.tot_repay_intrst,0) tot_repay_intrst,
+	     nvl(a.tot_midway_repay_amt,0) tot_midway_repay_amt,
+	     nvl(a.month_repay_amt,0) month_repay_amt,
+	     nvl(a.thmon_intrst_amt,0) thmon_intrst_amt,
+	     a.repay_schdl_tot_times ,
+	     a.midway_repay_times,
+	     a.repay_times ,
+	     a.dedct_start_ymd ,
+	     a.midway_repay_ymd ,
+	     a.final_dedct_ymd ,
+	     a.dedct_progrss_state,
+	     CASE WHEN a.dedct_progrss_state='1' THEN '진행'
+	          WHEN a.dedct_progrss_state='2' THEN '만기완료'
+	          WHEN a.dedct_progrss_state='3' THEN '중도상환' END as dedct_progrss_nm,
+	     a.rmk ,
+	     a.regst_psn_syspayno ,
+	     a.regst_daytm ,
+	     a.updt_psn_syspayno ,
+	     a.updt_daytm
+	FROM cwlloan a 
+	LEFT JOIN (select salry_cd as cd_gu
+					 ,salry_cd_nm as item_name
+	            from xodhslcode
+	              where use_yn = 'Y' 
+	                and base_ymd = (select max(base_ymd) from xodhslcode)
+	           ) b
+	ON a.loan_cd = b.cd_gu
+	LEFT JOIN v_humbasicinfo c
+	ON a.syspayno = c.syspayno
+	WHERE 1=1
+	AND a.syspayno = #{syspayno}
+	AND a.loan_ymd = #{loan_ymd}
+  </select>
+  
+  <insert id="insertCwlLoanMidRepayReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo">
+	insert /* QueryID : kr.re.kitech.biz.ccs.cwl.insertCwlLoanMidRepayReq */ 
+			 into cwlloanmidrepayreq
+	(	 req_no
+		,req_ymd
+		,req_syspayno
+		,req_dept_cd
+		,req_dept_new_ymd
+		,req_midway_repay_ymd
+		,midway_repay_ymd
+		,midway_repay_amt
+		,midway_repay_intrst
+		,dedct_clsf
+		,loan_rts
+		,midway_repay_aft_amt
+		,biz_proc_cd
+		,loan_cd
+		,loan_ymd
+		,loan_syspayno
+		,loan_tot_amt
+		,loan_ramt
+		,tot_repay_amt
+		,tot_repay_intrst
+		,tot_midway_repay_amt
+		,tot_midway_repay_intrst
+		,rmk, cofm_syspayno
+		,regst_psn_syspayno
+		,regst_daytm
+	)
+	values (
+				#{req_no}
+			   ,#{req_ymd}
+			   ,#{req_syspayno}
+			   ,#{req_dept_cd}
+			   ,#{req_dept_new_ymd}
+			   ,#{req_midway_repay_ymd}
+			   ,#{midway_repay_ymd}
+			   ,#{midway_repay_amt}
+			   ,#{midway_repay_intrst}
+			   ,#{dedct_clsf}
+			   ,#{loan_rts}
+			   ,#{midway_repay_aft_amt}
+			   ,#{biz_proc_cd}
+			   ,#{loan_cd}
+			   ,#{loan_ymd}
+			   ,#{loan_syspayno}
+			   ,#{loan_tot_amt}
+			   ,#{loan_ramt}
+			   ,#{tot_repay_amt}
+			   ,#{tot_repay_intrst}
+			   ,#{tot_midway_repay_amt}
+			   ,#{tot_midway_repay_intrst}
+			   ,#{rmk}
+			   ,#{cofm_syspayno}
+			   ,#{regst_syspayno}
+			   ,current
+		   )
+  </insert>
+  
+  <update id="updateCwlLoanMidRepayReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo">
+	update /* QueryID : kr.re.kitech.biz.ccs.cwl.updateCwlLoanMidRepayReq */ 
+			 cwlloanmidrepayreq 
+	set req_ymd = #{req_ymd}, 
+	    req_syspayno = #{req_syspayno}, 
+	    req_dept_cd = #{req_dept_cd}, 
+	    req_dept_new_ymd = #{req_dept_new_ymd}, 
+	    req_midway_repay_ymd = #{req_midway_repay_ymd}, 
+	    midway_repay_ymd = #{midway_repay_ymd}, 
+	    midway_repay_amt = #{midway_repay_amt}, 
+	    midway_repay_intrst = #{midway_repay_intrst}, 
+	    dedct_clsf = #{dedct_clsf}, 
+	    loan_rts = #{loan_rts}, 
+	    midway_repay_aft_amt = #{midway_repay_aft_amt}, 
+	    biz_proc_cd = #{biz_proc_cd}, 
+	    loan_cd = #{loan_cd}, 
+	    loan_ymd = #{loan_ymd}, 
+	    loan_syspayno = #{loan_syspayno}, 
+	    loan_tot_amt = #{loan_tot_amt}, 
+	    loan_ramt = #{loan_ramt}, 
+	    tot_repay_amt = #{tot_repay_amt}, 
+	    tot_repay_intrst = #{tot_repay_intrst}, 
+	    tot_midway_repay_amt = #{tot_midway_repay_amt}, 
+	    tot_midway_repay_intrst = #{tot_midway_repay_intrst}, 
+	    rmk = #{rmk}, 
+	    cofm_syspayno = #{cofm_syspayno}, 
+	    updt_psn_syspayno = #{updt_syspayno}, 
+	    updt_daytm = current
+	where req_no = #{req_no}
+  </update>		  
+  
+  <delete id="deleteCwlLoanMidRepayReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo">
+	delete /* QueryID : kr.re.kitech.biz.ccs.cwl.deleteCwlLoanMidRepayReq */ 
+			 from cwlloanmidrepayreq 
+	where req_no = #{req_no}
+  </delete>
+  
+  <update id="updateLoanMidRepayConfirmAndCancel" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo">
+	update /* QueryID : kr.re.kitech.biz.ccs.cwl.updateLoanMidRepayConfirmAndCancel */ 
+			 cwlloanmidrepayreq
+	set biz_proc_cd = #{biz_proc_cd},  --Y:확정, N:취소
+	      cofm_ymd = #{cofm_ymd},
+	      cofm_syspayno = #{cofm_syspayno},
+	      updt_psn_syspayno = #{updt_syspayno},
+	      updt_daytm = current
+	where req_no = #{req_no}
+  </update>
+  
+  <!-- 중도상환이자 이력테이블 등록 -->
+  <insert id="insertCwlLoanMidWayRepay" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo">
+	INSERT /* QueryID : kr.re.kitech.biz.ccs.cwl.insertCwlLoanMidWayRepay */ 
+		 INTO cwlloanmidwayrepay
+		 (
+              syspayno, 
+              loan_cd, 
+              loan_ymd, 
+              midway_repay_ymd, 
+              odr, 
+              repay_psn_dept_cd,
+              repay_psn_dept_new_ymd,
+              loan_ramt,              
+              loan_rts,
+              midway_repay_amt, 
+              midway_repay_intrst, 
+              rmk, 
+              dedct_clsf,
+              regst_psn_syspayno, 
+              regst_daytm, 
+              updt_psn_syspayno, 
+              updt_daytm
+	) 
+	VALUES
+	(
+		 #{loan_syspayno}
+		,#{loan_cd}
+		,#{loan_ymd}
+		,#{midway_repay_ymd}
+		,(SELECT NVL(MAX(odr), 0)+1 AS odr 
+			FROM cwlloanmidwayrepay 
+		   WHERE syspayno = #{loan_syspayno} 
+			 AND loan_cd = #{loan_cd} 
+			 AND loan_ymd = #{loan_ymd} 
+			 AND midway_repay_ymd = #{midway_repay_ymd})
+		,#{req_dept_cd}
+		,#{req_dept_new_ymd}
+		,#{loan_ramt}
+		,#{loan_rts}
+		,#{midway_repay_amt}
+		,#{midway_repay_intrst}
+		,#{rmk}
+		,#{dedct_clsf}
+		,#{regst_syspayno}
+		,CURRENT
+		,#{updt_syspayno}
+		,CURRENT
+		)
+  </insert>
+  
+  <!-- 중도상환이자 이력테이블 삭제 -->
+  <delete id="deleteCwlLoanMidWayRepay" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMidRepayReqVo">
+	DELETE /* QueryID : kr.re.kitech.biz.ccs.cwl.deleteCwlLoanMidWayRepay */ 
+			 FROM cwlloanmidwayrepay
+	WHERE syspayno = #{loan_syspayno}
+	  AND loan_cd = #{loan_cd}
+	  AND loan_ymd = #{loan_ymd}
+	  AND midway_repay_ymd = #{midway_repay_ymd}
+	  AND odr = #{odr}
+  </delete>
+  
+  <!-- 대출금마스터 수정 -->
+  <update id="updateCwlLoanMaster" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cwl.updateCwlLoanMaster */ 
+			 cwlloan 
+	    SET  loan_ramt = #{loan_ramt}, 
+	         midway_repay_ymd = #{midway_repay_ymd}, 
+	         tot_midway_repay_amt = #{tot_midway_repay_amt}, 
+	         tot_midway_repay_intrst = #{tot_midway_repay_intrst}, 
+	         midway_repay_times = #{midway_repay_times}, 
+	         thmon_midway_repay_intrst_amt = #{thmon_midway_repay_intrst_amt},
+	         dedct_progrss_state = #{dedct_progrss_state}, 
+	         updt_psn_syspayno = #{updt_syspayno},
+	         updt_daytm = CURRENT
+	WHERE syspayno = #{syspayno} 
+	  AND loan_cd = #{loan_cd} 
+	  AND loan_ymd = #{loan_ymd}
+  </update>
+  
+  <!-- 중도상환건에 대하여 삭제시 마스터데이터와 
+		중도상환데이터의 싱크를 맞추기 위한 자료 -->
+  <select id="selectCwlLoanForSync" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlLoanForSync */ 
+	     a.syspayno ,
+	     a.loan_cd ,
+	     a.loan_ymd ,
+	     nvl(count(a.loan_ymd), 0) as midway_repay_times,
+	     /*대출잔액 = 대출원금-총상환원금-총중도상환원금*/
+	     nvl(a.loan_tot_liq, 0) - nvl(a.tot_repay_amt, 0) - nvl(sum(b.midway_repay_amt), 0) as loan_ramt,
+	     nvl(max(b.midway_repay_ymd), 0) as max_midway_repay_ymd,     
+	     nvl(sum(b.midway_repay_amt), 0) as sum_midway_repay_amt,
+	     nvl(sum(b.midway_repay_intrst), 0) as sum_midway_repay_intrst     
+	FROM cwlloan a
+		,outer cwlloanmidwayrepay b
+	WHERE a.syspayno = b.syspayno 
+	AND a.loan_cd = b.loan_cd 
+	AND a.loan_ymd = b.loan_ymd
+	AND a.syspayno = #{syspayno}
+	AND a.loan_cd = #{loan_cd}
+	AND a.loan_ymd = #{loan_ymd}
+	AND (b.midway_repay_ymd <![CDATA[<>]]> #{midway_repay_ymd} OR b.odr <![CDATA[ <> ]]> #{odr})
+	GROUP BY a.syspayno, a.loan_cd, a.loan_ymd, a.loan_tot_liq, a.loan_ramt, a.tot_repay_amt
+  </select>
+  
+  <!-- 상환건 삭제시 마스터데이터와 중도상환데이터의 싱크작업을위한 자료(이전 상환이자) -->
+  <select id="selectCwlLoanMidWayRepay" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlLoanMidWayRepay */ 
+	     midway_repay_intrst
+	FROM cwlloanmidwayrepay
+	WHERE syspayno = #{syspayno}
+	AND   loan_cd = #{loan_cd}
+	AND   loan_ymd = #{loan_ymd}
+	AND   midway_repay_ymd = #{midway_repay_ymd}
+	AND   odr = (
+	     SELECT     
+	          max(odr) as odr
+	       FROM cwlloanmidwayrepay
+	      WHERE   syspayno = #{syspayno}
+	        AND   loan_cd = #{loan_cd}
+	        AND   loan_ymd = #{loan_ymd}
+	        AND   midway_repay_ymd = #{midway_repay_ymd}
+	   )
+  </select>
+</mapper>

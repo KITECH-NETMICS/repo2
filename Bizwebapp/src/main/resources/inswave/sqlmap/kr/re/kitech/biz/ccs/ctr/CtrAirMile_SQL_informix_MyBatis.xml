@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ccs.ctr">
+<!-- 항공사별 마일리지 신청서(신고서) 조회 -->
+<select id="selectCtrAirMileUseList" parameterType="kr.re.kitech.biz.ccs.ctr.vo.AirMileSrcVo" resultType="kr.re.kitech.biz.ccs.pop.vo.CtrAirMileUseVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrAirMileUseList */
+       a.req_no
+     , seq
+     , a.biztrip_req_no
+     , a.syspayno
+     , a.air_fee /* 항공운임비*/
+     , a.own_mile  /* 보유마일리지 */
+     , a.unuse_cause  /* 미사용사유 */
+     , a.req_psn
+     , a.air_cd  /* 항공사 */
+     , a.seat_grd  /* 좌석등급 */
+     , a.pub_new_mile  /* 공적생성마일리지 */
+     , a.pub_new_mile AS cu_pub_new_mile
+     , a.pub_use_mile  /* 공적사용마일리지 */
+     , a.pub_use_mile AS cu_pub_use_mile
+     , a.per_use_mile  /* 사적사용마일리지 */
+     , a.report_psn
+     , a.report_ymd   
+     , a.req_rmk  /* 비고*/
+     , a.report_rmk /* 신고서비고 */
+     , TRIM(a.attach_file_no_req) AS attach_file_no_req/* 신청서 첨부파일*/
+     , TRIM(a.attach_file_no_report) AS attach_file_no_report
+     , b.nm
+     , b.empno
+     , a.biztrip_report_no
+     , a.in_out_clsf /* 국내/국외 */
+     , a.use_mile_yn /* 마일리지사용유무 */
+     , a.mile_case   /* 마일리지 활용방법 */
+     , a.use_cause   /* 마일리지 사용사유 */
+     , a.air_real_fee  /* 운임신청액 */
+     , a.way_trip  /* 운행구분 */
+     , a.cal_boarding_ymd  /* 탑승일 */
+     , x.apr_state
+     , a.air_cd_chang_yn
+FROM ctrairmileuse a
+LEFT JOIN humbasicinfo b ON a.syspayno = b.syspayno
+LEFT JOIN xomxintfatab x ON x.req_no = a.biztrip_report_no
+WHERE 1=1
+<choose>
+ <when test='biztrip_req_no != null and biztrip_req_no != ""'> AND a.biztrip_req_no = #{biztrip_req_no} </when>
+ <otherwise> AND a.req_no = #{req_no} </otherwise>
+</choose>
+ORDER BY a.seq
+</select>
+
+<!-- 개인별 사용가능 항공마일리지 조회 -->
+<select id="selectCtrAirMileList" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrAirMileVo" parameterType="kr.re.kitech.biz.ccs.ctr.vo.AirMileSrcVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrAirMileList */
+       air_cd
+     , syspayno
+     , req_mile
+     , use_mile
+     , ext_mile
+     , totl_mile
+     , (totl_mile - use_mile - req_mile - ext_mile) AS able_mile
+  FROM ctrairmile
+ WHERE syspayno = #{syspayno}
+ <if test='air_cd != null and air_cd != ""'> AND air_cd = #{air_cd} </if>
+</select>
+
+<!-- 출장정보 조회 -->
+<select id="selectCtrTripAirMile" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ccs.pop.vo.CtrAirMileTripVo">
+SELECT /* kr.re.kitech.biz.ccs.ctr.selectCtrTripAirMile */
+       a.req_no AS biztrip_req_no
+     , a.biztrip_region
+     , a.biztrip_start_ymd
+     , a.biztrip_cls_ymd
+     , MAX(b.req_no) AS req_no
+  FROM (
+      SELECT req_no, biztrip_region, biztrip_start_ymd, biztrip_cls_ymd
+        FROM ctrdom
+       WHERE req_no = #{req_no}
+       UNION all
+      SELECT req_no, fun_xodxcommst_cd_nm(biztrip_region,0) AS biztrip_region, biztrip_start_ymd, biztrip_cls_ymd
+        FROM ctrover
+       WHERE req_no = #{req_no}
+       ) a
+  LEFT JOIN ctrairmileuse b ON a.req_no = b.biztrip_req_no
+ GROUP BY 1,2,3,4
+</select>
+
+<!-- 항공마일리지 신청 등록 -->
+<insert id="insertCtrAirMileUse" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrAirMileUseVo">
+INSERT /* kr.re.kitech.biz.ccs.ctr.insertCtrAirMileUse */
+  INTO ctrairmileuse (
+      req_no
+    , seq
+    , biztrip_req_no
+    , biztrip_report_no
+    , syspayno
+    , in_out_clsf
+    , use_mile_yn
+    , req_psn
+    , air_cd
+    , seat_grd
+    , air_fee
+   <if test='own_mile != null'> , own_mile </if>
+   <if test='unuse_cause != null'> , unuse_cause </if>
+   <if test='pub_new_mile != null'> , pub_new_mile </if>
+   <if test='pub_use_mile != null'> , pub_use_mile </if>
+   <if test='per_use_mile != null'> , per_use_mile </if>
+   <if test='req_rmk != null'> , req_rmk </if>
+   <if test='attach_file_no_req != null'> , attach_file_no_req </if>
+   <if test='mile_case != null'> , mile_case /* 마일리지 활용방법 */ </if> 
+   <if test='use_cause != null'> , use_cause </if>
+   <if test='air_real_fee != null'> , air_real_fee </if>
+   <if test='way_trip != null'> , way_trip </if>
+   <if test='cal_boarding_ymd != null'> , cal_boarding_ymd </if>
+   <if test='air_cd_chang_yn != null'> , air_cd_chang_yn </if>
+   <if test='report_ymd != null'> , report_ymd </if>
+   <if test='report_rmk != null'> , report_rmk </if>
+   <if test='report_psn != null'> , report_psn </if>
+    , regst_psn_syspayno
+    , regst_daytm
+) VALUES (
+      #{req_no}
+    , (SELECT NVL(MAX(seq), 0) +1 FROM ctrairmileuse WHERE req_no = #{req_no})
+    , #{biztrip_req_no}
+    , #{biztrip_report_no}
+    , #{syspayno}
+    , #{in_out_clsf}
+    , #{use_mile_yn}
+    , #{req_psn}
+    , #{air_cd}
+    , #{seat_grd}
+    , #{air_fee}
+   <if test='own_mile != null'> , #{own_mile} </if>
+   <if test='unuse_cause != null'> , #{unuse_cause} </if>
+   <if test='pub_new_mile != null'> , #{pub_new_mile} </if>
+   <if test='pub_use_mile != null'> , #{pub_use_mile} </if>
+   <if test='per_use_mile != null'> , #{per_use_mile} </if>
+   <if test='req_rmk != null'> , #{req_rmk} </if>
+   <if test='attach_file_no_req != null'> , #{attach_file_no_req} </if>
+   <if test='mile_case != null'> , #{mile_case} /* 마일리지 활용방법 */ </if> 
+   <if test='use_cause != null'> , #{use_cause} </if>
+   <if test='air_real_fee != null'> , #{air_real_fee} </if>
+   <if test='way_trip != null'> , #{way_trip} </if>
+   <if test='cal_boarding_ymd != null'> , #{cal_boarding_ymd} </if>
+   <if test='air_cd_chang_yn != null'> , #{air_cd_chang_yn} </if>
+   <if test='report_ymd != null'> , #{report_ymd} </if>
+   <if test='report_rmk != null'> , #{report_rmk} </if>
+   <if test='report_psn != null'> , #{report_psn} </if>
+    , #{regst_syspayno}
+    , SYSDATE
+)
+</insert>
+
+<!-- 개인별 항공마일리지 저장 -->
+<update id="mergeCtrAirMile" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrAirMileVo">
+MERGE /* kr.re.kitech.biz.ccs.ctr.mergeCtrAirMile */
+ INTO ctrairmile AS t1
+USING DUAL ON ( t1.syspayno = #{syspayno} AND t1.air_cd = #{air_cd}) 
+WHEN MATCHED THEN
+    UPDATE
+        SET t1.req_mile = req_mile - #{cu_req_mile} + #{req_mile}
+          , t1.use_mile = use_mile - #{cu_use_mile} + #{use_mile}
+          , t1.totl_mile = totl_mile - #{cu_pub_new_mile} + #{pub_new_mile}
+          , t1.updt_psn_syspayno = #{updt_syspayno}
+          , t1.updt_daytm = CURRENT
+WHEN NOT MATCHED THEN
+ INSERT (syspayno
+       , air_cd
+       , req_mile
+       , use_mile
+       , totl_mile
+       , use_yn
+       , regst_psn_syspayno
+       , regst_daytm) 
+ VALUES ( #{syspayno}
+        , #{air_cd}
+        , #{req_mile}
+        , #{use_mile}
+        , #{totl_mile}
+        , 'Y'
+        , #{regst_syspayno}
+        , CURRENT
+     )
+</update>
+
+<!-- 항공마일리지 신청 수정 -->
+<update id="updateCtrAirMileUse" parameterType="kr.re.kitech.biz.ccs.pop.vo.CtrAirMileUseVo">
+UPDATE /* kr.re.kitech.biz.ccs.ctr.updateCtrAirMileUse */
+       ctrairmileuse
+   SET use_mile_yn = #{use_mile_yn}
+     , seat_grd = #{seat_grd}
+     , air_fee = #{air_fee}
+    <if test='own_mile != null'> , own_mile = #{own_mile} </if>
+    <if test='unuse_cause != null'> , unuse_cause = #{unuse_cause} </if>
+    <if test='pub_new_mile != null'> , pub_new_mile = #{pub_new_mile} </if>
+    <if test='pub_use_mile != null'> , pub_use_mile = #{pub_use_mile} </if>
+    <if test='per_use_mile != null'> , per_use_mile = #{per_use_mile} </if>
+    <if test='req_rmk != null'> , req_rmk = #{req_rmk} </if>
+    <if test='report_rmk != null'> , report_rmk = #{report_rmk} </if>
+    <if test='attach_file_no_req != null'> , attach_file_no_req = #{attach_file_no_req} </if>
+    <if test='mile_case != null'> , mile_case = #{mile_case} /* 마일리지 활용방법 */ </if> 
+    <if test='use_cause != null'> , use_cause = #{use_cause} </if>
+    <if test='air_real_fee != null'> , air_real_fee = #{air_real_fee} </if>
+    <if test='way_trip != null'> , way_trip = #{way_trip} </if>
+    <if test='cal_boarding_ymd != null'> , cal_boarding_ymd = #{cal_boarding_ymd} </if>
+    <if test='air_cd_chang_yn != null'> , air_cd_chang_yn = #{air_cd_chang_yn} </if>
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+   AND seq = #{seq}
+</update>
+</mapper>

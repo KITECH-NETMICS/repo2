@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="프로젝트경비부처">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="accnt_no" name="accnt_no"></w2:key>
+            			<w2:key dataType="text" id="from_ymd" name="from_ymd"></w2:key>
+            			<w2:key dataType="text" id="to_ymd" name="to_ymd"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+					<w2:columnInfo>
+						<w2:column id="accnt_ymd" name="accnt_ymd" dataType="text"></w2:column>
+						<w2:column id="vend_nm" name="vend_nm" dataType="text"></w2:column>
+						<w2:column id="rmk" name="rmk" dataType="text"></w2:column>
+						<w2:column id="accnt_no" name="accnt_no" dataType="text"></w2:column>
+						<w2:column id="accnt_cd" name="accnt_cd" dataType="text"></w2:column>
+						<w2:column id="slip_no_odr" name="slip_no_odr" dataType="text"></w2:column>
+						<w2:column id="dr_amt" name="dr_amt" dataType="text"></w2:column>
+						<w2:column id="cr_amt" name="cr_amt" dataType="text"></w2:column>
+						<w2:column id="jan_amt" name="jan_amt" dataType="text"></w2:column>
+						<w2:column id="accnt_mm" name="accnt_mm" dataType="text"></w2:column>
+						<w2:column id="flag" name="flag" dataType="text"></w2:column>
+					</w2:columnInfo>
+				</w2:dataList>
+			</w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' action="SvcFINFINRESMR06.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 프로젝트경비부처
+ 	 * 변경 이력 : 2023-09-11	이지훈	최초 작성
+ 	 * 서비스아이디 : F613
+ 	 ****************************************************/          
+	scwin.onpageload = function() {
+		/*
+	     *  날짜 설정
+	     */
+		var now = new Date();
+		var defalutday = gcm.date.formatDateTime(now, "yyyyMMddHHmm"); // yyyyMMddHHmm
+		var ymd = gcm.date.formatDateTime(now); // yyyyMMdd 
+		var yearMm = ymd.substr(0, 6); // yyyyMM
+		
+		ica_from_ymd.setValue(yearMm + "01");
+		ica_to_ymd.setValue(ymd);
+	
+		com.setEnterKeyEvent(grp_accnt_no, scwin.btn_accnt_no_onclick);
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+
+
+	
+	scwin.btn_search_onclick = function(e) {
+
+		
+		var AccntFrYm = ica_from_ymd.getValue();
+		var AccntToYm = ica_to_ymd.getValue();
+		
+		
+		
+		var node = "accnt_fr_ymd="+AccntFrYm+"&accnt_to_ymd=" + AccntToYm;
+		var reportObj = {
+			ozrCode : "F085", 
+			param : node
+		};
+		
+		com.oz.setOzWframe(wfm_ozReport, reportObj);
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="grp_group1">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="조회조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:350px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="기준년월" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<w2:inputCalendar calendarValueType="yearMonth" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="ica_from_ymd" placeholder="년,월" ref="data:dma_search.from_ymd" renderDiv="true" rightAlign="false"
+    								style="width:80px;" title="기준년월 시작">
+    							</w2:inputCalendar>
+    							<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    							<w2:inputCalendar calendarValueType="yearMonth" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="ica_to_ymd" placeholder="년,월" ref="data:dma_search.to_ymd" renderDiv="true" rightAlign="false" style="width:80px;" title="기준년월 종료">
+    							</w2:inputCalendar>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>1</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button" title="프로젝트 경비부처 조회버튼">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" style="width: 102%;height: 75%;">
+    			<w2:wframe style="" id="wfm_ozReport"></w2:wframe>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

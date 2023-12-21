@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="계정번호 조회 ">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="aset_no" name="aset_no" dataType="text"></w2:key>
+				       <w2:key id="user_empno" name="user_empno" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="mngmt_mbody" name="mngmt_mbody" dataType="text"></w2:column>
+				       <w2:column id="mngmt_mbody_nm" name="mngmt_mbody_nm" dataType="text"></w2:column>
+				       <w2:column id="aset_clsf" name="aset_clsf" dataType="text"></w2:column>
+				       <w2:column id="aset_clsf_nm" name="aset_clsf_nm" dataType="text"></w2:column>
+				       <w2:column id="aset_no" name="aset_no" dataType="text"></w2:column>
+				       <w2:column id="old_aset_no" name="old_aset_no" dataType="text"></w2:column>
+				       <w2:column id="intro_ymd" name="intro_ymd" dataType="text"></w2:column>
+				       <w2:column id="aset_nm" name="aset_nm" dataType="text"></w2:column>
+				       <w2:column id="intro_amt" name="intro_amt" dataType="text"></w2:column>
+				       <w2:column id="user_syspayno" name="user_syspayno" dataType="text"></w2:column>
+				       <w2:column id="user_nm" name="user_nm" dataType="text"></w2:column>
+				       <w2:column id="user_empno" name="user_empno" dataType="text"></w2:column>
+				       <w2:column id="user_dept_nm" name="user_dept_nm" dataType="text"></w2:column>
+				       <w2:column id="respn_empno" name="respn_empno" dataType="text"></w2:column>
+				       <w2:column id="respn_nm" name="respn_nm" dataType="text"></w2:column>
+				       <w2:column id="aset_posi_region_nm" name="aset_posi_region_nm" dataType="text"></w2:column>
+				       <w2:column id="aset_posi_build_nm" name="aset_posi_build_nm" dataType="text"></w2:column>
+				       <w2:column id="aset_posi_floor" name="aset_posi_floor" dataType="text"></w2:column>
+				       <w2:column id="aset_posi_detls" name="aset_posi_detls" dataType="text"></w2:column>
+				       <w2:column id="aset_hear" name="aset_hear" dataType="text"></w2:column>
+				       <w2:column id="pur_req_no" name="pur_req_no" dataType="text"></w2:column>
+				       <w2:column id="slip_no" name="slip_no" dataType="text"></w2:column>
+				       <w2:column id="slip_odr" name="slip_odr" dataType="text"></w2:column>
+				       <w2:column id="reg_empno" name="reg_empno" dataType="text"></w2:column>
+				       <w2:column id="reg_nm" name="reg_nm" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+            <xf:submission id="sbm_selectAccntInfoList" ref='data:json,dma_search'
+				target='data:json,{"id":"dlt_accntNo","key":"accntNoPopupVoList"}' action="SvcAccntNoPopupList.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+				ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/*******************************************************************
+ 	 * 화면 설명 : 계정번호조회
+ 	 * 변경 이력 : 2022-04-01	박병목	최초 작성
+ 	            2023-04-19	이영희	조회조건추가(bsns_req_no : 연구비입금관리)
+ 	 *******************************************************************/
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		var param = com.getParameter();
+		dma_search.setJSON(param);
+
+		// 검색조건 영역내의 컴포넌트에 엔터키 이벤트 발생시 조회 수행
+		com.setEnterKeyEvent(grp_empno, scwin.btn_schimg_onclick);
+		com.setEnterKeyEvent(grp_accno, scwin.btn_search_onclick);
+		
+		// 공통코드
+		var codeOptions = [ { code : "RHA", compID :"grd_accntNo:bsns_cd_inout" } ];
+		com.setCmnCd(codeOptions, function() {
+
+		});
+	};
+
+	/**
+	 * 조회버튼 클릭
+	 */
+	scwin.btn_search_onclick = function() {
+		scwin.search();
+	};
+
+	/**
+	 * 조회
+	 */
+	scwin.search = function() {
+	
+	};
+	
+	/**
+	 * 그리드 더블클릭 이벤트
+	 */ 
+	scwin.grd_accntNo_oncelldblclick = function(row,col,colId) {
+		com.closePopup(dlt_accntNo.getRowJSON(row));
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	scwin.btn_schimg_onclick = function(e) {
+		scwin.selectHumBtn();
+	};
+	
+	/**
+	 * 계정번호 검색 팝업 호출
+	 */
+	scwin.selectHumBtn = function(data, callback) {
+		data == "img" ? data = { empno : ""} : data = { empno : ibx_empno.getValue(), nm : ibx_empno.getValue(), work_clsf : "HAG010" };
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			dma_search.set("accnt_rspns", ret.syspayno);
+			ibx_empno.setValue(ret.empno);
+			ibx_nm.setValue(ret.nm);
+
+			if (typeof callback === "function")
+				(callback)();
+		});
+	};
+	
+	scwin.ibx_empno_onchange = function(info) {
+		// 근무자 빈값일경우 이름, 시스템사번 데이터셋 초기화
+		if(info.newValue == "") {	
+			dma_search.set("accnt_rspns", "");
+			ibx_nm.setValue("");
+		}
+	};
+	
+	scwin.ibx_accnt_no_onkeyup = function(e) {
+		ibx_accnt_no.setValue(ibx_accnt_no.getValue().toUpperCase());
+	};
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group style="" id="grp_search" class="searchSection">
+    		<xf:group id="" class="schbox">
+    			<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    				<w2:attributes>
+    					<w2:summary></w2:summary>
+    				</w2:attributes>
+    				<xf:group tagname="caption"></xf:group>
+    				<xf:group tagname="colgroup">
+    					<xf:group tagname="col" style="width:60px;"></xf:group>
+    					<xf:group tagname="col" style="width:200px;"></xf:group>
+    					<xf:group tagname="col" style="width:100px;"></xf:group>
+    					<xf:group tagname="col" style=""></xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr" style="">
+    					<xf:group tagname="th" style="" class="w2tb_th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:textbox tagname="span" style="" id="" label="자산번호"></w2:textbox>
+    					</xf:group>
+    					<xf:group tagname="td" style="" class="w2tb_td" id="grp_accno">
+    						<xf:input adjustMaxLength="false" class="inp" id="ibx_accnt_no" style="width:150px;text-transform:uppercase;" title="계정번호" ref="data:dma_search.user_empno" ev:onkeyup="scwin.ibx_accnt_no_onkeyup;"></xf:input>
+    					</xf:group>
+    					<xf:group tagname="th" class="w2tb_th">
+    						<w2:attributes></w2:attributes>
+    						<w2:textbox tagname="span" style="" id="spn_accnt_rspns" label="개인번호(성명)"></w2:textbox>
+    					</xf:group>
+    					<xf:group tagname="td" class="w2tb_td" id="grp_empno">
+    						<w2:attributes></w2:attributes>
+    						<xf:group style="width: 120px;" id="" class="inpSch">
+    							<xf:input adjustMaxLength="false" style="" id="ibx_empno" class="inp" title="계정책임자명" ev:onchange="scwin.ibx_empno_onchange"></xf:input>
+    							<xf:trigger style="" id="btn_schimg" type="button" class="btn" title="계정책임자 조회 " ev:onclick="scwin.btn_schimg_onclick">
+    								<xf:label><![CDATA[검색]]></xf:label>
+    							</xf:trigger>
+    						</xf:group>
+    						<xf:input adjustMaxLength="false" style="width: 150px;" id="ibx_nm" class="inp" title="계정책임자 상세" readOnly="true" disabled="true"></xf:input>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" class="schbtn">
+    			<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    				<xf:label><![CDATA[조회]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    	<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    		rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    		rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    		dataList="data:dlt_list" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_accntNo"
+    		visibleRowNum="10" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncelldblclick="scwin.grd_accntNo_oncelldblclick"
+    		sortable="true" filterFocusMode="outfocus">
+    		<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    		<w2:header style="" id="header1">
+    			<w2:row style="" id="row1">
+    				<w2:column width="70" inputType="text" style="height:28px;" id="column9" value="자산번호" displayMode="label"></w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px;" id="column7" value="자산명" displayMode="label"></w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px;" id="column5" value="사용자" displayMode="label"></w2:column>
+    				<w2:column width="200" inputType="text" style="height:28px;" id="column3" value="사용자개인번호" displayMode="label"></w2:column>
+    				<w2:column width="156" inputType="text" style="height:28px;" id="column30" value="도입일자" displayMode="label"></w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px;" id="column29" value="관리주체" displayMode="label"></w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px;" id="column27" value="사용위치" displayMode="label"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody style="" id="gBody1">
+    			<w2:row style="" id="row2">
+    				<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="aset_no" displayMode="label"
+    					allOption="" chooseOption="" ref="">
+    					<w2:choices>
+    						<w2:item>
+    							<w2:label><![CDATA[과세]]></w2:label>
+    							<w2:value><![CDATA[FTX001]]></w2:value>
+    						</w2:item>
+    						<w2:item>
+    							<w2:label><![CDATA[비과세]]></w2:label>
+    							<w2:value><![CDATA[FTX002]]></w2:value>
+    						</w2:item>
+    					</w2:choices>
+    				</w2:column>
+    				<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="aset_nm" class=""
+    					displayMode="label">
+    				</w2:column>
+    				<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="user_nm" class="" escape="false"
+    					displayMode="label">
+    				</w2:column>
+    				<w2:column width="200" inputType="text" readOnly="true" style="height:28px;" id="user_empno" displayMode="label"
+    					escape="false" textAlign="left">
+    				</w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="intro_ymd" value="" displayMode="label"
+    					readOnly="true">
+    				</w2:column>
+    				<w2:column width="86" inputType="text" readOnly="true" style="height:28px;" id="mngmt_mbody_nm" displayMode="label"></w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px;" id="aset_hear" displayMode="label" readOnly="true"
+    					dataType="text">
+    				</w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_conf" type="button" class=" btn pro conf" ev:onclick="scwin.btn_conf_onclick">
+    				<xf:label><![CDATA[확인]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

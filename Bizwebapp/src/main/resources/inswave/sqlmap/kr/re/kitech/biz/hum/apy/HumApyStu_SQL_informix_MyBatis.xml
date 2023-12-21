@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+
+<select id="selectHumApyStuList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyStuList */ 
+      a.req_no      --신청번호
+    , a.syspayno
+    , a.req_ymd -- 신청일
+    , b.empno     --개인번호
+    , a.map_prof_syspayno -- 지도교수
+    , f.empno as map_prof_empno  -- 지도교수 empno
+    , fun_humbasicinfo_cd_nm(a.map_prof_syspayno ,0) as map_prof_nm--지도교수성명
+    , fun_humbasicinfo_cd_nm(a.map_prof_syspayno ,8) as map_prof_dept_nm--지도교수부서(활용부서)
+    , fun_humbasicinfo_cd_nm(a.map_prof_syspayno ,11) as map_prof_dept_email--지도교수이메일
+    , e.nm as stu_nm       --활용학연자(학생명)
+    , e.birth_ymd -- 주민번호
+    , e.email        --이메일
+    , REPLACE(e.mobile,'-','') AS mobile --핸드폰
+    , e.posi_nm
+    , DECODE(e.sex,'1','남자','2','여자') as sex
+    , e.final_edu
+    , e.supt_schl --학연진학학교명
+    , trim(e.procs) as procs  --학위과정
+    , e.major as major_cd --전공
+    , fun_xodxcommst_cd_nm(e.major, 0) as major-- 전공명
+    , c.apr_state  --결제상태
+    , d.cd_nm as apr_state_nm --결제상태이름
+    , substr(c.last_execute_tim, 1, 4) || '. ' || substr(c.last_execute_tim, 6, 2) ||'. ' ||substr(c.last_execute_tim, 9, 2) || '.' as last_execute_tim
+    , trim(b.nm) as nm        --신청자
+    , fun_xodxcommst_cd_nm(b.work_clsf, 0)as work_clsf -- 신청자 근무상태
+    , b.work_clsf as work_clsf_cd
+    , fun_humbasicinfo_cd_nm(a.syspayno ,11) as req_syspayno_email_org  --신청자이메일
+    , decode(b.work_clsf, 'HAG090', '', fun_humbasicinfo_cd_nm(a.syspayno ,11)) as req_syspayno_email --신청자이메일
+    , e.seq
+    , e.entr_ymd -- 입사일
+    , e.former_latter -- 전기 및 후기
+    , e.rcmd_no  -- 추천서 발급번호
+    , e.rcmd_state  -- 추천서 이메일발급 상태
+    , e.encrg_state -- 입소독려 이메일 상태
+FROM
+    humapybasic a   --기본신청 (학력사항 신청)
+    INNER JOIN v_humbasicinfo b ON b.syspayno = a.syspayno  --인사정보
+    INNER JOIN xomxintfatab c ON c.req_no = a.req_no
+    INNER JOIN xodxcommst d ON d.cd = c.apr_state
+    INNER JOIN humapystu e ON e.req_no = a.req_no --학생연구원 활용신청
+    INNER JOIN humbasicinfo f on a.map_prof_syspayno = f.syspayno
+WHERE a.req_typ='H0D'
+AND (#{stu_nm} = '' OR e.nm LIKE #{stu_nm})
+AND ((#{syspayno} = '' OR a.syspayno  = #{syspayno})
+OR b.dept_cd IN 
+(select c.dept_cd from xodhdeptinfo c 
+LEFT OUTER JOIN xodrresman a ON c.dept_cd = a.dept_cd AND c.dept_new_ymd = a.dept_new_ymd  
+LEFT OUTER JOIN humbasicinfo b ON a.syspayno = b.syspayno
+LEFT OUTER JOIN humbasicinfo b1 ON c.depthed = b1.syspayno 
+where b.syspayno = #{syspayno})) 
+AND (#{map_prof_syspayno} = '' OR a.map_prof_syspayno = #{map_prof_syspayno})
+AND (#{apr_state} = '' OR c.apr_state = #{apr_state})
+AND (#{supt_schl} = '' OR e.supt_schl = #{supt_schl})
+AND (#{req_ymd_from} = '' OR a.req_ymd  <![CDATA[ >= ]]>  #{req_ymd_from})
+AND (#{req_ymd_to} = '' OR a.req_ymd  <![CDATA[ <= ]]>   #{req_ymd_to})
+AND (#{posi_nm} = '' OR e.posi_nm LIKE #{posi_nm})
+ORDER BY a.req_no DESC
+</select>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<update id="updateHumApyStuRcmd" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+update /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyStuRcmd */ 
+		 humapystu
+set rcmd_no =   
+                       ( select to_char(#{rcmd_no}|| LPAD(HEX(nvl(max(substr(rcmd_no, 8, 3))+1, '001'))::INT,3,'0'))
+                         from humapystu
+                         where substr(rcmd_no, 1, 7) = #{rcmd_no})
+where req_no = #{req_no}
+and seq = #{seq}
+</update>
+<update id="updateEmailYn" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+update /* QueryID : kr.re.kitech.biz.hum.apy.updateEmailYn */ 
+		 humapystu
+set rcmd_state = #{rcmd_state}
+   ,rcmd_updt_syspayno = #{rcmd_updt_syspayno}
+   ,rcmd_updt_daytm = current
+where req_no = #{req_no}
+and seq = #{seq}
+</update>
+<select id="selectHumApyStuPrjList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyStuPrjList */ 
+		 c.accnt_no accnt_no, --계정번호
+        c.accnt_no_nm accnt_no_nm, --계정명
+        c.accnt_rspns accnt_rspns, --계정책임자
+        d.empno accnt_rspns_empno ,
+        fun_emp_nm(c.accnt_rspns) accnt_rspns_nm, --계정책임자명
+        c.start_ymd start_ymd, --기간(From)
+        c.cls_ymd cls_ymd,
+        NVL(f.gov_cntrbamt, 0) +  NVL(f.gov_subsidy, 0) + NVL(f.area_share_wide, 0) + NVL(f.area_share_base, 0) 
+        + NVL(f.self_share, 0) +NVL(f.cmpy_cash, 0) + NVL(f.cmpy_goods, 0) + NVL(f.contpat_goods, 0) + NVL(f.intrst_amt, 0)
+        + NVL(f.cryfwd_amt, 0) + NVL(f.local_gov_cash, 0) + NVL(f.univ_cash, 0) + NVL(f.etc_cash, 0) AS total_cash
+FROM humbasicinfo a
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+JOIN resbgacctm c ON b.depthed = c.accnt_rspns
+JOIN humbasicinfo d ON c.accnt_rspns = d.syspayno
+JOIN humbasicinfo e ON c.bugt_ctrl_psn = e.syspayno
+JOIN resinpbugt f ON c.prj_no = f.prj_no  
+WHERE a.syspayno = #{syspayno} --세션값(syspayno)
+  AND c.mngmt_clsf = 'F'
+  AND c.accnt_state in ( 'RAK041','RAK061')
+  AND c.cls_ymd <![CDATA[ >= ]]> #{cls_ymd}
+  AND d.syspayno = #{syspayno}
+UNION
+SELECT b.accnt_no accnt_no, --계정번호
+        b.accnt_no_nm accnt_no_nm, --계정명
+        b.accnt_rspns accnt_rspns, --계정책임자
+        c.empno accnt_rspns_empno ,
+        fun_emp_nm(b.accnt_rspns) accnt_rspns, --계정책임자명
+        b.start_ymd start_ymd, --기간(From)
+        b.cls_ymd cls_ymd, --기간(To)
+        NVL(e.gov_cntrbamt, 0) +  NVL(e.gov_subsidy, 0) + NVL(e.area_share_wide, 0) + NVL(e.area_share_base, 0) 
+       + NVL(e.self_share, 0) +NVL(e.cmpy_cash, 0) + NVL(e.cmpy_goods, 0) + NVL(e.contpat_goods, 0) + NVL(e.intrst_amt, 0)
+       + NVL(e.cryfwd_amt, 0) + NVL(e.local_gov_cash, 0) + NVL(e.univ_cash, 0) + NVL(e.etc_cash, 0) AS total_cash
+FROM resinppare a 
+JOIN resbgacctm b ON a.prj_no = b.prj_no
+JOIN humbasicinfo c ON b.accnt_rspns = c.syspayno
+JOIN resinpbugt e ON a.prj_no = e.prj_no  
+WHERE ((a.attnce_prd_orign_ymd <![CDATA[ <= ]]> #{cls_ymd}
+     AND a.attnce_prd_cls_ymd <![CDATA[ >= ]]> #{cls_ymd}
+     AND a.syspayno = #{syspayno})
+     OR  (a.syspayno = #{syspayno} and b.accnt_rspns = #{syspayno}))
+     AND b.mngmt_clsf = 'R'
+     AND b.accnt_state in ('RAK041','RAK061')
+     AND b.cls_ymd <![CDATA[ >= ]]> #{cls_ymd}     
+     AND c.syspayno = #{syspayno}
+</select>
+<select id="selectHumApyStuStuList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.agr.selectHumApyStuStuList */ 
+		 DISTINCT b.empno
+, b.nm
+, x1.posi_nm
+, nvl(x2.fxdamt_salry,0)+nvl(x2.resch_actn_un,0)+nvl(x2.payamt_amt,0) as month_fxdamt_amt
+, a.contrct_start_ymd||'~'||a.contrct_cls_ymd AS contrct_ymd -- 계약기간
+, a.contrct_start_ymd
+, a.contrct_cls_ymd 
+, d.accnt_no
+, f.accnt_no_nm
+, NVL(h.cash_attnce_rt, 0) AS cash_attnce_rt
+, i.unslip_no
+, decode(c.respn_clsf, 'M', '지도교수', 'S', '공동지도교수') AS respn_clsf
+, g.nm AS accnt_rspns_nm
+, h.attnce_prd_orign_ymd || '~' || h.attnce_prd_cls_ymd AS attnce_prd_ymd
+FROM 
+(
+    SELECT  respn_clsf,c.syspayno, max(bb.req_ymd) AS req_ymd, max(x1.belng_yrmon) as belng_yrmon
+    FROM    humpruserespninfo c
+    INNER JOIN humrctbasinfo bb ON bb.syspayno=c.syspayno
+    INNER JOIN xomxintfatab t ON t.req_no= bb.req_no AND t.apr_state='XAD100'
+    INNER JOIN humslmmpayamt x1 ON x1.syspayno=c.syspayno
+    WHERE   c.pruse_respn_psn = #{syspayno}
+    AND     TO_CHAR(CURRENT, '%Y%m%d')  BETWEEN bb.contrct_start_ymd AND bb.contrct_cls_ymd
+    AND     c.use_yn = 'Y'
+    GROUP BY 1,2
+) c 
+JOIN humrctbasinfo a ON c.syspayno = a.syspayno AND c.req_ymd = a.req_ymd
+JOIN humbasicinfo b ON b.syspayno = a.syspayno  AND b.posi_cd IN ('351010', '350010', '354000', '354010', '350020', '351020') AND b.work_clsf = 'HAG010' 
+JOIN humrctpjt d ON d.req_no = a.req_no 
+JOIN humslbasinfo e ON b.syspayno = e.syspayno  
+JOIN resbgacctm f ON d.accnt_no = f.accnt_no
+JOIN humbasicinfo g ON g.syspayno = f.accnt_rspns
+JOIN xodhposiinfo x1 ON b.posi_cd = x1.posi_cd
+JOIN humslmmpayamt x2 ON c.syspayno = x2.syspayno and c.belng_yrmon = x2.belng_yrmon
+LEFT JOIN resinppare h ON f.prj_no = h.prj_no AND h.syspayno = a.syspayno
+LEFT JOIN resbglstucost i ON i.belng_yrmon = to_char(current, '%Y%m') AND a.syspayno = i.syspayno
+</select>
+<select id="selectHumApyStuExpns" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyStuExpns */ 
+		 a.accnt_rspns -- 연수책임자(계정책임자)
+, NVL(b.cryfwd_bugt, 0) + ( NVL(c.plan_amt, 0) + nvl(e.unslip_amt,0) - NVL(d.enfrc_amt, 0)) AS tot_ramt --잔액
+, f.input_schdl_amt -- 흡수예정액
+FROM (
+    --흡수된 계정책임자 전체 조회
+    SELECT DISTINCT accnt_rspns FROM fsaabsrp
+    WHERE absrp_clsf = 'FBK035'   
+    UNION
+    SELECT DISTINCT accnt_rspns
+    FROM fspslipdecsnd
+    WHERE unslip_no LIKE '150'|| SUBSTR( #{absrp_yr} ,3,2)||'%'
+    AND SUBSTR(accnt_cd,6,3) = '026'
+    AND accnt_no IN ( SELECT accnt_no FROM resbgacctm WHERE accnt_rspns = #{accnt_rspns})
+) a
+JOIN humbasicinfo h1 on a.accnt_rspns = h1.syspayno
+LEFT JOIN bblbugtactrsltetc b ON h1.empno = b.relat_no AND b.bugt_yr = #{absrp_yr} AND b.accnt_no = 'FF130005' AND b.accnt_cd <![CDATA[ <> ]]> '21091051'
+LEFT JOIN (
+ --해당연도 흡수 및 사용금액 조회
+ SELECT x1.accnt_rspns, SUM(x1.plan_amt) AS plan_amt, SUM(x1.ramt) AS ramt
+ FROM(
+  SELECT  a.accnt_rspns
+  , NVL(a.plan_amt, 0) AS plan_amt    
+  , (NVL(a.plan_amt, 0) - NVL(a.enfrc_amt, 0)) AS ramt
+  FROM fsaabsrp a
+  JOIN fspsliph b ON b.unslip_no = a.unslip_no AND b.decsn_ex = 'Y'
+  WHERE a.absrp_clsf = 'FBK035'
+  AND SUBSTR(a.absrp_yrmon, 0, 4) = #{absrp_yr}
+  UNION ALL
+  SELECT b.syspayno, unslip_amt AS plan_amt, 0 AS ramt
+  FROM fspslipdecsnd a
+  JOIN humbasicinfo b ON a.ramt_mngmt_1 = b.empno
+  WHERE unslip_no LIKE '155'||SUBSTR(#{absrp_yr},3,2)||'%'
+  and accnt_cd = '21091050'
+  and accnt_no = 'FF130005'
+  and base_debit_cr = '2') x1
+  GROUP BY 1
+) c ON a.accnt_rspns = c.accnt_rspns
+LEFT JOIN (
+    --해당연도 집행금액
+    SELECT SUBSTR(belng_yrmon, 0, 4) AS belng_yr
+    , pruse_respn_psn
+    , SUM(partici_pay_amt - NVL(trans_partici_pay_amt, 0))  AS enfrc_amt    
+    FROM resbglstucost 
+    WHERE accnt_no = 'FF130005' 
+    AND partici_pay_amt  <![CDATA[ > ]]> 0
+ AND accnt_cd <![CDATA[ <> ]]> '21091051'
+    AND (trans_partici_pay_amt IS NULL OR trans_partici_pay_amt <![CDATA[ < ]]> partici_pay_amt)            -- 지출테이블
+    AND belng_yrmon LIKE #{absrp_yr}||'%'
+    GROUP BY 1, 2
+) d ON a.accnt_rspns = d.pruse_respn_psn
+LEFT JOIN (
+    SELECT ''||#{accnt_rspns} accnt_rspns, SUM(decode(base_debit_cr,'1',unslip_amt,-unslip_amt) ) unslip_amt
+    FROM fspslipdecsnd
+    WHERE unslip_no LIKE '150'||SUBSTR(#{absrp_yr},3,2)||'%'
+    AND SUBSTR(accnt_cd,6,3) = '026'
+    AND accnt_no IN (
+        SELECT accnt_no FROM resbgacctm WHERE accnt_rspns = #{accnt_rspns}
+    )
+    GROUP BY 1
+) e ON a.accnt_rspns = e.accnt_rspns
+LEFT JOIN (select x1.accnt_rspns
+     , sum(x2.bugt_amt) as bugt_amt
+     , sum(x1.plan_amt) as plan_amt
+     , sum(x2.bugt_amt - x1.plan_amt) as input_schdl_amt
+from ( select b.accnt_rspns
+            , a.accnt_no
+            , sum(nvl(a.plan_amt, 0)) as plan_amt
+       from fsaabsrp a
+       join resbgacctm b on a.accnt_no = b.accnt_no 
+       join humbasicinfo h on b.accnt_rspns = h.syspayno
+       where a.absrp_clsf = 'FBK035'     
+       and b.accnt_rspns = #{accnt_rspns}
+       group by 1, 2 ) x1
+join ( select a.accnt_rspns
+               , a.accnt_no
+               , sum(nvl(c.bugt_amt, 0)) as bugt_amt
+       from resbgacctm a 
+       join resinpmast b on a.prj_no = b.prj_no and b.student_cost_use = 'Y'
+       join bblbugtactrslt c on a.accnt_no = c.accnt_no and c.accnt_cd[6, 8] = '026' and c.bugt_amt <![CDATA[ > ]]> 0
+       where a.accnt_rspns = #{accnt_rspns}
+       and to_char(sysdate, '%Y') between substr(a.start_ymd,1,4) and substr(a.cls_ymd, 1, 4)
+       group by 1,2 ) x2 on x1.accnt_no = x2.accnt_no
+group by 1) f ON a.accnt_rspns = f.accnt_rspns
+WHERE a.accnt_rspns = #{accnt_rspns}
+</select>
+<select id="selectHumApyStuInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyStuInfo */ 
+		 a.req_no -- 신청번호
+ , a.req_typ -- 기본신청유형
+ , a.req_ymd -- 신청일
+ , d.nm ||'(' || d.empno ||')' AS req_psn_nm
+ , d.nm
+ , d.empno
+ , fun_posi_nm(d.posi_cd) AS posi_nm
+ , a.syspayno -- 시스템개인번호
+ , a.dept_cd -- 부서코드
+ , a.dept_new_ymd -- 부서신설일
+ , fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm
+ , a.depthed_syspayno -- 부서장시스템개인번호
+ , a.divsn_rspns_syspayno -- 본부장시스템개인번호
+ , a.map_prof_syspayno AS map_prof
+ , a.map_prof_syspayno
+ , fun_emp_nm(a.map_prof_syspayno) AS map_prof_nm
+ , fun_emp_no(a.map_prof_syspayno) AS map_prof_emp_no
+ , a.attach_file_no -- 첨부파일번호
+ , a.attach_file_no_01 -- 첨부파일번호
+ , a.unslip_no
+ , a.regst_syspayno -- 등록시스템개인번호
+ , a.regst_daytm -- 등록일시
+ , a.updt_syspayno -- 수정시스템개인번호
+ , a.updt_daytm -- 수정일시
+ , fun_xodxcommst_cd_nm(b.apr_state,0 ) apr_state_nm
+ , b.apr_state
+ , rmk
+ , secure_plan -- 확보계획
+ , DECODE(NVL(c.cnt, 0), 0, '미생성', '생성') AS plan_yn
+ , e.entr_ymd AS map_prof_entr_ymd
+FROM humapybasic a
+INNER JOIN humbasicinfo d ON a.syspayno = d.syspayno
+INNER JOIN xomxintfatab b ON a.req_no = b.req_no
+LEFT OUTER JOIN (SELECT req_no, count(*) AS cnt FROM humapyarcost WHERE req_no = #{req_no} GROUP BY 1) c ON a.req_no = c.req_no
+LEFT OUTER JOIN humbasicinfo e ON a.map_prof_syspayno = e.syspayno
+WHERE a.req_no = #{req_no}
+AND b.state_inform_flag = '1'
+</select>
+<select id="selectHumApyStuInfoList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyStuInfoList */ 
+     req_no          -- 신청번호                 
+    ,seq             -- 일련번호             
+    ,nm              -- 성명
+    ,nm_chchar       -- 한자
+    ,email           -- 이메일
+    ,mobile          -- 핸드폰
+    ,final_edu       -- 최종학력
+    ,gradt_ymd       -- 졸업예정일                 
+    ,supt_schl       -- 지원학교               
+    ,major           -- 전공
+    ,former_latter   -- 전기/후기
+    ,entr_ymd        -- 입사일  
+    ,prj_start_ymd   -- 활용예정일
+    ,prj_cls_ymd     -- 활용종료일
+    ,work_time       -- 근무시간(주)
+    ,stu_amt_mnt     -- 학생인건비지출예정액(월)
+    ,stu_amt_yr      -- 학생인건비지출예정총액    
+    ,procs           -- 과정
+    ,rcmd_no         -- 추천서번호                   
+    ,birth_ymd       -- 생년월일         
+    ,pruse_contnt    -- 활용내용               
+    ,attach_file_no  -- 첨부파일번호           
+    ,regst_syspayno  -- 등록시스템개인번호 
+    ,regst_daytm     -- 등록일시
+    ,posi_nm         -- 직급
+    ,trim(sex) as sex             -- 성별
+    ,intrv_result    -- 면담결과
+    ,updt_syspayno   -- 수정시스템개인번호 
+    ,updt_daytm      -- 수정일시          
+FROM humapystu
+WHERE req_no = #{req_no}
+</select>
+<select id="selectHumApyStuSalInsur" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumSalInsurMnt */ 
+    SUM(CASE WHEN x0.insr_clsf = 'HSL020' THEN (x1.membr_burdn / 100) * DECODE(NVL(x0.membr_burdn,''), '', 0, x0.membr_burdn / 100) 
+              ELSE DECODE(NVL(x0.membr_burdn,''), '', 0, x0.membr_burdn / 100) END) * 100 AS membr_burdn
+FROM humslinsurt x0
+JOIN (SELECT
+            belng_yr,
+            DECODE(NVL(membr_burdn,''), '', 0, membr_burdn) AS membr_burdn
+         FROM humslinsurt 
+        WHERE belng_yr = #{belng_yr} AND insr_clsf = 'HSL010'
+      ) x1 ON x0.belng_yr = x1.belng_yr
+WHERE x0.belng_yr = #{belng_yr}
+</select>
+<select id="selectHumApyStuSalAnuPay" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyStuSalAnuPay */ 
+    first 1
+    a.salry_label_grp,
+    a.base_ymd,
+    a.analsal_clsf,
+    fun_xodxcommst_cd_nm(a.analsal_clsf,0) AS analsal_clsf_nm,
+    b.cd_nm,
+    a.analsal
+FROM humslanupay a
+JOIN xodxcommst b ON a.salry_label_grp = b.cd
+WHERE a.base_ymd = (SELECT MAX(base_ymd) FROM humslanupay WHERE salry_label_grp = 'HSO020')
+AND fun_xodxcommst_cd_nm(a.analsal_clsf,0) LIKE '%' || #{posi_nm} || '%' AND fun_xodxcommst_cd_nm(a.analsal_clsf,0) LIKE '%' || #{procs} || '%'
+</select>
+<insert id="insertHumApyStuInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyStuInfo */ 
+		 INTO humapybasic
+(
+ req_no             			-- 신청번호      
+,req_typ                      -- 기본신청유형        
+,req_ymd                    -- 신청일              
+,syspayno                    -- 시스템개인번호      
+,dept_cd                      -- 부서코드            
+,dept_new_ymd                  -- 부서신설일          
+,depthed_syspayno              -- 부서장시스템개인번호
+,divsn_rspns_syspayno          -- 본부장시스템개인번호
+,attach_file_no              -- 첨부파일번호        
+,attach_file_no_01              -- 첨부파일번호        
+,map_prof_syspayno
+,rmk
+,secure_plan                   -- 확보계획
+,regst_syspayno                -- 등록시스템개인번호  
+,regst_daytm   -- 등록일시            
+) 
+	VALUES
+(  
+ #{req_no}   
+,#{req_typ}       
+,#{req_ymd}       
+,#{syspayno}       
+,#{dept_cd}       
+,#{dept_new_ymd}       
+,#{depthed_syspayno}
+,#{divsn_rspns_syspayno}       
+,#{attach_file_no}       
+,#{attach_file_no_01}       
+,#{map_prof_syspayno}       
+,#{rmk}
+,#{secure_plan}
+,#{regst_syspayno}
+,current
+)
+</insert>
+<insert id="insertHumApyStuList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyStuList */ 
+		 INTO humapystu
+(
+ req_no           -- 신청번호    
+,seq              -- 일련번호          
+,nm               -- 성명
+,nm_chchar        -- 한자
+,email            -- 이메일
+,mobile            -- 핸드폰
+,final_edu        -- 최종학력
+,gradt_ymd        -- 졸업예정일             
+,supt_schl        -- 지원학교          
+,major            -- 전공     
+,former_latter    -- 전기/후기
+,entr_ymd         -- 입사일         
+,procs            -- 과정              
+,birth_ymd        -- 생년월일          
+,pruse_contnt     -- 활용내용
+,prj_start_ymd    -- 활용예정일
+,prj_cls_ymd      -- 활용종료일
+,work_time        -- 근무시간(주)
+,stu_amt_mnt      -- 학생인건비지출예정액(월)
+,stu_amt_yr       -- 학생인건비지출예정총액   
+,attach_file_no   -- 첨부파일번호      
+,sex              -- 성별
+,posi_nm          -- 직급
+,intrv_result     -- 면담결과
+,regst_syspayno   -- 등록시스템개인번호  
+,regst_daytm      -- 등록일시   
+) VALUES 
+(
+ #{req_no} 
+,(SELECT nvl(max(seq),0)+1  from humapystu WHERE req_no = #{req_no})
+,#{nm} 
+,#{nm_chchar} 
+,#{email} 
+,#{mobile} 
+,#{final_edu} 
+,#{gradt_ymd} 
+,#{supt_schl} 
+,#{major}
+,#{former_latter}
+,#{entr_ymd}
+,#{procs}
+,#{birth_ymd}
+,#{pruse_contnt}
+,#{prj_start_ymd}
+,#{prj_cls_ymd}
+,#{work_time}
+,#{stu_amt_mnt}
+,#{stu_amt_yr}
+,#{attach_file_no}
+,#{sex}
+,#{posi_nm}
+,#{intrv_result}
+,#{regst_syspayno}
+,current
+)
+</insert>
+<update id="updateHumApyStuInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyStuInfo */ 
+		 humapybasic
+SET    req_ymd = #{req_ymd},
+       map_prof_syspayno = #{map_prof_syspayno},
+       rmk = #{rmk},
+       secure_plan = #{secure_plan},
+       attach_file_no = #{attach_file_no},
+       attach_file_no_01 = #{attach_file_no_01},
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = CURRENT
+WHERE req_no = #{req_no}
+</update>
+<update id="deleteHumApyStuList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyStuList */ 
+  FROM humapystu
+ WHERE req_no = #{req_no}
+<if test="seq != null and seq != ''">
+	 and seq= #{seq}
+</if>
+
+</update>
+<delete id="deleteHumApyStuInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyStuSrchVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyStuInfo */ 
+  FROM humapybasic
+ WHERE req_no = #{req_no}
+</delete>
+</mapper>

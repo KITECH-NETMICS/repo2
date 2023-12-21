@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ass.reg">
+<!-- 자산 마스터 헤더 변경 및 불용신청 결재완료 후 자산상태 업데이트 -->
+<update id="updateAssMasterHead" parameterType="java.util.HashMap">
+UPDATE  /* kr.re.kitech.biz.ass.reg.updateAssMasterHead */
+        assmastrh
+SET <if test='aset_clsf != null and aset_clsf !=""'> aset_clsf = #{aset_clsf}, </if>		/* 자산구분 */
+    <if test='aset_typ != null and aset_typ !=""'> aset_typ = #{aset_typ}, </if>			/* 자산유형 */
+    <if test='aset_nm != null and aset_nm !=""'> aset_nm = #{aset_nm}, </if>				/* 자산명 */
+    <if test='intro_amt != null and intro_amt !=""'> intro_amt = #{intro_amt}, </if>		/* 구입금액 */
+    <if test='intro_ymd != null and intro_ymd !=""'> intro_ymd = #{intro_ymd}, </if>		/* 구입일자 */
+    <if test='pur_req_no != null and pur_req_no !=""'> pur_req_no = #{pur_req_no}, </if>	/* 구매요구번호 */
+    <if test='regst_clsf != null and regst_clsf !=""'> regst_clsf = #{regst_clsf}, </if>	/* 등재구분 */
+    <if test='aset_state != null and aset_state !=""'> aset_state = #{aset_state}, </if>	/* 자산상태 */
+    <if test='sale_ex != null and sale_ex !=""'> sale_ex = #{sale_ex}, </if>				/* 매각유무 */
+     updt_syspayno = #{updt_syspayno},
+     updt_daytm = CURRENT
+WHERE aset_no = #{aset_no}
+</update>
+
+<!-- 자산 마스터 바디 변경 및 자산 인수인계 결재 완료 후 설치지역, 사용자 업데이트 -->
+<update id="updateAssMasterBody" parameterType="kr.re.kitech.biz.ass.com.vo.AssMastrBodyVO">
+UPDATE  /* kr.re.kitech.biz.ass.reg.updateAssMasterBody */
+        assmastrb
+SET <if test='aset_nm != null and aset_nm !=""'> aset_nm = #{aset_nm}, </if> 												/* 자산명 */
+    <if test='couse_clsf != null and couse_clsf !=""'> couse_clsf = #{couse_clsf}, </if>									/* 공용구분 */
+    <if test='equip_cd != null and equip_cd !=""'> equip_cd = #{equip_cd}, </if>											/* 장비코드 */
+    <if test='user_syspayno != null and user_syspayno !=""'> user_syspayno = #{user_syspayno}, </if>						/* 장비사용자개인번호 */
+    <if test='model_nm != null and model_nm !=""'> model_nm = #{model_nm}, </if>											/* 모델명 */
+    <if test='tech_equip_nm != null and tech_equip_nm !=""'> tech_equip_nm = #{tech_equip_nm}, </if>						/* 기술장비명 */
+    <if test='equip_state != null and equip_state !=""'> equip_state = #{equip_state}, </if>								/* 장비상태 */
+    <if test='mfg_natn != null and mfg_natn !=""'> mfg_natn = #{mfg_natn}, </if>											/* 제조국가 */
+    <if test='contrct_vend != null and contrct_vend !=""'> contrct_vend = #{contrct_vend}, </if>							/* 계약업체 */
+    <if test='suply_vend != null and suply_vend !=""'> suply_vend = #{suply_vend}, </if>									/* 공급업체 */
+    <if test='mfg_vend != null and mfg_vend !=""'> mfg_vend = #{mfg_vend}, </if>											/* 제조업체 */
+    <if test='finnc != null and finnc !=""'> finnc = #{finnc}, </if>														/* 재원 */
+    <if test='curncy_unit != null and curncy_unit !=""'> curncy_unit = #{curncy_unit}, </if>								/* 통화단위 */
+    <if test='unit != null and unit !=""'> unit = #{unit}, </if>															/* 단위 */
+    <if test='qty != null and qty !=""'> qty = #{qty}, </if>																/* 수량 */
+    <if test='move_clsf != null and move_clsf !=""'> move_clsf = #{move_clsf}, </if>										/* 이동구분 */
+    <if test='equip_region != null and equip_region !=""'> equip_region = #{equip_region}, </if>							/* 장비지역 */
+    <if test='intro_way != null and intro_way !=""'> intro_way = #{intro_way}, </if>										/* 도입방법 */
+    <if test='mngmt_start_ymd != null and mngmt_start_ymd !=""'> mngmt_start_ymd = #{mngmt_start_ymd}, </if>				/* 관리시작일자 */
+    <if test='mngmt_cls_ymd != null and mngmt_cls_ymd !=""'> mngmt_cls_ymd = #{mngmt_cls_ymd}, </if>						/* 관리종료일자 */
+    <if test='acq_yr != null and acq_yr !=""'> acq_yr = #{acq_yr}, </if>													/* 취득년도 */
+    <if test='contnt_yrs != null and contnt_yrs !=""'> contnt_yrs = #{contnt_yrs}, </if>									/* 내용년수 */
+    <if test='equip_use_fee != null and equip_use_fee !=""'> equip_use_fee = #{equip_use_fee}, </if>						/* 장비사용료 */
+    <if test='use_esti_time != null and use_esti_time !=""'> use_esti_time = #{use_esti_time}, </if>						/* 사용추정시간 */
+    <if test='keep_clsf != null and keep_clsf !=""'> keep_clsf = #{keep_clsf}, </if>										/* 미보유자산구분 */
+    <if test='slip_no != null and slip_no !=""'> slip_no = #{slip_no}, </if>												/* 결의번호 */
+    <if test='slip_odr != null and slip_odr !=""'> slip_odr = #{slip_odr}, </if>											/* 결의순번 */
+    <if test='techsup_clsf != null and techsup_clsf !=""'> techsup_clsf = #{techsup_clsf}, </if>							/* 기술지원구분 */
+    <if test='usg_desc != null and usg_desc !=""'> usg_desc = #{usg_desc}, </if>											/* 용도설명 */
+    <if test='attach_file_no != null and attach_file_no !=""'> attach_file_no = #{attach_file_no}, </if>					/* 첨부파일번호 */
+    <if test='homepg_link_clsf != null and homepg_link_clsf !=""'> homepg_link_clsf = #{homepg_link_clsf}, </if>			/* 홈페이지연계구분 */
+    <if test='cptl_clsf != null and cptl_clsf !=""'> cptl_clsf = #{cptl_clsf}, </if>										/* 자금구분 */
+    <if test='posi_region != null and posi_region !=""'> posi_region = #{posi_region}, </if>								/* 위치지역 */
+    <if test='posi_build != null and posi_build !=""'> posi_build = #{posi_build}, </if>									/* 위치건물 */
+    <if test='posi_floor != null and posi_floor !=""'> posi_floor = #{posi_floor}, </if>									/* 위치층 */
+    <if test='posi_detls != null and posi_detls !=""'> posi_detls = #{posi_detls}, </if>									/* 위치상세 */
+    <if test='main_sub_clsf != null and main_sub_clsf !=""'> main_sub_clsf = #{main_sub_clsf}, </if>						/* 메인부속구분 */
+    <if test='relat_aset_no != null and relat_aset_no !=""'> relat_aset_no = #{relat_aset_no}, </if>						/* 관련자산번호 */
+    <if test='sub_aset_intro_ymd != null and sub_aset_intro_ymd !=""'> sub_aset_intro_ymd = #{sub_aset_intro_ymd}, </if>	/* 부자산도입일자 */
+    <if test='old_aset_no != null and old_aset_no !=""'> old_aset_no = #{old_aset_no}, </if>								/* 구자산번호 */
+    <if test='upgrade_clsf != null and upgrade_clsf !=""'> upgrade_clsf = #{upgrade_clsf}, </if>							/* 업그레이드구분 */
+    <if test='tag_issu_ex != null and tag_issu_ex !=""'> tag_issu_ex = #{tag_issu_ex}, </if>								/* 태그발행유무 */
+    <if test='mngmt_mbody != null and mngmt_mbody !=""'> mngmt_mbody = #{mngmt_mbody}, </if>								/* 관리주체 */
+    <if test='rmk != null and rmk !=""'> rmk = #{rmk}, </if>																/* 비고 */
+    <if test='pda_send_yn != null and pda_send_yn !=""'> pda_send_yn = #{pda_send_yn}, </if>								/* PDA전송여부 */
+    <if test='model_yn != null and model_yn !=""'> model_yn = #{model_yn}, </if>											/* 모델명유무 */
+    <if test='compu_equip_yn != null and compu_equip_yn !=""'> compu_equip_yn = #{compu_equip_yn}, </if>					/* 전산장비해당여부 */
+    <if test='compu_equip_cd != null and compu_equip_cd !=""'> compu_equip_cd = #{compu_equip_cd}, </if>					/* 전산장비세부구분 */
+     updt_syspayno = #{updt_syspayno},
+     updt_daytm = CURRENT
+WHERE aset_no = #{aset_no}
+</update>
+</mapper>

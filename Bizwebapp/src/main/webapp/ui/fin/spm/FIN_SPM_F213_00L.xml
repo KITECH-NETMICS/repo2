@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="카드일별조회">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>            
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 조회 -->		
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		/*
+	     *  날짜 설정
+	     */
+		var now = new Date();
+		var defalutday = gcm.date.formatDateTime(now, "yyyyMMddHHmm"); // yyyyMMddHHmm
+		var ymd = gcm.date.formatDateTime(now); // yyyyMMdd 	
+		
+		ica_ymd.setValue(ymd);
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+
+
+	
+	scwin.btn_search_onclick = function(e) {
+		var searchYmd = ica_ymd.getValue().trim();
+		
+		if (searchYmd == null || searchYmd.length == 0) {
+			alert("결의일자를 입력해주세요.");
+			ica_ymd.focus();
+			return false;
+		}
+		
+		var node = "accnt_ymd=" + searchYmd;
+		var reportObj = {
+			ozrCode : "F083",
+			param : node
+		};
+		
+		com.oz.setOzWframe(wfm_ozReport, reportObj);
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="grp_group1">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="조회조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:250px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:350px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    					
+    						<xf:group class="w2tb_th" style="" tagname="th">결의일자<w2:attributes></w2:attributes></xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="ica_ymd" placeholder="년,월,일"  renderDiv="true" rightAlign="false"
+    								style="">
+    							</w2:inputCalendar>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>1</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" style="width: 102%;height: 75%;">
+    			<w2:wframe style="" id="wfm_ozReport"></w2:wframe>
+    		</xf:group>    		
+    	</xf:group>
+    </body>
+</html>

@@ -1,0 +1,849 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="단행본">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_book">
+        			<w2:keyInfo>
+        				<w2:key id="rowStatus" name="상태" dataType="text"></w2:key>
+        				<w2:key id="regst_no" name="등록번호" dataType="text"></w2:key>
+        				<w2:key id="regst_ymd" name="등록일자" dataType="text"></w2:key>
+        				<w2:key id="centr_cd" name="센터구분" dataType="text"></w2:key>
+        				<w2:key id="pur_way_cd" name="구입방법" dataType="text"></w2:key>
+        				<w2:key id="accnt_no" name="계정번호" dataType="text"></w2:key>
+        				<w2:key id="expns_cd" name="비용코드" dataType="text"></w2:key>
+        				<w2:key id="curncy_unit" name="화폐단위" dataType="text"></w2:key>
+        				<w2:key id="pur_amt" name="구입금액" dataType="text"></w2:key>
+        				<w2:key id="isbn" name="ISBN" dataType="text"></w2:key>
+        				<w2:key id="book_nm" name="서명" dataType="text"></w2:key>
+        				<w2:key id="data_typ_cd" name="사료유형" dataType="text"></w2:key>
+        				<w2:key id="natn_cd" name="국가구분" dataType="text"></w2:key>
+        				<w2:key id="publ_form" name="출판지" dataType="text"></w2:key>
+        				<w2:key id="auth_nm" name="저자" dataType="text"></w2:key>
+        				<w2:key id="publ_yr" name="출판년도" dataType="text"></w2:key>
+        				<w2:key id="publ_vend" name="출판사" dataType="text"></w2:key>
+        				<w2:key id="clsfsgn" name="분류기호" dataType="text"></w2:key>
+        				<w2:key id="authcd" name="저자기호" dataType="text"></w2:key>
+        				<w2:key id="copy" name="복본" dataType="text"></w2:key>
+        				<w2:key id="page" name="페이지" dataType="text"></w2:key>
+        				<w2:key id="ill" name="일러" dataType="text"></w2:key>
+        				<w2:key id="photo" name="사진" dataType="text"></w2:key>
+        				<w2:key id="tbl" name="테이블" dataType="text"></w2:key>
+        				<w2:key id="size" name="크기" dataType="text"></w2:key>
+        				<w2:key id="kwd" name="키워드" dataType="text"></w2:key>
+        				<w2:key id="contnt" name="목차" dataType="text"></w2:key>
+        				<w2:key id="apdix_cdrom" name="부록_CD" dataType="text"></w2:key>
+        				<w2:key id="apdix_book" name="부록_책자" dataType="text"></w2:key>
+        				<w2:key id="accnt_no_nm" name="계정명" dataType="text"></w2:key>
+        				<w2:key id="checkup_req_no" name="검수번호" dataType="text"></w2:key>
+        				<w2:key id="contrct_nm" name="contrct_nm" dataType="text"></w2:key>
+        				<w2:key id="apr_state" name="결재상태" dataType="text"></w2:key>
+        				<w2:key id="approval" name="name34" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectBookDetail" ref="data:json,dma_book" target="data:json,dma_book" action="SvcKBKPOPDTLR01.pwkjson"
+        		method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler=""
+        		mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 저장 -->
+        	<xf:submission id="sbm_saveBook" ref="data:json,dma_book" target="" action="SvcKBKPOPDTLM01.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_deleteBook" ref="data:json,dma_book" target="" action="SvcKBKPOPDTLD01.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+	 * 화면 설명 : 단행본
+	 * 변경 이력 : 2022-09-01	홍성민	최초 작성
+	 * serviceId : K602
+	 ****************************************************/  
+	scwin.data = {};
+	/**
+	* 페이지 로딩 이벤트
+	*/ 
+	scwin.onpageload = function() {
+		// 초기화
+		grp_apr.hide();
+		
+		// enter key event
+		com.setEnterKeyEvent(grp_schaccnt, scwin.btn_accntNo_onclick);
+		
+		//checkRole
+		com.biz.checkRole({ serviceId : "K602", roleCodes : com.getLoginInfo('roleCode')}, function(e){
+			if(!e.isRoleYn){
+				btn_save.setStyle("display", "none");
+				btn_copy.setStyle("display", "none");
+				btn_del.setStyle("display", "none");
+			}
+		});
+		
+		var param = com.getParameter();
+		dma_book.setJSON(param);
+		debugger;
+		if(param.checkup_req_no != undefined && param.checkup_req_no != ""){		
+			scwin.data.checkup_req_no = param.checkup_req_no;
+			grp_apr.show("");
+//			if(com.getLoginInfo("roleCode").indexOf("1004107") < 0){				
+//				btn_apr.hide();
+//			}
+		}
+		
+		var codeOptions = [ { code : "BAC", compID : "sbx_centr_cd"},
+							{ code : "BAB", compID : "sbx_purway_cd"},
+							{ code : "FAM", compID : "sbx_currncy_unit"},
+							{ code : "BAA", compID : "sbx_data_type_cd"},
+							{ code : "FDA", compID : "sbx_natn_cd"} ];
+							
+		com.setCmnCd(codeOptions, function() {
+			if (com.isEmpty(param.regst_no)) {
+				com.initDataMap(dma_book);
+				dma_book.set("regst_ymd", com.getServerDateTime("yyyyMMdd"));
+				dma_book.set("curncy_unit", "FAM022");
+				dma_book.set("data_typ_cd", "BAA001");
+				dma_book.set("centr_cd", "BAC001");
+				dma_book.set("natn_cd", "FDA001");
+				
+				btn_copy.hide();
+				btn_del.hide();
+			} else {
+				scwin.search();
+			}
+		});		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	* 조회
+	*/
+	scwin.search = function(){
+		com.execute(sbm_selectBookDetail, {
+			successCallback : function(e) {
+				dma_book.set("rowStatus", "U");
+				
+				var cbxVal = "";
+				if (dma_book.get("ill") === 'Y') cbxVal += "1";
+				if (dma_book.get("photo") === 'Y') cbxVal += ",2";
+				if (dma_book.get("tbl") === 'Y') cbxVal += ",3";
+				cbx_figure.setValue(cbxVal);
+				
+				// 구입방법에 따른 계정 폼 셋팅
+				scwin.setFormPurWay(dma_book.get("pur_way_cd"));
+				// 구매검사검수요청시
+				if(/XAD085|XAD080/.test(dma_book.get("apr_state"))){
+					btn_apr.setDisabled(false);	
+				}				
+			}
+		});
+	};
+	
+	/**
+	* 계정번호 검색 버튼 클릭 이벤트
+	*/
+	scwin.btn_accntNo_onclick = function(e) {
+		var data = {accnt_no : inp_accnt_no.getValue(),
+					ref_yn : (inp_accnt_no.getValue() == "")? "Y" : "N"
+		};
+		com.pop.open( com.pop.TYPE.ACNNO, data, function(retObj) {
+			dma_book.set("accnt_no",retObj.accnt_no);
+			dma_book.set("accnt_no_nm",retObj.accnt_no_nm);
+		}); 
+	};
+	
+	/**
+	* 닫기 버튼 클릭 이벤트
+	*/
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**
+	* 저장
+	*/
+	scwin.save = function(){
+		cbx_figure.getValue().split(",").forEach(function(e) {
+			if (e === '1') dma_book.set("ill", "Y");
+			if (e === '2') dma_book.set("photo", "Y");
+			if (e === '3') dma_book.set("tbl", "Y");
+		});
+		
+		// 검사검수요청시 도서등재가 필요할 경우
+		if(com.isNotEmpty(scwin.data.checkup_req_no)){
+			dma_book.set("checkup_req_no", scwin.data.checkup_req_no);
+		}
+		
+		com.execute(sbm_saveBook, {
+			successCallback : function() {
+				com.alert("message.xom.wq.023", function() {
+					if(com.isNotEmpty(scwin.data.checkup_req_no)){
+						com.closePopup({isApr : true});
+					}else{
+						com.closePopup({});
+					}
+				});
+			}
+		});	
+	};
+	
+	/**
+	* 저장 버튼 클릭 이벤트
+	*/
+	scwin.btn_save_onclick = function(e) {
+		if (!scwin.validate(dma_book)) {
+			return ;
+		}
+		
+		com.confirm("message.xom.wq.017", function(ret) {
+			if (ret) {
+				scwin.save();
+			}
+		});
+	};
+	
+	/**
+	* 복사버튼 클릭 이벤트
+	*/  
+	scwin.btn_copy_onclick = function(e) {
+		com.confirm("message.alert.kbk.pop.0001", function(ret) {
+			if (ret) {
+				dma_book.set("rowStatus", "C");
+				dma_book.set("regst_no", "");	
+			}
+		});
+	};
+	
+	scwin.btn_del_onclick = function(e) {
+		com.confirm("message.xom.wq.022", function(ret) {
+			if (ret) {
+				com.execute(sbm_deleteBook, {
+					successCallback : function(e) {
+						com.alert("message.xom.wq.023", function() {
+							com.closePopup({})
+						});
+					}
+				});
+			}
+		});
+	};
+	
+	scwin.btn_on_onclick = function(e) {
+		//등재 프로세스 진행	
+	}
+	
+	scwin.validate = function(dataMap) {
+		return com.validateData(dataMap, [
+			{id : "book_nm", mandatory : true},
+			{id : "isbn", valFunc : function(value) {
+					if (!com.isEmpty(value) && value.length != 13) {
+						return "message.alert.kbk.pop.0002";	
+					}
+				}
+			},
+			{id : "centr_cd", mandatory : true},
+			{id : "pur_way_cd", mandatory : true},
+		]);
+	}	
+
+	/*
+	* 검사검수조서 클릭 이벤트
+	*/
+	scwin.btn_print_onclick = function(e) {
+		if(dma_book.get("checkup_req_no") == ""){
+			com.alert(com.getMsg("message.xom.co.com.0007", "검수번호"));
+			return
+		}
+		var node = "checkup_req_no="+ dma_book.get("checkup_req_no");
+		com.oz.openPopup({
+			ozrCode : "P200",      
+			clsf : "EGF010",
+			param: node
+        });
+	};
+	
+	/*
+	* 구입방법에 따른 계정셋팅
+	*/
+	scwin.setFormPurWay = function(purWayCd){
+		if(purWayCd == "BAB001"){
+			btn_accntNo.setDisabled(true);
+			inp_accnt_no.setDisabled(true);
+		}else{
+			btn_accntNo.setDisabled(false);
+			inp_accnt_no.setDisabled(false);
+		}
+	};
+	
+	/*
+	* 구입방법 변경 이벤트
+	*/
+	scwin.sbx_purway_cd_onviewchange = function(info) {
+		if(dma_book.get("rowStatus") == "C"){
+			if(info.newValue == "BAB002"){ // 구입(과제)
+				inp_expns_cd.setValue("143");								
+			}else if(info.newValue == "BAB001"){ // 일반구입
+				inp_expns_cd.setValue("999");					
+			}else{
+				inp_expns_cd.setValue("");
+			}
+			
+			dma_book.set("accnt_no", "");
+			dma_book.set("accnt_no_nm", "");
+			
+			scwin.setFormPurWay(info.newValue);
+		}
+	};
+	
+	/*
+	* 등재완료 버튼 클릭 이벤트
+	*/
+	scwin.btn_apr_onclick = function(e) {
+		dma_book.set("approval", "true");
+		
+		scwin.save();
+	};
+	
+	/*
+	* 등록번호 keyup 이벤트
+	*/
+	scwin.inp_regst_no_onkeyup = function(e) {
+		if(e.keyCode == 13){
+			if(this.getValue() != "" && this.getValue().trim().length == 7){
+				dma_book.set("regst_no", this.getValue());
+				scwin.search();
+			}
+		}
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="titleSection pt0" id="grp_apr" style="">
+    			<xf:group class="le" id="">
+    			</xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:trigger class="btn icon print" id="btn_print" style="" type="button" ev:onclick="scwin.btn_print_onclick">
+    					<xf:label><![CDATA[검사검수조서]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn blue" id="btn_apr" style="" type="button" ev:onclick="scwin.btn_apr_onclick" disabled="true">
+    					<xf:label><![CDATA[등재완료]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="단행본 상세정보"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:110px;" tagname="col"></xf:group>
+    				<xf:group style="width:150px;" tagname="col"></xf:group>
+    				<xf:group style="width:110px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:130px;" tagname="col"></xf:group>
+    				<xf:group style="width:150px;" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="등록번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_regst_no" style="" title="등록번호"
+    						ref="data:dma_book.regst_no" disabled="true" ev:onkeyup="scwin.inp_regst_no_onkeyup">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="등록일자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal req" focusOnDateSelect="false" footerDiv="false"
+    						id="inp_regst_ymd" renderDiv="true" rightAlign="false" style="" title="등록일자" ref="data:dma_book.regst_ymd">
+    					</w2:inputCalendar>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th" style="">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="소장처(센터)" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td" style="">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel full req ce"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_centr_cd" ref="data:dma_book.centr_cd" style=""
+    						submenuSize="auto" title="소장처(센터)">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="구입방법" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel full ce"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_purway_cd" ref="data:dma_book.pur_way_cd" style=""
+    						submenuSize="auto" title="구입방법" ev:onviewchange="scwin.sbx_purway_cd_onviewchange">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="계정번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td" id="grp_schaccnt">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:group id="grp_sch_accnt" class="flex">
+    						<xf:group style="width: 100px;" id="" class="inpSch">
+    							<xf:input adjustMaxLength="false" style="" id="inp_accnt_no" class="inp" title="계정번호"
+    								ref="data:dma_book.accnt_no">
+    							</xf:input>
+    							<xf:trigger style="" id="btn_accntNo" type="button" class="btn" title="계정번호 조회"
+    								ev:onclick="scwin.btn_accntNo_onclick">
+    								<xf:label><![CDATA[검색]]></xf:label>
+    							</xf:trigger>
+    						</xf:group>
+    						<xf:input adjustMaxLength="false" style="width: 150px;" id="inp_accnt_no_nm" class="inp" title="계정번호 상세"
+    							readOnly="true" ref="data:dma_book.accnt_no_nm">
+    						</xf:input>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="화폐단위" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel full ce"
+    						direction="auto" disabledClass="w2selectbox_disabled" id="sbx_currncy_unit" ref="data:dma_book.curncy_unit" style=""
+    						submenuSize="auto" title="화폐단위" disabled="true">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="구입금액" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full ri" id="inp_pur_amt" style="" title="구입금액" dataType="number"
+    						displayFormat="#,###" ref="data:dma_book.pur_amt">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="비용코드" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_expns_cd" style="" title="비용코드"
+    						ref="data:dma_book.expns_cd">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="서명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full  req" id="inp_book_nm" style="" title="서명"
+    						ref="data:dma_book.book_nm">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="ISBN" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full req" id="inp_isbn" style="" title="ISBN" ref="data:dma_book.isbn"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="자료유형" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel full ce"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_data_type_cd" ref="data:dma_book.data_typ_cd"
+    						style="" submenuSize="auto" title="자료유형">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="국가구분" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel full ce"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_natn_cd" ref="data:dma_book.natn_cd" style=""
+    						submenuSize="auto" title="국가구분">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="저자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_auth_nm" style="" title="저자"
+    						ref="data:dma_book.auth_nm">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="출판년도" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_publ_yr" style="" title="출판년도"
+    						ref="data:dma_book.publ_yr">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="출판사" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_publ_vend" style="" title="출판사"
+    						ref="data:dma_book.publ_vend">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="출판지" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_publ_form" style="" title="출판지"
+    						ref="data:dma_book.publ_form">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="분류기호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_clsfsgn" style="" title="분류기호"
+    						ref="data:dma_book.clsfsgn">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="저자기호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_auth_cd" style="" title="저자기호"
+    						ref="data:dma_book.authcd">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="복본" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_copy" style="" title="복본" ref="data:dma_book.copy"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="페이지" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_page" style="" title="페이지" ref="data:dma_book.page"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="삽도" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select appearance="full" class="chkGroup" cols="" id="cbx_figure" renderType="checkboxgroup" rows=""
+    						selectedindex="-1" style="" title="삽도">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[ILL]]></xf:label>
+    								<xf:value><![CDATA[1]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[Photo]]></xf:label>
+    								<xf:value><![CDATA[2]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[Table]]></xf:label>
+    								<xf:value><![CDATA[3]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="크기" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp ri" id="inp_size" ref="data:dma_book.size" style="width:100px;" title="크기"></xf:input>
+    					<w2:textbox class="txt" id="" label="cm" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="키워드" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_kwd" style="" title="키워드" ref="data:dma_book.kwd"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="목차" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:textarea id="txt_contnt" style="height: 80px;" title="목차" ref="data:dma_book.contnt"></xf:textarea>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    						<w2:colspan>1</w2:colspan>
+    						<w2:rowspan>2</w2:rowspan>
+    					</w2:attributes>
+    					<w2:textbox id="" label="부록" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:group id="" class="flex">
+    						<w2:textbox tagname="span" style="width: 70px" id="" label="CD-ROM" class="txt"></w2:textbox>
+    						<xf:input adjustMaxLength="false" style="" id="inp_apdix_cdrom" title="접수 번호" class="inp full"
+    							ref="data:dma_book.apdix_cdrom">
+    						</xf:input>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:group id="" class="flex">
+    						<w2:textbox tagname="span" style="width: 70px" id="" label="책자" class="txt"></w2:textbox>
+    						<xf:input adjustMaxLength="false" style="" id="inp_apdix_book" title="접수 번호" class="inp full"
+    							ref="data:dma_book.apdix_book">
+    						</xf:input>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class=" btn  pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn pro icon copy" id="btn_copy" style="" type="button" ev:onclick="scwin.btn_copy_onclick">
+    					<xf:label><![CDATA[복사]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn  pro " id="btn_del" style="" type="button" ev:onclick="scwin.btn_del_onclick">
+    					<xf:label><![CDATA[삭제]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_save" type="button" class=" btn pro conf" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

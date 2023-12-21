@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ass.pop">
+<!-- 자산정보조회 -->
+<select id="selectAssMastrH" resultType="kr.re.kitech.biz.ass.pop.vo.AssMastrHPopVo" parameterType="kr.re.kitech.biz.ass.pop.vo.AssMastrHPopVo">
+SELECT /* kr.re.kitech.biz.ass.pop.selectAssMastrH */
+       t1.aset_no -- 자산번호
+     , t1.aset_nm
+     , t1.intro_ymd
+     , t1.intro_amt
+     , t1.aset_clsf
+     , t1.aset_typ
+     , t2.equip_use_fee
+     , t2.usg_desc
+     , t2.couse_clsf /* 공용구분 AEA */
+     , t2.old_aset_no 
+     , t2.posi_region -- 위치지역
+     , t2.posi_build
+     , x.cd_nm AS posi_build_nm
+     , t2.posi_floor
+     , t2.posi_detls
+     , t3.nm AS user_nm
+     , t3.empno AS user_empno
+     , t2.user_syspayno
+     , t5.use_fild
+     , t5.ntis_reg_no
+  FROM assmastrh t1
+  JOIN assmastrb t2 ON t1.aset_no = t2.aset_no
+  JOIN humbasicinfo t3 ON t2.user_syspayno = t3.syspayno
+  JOIN xodxcommst t4 ON t2.mngmt_mbody = t4.cd AND t4.cd_clsf = 'ARB'
+  LEFT JOIN xodxcommst x ON x.cd_clsf = 'APA' AND t2.posi_build = x.cd
+  LEFT JOIN assmastrtech t5 ON t1.aset_no = t5.aset_no
+ WHERE 1=1
+ <if test='biz_clsf != null and biz_clsf eq "S"'> 
+   AND (t1.aset_typ IN ( 'AAA010','AAA020') /* 등재완료, 검수완료*/ OR (TO_CHAR(SYSDATE, '%Y%m%d') <![CDATA[ <= ]]> '2030' AND t1.aset_no IN ('A2016070091','A2015050073','A2015030087')) /*2030년 까지 사용 가능 하도록 수정*/)
+ <if test='region_centr != null and region_centr != ""'> AND t4.mngmt_item_1 = #{region_centr} </if>
+ </if>
+ <if test='biz_clsf != null and biz_clsf eq "B"'> <!-- IP발급신청서 조건  -->
+   AND t1.aset_typ IN ( 'AAA010', 'AAA030') AND t1.aset_state = 'AAI010' 
+ </if>
+ <if test='aset_clsf != null and aset_clsf != ""'> AND t1.aset_clsf = #{aset_clsf} </if>
+ <if test='aset_typ != null and aset_typ != ""'> AND t1.aset_typ = #{aset_typ} </if>
+ <if test='aset_typ != null or aset_typ == ""'> AND t1.aset_typ IN ('AAA010','AAA020','AAA030') </if>
+ <if test='aset_no != null and aset_no != ""'> AND (t1.aset_no like '%' || #{aset_no} || '%' OR t1.aset_nm like '%' || #{aset_no} || '%') </if>
+ <if test='user_syspayno != null and user_syspayno != ""'> AND t2.user_syspayno = #{user_syspayno} </if>
+ ORDER BY t1.aset_no
+</select>
+</mapper>

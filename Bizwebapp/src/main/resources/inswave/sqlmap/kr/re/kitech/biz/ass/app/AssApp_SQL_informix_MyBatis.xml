@@ -1,0 +1,728 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ass.app">
+	<!-- 자산 마스터 헤더 변경 및 불용신청 결재완료 후 자산상태 업데이트 -->
+	<update id="updateAssMasterHead" parameterType="java.util.HashMap">
+		UPDATE  /* kr.re.kitech.biz.ass.reg.updateAssMasterHead */
+		        assmastrh
+		SET <if test='aset_clsf != null and aset_clsf !=""'> aset_clsf = #{aset_clsf}, </if> 
+		    <if test='aset_typ != null and aset_typ !=""'> aset_typ = #{aset_typ}, </if>
+		    <if test='aset_nm != null and aset_nm !=""'> aset_nm = #{aset_nm}, </if>
+		    <if test='intro_amt != null and intro_amt !=""'> intro_amt = #{intro_amt}, </if>
+		    <if test='intro_ymd != null and intro_ymd !=""'> intro_ymd = #{intro_ymd}, </if>
+		    <if test='pur_req_no != null and pur_req_no !=""'> pur_req_no = #{pur_req_no}, </if>
+		    <if test='regst_clsf != null and regst_clsf !=""'> regst_clsf = #{regst_clsf}, </if>
+		    <if test='aset_state != null and aset_state !=""'> aset_state = #{aset_state}, </if>
+		    <if test='sale_ex != null and sale_ex !=""'> sale_ex = #{sale_ex}, </if>
+		     updt_syspayno = #{updt_syspayno},
+		     updt_daytm = CURRENT
+		WHERE aset_no = #{aset_no}
+	</update>
+	
+	<!-- 불용신청 상세보기 조회-->  
+	<select id="selectAssUnUseList" resultType="kr.re.kitech.biz.ass.app.vo.AssUnUseVo" parameterType="java.lang.String">
+		SELECT /* kr.re.kitech.biz.ass.app.selectAssUnUseList */
+		       t1.req_no /* 신청 번호 */
+		     , t5.nm AS req_nm /* 신청자 */
+		     , t5.empno AS req_empno 
+		     , t5.syspayno AS req_syspayno /* 신청자 개인번호 */
+		     , t5.dept_cd AS req_dept_cd 
+		     , t5.dept_new_ymd AS req_dept_new_ymd 
+		     , t5.email AS req_email /* 신청자 이메일 */
+		     , t5.ext_no AS req_ext_no /* 신청자 연락처 */
+		     , t6.dept_nm AS req_dept_nm /* 부서명 */
+		     , t1.unuse_clsf /* 불용구분 */ 
+		     , t7.nm AS respn_nm /* 사용책임자 성명 */
+		     , t1.re_use_possbl /* 타기관 사용 가능성 */
+		     , t1.repay_aftr_econo_value /* 수리후 경제적 가치 */
+		     , t1.mngmt_state /* 관리 상태 */
+		     , t1.etc_item /* 기타 사항 */
+		     , t1.cause /* 불용 사유 */
+		     , t1.idle_unuse_clsf /* 유휴불용구분 */
+		     , t15.nm AS user_nm /* 자산 사용자 성명 */
+		     , t15.empno AS user_empno /* 자산 사용자 개인번호 */
+		     , t1.aset_no /* 자산 번호 */
+		     , t2.aset_clsf
+		     , t3.relat_aset_no /* 관련자산번호 */
+		     , t3.main_sub_clsf
+		     , t2.aset_nm /* 품명 */
+		     , t2.aset_typ /* 자산 구분 */
+		     , x1.cd_nm AS aset_clsf_nm /* 자산 분류 */ 
+		     , x2.cd_nm AS main_sub_clsf_nm /* M/S 구분 */
+		     , t2.intro_amt /* 도입 금액 */
+		     , t2.intro_ymd /* 도입 일자 */
+		     , t1.posi_region 
+		     , t1.posi_build 
+		     , fun_xodxcommst_cd_nm (t1.posi_region, 0) AS posi_region_nm /* 위치(지역) */
+		     , fun_xodxcommst_cd_nm (t1.posi_build, 0) AS posi_build_nm /* 위치(건물) */
+		     , t1.posi_floor /* 위치(층) */
+		     , t1.posi_detls /* 위치(상세) */
+		     , t1.prcs_ymd
+		     , t1.prcs_amt
+		     , t1.prcs_clsf
+		     , t1.attach_file_no /* 첨부 파일 번호 */
+		     , t15.dept_cd AS user_dept_cd
+		     , t15.dept_new_ymd AS user_dept_cd_ymd
+		     , CASE
+		      WHEN TRIM(NVL(x3.syspayno, '')) = ''
+		       THEN (SELECT e1.empsn FROM bpm:roleusertable r1 JOIN bpm:emptable e1 ON r1.empcode = e1.empcode WHERE r1.rolecode = '1015208' AND 
+		               NOT EXISTS (SELECT * FROM bpm:emptable x1 JOIN bpm:roleusertable x2 ON x1.empcode = x2.empcode  WHERE  x2.rolecode = '1015208'  AND x1.empsn > e1.empsn))
+		      ELSE TRIM(x3.syspayno)
+		      END AS manager_id
+		      ,t1.app_div
+		      ,t1.aset_state_clsf
+		      , 'U' AS cud_type
+		      , t8.apr_state
+		  FROM assunuse t1
+		  JOIN assmastrh t2 ON t1.aset_no = t2.aset_no
+		  JOIN assmastrb t3 ON t1.aset_no = t3.aset_no
+		  JOIN humbasicinfo t5 ON t1.syspayno = t5.syspayno
+		  JOIN xodhdeptinfo t6 ON t5.dept_cd = t6.dept_cd AND t5.dept_new_ymd = t6.dept_new_ymd
+		  JOIN humbasicinfo t15 ON t3.user_syspayno = t15.syspayno
+		  LEFT JOIN humbasicinfo t7 ON t6.depthed = t7.syspayno
+		  JOIN xodxcommst x1 ON t2.aset_clsf = x1.cd AND x1.cd_clsf = 'ABA'
+		  JOIN xomxintfatab t8 ON t1.req_no = t8.req_no
+		  JOIN xodxcommst x2 ON t3.main_sub_clsf = x2.cd AND x2.cd_clsf = 'AFA'
+		  LEFT JOIN xodrdeptpurman x3 ON x3.role_type = 'ASS' AND x3.dept_cd = t15.dept_cd AND x3.dept_new_ymd = t15.dept_new_ymd
+		            AND NOT EXISTS (SELECT * FROM xodrdeptpurman WHERE role_type = 'ASS' AND dept_cd = x3.dept_cd AND dept_new_ymd = x3.dept_new_ymd AND syspayno > x3.syspayno)
+		 WHERE t1.req_no = #{req_no}
+		ORDER BY relat_aset_no, main_sub_clsf, aset_clsf
+	<!-- 불용신청 목록 조회-->  
+	</select>
+	<select id="selectListAssUnUseList" parameterType="kr.re.kitech.biz.ass.app.vo.AssUnUseSrcListVo" resultType="kr.re.kitech.biz.ass.app.vo.AssUnUseSrcListVo">
+		SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectListItemAssUnUse */ 
+			   t1.req_no,    -- 신청 번호
+		       t4.nm       AS req_user_nm,     -- 신청자 성명
+		       t4.empno    AS req_user_empno,  -- 신청자 개인 번호
+		       t7.cd_nm    AS aset_clsf_nm,    -- 자산 분류
+		       t1.aset_no,        -- 자산 번호
+		       t3.old_aset_no,    -- 구 자산 번호
+		       t2.aset_nm,        -- 품명
+		       t2.intro_ymd,      -- 도입 일자
+		       t2.intro_amt,      -- 도입 금액
+		       t2.aset_state,
+		       x1.cd_nm AS aset_state_nm,
+		       t3.user_syspayno,  -- 사용자 시스템개인번호
+		       t10.nm AS user_nm,     -- 사용자 성명
+		       t10.empno AS user_empno,  -- 사용자 개인번호
+		       t5.dept_nm,                     -- 신청 부서 명
+		       t5.depthed AS respn_syspayno,   -- 사용 부서장 시스템개인번호
+		       t6.nm AS respn_nm,              -- 사용 부서장 성명
+		       t6.empno AS respn_empno,        -- 사용 부서장 개인번호
+		       t8.apr_state,
+		       t9.cd_nm AS apr_state_nm,
+		       t1.review_com_state as review_com_state,
+		       DECODE(t1.review_com_state,'AAM000','내부 재배치','AAM010','나눔터 게시','AAM020','경매 진행 중','AAM030','폐기 예정 중') AS review_com_state_nm,
+		       t1.deliberation_state as deliberation_state,
+		       DECODE(t1.deliberation_state,'Y','심의 완료','N','심의 미완료','S','위원회 심의 중','R','환원 위원회 심의 중','G','환원 심의 미완료','Q','환원 위원회 안건제출','W','위원회 안건 제출','심의 미완료') AS deliberation_state_nm,
+		       fun_xodxcommst_cd_nm(t1.prcs_clsf, 0) AS prcs_clsf_nm,
+		       r.rvew_rst_cd AS rvew_rst_cd,
+		       r2.rvew_rst_cd AS res_rvew_rst_cd,
+		       t11.apr_state AS sml_apr_state,
+		       t12.apr_state AS res_sml_apr_state,
+		       t1.app_div AS app_div
+		FROM assunuse t1
+		JOIN assmastrh t2 ON t1.aset_no = t2.aset_no
+		JOIN assmastrb t3 ON t1.aset_no = t3.aset_no
+		JOIN humbasicinfo t4 ON t1.syspayno = t4.syspayno
+		JOIN xodhdeptinfo t5 ON t4.dept_cd = t5.dept_cd AND t4.dept_new_ymd = t5.dept_new_ymd
+		LEFT JOIN humbasicinfo t6 ON t5.depthed = t6.syspayno
+		JOIN xodxcommst t7 ON t2.aset_clsf = t7.cd AND t7.cd_clsf = 'ABA'
+		JOIN xomxintfatab t8 ON t1.req_no = t8.req_no
+		JOIN xodxcommst t9 ON t8.apr_state = t9.cd AND t9.cd_clsf = 'XAD'
+		JOIN xodxcommst x1 ON t2.aset_state = x1.cd AND x1.cd_clsf = 'AAI'
+		JOIN humbasicinfo t10 ON t3.user_syspayno = t10.syspayno
+		LEFT JOIN ressmlrvewd r ON t1.sml_rvew_no = r.key_1
+		LEFT JOIN ressmlrvewd r2 ON t1.res_sml_rvew_no = r2.key_1
+		LEFT JOIN xomxintfatab t11 ON t11.req_no = r.req_no
+		LEFT JOIN xomxintfatab t12 ON t12.req_no = r2.req_no
+		WHERE t1.req_ymd BETWEEN #{req_ymd_st} AND #{req_ymd_ed}
+		AND ( '' = #{aset_typ} OR t2.aset_typ = #{aset_typ} )
+		AND ( '' = #{req_no} OR t1.req_no = #{req_no} )
+		AND ( '' = #{aset_no} OR (t1.aset_no = #{aset_no} OR t3.old_aset_no = #{aset_no}) )
+		AND ( '' = #{user_syspayno} OR (t1.syspayno = #{user_syspayno} OR t3.user_syspayno = #{user_syspayno} ) ) 
+		AND t2.aset_nm LIKE '%'||#{aset_nm}||'%'
+		ORDER BY t1.req_no, t1.aset_no
+	</select>
+	<!-- 불용신청 등록 상세보기 조회 -->  
+	<select id="selectAssUnUseCList" parameterType="kr.re.kitech.biz.ass.app.vo.AssMastrBVo" resultType="kr.re.kitech.biz.ass.app.vo.AssMastrBVo">
+		SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssUnUseListC */ 
+				aset_typ,
+		        aset_clsf,
+		        aset_clsf_nm,
+		        aset_no,
+		        main_sub_clsf,
+		        main_sub_clsf_nm,
+		        relat_aset_no,
+		        aset_nm,
+		        old_aset_no,
+		        intro_ymd,
+		        intro_amt,
+		        user_syspayno,
+		        user_empno,
+		        user_nm,
+		        user_dept_cd,
+		        user_dept_new_ymd,
+		        posi_region,
+		        posi_build,
+		        posi_region_nm,
+		        posi_build_nm,
+		        posi_floor,
+		        posi_detls,
+		        manager_id
+		FROM
+		(
+		    SELECT t1.aset_typ,
+		        t1.aset_clsf,
+		        x1.cd_nm AS aset_clsf_nm,
+		        t2.aset_no,
+		        t2.main_sub_clsf,
+		        x2.cd_nm AS main_sub_clsf_nm,
+		        t2.relat_aset_no,
+		        t2.aset_nm,
+		        t2.old_aset_no,
+		        t1.intro_ymd,
+		        t1.intro_amt,
+		        t2.user_syspayno,
+		        t3.empno AS user_empno,
+		        t3.nm AS user_nm,
+		        t3.dept_cd AS user_dept_cd,
+		        t3.dept_new_ymd AS user_dept_new_ymd,
+		        t2.posi_region,
+		        t2.posi_build,
+		        fun_xodxcommst_cd_nm(t2.posi_region, 0) AS posi_region_nm,
+		        fun_xodxcommst_cd_nm(t2.posi_build, 0) AS posi_build_nm,
+		        t2.posi_floor,
+		        t2.posi_detls,
+		        CASE
+		            WHEN TRIM(NVL(x3.syspayno, '')) = ''
+		                THEN (SELECT MAX(e1.empsn) FROM bpm:roleusertable r1 JOIN bpm:emptable e1 ON r1.empcode = e1.empcode WHERE r1.rolecode = '1015208')
+		            ELSE TRIM(x3.syspayno)
+		        END AS manager_id
+		    FROM assmastrh t1
+		    JOIN assmastrb t2 ON t1.aset_no = t2.aset_no
+		    JOIN humbasicinfo t3 ON t2.user_syspayno = t3.syspayno
+		    JOIN xodxcommst x1 ON t1.aset_clsf = x1.cd AND x1.cd_clsf = 'ABA'
+		    JOIN xodxcommst x2 ON t2.main_sub_clsf = x2.cd AND x2.cd_clsf = 'AFA'
+		    LEFT JOIN xodrdeptpurman x3 ON x3.role_type = 'ASS' AND x3.dept_cd = t3.dept_cd AND x3.dept_new_ymd = t3.dept_new_ymd
+		    WHERE t1.aset_state = 'AAI010'
+		    AND t2.relat_aset_no IN (${relat_aset_no})
+		)
+		ORDER BY relat_aset_no, main_sub_clsf, aset_clsf
+	</select>
+	<!-- 불용신청 저장 -->  
+	<insert id="insertAssUnUse" parameterType="kr.re.kitech.biz.ass.app.vo.AssUnUseVo">
+		INSERT /* QueryID : kr.re.kitech.biz.ass.app.insertAssUnUse */ 
+			 INTO assunuse (req_no                    ,   /* 신청번호           */
+	                      aset_no                   ,   /* 자산번호           */
+	                      syspayno                  ,   /* 시스템개인번호     */
+	                      req_dept_cd               ,   /* 요청부서코드       */
+	                      req_ymd                   ,   /* 신청일자           */
+	                      req_dept_new_ymd          ,   /* 요청부서신설일자   */
+	                      unuse_clsf                ,   /* 불용구분           */
+	                      cause                     ,   /* 사유               */
+	                      decidarb_item             ,   /* 전결사항           */
+	                      etc_item                  ,   /* 기타사항           */
+	                      attach_file_no            ,   /* 첨부파일번호       */
+	                      posi_region               ,   /* 위치지역           */
+	                      posi_build                ,   /* 위치건물           */
+	                      posi_floor                ,   /* 위치층             */
+	                      posi_detls                ,   /* 위치상세           */
+	                      mngmt_state               ,   /* 관리상태           */
+	                      sale_obj_clsf             ,   /* 매각구분           */
+	                      prcs_ymd                  ,   /* 처리일자           */
+	                      prcs_amt                  ,   /* 처리금액           */
+	                      prcs_clsf                 ,   /* 처리구분           */
+	                      prcs_no                   ,   /* 처리번호           */
+	                      re_use_possbl             ,   /* 재사용가능         */
+	                      repay_aftr_econo_value    ,   /* 수리후경제가치     */
+	                      idle_unuse_clsf           ,   /* 유휴불용구분       */
+	                      app_div                   ,   /* 신청구분           */
+	                      regst_syspayno            ,   /* 등록시스템개인번호 */
+	                      regst_daytm               )   /* 등록일시           */
+				VALUES (#{req_no},
+				        #{aset_no},
+				        #{syspayno},
+				        #{req_dept_cd},
+				        TO_CHAR(SYSDATE, '%Y%m%d'),
+				        #{req_dept_new_ymd},
+				        #{unuse_clsf},
+				        #{cause},
+				        #{decidarb_item},
+				        #{etc_item},
+				        #{attach_file_no},
+				        #{posi_region},
+				        #{posi_build},
+				        #{posi_floor},
+				        #{posi_detls},
+				        #{mngmt_state},
+				        #{sale_obj_clsf},
+				        #{prcs_ymd},
+				        #{prcs_amt},
+				        #{prcs_clsf},
+				        #{prcs_no},
+				        #{re_use_possbl},
+				        #{repay_aftr_econo_value},
+				        #{idle_unuse_clsf},
+				        #{app_div},
+				        #{regst_syspayno},
+				        CURRENT)
+	</insert>
+	<!-- 불용신청 중복등록 체크 -->  
+   	<select id="selectAssUnuseChk" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ass.app.vo.AssUnUseChkVo">
+		SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssUnuseChk */ 
+			a.req_no,
+			b.nm,
+			b.empno,
+		COUNT(req_no) AS cnt
+		FROM assunuse a
+		LEFT JOIN humbasicinfo b ON b.syspayno = a.syspayno
+		LEFT JOIN assmastrh c ON a.aset_no = c.aset_no
+		WHERE a.aset_no = #{aset_no}
+		AND c.aset_state NOT IN ('AAI010')
+		GROUP BY a.req_no, b.nm, b.empno
+  	</select>
+	<!-- 불용신청 삭제 -->  
+	<delete id = "deleteAssUnUse" parameterType="kr.re.kitech.biz.ass.app.vo.AssUnUseVo"> 	
+	  	DELETE 
+			FROM    assunuse
+			WHERE   req_no  = #{req_no}
+	</delete>
+	
+	<!-- 불용신청 상세내역 조회 -->  
+    <select id="selectAssUnUseDtl" parameterType="kr.re.kitech.biz.ass.app.vo.AssUnUseVo" resultType="kr.re.kitech.biz.ass.app.vo.AssUnUseDetailVo">
+			SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssUnUseDtl */ 
+					 req_no
+			            ,  aset_no
+			            ,  aset_typ
+			            ,  aset_clsf
+			            ,  aset_clsf_nm
+			            ,  ntis_reg_no
+			            ,  aset_nm
+			            ,  model_nm
+			            ,  intro_ymd
+			            ,  intro_amt
+			            ,  empno
+			            ,  nm
+			            ,  up_dept_nm
+			            ,  dept_nm
+			            ,  posi_region
+			            ,  posi_build
+			            ,  posi_floor
+			            ,  posi_detls
+			            ,  aset_state_clsf
+			            ,  aset_state_nm
+			            ,  re_use_possbl
+			            ,  repay_aftr_econo_value
+			            ,  unuse_clsf
+			            ,  unuse_clsf_nm
+			            ,  aset_use
+			            ,  cause
+			            ,  mngmt_state
+			            ,  aset_file_no
+			            ,  attach_file_no
+			FROM (
+			SELECT a.req_no  -- 신청번호
+			             , a.aset_no -- 자산번호
+			             , b.aset_typ -- 자산유형코드
+			             , b.aset_clsf -- 자산분류코드
+			             , fun_xodxcommst_cd_nm(b.aset_clsf, 0) AS aset_clsf_nm -- 자산분류 명
+			             , i.ntis_reg_no  -- NTIS(NFEC) 등록번호
+			             , c.aset_nm  -- 장비명
+			             , c.model_nm  -- 모델명
+			             , b.intro_ymd -- 취득일자
+			             , b.intro_amt  -- 취득금액
+			             , d.empno -- 사용책임자empno
+			             , d.nm --사용책임자
+			             , f.dept_nm AS up_dept_nm  -- 본부명
+			             , e.dept_nm  -- 부서명
+			             , a.posi_region  -- 위치(지역)
+			             , a.posi_build  -- 위치(건물)
+			             , trim(a.posi_floor) AS posi_floor  -- 위치(층)
+			             , a.posi_detls  -- 위치(상세)
+			             /*자산 상태정보*/
+			             , a.aset_state_clsf  -- 장비상태코드
+			             , fun_xodxcommst_cd_nm(a.aset_state_clsf, 0) AS aset_state_nm -- 장비상태명
+			             , a.re_use_possbl  -- 타기관사용가능성 , 기존 selectbox 
+			             , a.repay_aftr_econo_value  -- 수리후 경제적가치
+			             , a.unuse_clsf -- 불용구분
+			             , fun_xodxcommst_cd_nm(a.unuse_clsf, 0) AS unuse_clsf_nm  -- 불용구분명
+			             , a.aset_use  -- 장비용도 ( 신규 )
+			             , a.cause  -- 불용사유
+			             , a.mngmt_state   -- 장비상태 평상시 관리 상태, input
+			             , a.aset_file_no   -- 장비사진 ( 신규 )
+			             , a.attach_file_no  -- 첨부파일
+			FROM assunuse a 
+			JOIN assmastrh b ON b.aset_no = a.aset_no
+			JOIN assmastrb c ON c.aset_no = b.aset_no
+			JOIN humbasicinfo d ON d.syspayno = c.user_syspayno
+			JOIN xodhdeptinfo e ON e.dept_cd = d.dept_cd AND e.dept_new_ymd = d.dept_new_ymd
+			JOIN xodhdeptinfo f ON f.dept_cd = e.up_dept AND f.dept_new_ymd = e.up_dept_new_ymd
+			LEFT JOIN assmastrtech i ON i.aset_no = a.aset_no
+			)
+			WHERE req_no = #{req_no}
+			AND aset_no = #{aset_no}
+  	</select>
+  
+    <!-- 불용신청 상세내역 수정 저장 -->  
+  	<update id="updateAssUnUseDetail" parameterType="kr.re.kitech.biz.ass.app.vo.AssUnUseDetailVo">
+		UPDATE /* QueryID : kr.re.kitech.biz.ass.app.updateAssUnUseDtl */ 
+				 assunuse
+		SET posi_region = #{posi_region}           
+		, posi_build = #{posi_build}              
+		, posi_floor = #{posi_floor}              
+		, posi_detls = #{posi_detls}              
+		, aset_state_clsf = #{aset_state_clsf}         
+		, repay_aftr_econo_value = #{repay_aftr_econo_value}  
+		, re_use_possbl = #{re_use_possbl}           
+		, unuse_clsf = #{unuse_clsf}              
+		, aset_use = #{aset_use}                
+		, cause = #{cause}                   
+		, mngmt_state = #{mngmt_state}             
+		, attach_file_no = #{attach_file_no}          
+		, aset_file_no = #{aset_file_no}            
+		, updt_syspayno = #{updt_syspayno}
+		, updt_daytm = current
+		WHERE req_no = #{req_no}
+		AND aset_no = #{aset_no}
+  	</update>
+  	
+  	 <!-- 신청구분 수정 불용 -> 환원 -->  
+  	<update id="updateRstrt" parameterType="kr.re.kitech.biz.ass.app.vo.AssUnUseVo">
+		UPDATE /* QueryID : kr.re.kitech.biz.ass.app.updateRstrt */ 
+				 assunuse
+		SET app_div = 'AHB040',
+		    updt_syspayno = #{updt_syspayno},
+		    updt_daytm = CURRENT
+		WHERE req_no = #{req_no}
+		  AND aset_no IN (${aset_no})
+  </update>
+	<!-- 자산 이동신청 저장 -->
+	<insert id="insertAssMoveReq" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppMoveReqDetailVo">
+	INSERT /* QueryID : kr.re.kitech.biz.ass.app.insertAssMove */ 
+		 INTO assmove (req_no                 ,       /* 요청번호(공통)                       */
+                     aset_no                ,       /* 자산번호(공통)                       */
+                     wrte_syspayno          ,       /* 작성자시스템개인번호(공통)           */
+                     move_clsf              ,       /* 이동구분(반입, 반출, 외부설치)(공통) */
+                     req_ymd,
+                     tout_psn_syspayno      ,       /* 반출자시스템개인번호(공통)           */
+                     tout_dept              ,       /* 반출부서(공통)                       */
+                     tout_dept_new_ymd      ,       /* 반출부서신설 일자(공통)              */
+                     tout_schdl_ymd         ,       /* 반출예정일자(공통)                   */                   
+                     tout_posi_region       ,       /* 위치지역(이동)                       */
+                     tout_posi_build        ,       /* 위치건물(이동)                       */
+                     tout_posi_floor        ,       /* 위치층(이동)                         */
+                     tout_posi_detls        ,       /* 상세위치(이동)                       */
+                     instl_vend             ,       /* 설치거래처(외부)                     */
+                     instl_vend_nm          ,       /* 설치거래처(외부)     */                     
+                     instl_vend_charg       ,       /* 설치거래처담당(외부)                 */
+                     instl_vend_charg_tel   ,       /* 설치거래처담당전화번호(외부)         */
+                     brin_schdl_ymd         ,       /* 반입예정일자(공통)                   */                   
+                     lease_amt              ,       /* 대여금액(이동)                       */
+                     lease_ymd              ,       /* 대여일자(이동)                       */
+                     aftr_mngmt_ex          ,       /* 사후관리유무(외부)                   */
+                     out_instl_orign_ymd    ,       /* 외부설치출처일자(외부)               */
+                     out_instl_ymd_st       ,       /* 외부설치시작일자(외부)               */
+                     out_instl_ymd_ed       ,       /* 외부설치종료일자(외부)               */
+                     cause                  ,       /* 사유(공통)                           */
+                     attach_file_no         ,       /* 첨부파일번호(외부)                   */
+                     prj_no                 ,       /* 과제명(외부)                         */
+                     prj_nm                 ,       /* 과제명(외부)                         */
+                     regst_syspayno         ,       /* 등록시스템개인번호                   */
+                     regst_daytm            )       /* 등록일시                             */
+VALUES (#{req_no},
+        #{aset_no},
+        #{wrte_syspayno},
+        #{move_clsf},
+        #{req_ymd},
+        #{tout_psn_syspayno},
+        #{tout_dept},
+        #{tout_dept_new_ymd},
+        #{tout_schdl_ymd},
+        #{tout_posi_region},
+        #{tout_posi_build},
+        #{tout_posi_floor},
+        #{tout_posi_detls},
+        #{instl_vend},
+        #{instl_vend_nm},
+        #{instl_vend_charg},
+        #{instl_vend_charg_tel},
+        #{brin_schdl_ymd},
+        #{lease_amt},
+        #{lease_ymd},
+        #{aftr_mngmt_ex},
+        #{out_instl_orign_ymd},
+        #{out_instl_ymd_st},
+        #{out_instl_ymd_ed},
+        #{cause},
+        #{attach_file_no},
+        #{prj_no},
+        #{prj_nm},
+        #{regst_syspayno},
+        CURRENT)
+	</insert>
+	<!-- 자산 이동신청 수정 -->
+	<update id="updateAssMoveReq" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppMoveReqDetailVo">
+		UPDATE /* QueryID : kr.re.kitech.biz.ass.app.updateAssMove */ 
+				 assmove
+		SET 
+		  <if test="wrte_syspayno != null and wrte_syspayno != ''">
+			  wrte_syspayno        = #{wrte_syspayno},
+		</if>  /* 작성자시스템개인번호(공통)    */
+		  <if test="move_clsf != null and move_clsf != ''">
+			  move_clsf            = #{move_clsf},
+		</if>  /* 이동구분(반입, 반출, 외부설치)(공통) */        
+		  <if test="decidarb_item != null and decidarb_item != ''">
+			  decidarb_item        = #{decidarb_item},
+		</if>  /* 전결사항(공통)                */
+		  <if test="tout_psn_syspayno != null and tout_psn_syspayno != ''">
+			  tout_psn_syspayno    = #{tout_psn_syspayno},
+		</if>  /* 반출자시스템개인번호(공통)    */
+		  <if test="tout_dept != null and tout_dept != ''">
+			  tout_dept            = #{tout_dept},
+		</if>  /* 반출부서(공통)                */
+		  <if test="tout_dept_new_ymd != null and tout_dept_new_ymd != ''">
+			  tout_dept_new_ymd    = #{tout_dept_new_ymd},
+		</if>  /* 반출부서신설 일자(공통)       */
+		  <if test="tout_schdl_ymd != null and tout_schdl_ymd != ''">
+			  tout_schdl_ymd       = #{tout_schdl_ymd},
+		</if>  /* 반출예정일자(공통)            */
+		  <if test="tout_affir_syspayno != null and tout_affir_syspayno != ''">
+			  tout_affir_syspayno  = #{tout_affir_syspayno},
+		</if>  /* 반출확인시스템개인번호(공통)  */
+		  <if test="tout_affir_ymd != null and tout_affir_ymd != ''">
+			  tout_affir_ymd       = #{tout_affir_ymd},
+		</if>  /* 반출확인일자(공통)            */
+		  <if test="tout_ymd != null and tout_ymd != ''">
+			  tout_ymd             = #{tout_ymd},
+		</if>  /* 반출일자(공통)                */
+		  <if test="tout_posi_region != null and tout_posi_region != ''">
+			  tout_posi_region     = #{tout_posi_region},
+		</if>  /* 위치지역(이동)                */
+		  <if test="tout_posi_build != null and tout_posi_build != ''">
+			  tout_posi_build      = #{tout_posi_build},
+		</if>  /* 위치건물(이동)                */
+		  <if test="tout_posi_floor != null and tout_posi_floor != ''">
+			  tout_posi_floor      = #{tout_posi_floor},
+		</if>  /* 위치층(이동)                  */
+		  <if test="tout_posi_detls != null and tout_posi_detls != ''">
+			  tout_posi_detls      = #{tout_posi_detls},
+		</if>  /* 상세위치(이동)                */
+		  <if test="instl_vend != null and instl_vend != ''">
+			  instl_vend           = #{instl_vend},
+		</if>  /* 설치거래처(외부)              */
+		  <if test="instl_vend_nm != null and instl_vend_nm != ''">
+			  instl_vend_nm        = #{instl_vend_nm},
+		</if>
+		  <if test="instl_vend_charg != null and instl_vend_charg != ''">
+			  instl_vend_charg     = #{instl_vend_charg},
+		</if>  /* 설치거래처담당(외부)          */
+		  <if test="instl_vend_charg_tel != null and instl_vend_charg_tel != ''">
+			  instl_vend_charg_tel = #{instl_vend_charg_tel},
+		</if>  /* 설치거래처담당전화번호(외부)  */
+		  <if test="brin_schdl_ymd != null and brin_schdl_ymd != ''">
+			  brin_schdl_ymd       = #{brin_schdl_ymd},
+		</if>  /* 반입예정일자(공통)            */
+		  <if test="brin_ymd != null and brin_ymd != ''">
+			  brin_ymd             = #{brin_ymd},
+		</if>  /* 반입일자(공통)                */
+		  <if test="brin_affir_syspayno != null and brin_affir_syspayno != ''">
+			  brin_affir_syspayno  = #{brin_affir_syspayno},
+		</if>  /* 반입확인시스템개인번호(공통)  */
+		  <if test="brin_affir_ymd != null and brin_affir_ymd != ''">
+			  brin_affir_ymd       = #{brin_affir_ymd},
+		</if>  /* 반입확인일자(공통)            */
+		  <if test="lease_amt != null and lease_amt != ''">
+			  lease_amt            = #{lease_amt},
+		</if>  /* 대여금액(이동)                */
+		  <if test="lease_ymd != null and lease_ymd != ''">
+			  lease_ymd            = #{lease_ymd},
+		</if>  /* 대여일자(이동)                */
+		  <if test="aftr_mngmt_ex != null and aftr_mngmt_ex != ''">
+			  aftr_mngmt_ex        = #{aftr_mngmt_ex},
+		</if>  /* 사후관리유무(외부)            */
+		  <if test="out_instl_orign_ymd != null and out_instl_orign_ymd != ''">
+			  out_instl_orign_ymd  = #{out_instl_orign_ymd},
+		</if>  /* 외부설치출처일자(외부)        */
+		  <if test="out_instl_ymd_st != null and out_instl_ymd_st != ''">
+			  out_instl_ymd_st     = #{out_instl_ymd_st},
+		</if>  /* 외부설치시작일자(외부)        */
+		  <if test="out_instl_ymd_ed != null and out_instl_ymd_ed != ''">
+			  out_instl_ymd_ed     = #{out_instl_ymd_ed},
+		</if>  /* 외부설치종료일자(외부)        */
+		  <if test="cause != null and cause != ''">
+			  cause                = #{cause},
+		</if>  /* 사유(공통)                    */
+		  <if test="attach_file_no != null and attach_file_no != ''">
+			  attach_file_no       = #{attach_file_no},
+		</if>  /* 첨부파일번호(외부)            */
+		  <if test="gods_attach_file_no != null and gods_attach_file_no != ''">
+			  gods_attach_file_no  = #{gods_attach_file_no},
+		</if>  /* 물품인수증 첨부파일번호       */
+		  <if test="prj_no != null and prj_no != ''">
+			  prj_no               = #{prj_no},
+		</if>  /* 과제명(외부)                  */
+		  <if test="prj_nm != null and prj_nm != ''">
+			  prj_nm               = #{prj_nm},
+		</if>  /* 과제명(외부)                  */
+		  updt_syspayno = #{updt_syspayno},  
+		  updt_daytm = CURRENT  
+		WHERE req_no = #{req_no}
+		<if test="aset_no != null and aset_no != ''">
+			 AND aset_no = #{aset_no}
+		</if>
+	</update>
+	<!-- 자산 이동신청 삭제 -->
+	<delete id="deleteAssMoveReq">
+		DELETE /* QueryID : kr.re.kitech.biz.ass.app.deleteAssMove */ 
+				 FROM assmove
+		WHERE req_no = #{req_no}
+		AND ( '' = #{aset_no} OR aset_no = #{aset_no} )
+	</delete>
+<select id="selectAssAppMoveReqList" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppMoveReqSrchVo" resultType="kr.re.kitech.biz.ass.app.vo.AssAppMoveReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssMove */ 
+		 t1.req_no,
+       t1.req_ymd,
+       t2.aset_clsf,
+       t1.move_clsf,
+       t1.aset_no,
+       t3.old_aset_no,
+       t2.aset_nm,
+       t2.intro_ymd,
+       t2.intro_amt,
+       t3.user_syspayno,
+       t3.mngmt_mbody,
+       t6.nm AS user_nm,
+       t6.empno AS user_empno,
+       t7.dept_nm AS user_dept_nm,
+       t7.depthed AS respn_syspayno,
+       t8.nm AS respn_nm,
+       t8.empno AS respn_empno,
+       t4.apr_state,
+       t1.brin_schdl_ymd,
+       t1.tout_schdl_ymd,
+       t10.nm AS wrte_nm, -- 신청자
+       a.empno AS tout_empno,
+       a.nm AS tout_nm, -- 반출자
+       t1.cause,
+       CASE WHEN t1.tout_posi_region = '' THEN ''
+            ELSE x1.cd_nm || fun_xodxcommst_cd_nm(t1.tout_posi_build,0) || t1.tout_posi_floor||t1.tout_posi_detls END AS posi, -- 반입상세위치
+       t1.tout_ymd, -- 반출일
+       t1.tout_affir_ymd, -- 반출확인일자
+       h1.nm AS tout_affir_nm, -- 반출확인자
+       t1.brin_ymd, -- 반입일
+       t1.brin_affir_ymd, -- 반입확인일자
+       h2.nm AS brin_affir_nm,--반입확인자
+       t1.prj_nm, -- (외부설치)과제명
+       t1.instl_vend_nm,-- (외부설치)설치업체
+       t1.aftr_mngmt_ex, -- (외부설치)사후관리여부
+       t1.instl_vend_charg, -- (외부설치)업체담당자
+       t1.instl_vend_charg_tel, -- (외부설치)담당자연락처
+       t1.out_instl_ymd_st, -- (외부설치)시작일자
+       t1.out_instl_ymd_ed, -- (외부설치)종료일자
+        x2.cd_nm AS mngmt_mbody_nm,
+        x3.cd_nm AS aset_clsf_nm,
+        x4.cd_nm AS move_clsf_nm,
+        x5.cd_nm AS apr_state_nm
+FROM assmove t1
+JOIN assmastrh t2 ON t1.aset_no = t2.aset_no
+JOIN assmastrb t3 ON t2.aset_no = t3.aset_no
+JOIN xodxcommst t5 ON t2.aset_clsf = t5.cd
+JOIN humbasicinfo t6 ON t3.user_syspayno = t6.syspayno
+JOIN xodhdeptinfo t7 ON t6.dept_cd = t7.dept_cd AND t6.dept_new_ymd = t7.dept_new_ymd
+LEFT JOIN humbasicinfo t8 ON t7.depthed = t8.syspayno
+LEFT JOIN humbasicinfo t10 ON t1.wrte_syspayno = t10.syspayno
+LEFT JOIN humbasicinfo a ON t1.tout_psn_syspayno = a.syspayno
+LEFT JOIN xomxintfatab t4 ON t1.req_no = t4.req_no
+LEFT JOIN xodxcommst x1 ON t1.tout_posi_region = x1.cd AND x1.cd_clsf ='HBX'
+LEFT JOIN humbasicinfo h1 ON t1.tout_affir_syspayno = h1.syspayno
+LEFT JOIN humbasicinfo h2 ON t1.brin_affir_syspayno = h2.syspayno
+LEFT OUTER JOIN xodxcommst x2 ON t3.mngmt_mbody = x2.cd AND x2.cd_clsf = 'ARB'
+LEFT OUTER JOIN xodxcommst x3 ON t2.aset_clsf = x3.cd  AND x3.cd_clsf = 'ABA'
+LEFT OUTER JOIN xodxcommst x4 ON t1.move_clsf = x4.cd  AND x4.cd_clsf = 'AGA'
+LEFT OUTER JOIN xodxcommst x5 ON t4.apr_state = x5.cd  AND x5.cd_clsf = 'XAD'
+WHERE ( '' = #{apr_state} OR t4.apr_state = #{apr_state} )
+AND ( '' = #{aset_typ} OR t2.aset_typ = #{aset_typ} )
+AND ( '' = #{req_no} OR t1.req_no = #{req_no} )
+AND ( '' = #{aset_no} OR (t1.aset_no = #{aset_no} OR t3.old_aset_no = #{aset_no} ))
+AND ( '' = #{move_clsf} OR t1.move_clsf = #{move_clsf} )
+AND t2.aset_nm LIKE '%'||#{aset_nm}||'%'
+AND ( '' = #{user_syspayno} OR ( t1.tout_psn_syspayno = #{user_syspayno} OR t3.user_syspayno = #{user_syspayno} OR t1.wrte_syspayno = #{user_syspayno} ))
+AND ( '' = #{req_ymd_st} OR t1.req_ymd <![CDATA[ >= ]]> #{req_ymd_st} )
+AND ( '' = #{req_ymd_ed} OR t1.req_ymd <![CDATA[ <= ]]> #{req_ymd_ed} )
+AND ( '' = #{mngmt_mbody} OR t3.mngmt_mbody = #{mngmt_mbody} )
+AND ( '' = #{brin_schdl_ymd_st} OR t1.brin_schdl_ymd <![CDATA[ >= ]]> #{brin_schdl_ymd_st} )
+AND ( '' = #{brin_schdl_ymd_ed} OR t1.brin_schdl_ymd <![CDATA[ <= ]]> #{brin_schdl_ymd_ed} )
+ORDER BY t1.req_no, t2.aset_clsf, t1.aset_no
+</select>
+<select id="selectAssAppMoveReqDetail" resultType="kr.re.kitech.biz.ass.app.vo.AssAppMoveReqDetailVo" parameterType="kr.re.kitech.biz.ass.app.vo.AssAppMoveReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.ass.app.selectAssAppMoveReqDetail */ 
+		  t1.req_no,             -- 결재 신청 번호
+        t1.aset_no,            -- 자산 번호
+        t2.aset_nm,            -- 자산 명
+        t2.aset_clsf,          -- 자산 구분
+        fun_xodxcommst_cd_nm(t2.aset_clsf, 0)   AS aset_clsf_nm,
+        t2.aset_typ,      -- 자산 유형
+        fun_xodxcommst_cd_nm(t2.aset_typ, 0)   AS aset_typ_nm,
+        t1.move_clsf,      -- 이동 구분
+        fun_xodxcommst_cd_nm(t1.move_clsf, 0)   AS move_clsf_nm,
+        t1.tout_schdl_ymd,     -- 반출 예정 일자
+        t1.brin_schdl_ymd,     -- 반입 예정 일자
+        t3.user_syspayno,      -- 자산 사용자
+        t6.nm AS user_nm,
+        t6.empno AS user_empno,
+        t2.intro_ymd,               -- 도입 일자
+        t2.intro_amt,               -- 도입 금액
+        t4.nm AS tout_user_nm,      -- 반출자 정보
+        t4.empno AS tout_user_empno,
+        t4.syspayno AS tout_user_syspayno,
+        t4.dept_cd AS tout_user_dept_cd,
+        t4.dept_new_ymd AS tout_user_dept_new_ymd,
+        t4.ext_no AS tout_user_ext_no,
+        t4.email AS tout_user_email,
+        t5.dept_nm AS tout_user_dept_nm,
+        t1.cause,                   -- 사유
+        t1.attach_file_no,
+        t1.gods_attach_file_no,     -- 물품인수증 첨부파일
+        t1.instl_vend,              -- 설치거래처
+        t1.instl_vend_nm,           -- 설치거래쳐
+        t1.instl_vend_charg,        -- 설치거래처담당
+        t1.instl_vend_charg_tel,    -- 설치거래처담당전화
+        t1.out_instl_ymd_st,        -- 외부설치시작일자
+        t1.out_instl_ymd_ed,        -- 외부설치종료일자
+        t1.prj_no,                  -- 과제번호
+        t1.prj_nm,                  -- 과제 명
+        t1.aftr_mngmt_ex,           -- 사후관리여부
+        DECODE(t1.aftr_mngmt_ex, 'Y', '예', '아니오') AS aftr_mngmt_ex_nm,
+        t1.tout_posi_region,
+        t1.tout_posi_build,
+        fun_xodxcommst_cd_nm(t1.tout_posi_region, 0) AS tout_posi_region_nm,
+        fun_xodxcommst_cd_nm(t1.tout_posi_build,  0) AS tout_posi_build_nm,
+        t1.tout_posi_floor,
+        t1.tout_posi_detls,
+        t1.tout_ymd,
+        t1.tout_affir_ymd,
+        t1.tout_affir_syspayno,
+        t7.nm AS tout_affir_nm,
+        t1.brin_ymd,
+        t1.brin_affir_ymd,
+        t1.brin_affir_syspayno,
+        t8.nm AS brin_affir_nm,
+        fun_xodxcommst_cd_nm(t3.posi_region, 0) ||' '|| fun_xodxcommst_cd_nm(t3.posi_build,  0) ||' '||t3.posi_floor ||' '||t3.posi_detls as posi_nm,
+        t9.syspayno AS ass_syspayno,
+        t11.apr_state AS apr_state
+FROM assmove t1
+JOIN assmastrh t2 ON t1.aset_no = t2.aset_no
+JOIN assmastrb t3 ON t1.aset_no= t3.aset_no
+JOIN humbasicinfo t6 ON t3.user_syspayno = t6.syspayno
+LEFT JOIN humbasicinfo t4 ON t1.tout_psn_syspayno = t4.syspayno
+LEFT JOIN xodhdeptinfo t5 ON t4.dept_cd = t5.dept_cd AND t4.dept_new_ymd = t5.dept_new_ymd
+LEFT JOIN humbasicinfo t7 ON t1.tout_affir_syspayno = t7.syspayno
+LEFT JOIN humbasicinfo t8 ON t1.brin_affir_syspayno = t8.syspayno
+LEFT JOIN xodhdeptinfo t10 ON t6.dept_cd = t10.dept_cd AND t6.dept_new_ymd = t10.dept_new_ymd
+LEFT JOIN xodrdeptpurman t9 ON t10.dept_cd = t9.dept_cd AND t10.dept_new_ymd = t9.dept_new_ymd AND t9.role_type = 'ASS'
+LEFT JOIN xomxintfatab t11 on t11.req_no = t1.req_no
+WHERE t1.req_no = #{req_no}
+AND ( '' = #{move_clsf} OR t1.move_clsf = #{move_clsf})
+</select>
+</mapper>

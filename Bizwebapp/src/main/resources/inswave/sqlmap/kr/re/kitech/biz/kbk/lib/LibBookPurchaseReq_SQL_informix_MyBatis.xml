@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.kbk.lib">
+<!-- 도서 구입신청 상세 조회 -->
+<select id="selectLibBookPurReq" resultType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo">
+SELECT /* kr.re.kitech.biz.kbk.lib.selectLibBookPurReq */
+      a.req_no
+    , a.regst_ymd
+    , a.centr_cd
+    , a.ymd
+    , fun_xodxcommst_cd_nm(a.book_pur_typ, 0) AS book_pur_typ_nm
+    , a.book_pur_typ
+    , a.req_qty
+    , a.req_psn_syspayno
+    , trim(fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 0)) || "(" || fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 1) || ")" AS req_psn_nm
+    , fun_emp_nm(a.loan_psn_syspayno) AS loan_psn_nm
+    , fun_humbasicinfo_cd_nm(a.loan_psn_syspayno, 1) AS loan_psn_empno
+    , a.loan_psn_syspayno
+    , a.tot_expns
+    , a.expns_cd
+    , a.accnt_cd
+    , a.curncy_unit
+    , a.accnt_no
+    , b.accnt_rspns AS accnt_respn_psn_syspayno
+    , b.accnt_no_nm
+    , a.accnt_expir_ymd
+    , a.book_info_url
+    , a.cycle_item
+    , a.attach_file_no
+    , a.prcs_state
+    , c.apr_state
+FROM kbkbookpurreq a
+LEFT JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+LEFT JOIN xomxintfatab c ON a.req_no = c.req_no
+WHERE a.req_no = #{req_no}
+</select>
+<!-- 도서구입신청 신청도서 조회 -->	
+<select id="selectLibBookPurReqList" resultType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqListVo" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.kbk.lib.selectLibBookPurRegDtl */
+      req_no
+    , no
+    , book_nm
+    , max(auth_nm) AS auth_nm
+    , max(issu_agncy) AS issu_agncy
+    , max(req_qty) AS req_qty
+    , trunc(max(unit_amt)) AS unit_amt
+    , max(curncy_unit) AS curncy_unit
+    , max(tot_expns) AS tot_expns
+    , max(publ_yr) AS publ_yr
+FROM kbkbookpurreqlist
+WHERE req_no = #{req_no}
+GROUP BY 1, 2, 3
+</select>	
+
+<!-- 도서 구입 회계코드 조회 -->	
+<select id="selectLibBprAccntCd" resultType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo">
+SELECT /* kr.re.kitech.biz.kbk.lib.selectLibBprAccntCd */
+      fun_fin_accnt_cd(#{accnt_no}, #{expns_cd}) AS accnt_cd
+  FROM DUAL
+</select>
+
+<!-- 환율조회 -->	
+<select id="selectLibBprCashPurRt" resultType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo">
+SELECT /* kr.re.kitech.biz.kbk.lib.selectLibBprCashPurRt */
+     cash_pur_rt
+FROM xodpexchgr a
+JOIN xodxcommst b ON a.curncy_unit_cd = b.mngmt_item_1
+WHERE b.cd = #{curncy_unit}
+AND exchgr_ymd = ( SELECT max(exchgr_ymd) AS exchgr_ymd
+                     FROM xodpexchgr a
+                     JOIN xodxcommst b ON a.curncy_unit_cd = b.mngmt_item_1
+                     WHERE b.cd = #{curncy_unit})
+</select>	
+
+<!-- 도서구입신청 승인 -->
+<update id="updateLibBprAgrPrc" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo">
+UPDATE /* kr.re.kitech.biz.kbk.lib.updateLibBprAgrPrc */
+      kbkbookpurreq
+   SET cycle_item = #{cycle_item}
+     , prcs_state = #{prcs_state}   
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+ WHERE req_no = #{req_no}
+</update>
+
+<!-- 도서구입신청 저장 -->
+<insert id="insertLibBookPurReq" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo">
+INSERT /* kr.re.kitech.biz.kbk.lib.insertLibBookPurReq */
+   INTO kbkbookpurreq(
+            req_no       /* 등록번호 */
+          , centr_cd     /* 센터코드 */
+          , regst_ymd    /* 등록일자 */
+          , ymd          /* 요청일자 */
+        <if test='book_pur_typ != null'> , book_pur_typ /* 도서구입현황 */ </if>        
+        <if test='req_qty != null'> , req_qty      /* 신청권수 */ </if>
+        <if test='loan_psn_syspayno != null'> , loan_psn_syspayno /* 대출자개인번호 */ </if>      
+        <if test='curncy_unit != null'> , curncy_unit /* 화폐단위 */ </if>
+        <if test='accnt_no != null'> , accnt_no /* 계정번호 */ </if>
+         , expns_cd /* 비용코드 */ 
+         , accnt_cd
+        <if test='accnt_expir_ymd != null'> , accnt_expir_ymd  /* 계정만료일 */ </if>
+        <if test='accnt_respn_psn_syspayno != null'> , accnt_respn_psn_syspayno /* 계정책임자 */ </if>
+        <if test='book_info_url != null'> , book_info_url   /* 도서정보url */ </if>
+        <if test='cycle_item != null'> , cycle_item         /* 주기사항 */ </if>
+        <if test='attach_file_no != null'> , attach_file_no /* 첨부파일명 */ </if>
+          , req_psn_syspayno    /* 신청자개인번호 */
+          , tot_expns           /* 전체구입비 */
+          , prcs_state          /* 처리상태 */
+          , regst_psn_syspayno  /* 등록자개인번호 */          
+          , regst_daytm         /* 등록일자 */
+   ) VALUES(
+            #{req_no}
+          , #{centr_cd}
+          , #{ymd}
+          , #{ymd}
+        <if test='book_pur_typ != null'> , #{book_pur_typ} </if>      
+        <if test='req_qty != null'> , #{req_qty} </if>
+        <if test='loan_psn_syspayno != null'> , #{loan_psn_syspayno} </if>        
+        <if test='curncy_unit != null'> , #{curncy_unit} </if>
+        <if test='accnt_no != null'> , #{accnt_no} </if>
+          , #{expns_cd} 
+          , #{accnt_cd}
+        <if test='accnt_expir_ymd != null'> , #{accnt_expir_ymd} </if>
+        <if test='accnt_respn_psn_syspayno != null'> , #{accnt_respn_psn_syspayno} </if>
+        <if test='book_info_url != null'> , #{book_info_url} </if>
+        <if test='cycle_item != null'> , #{cycle_item} </if>
+        <if test='attach_file_no != null'> , #{attach_file_no} </if>
+          , #{req_psn_syspayno}
+          , #{tot_expns}
+          , 'BED001'
+          , #{regst_syspayno}          
+          , CURRENT          
+       )
+</insert>
+<!-- 도서구입신청 신청도서 저장 -->
+<insert id="insertLibBookPurReqList"  parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqListVo">
+INSERT /* kr.re.kitech.biz.kbk.lib.insertLibBookPurReqList */
+   INTO kbkbookpurreqlist(
+       req_no
+     , no
+     , book_nm
+     , auth_nm
+     , issu_agncy
+     , req_qty
+     , unit_amt
+     , curncy_unit
+     , tot_expns
+     , publ_yr
+     , regst_psn_syspayno
+     , regst_daytm
+  ) VALUES(
+       #{req_no}
+     , (SELECT NVL(MAX(no), 0) + 1 FROM kbkbookpurreqlist  WHERE req_no = #{req_no})
+     , #{book_nm}
+     , #{auth_nm}
+     , #{issu_agncy}
+     , #{req_qty}
+     , #{unit_amt}
+     , #{curncy_unit}
+     , #{tot_expns}
+     , #{publ_yr}
+     , #{regst_syspayno}
+     , SYSDATE
+    )
+</insert>
+	
+<update id="updateLibBookPurReq" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo">
+UPDATE /* kr.re.kitech.biz.kbk.lib.updateLibBookPurReq */
+      kbkbookpurreq
+   SET regst_ymd = #{ymd}             /* 등록일자 */
+     , ymd = #{ymd}                         /* 요청일자 */
+     , centr_cd = #{centr_cd}               /* 센터코드 */
+     , book_pur_typ = #{book_pur_typ}       /* 도서구입유형 */    
+    <if test='req_qty != null'> , req_qty = #{req_qty} /* 신청권수 */ </if>
+    <if test='loan_psn_syspayno != null'> , loan_psn_syspayno = #{loan_psn_syspayno} /* 대출자개인번호 */ </if>
+    <if test='tot_expns != null'> , tot_expns = #{tot_expns}  /* 단위가격 */ </if>
+    <if test='curncy_unit != null'> , curncy_unit = #{curncy_unit} /* 화폐단위 */ </if>   
+    <if test='accnt_no != null'> , accnt_no = #{accnt_no}   /* 계정번호 */ </if>
+    <if test='accnt_expir_ymd != null'> , accnt_expir_ymd = #{accnt_expir_ymd} /* 계정만료일자 */ </if>
+    <if test='accnt_respn_psn_syspayno != null'> , accnt_respn_psn_syspayno = #{accnt_respn_psn_syspayno} /* 계정책임자 */ </if>
+    , accnt_cd = #{accnt_cd}     /* 회계코드 */ 
+    , expns_cd = #{expns_cd}     /* 비용코드 */     
+    <if test='book_info_url != null'> , book_info_url = #{book_info_url} /* 도서정보url */ </if>
+    <if test='cycle_item != null'> , cycle_item = #{cycle_item}  /* 주기사항 */ </if>
+    <if test='attach_file_no != null'> , attach_file_no = #{attach_file_no} /* 첨부파일명 */ </if>
+     , updt_psn_syspayno = #{updt_syspayno}    /* 수정자개인번호 */
+     , updt_daytm = CURRENT               /* 수정일시 */
+WHERE req_no = #{req_no}
+</update>
+	
+<update id="updateLibBookPurReqList" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqListVo">
+UPDATE /* kr.re.kitech.biz.kbk.lib.updateLibBookPurReqList */
+      kbkbookpurreqlist 
+   SET book_nm = #{book_nm}
+     , auth_nm = #{auth_nm}
+     , issu_agncy = #{issu_agncy}
+     , req_qty = #{req_qty}
+     , unit_amt = #{unit_amt}
+     , curncy_unit = #{curncy_unit}
+     , tot_expns = #{tot_expns}
+     , publ_yr = #{publ_yr}
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE req_no = #{req_no}
+AND   no = #{no}
+</update>
+	
+<delete id="deleteLibBookPurReq" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo">
+DELETE /* kr.re.kitech.biz.kbk.lib.deleteLibBookPurReq */
+  FROM kbkbookpurreq
+ WHERE req_no = #{req_no}
+</delete>
+	
+<delete id="deleteLibBookPurReqList" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurReqVo">
+DELETE /* kr.re.kitech.biz.kbk.lib.deleteLibBookPurReqList */
+  FROM kbkbookpurreqlist 
+WHERE req_no = #{req_no}
+</delete>
+</mapper>

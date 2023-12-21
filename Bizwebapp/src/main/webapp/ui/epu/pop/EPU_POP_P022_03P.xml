@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="원인행위금액 조회" meta_author="이영희" meta_date="2023.02.10.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="req_no" name="신청번호" dataType="text"></w2:column>
+            			<w2:column id="req_seq" name="신청순번" dataType="text"></w2:column>
+            			<w2:column id="ctrl_no" name="통제번호" dataType="text"></w2:column>
+            			<w2:column id="ctrl_ymd" name="통제일자" dataType="text"></w2:column>
+            			<w2:column id="accnt_no" name="계정번호" dataType="text"></w2:column>
+            			<w2:column id="accnt_cd" name="회계코드" dataType="text"></w2:column>
+            			<w2:column id="req_amt" name="신청금액" dataType="text"></w2:column>
+            			<w2:column id="chng_amt" name="잔액" dataType="text"></w2:column>
+            			<w2:column id="enfrc_amt_cause" name="원인행위금액" dataType="text"></w2:column>
+            			<w2:column id="unslip_amt" name="결의금액" dataType="text"></w2:column>
+            			<w2:column id="unslip_no" name="결의번호" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            		<w2:data use="false"></w2:data>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="req_no" name="구매요구번호" dataType="text"></w2:key>
+            			<w2:key id="bid_ord_no" name="발주번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+            <!-- 조회 -->            
+        	<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' 
+        	    action="SvcEPUCOMR01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 원인행위금액 정리 -->
+        	<xf:submission id="sbm_saveData" ref="data:json,dma_search" target='' 
+        	    action="SvcEPUCOMM01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 원인행위금액 조회
+ 	 * 변경 이력 : 2023-02-09	이영희	최초 작성
+ 	 ****************************************************/  
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */ 
+	scwin.onpageload = function() {
+		dma_search.set("req_no", com.getParameter("pur_req_no"));
+		dma_search.set("bid_ord_no", com.getParameter("bid_ord_no"));
+		
+		scwin.search();
+
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(e) {
+		com.execute(sbm_selectData, {
+			successCallback : function(e) {
+				dlt_grd.setJSON(e.responseJSON.bblenfrcVoList);
+			}
+		});			
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+
+	/**
+	 * 확인버튼 클릭 이벤트
+	 */
+	scwin.btn_conf_onclick = function(e) {		
+		com.confirm(com.getMsg("message.xom.ui.pur.002", ibx_pur_req_no.getValue()), function(ret) {
+			if(ret) {
+				com.execute(sbm_saveData, {
+					successCallback : function(e) {
+						com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function(){
+							scwin.search();
+						});
+					}
+				});	
+			}
+		});
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection " id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:100px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="구매요구번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_pur_req_no" ref="data:dma_search.req_no" style="width: 150px;"
+    								title="관련내용">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff" id="grd_pur"
+    			noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="10" tooltipDisplay="true" readOnly="true">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column width="90" inputType="text" style="height:28px" id="column47" value="구매요구번호" displayMode="label"></w2:column>
+    					<w2:column width="60" inputType="text" style="height:28px" id="column54" value="순번" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="column42" inputType="text" style="height:28px" value="계정번호" width="90"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column56" value="회계코드" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="column40" inputType="text" style="height:28px" value="통제번호" width="90"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column49" value="통제일자" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column51" value="신청금액" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column58" value="원인행위금액" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column60" value="결의금액" displayMode="label"></w2:column>
+    					<w2:column width="79" inputType="text" style="height:28px" id="column53" value="결의번호" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column width="90" inputType="text" style="height:28px" id="req_no" value="" displayMode="label"></w2:column>
+    					<w2:column width="60" inputType="text" style="height:28px" id="req_seq" value="" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="accnt_no" inputType="text" readOnly="true" style="height:28px" width="90"
+    						class="" dataType="text">
+    					</w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="accnt_cd" value="" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="ctrl_no" inputType="text" readOnly="true" style="height:28px" width="90" class="">
+    					</w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="ctrl_ymd" value="" displayMode="label" dataType="date"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="req_amt" value="" displayMode="label"
+    						dataType="number" displayFormat="#,###" class="ri">
+    					</w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="enfrc_amt_cause" value="" displayMode="label" class="ri" dataType="number" displayFormat="#,###"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="unslip_amt" value="" displayMode="label" displayFormat="#,###" dataType="number" class="ri"></w2:column>
+    					<w2:column width="79" inputType="text" style="height:28px" id="unslip_no" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="btn_conf" style="" type="button" ev:onclick="scwin.btn_conf_onclick">
+    					<xf:label><![CDATA[확인]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

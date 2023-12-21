@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.epu.mail">
+<!-- 발주계획 결재완료 후 메일발송을 위한 조회 -->
+<select id="selectEpuOrdMastrForMail" resultType="kr.re.kitech.biz.epu.mail.vo.BidMailSendVo" parameterType="kr.re.kitech.biz.epu.mail.vo.BidMailSendVo">
+SELECT FIRST 1 /* kr.re.kitech.biz.epu.mail.selectEpuOrdMastrForMail */
+       a.bid_ord_no
+     , a.chg_no
+     , c.pur_req_no
+     , c.addtax_amt
+     , c.req_amt_sum
+     , c.delvr_plc_nm
+     , DECODE(LENGTH(a.noti_last_ymd) , 12 , TO_CHAR(TO_DATE(a.noti_last_ymd,'%Y%m%d%H%M'),'%Y-%m-%d %H:%M'), 8,TO_CHAR(TO_DATE(a.noti_last_ymd||'0000','%Y%m%d%H%M'),'%Y-%m-%d %H:%M'), '') AS noti_last_ymd
+     , a.bid_title
+     , DECODE(d.accnt_no, 'FF210001', d.accnt_respn_psn_syspayno, e.accnt_rspns) AS accnt_rspns -- 2022.02.14. FF210001추가
+     , h3.email AS accnt_rspns_email
+     , c.req_psn_syspayno
+     , h2.email AS req_psn_email
+     , c.charg_syspayno
+     , h.email AS charg_email
+     , h.nm AS charg_nm
+     , ROUND(a.assign_amount) AS assign_amount
+     , a.bid_clsf_cd
+     , a.contrct_method
+     , a.bid_succ_method
+     , a.pur_clsf_cd
+     , NVL(TRIM(a.apr_mail_send_yn),'N') AS apr_mail_send_yn
+FROM epuordmastr a
+JOIN epuordreqitem b ON a.bid_ord_no = b.bid_ord_no AND a.chg_no = b.chg_no
+JOIN purreqmastr c ON b.pur_req_no = c.pur_req_no
+JOIN purreqaccnt d ON b.pur_req_no = d.pur_req_no
+JOIN resbgacctm e ON d.accnt_no = e.accnt_no
+JOIN humbasicinfo h ON a.regst_syspayno = h.syspayno
+JOIN humbasicinfo h2 ON c.req_psn_syspayno = h2.syspayno
+JOIN humbasicinfo h3 ON DECODE(d.accnt_no, 'FF210001', d.accnt_respn_psn_syspayno, e.accnt_rspns) = h3.syspayno
+WHERE a.bid_ord_no = #{bid_ord_no}
+AND a.chg_no = #{chg_no}
+</select>
+
+<!-- 발주계획 결재완료 후 메일발송을 위한 수신자 조회(P82) -->
+<select id="selectEpuOrdMastrForMail2" parameterType="kr.re.kitech.biz.epu.mail.vo.BidMailSendVo" resultType="kr.re.kitech.biz.epu.mail.vo.BidMailSendVo">
+SELECT  /* kr.re.kitech.biz.epu.mail.selectEpuOrdMastrForMail2 */
+       c2.email AS main_email
+     , c3.email AS sub_email
+     , c4.email AS bid_regst_email
+     , c4.nm AS bid_regst_email_nm
+     , c5.email AS req_psn_email
+FROM epuordmastr t1 
+JOIN epuordreqitem t2 ON t1.bid_ord_no = t2.bid_ord_no AND t1.chg_no = t2.chg_no 
+    AND NOT EXISTS ( SELECT * FROM epuordreqitem WHERE bid_ord_no = t2.bid_ord_no AND chg_no = t2.chg_no AND pur_req_no = t2.pur_req_no AND pur_req_item_odr <![CDATA[ < ]]> t2.pur_req_item_odr )
+JOIN purreqmastr t3 ON t2.pur_req_no = t3.pur_req_no
+JOIN humbasicinfo c2 ON t3.user_main_syspayno = c2.syspayno
+JOIN humbasicinfo c3 ON t3.user_sub_syspayno = c3.syspayno
+JOIN humbasicinfo c4 ON t1.regst_syspayno = c4.syspayno
+JOIN humbasicinfo c5 ON t3.req_psn_syspayno = c5.syspayno
+WHERE t1.bid_ord_no = #{bid_ord_no}
+AND t1.chg_no = #{chg_no}
+GROUP BY 1,2,3,4,5
+</select>
+
+<!-- 입찰공고 메일발송 내용 조회 -->
+<select id="selectEpuOrdMastrForMailCont" parameterType="kr.re.kitech.biz.epu.mail.vo.BidMailSendVo" resultType="kr.re.kitech.biz.epu.mail.vo.BidMailSendVo">
+SELECT /* kr.re.kitech.biz.epu.mail.selectEpuOrdMastrForMailCont */
+       a.bid_noti_no
+     , a.chg_no
+     , b.bid_ord_no
+     , b.chg_no AS ord_chg_no
+     , b.noti_ymd
+     , b.bid_title
+     , b.bid_apply_end_ymd
+     , b.open_ymd
+     , h.nm AS charg_nm
+     , h.ext_no
+     , c.pur_req_no
+FROM epunotimastr a
+JOIN epuordmastr b ON a.bid_ord_no = b.bid_ord_no AND a.ord_chg_no = b.chg_no
+JOIN epuordreqitem c ON b.bid_ord_no = c.bid_ord_no AND b.chg_no = c.chg_no 
+    AND NOT EXISTS ( SELECT * FROM epuordreqitem WHERE bid_ord_no = c.bid_ord_no AND chg_no = c.chg_no AND item_odr <![CDATA[ < ]]> c.item_odr )
+JOIN humbasicinfo h ON b.regst_syspayno = h.syspayno
+WHERE b.bid_ord_no = #{bid_ord_no}
+AND b.chg_no = #{chg_no}
+</select>
+
+<!-- 입찰공고 메일발송 후 메일발송여부 Y 업데이트 -->
+<update id="updateEpuNotiMastrMailSendYn" parameterType="kr.re.kitech.biz.epu.mail.vo.BidMailSendVo">
+UPDATE /* kr.re.kitech.biz.epu.mail.updateEpuNotiMastrMailSendYn */
+       epunotimastr
+   SET mail_send_yn = 'Y'
+     , updt_syspayno = 'batch'
+     , updt_daytm = SYSDATE
+ WHERE bid_noti_no = #{bid_noti_no}
+   AND chg_no = #{chg_no}
+</update>
+
+<!-- 발주계획 메일발송 후 메일발송여부 Y 업데이트 -->
+<update id="updateEpuOrdMastrAprMailSendYn" parameterType="kr.re.kitech.biz.epu.mail.vo.BidMailSendVo">
+UPDATE /* kr.re.kitech.biz.epu.mail.updateEpuOrdMastrAprMailSendYn */
+       epuordmastr
+   SET apr_mail_send_yn = 'Y'
+     , updt_syspayno = 'aprafter'
+     , updt_daytm = SYSDATE
+ WHERE bid_ord_no = #{bid_ord_no}
+   AND chg_no = #{chg_no}
+</update>
+</mapper>

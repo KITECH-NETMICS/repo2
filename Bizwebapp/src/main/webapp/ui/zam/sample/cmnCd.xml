@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/css/sample.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="공통코드 셋팅">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap id="dma_sample">
+					<w2:keyInfo>
+						<w2:key id="sbx" name="sbx" dataType="text"></w2:key>
+						<w2:key dataType="text" name="acb" id="acb"></w2:key>
+						<w2:key dataType="text" name="ccb" id="ccb"></w2:key>
+
+						<w2:key dataType="text" name="cbx" id="cbx"></w2:key>
+						<w2:key dataType="text" name="rad" id="rad"></w2:key>
+
+						<w2:key id="sbx_all" name="sbx_all" dataType="text"></w2:key>
+						<w2:key id="cbx_all" name="cbx_all" dataType="text"></w2:key>
+						<w2:key id="cbx_y" name="cbx_y" dataType="text"></w2:key>
+						<w2:key id="rad_y" name="rad_y" dataType="text"></w2:key>
+						<w2:key id="popS" name="name6" dataType="text"></w2:key>
+						<w2:key id="popM" name="name7" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList id="dlt_sample" baseNode="list" saveRemovedData="true" repeatNode="map"
+					ev:oncelldatachange="scwin.dlt_sample_oncelldatachange">
+					<w2:columnInfo>
+						<w2:column id="sbx" name="sbx" dataType="text" ignoreStatus="true"></w2:column>
+						<w2:column id="acb" name="acb" dataType="text"></w2:column>
+						<w2:column id="ccb" name="ccb" dataType="text"></w2:column>
+						
+						<w2:column id="sbx_all" name="sbx_all" dataType="text"></w2:column>
+						<w2:column id="sbx_y" name="sbx_y" dataType="text"></w2:column>
+						<w2:column id="popV" name="name6" dataType="text"></w2:column>
+						<w2:column id="popL" name="name7" dataType="text"></w2:column>
+					</w2:columnInfo>
+					<w2:data use="false"></w2:data>
+				</w2:dataList>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_selectList" ref='data:json,{"id":"dma_search","key":"srchBox"}'
+				target='data:json,{"id":"dlt_sample","key":"list"}' action="/sample/msgNoPageList.json" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="scwin.sbm_selectList_submitdone" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<xf:submission abortTrigger="" action="/sample/msgSave.json" customHandler="" encoding="UTF-8" errorHandler="" ev:submit=""
+				ev:submitdone="scwin.sbm_saveList_submitdone" ev:submiterror="" id="sbm_saveList" instance="" mediatype="application/json" method="post"
+				mode="asynchronous" processMsg="" ref='data:json,{"action":"modified","id":"dlt_sample","key":"saveList"}' replace="" target=''
+				style="">
+			</xf:submission>
+			<xf:submission abortTrigger="" action="/sample/test.json" customHandler="" encoding="UTF-8" errorHandler="" ev:submit=""
+				ev:submitdone="scwin.sbm_test_submitdone" ev:submiterror="" id="sbm_test" instance="" mediatype="application/json" method="post"
+				mode="asynchronous" processMsg="" ref='data:json,{"action":"modified","id":"dlt_sample","key":"saveList"}' replace="" target=''
+				style="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 공통코드셋팅
+ 	 * 변경 이력 : 2022-01-01	문철주	최초작성
+ 	 ****************************************************/
+
+	/**
+	 * 도움말
+	 */
+	scwin.help = `
+공통코드 셋팅 샘플입니다. com.setCmnCd 함수 사용
+
+※ selectbox, autoComplete, checkcombobox는 chooseOption속성을 "true"로 설정, chooseOptionLabel은 공통설정에 따름.
+  (chooseOption을 체크해야 아이템 미선택이 가능함.)
+- 검색조건인 경우 미선택시 전체 검색의 의미 (필수조건이면 th영역에 'req' class 적용)
+- 입력항목인 경우 미선택시 선택값 없음의 의미 (필수항목이면 th영역에 req' class 적용)
+- allOption은 사용안함. ( selectbox, autoComplete의 경우 "all"값(공통설정)으로 셋팅되어 서버 프로그래밍시 추가 로직이 수반되기도 하고, checkcombobox의 동작방식과 차이가 있음 )
+- checkcombobox의 allOption은 item의 전체선택/전체해제 기능으로, 비표준이지만 item이 많아 꼭 필요한 경우에만 사용
+
+※ selectbox인 경우에 한해 코드값을 같이 노출할 필요가 있는 경우에만 displayMode="value delimiter label"로 설정
+( checkcombobox는 다건 선택시 가독성이 떨어지고, autocomplete은 코드값으로 검색이 되지 않아 displayMode 설정 비권장 )
+
+※ USE_YN이 'N'인 항목은 초기값으로 셋팅할 수는 있지만, 사용자가 다시 재선택 할 수 없음
+
+※ ignoreUseYn : true 시 useYn 값에 관계 없이 사용자가 재선택 가능
+
+※ useYn 이 'Y'인 항목만 노출하고 싶은 경우 flter : "useEx == 'Y'" 옵션 설정
+
+※ 그리드 컬럼의 inputType이 select, checkcombobox, autoComplete인 경우 viewType="icon"이 공통 설정되어 있어 아이콘이 표시되며, readOnly=true 또는 disabled=true 이면 아이콘 표시 안함.
+( 단, 재선택이 가능한 경우에도 아이콘 안보이게 하려면 viewType="default"로 설정 )
+	`;
+	
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		var codeOptions = [ { code : "TEST_STEP1", compID :"sbx_a, acb_a, ccb_a, cbx_a, rad_a, grd_sample:sbx, grd_sample:ccb, grd_sample:acb, sbx_srch" } //useEx이 'N'인 항목은 재선택 불가
+						  ,	{ code : "TEST_STEP1", compID :"sbx_all, cbx_all, grd_sample:sbx_all", ignoreUseYn : true } //useEx에 관계없이 모든 항목 재선택 가능
+						  ,	{ code : "TEST_STEP1", compID :"cbx_y, rad_y, grd_sample:sbx_y", filter : "useEx == 'Y'" } //useEx이 'Y'인 항목만 노출
+		];
+		com.setCmnCd(codeOptions, function() {
+			// 공통코드 셋팅 콜백에서 초기값 셋팅
+			// 화면을 열때 자동조회되도록 구현하려면 이곳에서 조회 submission 수행
+			dma_sample.setJSON( { sbx:"50", ccb:"20,50", acb:"50", cbx:"20,30,50", rad:"50", sbx_all:"50", cbx_all:"20,30,50", cbx_y:"20,30", rad_y:"20" });
+			dlt_sample.setJSON([ { sbx:"20", ccb:"20,30", acb:"30", sbx_all:"10", sbx_y:"40" }
+								,{ sbx:"50", ccb:"10,50", acb:"50", sbx_all:"50", sbx_y:"30" }
+			]);
+		});
+		
+		// 공통코드 팝업 셋팅
+		com.setCmnCdPop("TEST_STEP1", wfm_cmnCdSingle, {
+			  ref : "dma_sample.popS"
+//			, displayMode : "value" // value|label, null(기본값)이면 둘다 
+			, selectCallback : function(retObj) {
+				// 선택 콜백
+				console.log(retObj);
+			}  
+		});
+		
+		// 공통코드 팝업 셋팅
+		com.setCmnCdPop("TEST_STEP2", wfm_cmnCdMulti, {
+			  ref : "dma_sample.popM"
+			, type : "multi"	// single(기본값)|multi
+			, headName : { // 헤더명 설정시
+				  value : "코드값테스트"
+				, label : "코드명테스트"
+			}
+		});
+	};
+
+	/**
+	 * 그리드의 textimage 클릭 이벤트
+	 */
+	scwin.grd_sample_ontextimageclick = function(row,col) {
+		if (grd_sample.getColumnID(col) == "popL") {
+			// 공통코드 팝업
+			com.openCmnCdPop("TEST_STEP1", {
+				  srchWord : dlt_sample.getCellData(row, "popL")
+				, selectCallback : function(retObj) {
+					// 선택 콜백
+					console.log(retObj);
+					dlt_sample.setCellData(row, "popV", retObj.values); // value 셋팅
+					dlt_sample.setCellData(row, "popL", retObj.labels); // label 셋팅
+				}  
+//				, type : "multi"	// single(기본값)|multi
+//				, showCols : "ETC1,ETC2,ETC3" // 기타 컬럼 추가시 
+//				, headName : { // 헤더명 설정시
+//					  value : "코드값"
+//					, label : "코드명"
+//					, etc1 : "AAA"
+//					, etc2 : "BBB"
+//					, etc3 : "CCC"
+//				}
+			});
+		}
+	};
+
+	/**
+	 * dataList의 셀 값 변경 이벤트
+	 */
+	scwin.dlt_sample_oncelldatachange = function(info) {
+		// label삭제시 value 삭제
+		if (info.colID == "popL" && info.newValue == "") {
+			dlt_sample.setCellData(info.rowIndex, "popV", ""); // value 초기화
+		} 
+	};
+	]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe><xf:group class="pageWrap" id="" style="">
+			
+			<xf:group class="dfbox" id="" style="">
+				<w2:textbox class="df_tit" id="" label="기본 컴포넌트" style="" tagname="h2"></w2:textbox>
+				<xf:group id="" class="fr"></xf:group>
+
+			</xf:group>
+			<xf:group class="tbbox" id="" style="">
+				<xf:group class="w2tb tb" id="" style="width:100%;" tagname="table" adaptiveThreshold="600" adaptive="layout">
+					<w2:attributes>
+						<w2:summary></w2:summary>
+					</w2:attributes>
+					<xf:group tagname="colgroup">
+						<xf:group style="width:150px;" tagname="col"></xf:group>
+						<xf:group style="" tagname="col"></xf:group>
+						<xf:group style="width:150px;" tagname="col"></xf:group>
+						<xf:group tagname="col"></xf:group>
+					</xf:group>
+					<xf:group id="" tagname="tbody">
+						<xf:group style="" tagname="tr">
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox class="" id="" label="selectbox" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" tagname="td">
+								<w2:attributes></w2:attributes>
+								<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="wq_sel" id="sbx_a" ref="data:dma_sample.sbx" style="" submenuSize="auto"
+									textAlign="left" chooseOptionLabel="" displayMode="" visibleColumnFalseValue="" setDataRemoveAll="" delimiter="">
+									<xf:choices></xf:choices>
+								</xf:select1>
+
+							</xf:group>
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox class="" id="" label="autocomplete" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" tagname="td">
+								<w2:attributes></w2:attributes>
+								<w2:autoComplete allOption="" chooseOption="true" class="" id="acb_a" ref="data:dma_sample.acb" search=""
+									style="" submenuSize="auto" textAlign="left" tooltipDisplay="" useKeywordHighlight="" visibleColumnFalseValue=""
+									chooseOptionLabel="" visibleColumn="" displayMode="">
+									<w2:choices></w2:choices>
+								</w2:autoComplete>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+
+
+
+
+
+								<w2:textbox class="" id="" label="checkcombobox" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" tagname="td">
+								<w2:attributes><w2:colspan>3</w2:colspan><w2:rowspan>1</w2:rowspan></w2:attributes>
+
+
+
+
+
+								<xf:checkcombobox allOption="" appearance="minimal" chooseOption="" class="wq_ccb" displayMode="" id="ccb_a" ref="data:dma_sample.ccb" style="" submenuSize="auto"
+									visibleColumnFalseValue="" separator="" chooseOptionLabel="">
+									<xf:choices></xf:choices>
+								</xf:checkcombobox>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox class="" id="" label="checkbox" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes>
+									<w2:colspan>3</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+								<xf:select appearance="full" class="chk" cols="" id="cbx_a" ref="data:dma_sample.cbx"
+									renderType="checkboxgroup" rows="1" selectedindex="1" style="" ev:oncheckboxclick="" ev:onlabelclick="" visibleColumnFalseValue=""
+									separator="">
+									<xf:choices>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value><![CDATA[]]></xf:value>
+										</xf:item>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value><![CDATA[]]></xf:value>
+										</xf:item>
+									</xf:choices>
+								</xf:select>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox class="" id="" label="radio" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes>
+									<w2:colspan>3</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+								<xf:select1 appearance="full" class="rdo" cols="" id="rad_a" ref="data:dma_sample.rad"
+									renderType="radiogroup" rows="1" selectedIndex="1" style="" ev:onlabelclick="" ev:onradioclick="" visibleColumnFalseValue="">
+									<xf:choices>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value><![CDATA[]]></xf:value>
+										</xf:item>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value><![CDATA[]]></xf:value>
+										</xf:item>
+									</xf:choices>
+								</xf:select1>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+
+								<w2:textbox class="" id="" label="ignoreUseYn : true" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes></w2:attributes>
+
+
+								<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="wq_sel"
+									direction="auto" disabled="false" disabledClass="w2selectbox_disabled" displayMode="" id="sbx_all" ref="data:dma_sample.sbx_all" style=""
+									submenuSize="auto" textAlign="left" visibleColumnFalseValue="">
+									<xf:choices></xf:choices>
+								</xf:select1>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+									<w2:colspan>2</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+								<xf:select appearance="full" class="chk" cols="" ev:oncheckboxclick="" ev:onlabelclick="" id="cbx_all"
+									ref="data:dma_sample.cbx_all" renderType="checkboxgroup" rows="1" selectedindex="1" style="" visibleColumnFalseValue="">
+									<xf:choices>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value></xf:value>
+										</xf:item>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value></xf:value>
+										</xf:item>
+									</xf:choices>
+								</xf:select>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr" style="">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox class="" id="" label="filter : &quot;USE_YN == 'Y'&quot;" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes></w2:attributes>
+								<xf:select appearance="full" class="chk" cols="" ev:oncheckboxclick="" ev:onlabelclick="" id="cbx_y" ref="data:dma_sample.cbx_y"
+									renderType="checkboxgroup" rows="1" selectedindex="1" style="" visibleColumnFalseValue="">
+									<xf:choices>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value></xf:value>
+										</xf:item>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value></xf:value>
+										</xf:item>
+									</xf:choices>
+								</xf:select>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+									<w2:colspan>2</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+								<xf:select1 appearance="full" class="rdo" cols="" ev:onlabelclick="" ev:onradioclick="" id="rad_y"
+									ref="data:dma_sample.rad_y" renderType="radiogroup" rows="1" selectedIndex="1" style="" visibleColumnFalseValue="">
+									<xf:choices>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value></xf:value>
+										</xf:item>
+										<xf:item>
+											<xf:label><![CDATA[new row]]></xf:label>
+											<xf:value></xf:value>
+										</xf:item>
+									</xf:choices>
+								</xf:select1>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="dfbox" id="" style="">
+				<w2:textbox class="df_tit" id="" label="공통코드 팝업" style="" tagname="h2"></w2:textbox>
+				<xf:group class="fr" id=""></xf:group>
+			</xf:group>
+			<xf:group class="tbbox" id="" style="">
+				<xf:group class="w2tb tb" id="" style="width:100%;" tagname="table" adaptive="layout" adaptiveThreshold="600">
+					<w2:attributes>
+						<w2:summary></w2:summary>
+					</w2:attributes>
+					<xf:group tagname="colgroup">
+						<xf:group style="width:150px;" tagname="col"></xf:group>
+						<xf:group style="" tagname="col"></xf:group>
+						<xf:group style="width:150px;" tagname="col"></xf:group>
+						<xf:group tagname="col"></xf:group>
+					</xf:group>
+					<xf:group id="" tagname="tbody">
+						<xf:group tagname="tr">
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox class="" id="" label="single" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" tagname="td">
+								<w2:attributes></w2:attributes>
+								<w2:wframe id="wfm_cmnCdSingle" src="/cm/xml/cmnCdWfm.xml" style=""></w2:wframe>
+							</xf:group>
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox class="" id="" label="multi" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" tagname="td">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:wframe id="wfm_cmnCdMulti" src="/cm/xml/cmnCdWfm.xml" style=""></w2:wframe>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="dfbox" id="">
+				<w2:textbox class="df_tit" id="" label="그리드" style="" tagname="h2"></w2:textbox>
+				<xf:group class="fr" id="" style="">
+
+				</xf:group>
+			</xf:group>
+			<xf:group class="gvwbox" id="" style="height : 150px;">
+				<w2:gridView autoFit="allColumn" class="wq_gvw" dataList="data:dlt_sample" fixedColumnWithHidden="true" focusMode=""
+					id="grd_sample" ignoreCellClick="false" ignoreToggleOnDisabled="false" rowNumHeaderValue="번호" rowNumVisible="false" rowNumWidth="30"
+					rowStatusHeaderValue="상태" scrollByColumn="false" scrollByColumnAdaptive="false" showSortableUseFilter="true" sortable="true"
+					style="height:100%;" summaryAuto="false" useFilterList="true" useShiftKey="true" visibleRowNum="" sortEvent="" readOnly=""
+					rowStatusVisible="true" ev:onrowindexchange="" ev:onviewchange="" ev:ontextimageclick="scwin.grd_sample_ontextimageclick">
+					<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+					<w2:header id="header1" style="">
+						<w2:row id="row1" style="">
+							<w2:column blockSelect="false" class="req" displayMode="label" id="column9" inputType="text"
+								removeBorderStyle="false" style="height:24px;" value="select" width="150" useLocale="">
+							</w2:column>
+							<w2:column removeBorderStyle="false" width="150" inputType="text" style="height:24px" id="column11"
+								value="autoComplete" blockSelect="false" displayMode="label">
+							</w2:column>
+							<w2:column blockSelect="false" displayMode="label" id="column5" inputType="text" removeBorderStyle="false"
+								style="height:24px;" value="checkcombobox" width="150">
+							</w2:column>
+							<w2:column removeBorderStyle="false" width="150" inputType="text" style="height:24px" id="column17"
+								value="ignoreUseYn : true" blockSelect="false" displayMode="label">
+							</w2:column>
+							<w2:column removeBorderStyle="false" width="150" inputType="text" style="height:24px" id="column19"
+								value="filter : &quot;useYn == 'Y'&quot;" blockSelect="false" displayMode="label">
+							</w2:column>
+							<w2:column width="140" inputType="text" style="height:24px;" id="column20" value="공통코드 팝업" displayMode="label"
+								colSpan="2" rowSpan="">
+							</w2:column>
+						</w2:row>
+					</w2:header>
+					<w2:gBody id="gBody1" style="">
+						<w2:row id="row2" style="">
+							<w2:column blockSelect="false" displayMode="" id="sbx" inputType="select" removeBorderStyle="false"
+								style="height:24px;" value="" width="150" allOption="" chooseOption="true" chooseOptionLabel="" ref="" valueType="" viewType=""
+								disabled="" class="" readOnly="">
+								<w2:choices></w2:choices>
+							</w2:column>
+							<w2:column removeBorderStyle="false" width="150" inputType="autoComplete" style="height:24px" id="acb" value=""
+								blockSelect="false" displayMode="label" allOption="" chooseOption="true" chooseOptionLabel="" ref="">
+								<w2:choices></w2:choices>
+							</w2:column>
+							<w2:column blockSelect="false" displayMode="label" id="ccb" inputType="checkcombobox" removeBorderStyle="false"
+								style="height:24px;" value="" viewType="" width="150" allOption="" chooseOption="" chooseOptionLabel="" ref="">
+								<w2:choices></w2:choices>
+							</w2:column>
+							<w2:column removeBorderStyle="false" width="150" inputType="select" style="height:24px" id="sbx_all" value=""
+								blockSelect="false" displayMode="label" allOption="" chooseOption="true" chooseOptionLabel="" ref="" readOnly="">
+								<w2:choices></w2:choices>
+							</w2:column>
+							<w2:column removeBorderStyle="false" width="150" inputType="select" style="height:24px" id="sbx_y" value=""
+								blockSelect="false" displayMode="label" allOption="" chooseOption="true" chooseOptionLabel="" ref="">
+								<w2:choices></w2:choices>
+							</w2:column>
+							<w2:column width="70" inputType="text" style="height:24px" id="popV" value="" displayMode="label"
+								readOnly="true">
+							</w2:column>
+							<w2:column width="120" inputType="textImage" style="height:24px" id="popL" value="" displayMode="label"
+								imageSrc="/cm/images/sample/btn_tbsearch02.png" imageHeight="15" imageWidth="16" readOnly="">
+							</w2:column>
+						</w2:row>
+					</w2:gBody>
+				</w2:gridView>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

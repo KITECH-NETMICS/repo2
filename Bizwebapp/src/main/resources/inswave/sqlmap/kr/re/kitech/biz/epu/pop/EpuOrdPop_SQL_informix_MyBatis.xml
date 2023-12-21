@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.epu.pop">
+<!-- 발주계획구매요구 품목내역팝업 구매요구리스트 조회 -->
+<select id="selectPurReqForOrd" parameterType="kr.re.kitech.biz.epu.pop.vo.PurReqItemVo" resultType="kr.re.kitech.biz.epu.pop.vo.PurReqItemVo">
+SELECT /* QueryID : kr.re.kitech.biz.epu.pop.selectPurReqForOrd*/ 
+       aa.pur_req_no
+     , aa.item_nm
+     , aa.delvr_plc_nm
+     , aa.delvr_demnd_daycnt
+     , aa.pur_clsf_cd
+     , aa.pur_grp_cd
+     , CASE WHEN aa.cnt > bb.cnt THEN '분리발주 중'
+            WHEN aa.cnt = bb.cnt THEN '발주 가능'
+            ELSE '' END AS state_text
+FROM (SELECT a.pur_req_no
+           , DECODE(a.inout_psn_clsf_cd, '2', b.eng_gdnm, b.krchar_gdnm) AS item_nm
+           , a.instl_posi_addr AS delvr_plc_nm
+           , a.delvr_demnd_daycnt
+           , a.pur_clsf_cd
+           , a.pur_grp_cd
+           , b.item_odr
+           , MIN(item_odr) OVER (PARTITION BY a.pur_req_no) min_odr
+           , COUNT(b.pur_req_no) AS cnt
+        FROM purreqmastr a
+        JOIN purreqitem b ON a.pur_req_no = b.pur_req_no
+        JOIN xomxintfatab d ON a.pur_req_no = d.req_no
+       WHERE d.apr_state = 'XAD100' -- 20160613 추가
+         AND NVL(a.cud_type, '') <![CDATA[ <> ]]> 'D'
+         AND a.inout_psn_clsf_cd = #{inout_psn_clsf_cd}
+       <if test='pur_grp_cd != null and pur_grp_cd != ""'> AND a.pur_grp_cd = #{pur_grp_cd} </if>
+       <if test='pur_req_no != null and pur_req_no != ""'> AND a.pur_req_no = #{pur_req_no} </if>
+       <if test='pur_req_no == null or pur_req_no == ""'> AND a.req_ymd >= TO_CHAR(EXTEND(SYSDATE, YEAR TO DAY)-1 UNITS YEAR, '%Y%m%d') </if>
+       GROUP BY 1,2,3,4,5,6,7
+     ) aa 
+ JOIN(SELECT pur_req_no
+           , COUNT(pur_req_no) AS cnt
+        FROM purreqitem
+       WHERE (order_cd IS NULL OR order_cd != '10')   
+       GROUP BY pur_req_no
+    ) bb ON aa.pur_req_no = bb.pur_req_no
+WHERE aa.item_odr = aa.min_odr
+<if test="pur_req_no != null and pur_req_no != ''"> AND aa.pur_req_no = #{pur_req_no} </if>
+<if test="item_nm != null and item_nm != ''">
+  AND aa.item_nm LIKE '%'||#{item_nm}||'%'
+</if>
+ORDER BY aa.pur_req_no DESC
+</select>
+  
+  
+  
+
+<!-- 발주계획 - 구매요구내역 첨부파일 조회 -->
+<select id="selectXomxComAttachPur" parameterType="java.lang.String" resultType="kr.re.kitech.biz.xom.core.vo.AttachVo">
+SELECT /* QueryID : kr.re.kitech.biz.epu.ord.selectXomxComAttachPur */ 
+     t2.etc,
+     t1.attach_file_no ,
+     t1.seq ,
+     t1.file_nm ,
+     t1.extens_nm ,
+     t1.file_nm||'.'||t1.extens_nm AS orgFile,
+     t1.file_size ,
+     t1.path ,
+     t1.path||t1.attach_file_no||t1.seq AS attachFullPath
+ FROM xomxcomattachfile t1
+ JOIN (SELECT  attach_file_no, 1 AS fileseq, '사양서' AS etc 
+         FROM purreqspec
+        WHERE pur_req_no = #{pur_req_no}
+        UNION ALL
+        SELECT  attach_file_no, 2, '과업지시서' AS etc 
+         FROM purreqdely
+        WHERE pur_req_no = #{pur_req_no}
+        and clsf_cd = 'I'
+        UNION ALL
+        SELECT  attach_file_no, 3, '견적서' AS etc 
+         FROM purreqeval
+        WHERE pur_req_no = #{pur_req_no}
+        UNION ALL
+        SELECT  attach_file_no, 4, '시방서' AS etc 
+         FROM purreqdely
+        WHERE pur_req_no = #{pur_req_no}
+        and clsf_cd = 'G'
+        UNION ALL
+        SELECT  attach_file_no, 5, '원가계산서' AS etc 
+         FROM purreqcost
+        WHERE pur_req_no = #{pur_req_no}
+        UNION ALL
+        SELECT attach_file_no, 6, '사업계획서' AS etc 
+         FROM purreqdely
+        WHERE pur_req_no = #{pur_req_no}
+        and clsf_cd = 'J'
+ ) t2 ON t1.attach_file_no = t2.attach_file_no
+ORDER BY fileseq
+</select>
+
+<!-- 발주계획 지명업체 조회 -->
+<select id="selectEpuVendInfoG2b" parameterType="kr.re.kitech.biz.epu.ord.vo.EpuOrnomVendVo" resultType="kr.re.kitech.biz.epu.ord.vo.EpuOrnomVendVo">
+SELECT /* QueryID : kr.re.kitech.biz.epu.pop.selectEpuVendInfoG2b */ 
+       t1.vend_nm -- 거래처명
+     , TRIM(t1.bsns_psn_regst_no) AS bsns_psn_regst_no-- 사업자등록번호
+     , t2.ceo_nm --대표자명
+     , t1.post_no
+     , t1.vend_addr -- 주소
+     , t1.tel AS tel_no -- 전화번호
+     , t1.fax_no AS fax -- 팩스번호
+     , t1.corp_regst_no
+     , t1.vend_clsf -- 업태
+     , t1.vend_kind -- 종목
+     , a.vend_cd
+FROM epuvendinfog2b t1
+JOIN epuceoinfog2b t2 ON t1.bsns_psn_regst_no = t2.bsns_psn_regst_no AND t2.reprs_ceo_yn = 'Y'
+<if test='bid_nomi_yn != null and bid_nomi_yn =="Y"'> JOIN epuornomvend b ON t1.bsns_psn_regst_no = b.bsns_psn_regst_no </if>
+LEFT JOIN xodfvend a ON t1.bsns_psn_regst_no = REPLACE(a.bsns_psn_regst_no, '-', '') AND NVL(a.use_yn,'') <![CDATA[ <> ]]> 'N'
+WHERE 1=1
+<if test='ceo_nm != null and ceo_nm != ""'> t2.ceo_nm LIKE '%'||#{ceo_nm}||'%'  </if>
+<if test='vend_nm != null and vend_nm != ""'> AND UPPER(t1.vend_nm) LIKE '%' ||UPPER (#{vend_nm}) || '%' </if>
+<if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND REPLACE(t1.bsns_psn_regst_no, '-', '') LIKE '%'||#{bsns_psn_regst_no}||'%' </if>
+<if test='bid_nomi_yn != null and bid_nomi_yn =="Y"'> AND b.bid_ord_no = #{bid_ord_no} </if>
+</select>
+<select id="selectEpuXodfVend" parameterType="kr.re.kitech.biz.epu.ord.vo.EpuOrnomVendVo" resultType="kr.re.kitech.biz.epu.ord.vo.EpuOrnomVendVo">
+SELECT /* kr.re.kitech.biz.epu.pop.selectEpuXodfVend */
+       a.vend_abbr AS vend_nm
+     , TRIM(REPLACE(a.bsns_psn_regst_no, '-', '')) AS bsns_psn_regst_no
+     , a.reprs_psn_nm AS ceo_nm
+     , a.addr || ' ' ||a.detls_addr AS vend_addr
+     , a.tel_no
+     , a.fax
+     , a.vend_cd
+     , a.bizcatg AS vend_clsf
+     , a.biztyp AS vend_kind
+     , a.corp_resid_no  
+     , a.postmt_no AS post_no
+FROM xodfvend a
+<if test='bid_nomi_yn != null and bid_nomi_yn =="Y"'> JOIN epuornomvend b ON REPLACE(a.bsns_psn_regst_no, '-', '') = b.bsns_psn_regst_no </if>
+WHERE NVL(a.use_yn,'') != 'N'
+<if test='vend_nm != null and vend_nm != ""'> AND UPPER(a.vend_abbr) LIKE '%' || UPPER (#{vend_nm}) || '%' </if>
+<if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND REPLACE(a.bsns_psn_regst_no,'-','') LIKE '%'||#{bsns_psn_regst_no}||'%' </if>
+<if test='ceo_nm != null and ceo_nm != ""'> AND a.reprs_psn_nm LIKE '%'||#{ceo_nm}||'%' </if>
+<if test='bid_nomi_yn != null and bid_nomi_yn =="Y"'> AND b.bid_ord_no = #{bid_ord_no} </if>
+</select>
+
+<!-- 조달청 거래처저장 -->
+<insert id="insertEpuVendInfoG2b" parameterType="kr.re.kitech.biz.epu.ord.vo.EpuOrnomVendVo">
+MERGE /* kr.re.kitech.biz.epu.pop.insertEpuVendInfoG2b */
+  INTO epuvendinfog2b AS a
+USING dual AS b ON 1=1 AND a.bsns_psn_regst_no = #{bsns_psn_regst_no}
+WHEN MATCHED THEN
+    UPDATE  
+    SET a.vend_nm= #{vend_nm}       
+      <if test='corp_regst_no != null'> , a.corp_regst_no= #{corp_regst_no} </if>
+      <if test='post_no != null'> , a.post_no= #{post_no} </if>
+      <if test='vend_addr != null'> , a.vend_addr= #{vend_addr} </if>  
+      <if test='vend_kind != null'> , a.vend_kind= #{vend_kind} </if>
+      <if test='vend_clsf != null'> , a.vend_clsf= #{vend_clsf} </if>
+      <if test='tel_no != null'> , a.tel= #{tel_no} </if>
+      <if test='fax != null'> , a.fax_no= #{fax} </if>
+      , a.updt_syspayno= #{updt_syspayno}
+      , a.updt_daytm = SYSDATE
+   
+WHEN NOT MATCHED THEN
+INSERT ( a.bsns_psn_regst_no
+       , a.vend_nm
+      <if test='corp_regst_no != null'>, a.corp_regst_no </if>
+      <if test='post_no != null'>, a.post_no </if>
+      <if test='vend_addr != null'>, a.vend_addr </if> 
+      <if test='vend_kind != null'>, a.vend_kind </if>
+      <if test='vend_clsf != null'>, a.vend_clsf </if>
+      <if test='regst_psn_nm != null'>, a.regst_psn_nm </if>
+      <if test='tel_no != null'>, a.tel </if>
+      <if test='fax != null'>, a.fax_no </if>
+       , a.regst_syspayno
+       , a.regst_daytm
+ ) VALUES ( #{bsns_psn_regst_no}
+          , #{vend_nm}
+         <if test='corp_regst_no != null'> , #{corp_regst_no} </if>
+         <if test='post_no != null'> , #{post_no} </if>
+         <if test='vend_addr != null'> , #{vend_addr} </if> 
+         <if test='vend_kind != null'> , #{vend_kind} </if>
+         <if test='vend_clsf != null'> , #{vend_clsf} </if>
+         <if test='regst_psn_nm != null'> , #{regst_psn_nm} </if>
+         <if test='tel_no != null'> , #{tel_no} </if>
+         <if test='fax != null'> , #{fax} </if>
+          , #{regst_syspayno}
+          , SYSDATE )
+</insert>
+
+<!-- 조달청 거래처 대표자 저장 -->
+<insert id="insertEpuCeoInfoG2b" parameterType="kr.re.kitech.biz.epu.ord.vo.EpuOrnomVendVo">
+MERGE /* kr.re.kitech.biz.epu.pop.insertEpuCeoInfoG2b */
+  INTO epuceoinfog2b AS a
+USING dual AS b ON 1=1 AND a.bsns_psn_regst_no = #{bsns_psn_regst_no}
+WHEN MATCHED THEN
+   UPDATE 
+   SET a.reprs_ceo_yn= #{reprs_ceo_yn}
+     , a.ceo_nm= #{ceo_nm}
+     , a.updt_syspayno = #{updt_syspayno} 
+     , a.updt_daytm = SYSDATE
+  
+WHEN NOT MATCHED THEN
+INSERT (a.bsns_psn_regst_no
+      , a.reprs_ceo_yn
+      , a.ceo_nm
+      , a.regst_syspayno
+      , a.regst_daytm )
+VALUES ( #{bsns_psn_regst_no}
+       , #{reprs_ceo_yn}
+       , #{ceo_nm}
+       , #{regst_syspayno}
+       , SYSDATE )
+</insert>
+</mapper>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.inv">
+		
+	<select id="selectReportList" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvReportVo" resultType="kr.re.kitech.biz.kbk.inv.vo.InvReportVo">
+		SELECT   regst_no,
+				  rcpt_no,
+				  regst_ymd,
+				  rptp_nm,
+				  resch_respn_psn,
+				  publ_yr,
+				  fun_res_bsns_nm(bsns_cd_2) as bsns_cd_ofic, --관계부처
+				  fun_res_bsns_nm(bsns_cd_4) as bsns_cd_bsns, --사업분류
+				  kitech_publc_yn,
+				  DECODE(NVL(attach_file_no,''),'','','원문') as attach_file_yn,
+				  attach_file_no
+		FROM  	  kbkreschrptp
+		WHERE  	  1 = 1 
+	   <if test="regst_no != null and regst_no != ''"> AND  regst_no  LIKE '%' || #{regst_no} || '%' </if>
+	   <if test="rcpt_no != null and rcpt_no != ''"> AND  rcpt_no  LIKE '%' || #{rcpt_no} || '%' </if>
+	   <if test="resch_respn_psn != null and resch_respn_psn != ''"> AND  (resch_respn_psn LIKE '%' || #{resch_respn_psn} || '%' OR   attnce_reschr_psn LIKE '%' || #{resch_respn_psn} || '%' </if>
+	   <if test="rptp_nm != null and rptp_nm != ''"> AND  rptp_nm  LIKE '%' || #{rptp_nm} || '%' </if>
+	   <if test="publ_yr != null and publ_yr != ''"> AND  publ_yr  LIKE '%' || #{publ_yr} || '%' </if>
+	   <if test="kitech_publc_yn != null and kitech_publc_yn != ''"> AND  kitech_publc_yn LIKE '%' || #{kitech_publc_yn} || '%' </if>
+	   <if test="rptp_no != null and rptp_no != ''"> AND  rptp_no LIKE '%' || #{rptp_no} || '%' </if>
+	   <if test="idx != null and idx != ''"> AND  idx  LIKE '%' || #{idx} || '%' </if>
+		order by regst_no desc
+	</select>
+
+</mapper>

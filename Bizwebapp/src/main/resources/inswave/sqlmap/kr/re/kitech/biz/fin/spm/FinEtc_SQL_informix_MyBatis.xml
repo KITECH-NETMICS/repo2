@@ -1,0 +1,685 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.spm">
+<!-- 회의록 목록 조회 -->
+<select id="selectMeetList" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetVo" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo">
+SELECT /* kr.re.kitech.biz.fin.spm.selectMeetList */
+       a.meet_req_no
+     , a.accnt_no
+     , b.nm AS req_nm
+     , d.dept_nm
+     , TO_CHAR(TO_DATE(a.meet_start_ymd, '%Y%m%d'), '%Y-%m-%d') || '~' || TO_CHAR(TO_DATE(a.meet_cls_ymd, '%Y%m%d'), '%Y-%m-%d') AS meet_ymd
+     , DECODE(NVL(a.meet_start_time, ''), '', '', (SUBSTR(a.meet_start_time, 1, 2) || ':' ||SUBSTR(a.meet_start_time, 3, 2)))
+       || '~' || DECODE(NVL(a.meet_cls_time,''),'','',SUBSTR(a.meet_cls_time,1,2) ||':'|| SUBSTR(a.meet_cls_time,3,2) ) AS meet_time
+     , TRIM(a.meet_subject) AS meet_subject
+     , a.rmk            
+     , r1.nm AS accnt_rspns_nm
+     , r2.dept_nm AS accnt_rspns_dept_nm
+     , (SELECT GROUP_CONCAT(DISTINCT DECODE(NVL(unslip_no,''),'', '미결의', unslip_no)) FROM fspmeetevidh WHERE meet_req_no = a.meet_req_no) AS unslip_no
+     , (SELECT GROUP_CONCAT(nm) FROM fspmeetmntd WHERE meet_req_no = a.meet_req_no) AS meet_member
+  FROM fspmeetmnth a
+  JOIN humbasicinfo b ON a.req_syspayno = b.syspayno
+  JOIN xodhdeptinfo d ON b.dept_cd = d.dept_cd AND b.dept_new_ymd = d.dept_new_ymd
+  LEFT JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+  LEFT JOIN humbasicinfo r1 ON r.accnt_rspns = r1.syspayno
+  LEFT JOIN xodhdeptinfo r2 ON r2.dept_cd = r1.dept_cd AND r1.dept_new_ymd = r2.dept_new_ymd
+<if test='role_syspayno != null and role_syspayno !=""'>
+  JOIN ( SELECT c.dept_cd
+          FROM xodhdeptinfo c 
+          JOIN xodrdeptresman a ON c.dept_cd = a.dept_cd AND c.dept_new_ymd = a.dept_new_ymd
+         WHERE c.abol_ymd IS NULL 
+           AND a.syspayno = #{role_syspayno}
+       ) t1 ON (r1.dept_cd = t1.dept_cd OR a.dept_cd = t1.dept_cd OR c1.dept_cd = t1.dept_cd)
+</if>
+WHERE a.req_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+<if test='meet_start_ymd != null and meet_start_ymd !=""'> AND a.meet_start_ymd BETWEEN #{meet_start_ymd} AND #{meet_cls_ymd} </if>
+<if test='req_syspayno != null and req_syspayno !=""'> AND a.req_syspayno = #{req_syspayno} </if>
+<if test='accnt_no != null and accnt_no !=""'> AND a.accnt_no = #{accnt_no} </if>
+<if test='unslip_no != null and unslip_no !=""'> AND f.unslip_no LIKE #{unslip_no} || '%' </if>
+<if test='unslip_no_chk != "" and unslip_no_chk =="Y"'> AND NVL(f.unslip_no,'') <![CDATA[ <> ]]> '' </if>
+<if test='unslip_no_chk != "" and unslip_no_chk =="N"'> AND NVL(f.unslip_no,'') = '' </if>
+<if test='syspayno != null and syspayno !=""'> AND EXISTS (SELECT '' FROM fspmeetmntd WHERE meet_req_no = a.meet_req_no AND syspayno = #{syspayno}) </if>
+<if test='cardno != null and cardno !=""'> AND EXISTS (SELECT '' FROM fspmeetevidh WHERE meet_req_no = a.meet_req_no AND cardno LIKE '%' || #{cardno} || '%') </if>
+<if test='meet_req_no != null and meet_req_no !=""'> AND a.meet_req_no = #{meet_req_no} </if>
+<if test='dept_cd != null and dept_cd !=""'> AND (r1.dept_cd = #{dept_cd} OR a.dept_cd = #{dept_cd} OR c1.dept_cd = #{dept_cd}) </if>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11
+ORDER BY a.meet_req_no DESC
+</select>
+
+<!-- 부서정보조회 -->
+<select id="selectDeptCodeList" parameterType="kr.re.kitech.biz.fin.com.vo.FinCodeNmVo" resultType="kr.re.kitech.biz.fin.com.vo.FinCodeNmVo">
+SELECT /*kr.re.kitech.biz.fin.spm.selectDeptCodeList*/
+       a.dept_cd AS code
+     , b.dept_nm AS code_nm
+  FROM xodrdeptresman a
+  JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+ WHERE a.syspayno = #{syspayno}
+   AND b.abol_ymd IS NULL
+   AND 'M' = #{mngmt_clsf}
+ UNION
+SELECT b.dept_cd AS code
+     , a.dept_nm AS code_nm
+  FROM xodhdeptinfo a
+  JOIN humbasicinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+ WHERE b.syspayno = #{syspayno}
+   AND a.abol_ymd IS NULL
+ UNION
+SELECT a.dept_cd AS code
+     , b.dept_nm AS code_nm
+  FROM humadjobhis a
+  JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+ WHERE a.syspayno = #{syspayno}
+   AND b.abol_ymd IS NULL
+   AND 'U' = #{mngmt_clsf}
+</select>
+
+<!-- 지출증빙조회 -->
+<select id="selectMeetEvidList" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetEvidVo">
+SELECT /*kr.re.kitech.biz.fin.spm.selectMeetEvidList*/
+       a.meet_req_no 
+     , a.evid_clsf
+     , a.expns_clsf
+     , DECODE(NVL(a.expns_cd, ''), '', fun_xodxcommst_cd_nm(a.expns_clsf, 1), a.expns_cd) AS expns_cd --비용코드
+     , CASE WHEN a.evid_clsf = '1' THEN '****-****-' || SUBSTR(c.card_no, 11, 9)
+            WHEN a.evid_clsf = '3' AND NVL(a.casg_receipts, '') != '' THEN a.casg_receipts
+            ELSE a.issu_seqno END AS evid_no
+     , a.evid_apprno
+     , a.card_knd
+     , a.card_clsf
+     , c.card_no
+     , CASE WHEN LENGTH(a.evid_date) > 8 THEN a.evid_date ELSE a.evid_date||a.evid_time END AS evid_date
+     , a.evid_time
+     , a.evid_shop
+     , a.evid_amt 
+     , a.issu_seqno
+     , a.cardno
+     , a.casg_receipts
+     , a.accnt_cd
+     , b.expns_cd_nm
+     , a.unslip_no
+     , a.unslip_odr
+     , g.apr_state
+     , a.chrg_amt
+     , a.tax_amt
+     , CASE WHEN a.evid_clsf = '1' THEN 'FAH500' ELSE d.evid_cd END AS evid_cd
+     , a.syspayno
+     , SUBSTR(a.syspayno, 3, 6) AS empno
+     , a.bankaccnt_no
+     , a.bank
+     , a.depstr_nm
+FROM fspmeetevidh a
+LEFT JOIN fbacard c ON c.cardno = a.cardno 
+LEFT JOIN xomxintfatab f ON f.req_no = a.unslip_no
+LEFT JOIN xodfexpns b ON DECODE(NVL(a.expns_cd, ''), '', fun_xodxcommst_cd_nm(a.expns_clsf, 1), a.expns_cd) = b.expns_cd
+LEFT JOIN xomxintfatab g ON g.req_no = a.unslip_no
+LEFT JOIN ktx_issu_mstr d ON a.issu_seqno = d.issu_seqno
+WHERE a.meet_req_no = #{meet_req_no}
+</select>
+<select id="selectMeetDetls" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetDetlsVo">
+SELECT /*kr.re.kitech.biz.fin.spm.selectMeetDetls*/
+      a.meet_req_no 
+     , a.meet_seq
+     , a.req_ymd
+     , a.meet_start_ymd
+     , CASE WHEN NVL(a.meet_cls_ymd, '') = '' THEN a.meet_start_ymd ELSE a.meet_cls_ymd END AS meet_cls_ymd
+     , a.req_syspayno
+     , b.nm AS req_nm
+     , d.dept_nm
+     , a.meet_start_time
+     , a.meet_cls_time
+     , a.meet_subject
+     , a.meet_place
+     , a.meet_contents
+     , a.rmk
+     , a.accnt_no
+     , c.accnt_no_nm
+     , c.accnt_rspns
+     , c.start_ymd
+     , c.cls_ymd
+     , c.accnt_grp AS accnt_clsf
+     , c.fomat_unit
+     , c.mngmt_clsf
+     , c.itm_solve_base
+     , c.tax_cd
+     , e.bsns_cd_inout
+     , TRIM(a.attach_file_no) AS attach_file_no
+     , f.nm AS accnt_rspns_nm
+     , a.conf_clsf
+     , a.slip_syspayno
+     , a.meal_cnt
+     , a.refrsh_cnt
+     , a.progrs_status
+     , g.nm AS slip_nm
+     , g.empno AS slip_empno
+     , 'U' AS cud_type
+FROM fspmeetmnth a
+JOIN humbasicinfo b ON b.syspayno=a.req_syspayno
+JOIN xodhdeptinfo d ON d.dept_cd=a.dept_cd AND d.dept_new_ymd=a.dept_new_ymd
+JOIN resbgacctm c ON c.accnt_no=a.accnt_no
+LEFT JOIN resinpmast e ON c.prj_no = e.prj_no
+JOIN humbasicinfo f ON f.syspayno = c.accnt_rspns
+LEFT JOIN humbasicinfo g ON g.syspayno = a.slip_syspayno
+WHERE a.meet_req_no = #{meet_req_no}
+</select>
+
+<!-- 회의록 참여자 조회 -->
+<select id="selectMeetAttendList" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetAttendVo">
+SELECT /*kr.re.kitech.biz.fin.spm.selectMeetAttendList*/ 
+       a.meet_req_no
+     , a.seq
+     , a.user_clsf
+     , a.syspayno
+     , a.nm
+     , a.dept_nm
+     , a.posi_nm
+     , a.mobile_no
+     , a.rmk
+     , (SELECT COUNT(*) 
+          FROM fspmeetmntd 
+         WHERE user_clsf = 1 
+           AND NVL(syspayno,'') != '' 
+           AND syspayno = a.syspayno 
+           AND meet_req_no <![CDATA[<>]]> #{meet_req_no}
+           AND meet_req_no IN ( SELECT meet_req_no
+                                  FROM fspmeetmnth 
+                                 WHERE #{meet_start_ymd} BETWEEN meet_start_ymd AND meet_cls_ymd
+                                   AND (#{meet_start_time} BETWEEN meet_start_time AND meet_cls_time OR #{meet_cls_time} BETWEEN meet_start_time AND meet_cls_time))
+        ) AS cnt
+     , a.ctr_req_no
+     , a.meal_cnt
+     , b.req_no AS adjst_req_no
+  FROM fspmeetmntd a
+  LEFT JOIN ctrdomad b ON a.ctr_req_no = b.biztrip_req_no
+ WHERE a.meet_req_no = #{meet_req_no}
+ ORDER BY a.user_clsf, a.seq
+</select>
+
+<!-- 재택근무 근태정보조회 -->
+<select id="selectHomeWorkInfo" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetWorkTimeVo">
+SELECT /* kr.re.kitech.biz.fin.spm.selectHomeWorkInfo */
+      CASE WHEN a.date_cls == '재택근무' THEN b.trip_cls
+      ELSE  ''  END AS trip_cls,
+      a.syspayno,
+      a.date_cls
+  FROM cwsworktime a
+  LEFT JOIN ( SELECT '근거리출장' AS trip_cls
+                FROM ctrlocal x
+                JOIN xomxintfatab y ON x.req_no = y.req_no AND y.apr_state > 'XAD015'
+                JOIN ctrlocalcompn z ON x.req_no = z.req_no
+               WHERE x.biztrip_ymd = #{meet_start_ymd}
+                 AND z.biztrip_psn_syspayno = #{syspayno}
+                 AND #{meet_start_ymd} BETWEEN REPLACE(x.start_time,':','') AND REPLACE(x.arriv_time,':','')
+        ) b ON 1=1
+ WHERE TO_CHAR(basedate, '%Y%m%d') = #{meet_start_ymd}
+   AND syspayno = #{syspayno}
+</select>
+
+<!-- 근태정보 조회 -->
+<select id="selectCwsWorkTime" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetWorkTimeVo">
+SELECT /*kr.re.kitech.biz.fin.spm.selectCwsWorkTime*/
+       CASE WHEN work_day LIKE '%국내출장%' THEN work_day||DECODE(card_meal, null, '', '/카드 ' || card_meal ||'식')
+            ELSE work_day END AS work_detls
+     , cnt
+     , holiday_clsf
+     , TRIM(ctr_req_no) AS ctr_req_no
+     , TRIM(adjst_req_no) AS adjst_req_no
+  FROM ( SELECT group_concat(work_day) AS work_day
+              , MAX(card_meal) AS card_meal
+              , MAX(cnt) AS cnt
+              , holiday_clsf
+              , CASE WHEN biztrip_req_no = '' AND local_req_no = '' THEN ''
+                     WHEN biztrip_req_no != '' AND local_req_no = '' THEN biztrip_req_no
+                     WHEN biztrip_req_no = '' AND local_req_no != '' THEN local_req_no
+                     ELSE '출장데이터중복' END AS ctr_req_no
+              , adjst_req_no
+           FROM ( SELECT CASE WHEN a.trip_cls = '근거리출장'
+                              THEN ('['|| TRIM(TO_CHAR(a.basedate, '%Y-%m-%d'))
+                                     || CASE WHEN f.start_time IS NOT NULL THEN '/' || f.start_time ELSE '' END 
+                                     || CASE WHEN f.cls_time IS NOT NULL THEN '/'|| f.cls_time ELSE '' END ||']'|| '  ' || a.trip_cls)
+                              ELSE ('['|| TRIM(TO_CHAR(a.basedate, '%Y-%m-%d'))
+                                     || CASE WHEN a.truth_st_dt IS NOT NULL THEN '/' ||TO_CHAR(a.truth_st_dt, '%H:%M') ELSE '' END 
+                                     || CASE WHEN a.truth_ed_dt IS NOT NULL THEN '/'|| TO_CHAR(a.truth_ed_dt, '%H:%M') ELSE '' END ||']'
+                                     || '  '|| a.date_cls || a.trip_cls)
+                         END AS work_day
+                       , d.cnt
+                       , t3.card_meal
+                       , CASE WHEN a.date_cls = '재택근무' THEN 'CWM002'
+                              ELSE CASE WHEN e.holiday_clsf IS NOT NULL THEN e.holiday_clsf ELSE '' END
+                              END AS holiday_clsf
+                       , NVL(t3.biztrip_req_no, '') AS biztrip_req_no
+                       , NVL(t3.req_no, '') AS adjst_req_no
+                       , NVL(f.req_no, '') AS local_req_no
+                    FROM cwsworktime a
+                    LEFT JOIN (SELECT MAX(NVL(t4.card_meal, t2.card_meal)) AS card_meal
+                                    , t2.req_no AS biztrip_req_no-- 국내출장신청서 번호
+                                    , CASE WHEN x.apr_state ='XAD100' THEN t3.req_no ELSE '' END req_no /*결재완료난 문서만 필요*/
+                                 FROM ctrdom t2 -- 국내출장신청서 테이블      
+                                 JOIN ctrdomcompn t1 ON t2.req_no = t1.req_no  AND t1.biztrip_psn_syspayno = #{syspayno} --syspayno 
+                                 LEFT JOIN ctrdomad t3 ON t3.biztrip_req_no = t2.req_no
+                                 LEFT JOIN ctrdomexpns t4 ON t4.req_no = t3.req_no AND t4.syspayno = t1.biztrip_psn_syspayno   
+                                 LEFT JOIN xomxintfatab x ON t3.req_no = x.req_no
+                                WHERE #{meet_start_ymd} BETWEEN t2.biztrip_start_ymd AND t2.biztrip_cls_ymd
+                                GROUP BY 2,3
+                              ) t3 ON 1=1 
+                    LEFT JOIN (SELECT COUNT(*) AS cnt
+                                 FROM fspmeetmnth x 
+                                 JOIN fspmeetmntd y ON x.meet_req_no = y.meet_req_no AND y.meet_req_no != #{meet_req_no} 
+                                 WHERE #{meet_start_ymd} BETWEEN x.meet_start_ymd AND x.meet_cls_ymd
+                                   AND ((#{meet_start_time} BETWEEN x.meet_start_time AND x.meet_cls_time) 
+                                          OR (#{meet_cls_time} BETWEEN x.meet_start_time AND x.meet_cls_time)) 
+                                   AND y.syspayno = #{syspayno}
+                              ) d ON 1=1 
+                    LEFT JOIN ( SELECT l.biztrip_psn_syspayno AS syspayno
+                                     , m.biztrip_ymd AS start_ymd
+                                     , m.biztrip_ymd  AS cls_ymd
+                                     , m.start_time AS start_time
+                                     , m.arriv_time AS cls_time
+                                     , m.req_no
+                                  FROM ctrlocal m
+                                  JOIN xomxintfatab n ON m.req_no = n.req_no AND n.apr_state >= 'XAD020'
+                                  JOIN ctrlocalcompn l ON m.req_no = l.req_no
+                                 WHERE m.biztrip_ymd = #{meet_start_ymd}
+                                   AND l.biztrip_psn_syspayno = #{syspayno}
+                             ) f ON 1=1
+                    LEFT JOIN ( SELECT holiday_clsf
+                                  FROM cgslapp 
+                                 WHERE req_psn_syspayno = #{syspayno} 
+                                   AND #{meet_start_ymd} BETWEEN holiday_start_ymd AND holiday_cls_ymd
+                                   AND (holiday_start_hour >= #{meet_start_hour} OR holiday_cls_hour <![CDATA[<=]]> #{meet_cls_hour})
+                             ) e ON 1=1
+          WHERE a.basedate = TO_DATE(#{meet_start_ymd}, '%Y%m%d')
+            AND a.syspayno = #{syspayno}
+        )
+   GROUP BY 4, 5, 6
+ )
+</select>
+
+<!-- 외부인 타회의 참석 확인 -->
+<select id="selectOutMeetPrsn" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetAttendVo">
+SELECT /*kr.re.kitech.biz.fin.spm.selectOutMeetPrsn*/
+       b.nm
+     , b.dept_nm
+     , a.meet_req_no
+     , a.meet_start_ymd
+     , a.meet_cls_ymd
+     , a.meet_start_time
+     , a.meet_cls_time
+     , c.nm AS reg_nm
+  FROM fspmeetmnth a
+  JOIN fspmeetmntd b ON a.meet_req_no = b.meet_req_no
+  LEFT JOIN humbasicinfo c ON a.regst_syspayno = c.syspayno
+ WHERE b.user_clsf = '2'
+   AND b.nm = #{attend_nm}
+   AND a.meet_start_ymd = #{meet_start_ymd}
+   AND ((#{meet_start_time} BETWEEN a.meet_start_time AND a.meet_cls_time) OR (#{meet_cls_time} BETWEEN a.meet_start_time AND a.meet_cls_time))
+</select>
+
+<!-- 회의록 마스터 등록 -->
+<insert id="insertFspmeetmnth" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetDetlsVo">
+INSERT /* kr.re.kitech.biz.fin.spm.insertFspmeetmnth */
+  INTO imis.fspmeetmnth(
+       meet_req_no
+     , meet_seq
+     , req_ymd
+     , dept_cd
+     , dept_new_ymd
+     , meet_start_ymd
+     , meet_cls_ymd
+     , req_syspayno
+     , meet_start_time
+     , meet_cls_time
+     , meet_subject
+     , meet_place
+     , meet_contents
+     , rmk
+     , accnt_no
+     , attach_file_no
+     , slip_syspayno
+     , meal_cnt
+     , refrsh_cnt
+     , progrs_status
+     , regst_syspayno
+     , regst_daytm
+ ) VALUES (
+       #{meet_req_no}
+     , 1
+     , #{req_ymd}
+     , #{dept_cd}
+     , #{dept_new_ymd}
+     , #{meet_start_ymd}
+     , #{meet_start_ymd}
+     , #{req_syspayno}
+     , #{meet_start_time}
+     , #{meet_cls_time}
+     , #{meet_subject}
+     , #{meet_place}
+     , #{meet_contents}
+     , #{rmk}
+     , #{accnt_no}
+     , #{attach_file_no}
+     , #{slip_syspayno}
+     , #{meal_cnt}
+     , #{refrsh_cnt}
+     , 'FGA001'
+     , #{regst_syspayno}
+     , SYSDATE
+ )
+</insert>
+
+<!-- 회의록 지출증빙 등록 -->
+<insert id="insertFspmeetevidh" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetEvidVo">
+INSERT /* kr.re.kitech.biz.fin.spm.insertFspmeetevidh */
+  INTO fspmeetevidh(
+        meet_req_no
+      , evid_clsf
+      , expns_clsf
+      , expns_cd
+      , accnt_cd
+      , cardno
+      , evid_apprno
+      , card_knd
+      , card_clsf
+      , issu_seqno
+      , evid_date
+      , evid_time
+      , evid_shop
+      , evid_amt
+      , chrg_amt
+      , tax_amt
+     <if test='syspayno != null'>, syspayno </if>
+     <if test='bankaccnt_no != null'>, bankaccnt_no </if>
+     <if test='bank != null'>, bank </if>
+     <if test='depstr_nm != null'>, depstr_nm </if>
+     <if test='unslip_no != null'>, unslip_no </if>
+     <if test='unslip_odr != null'>, unslip_odr </if>
+     <if test='casg_receipts != null'>, casg_receipts </if>
+      , regst_syspayno
+      , regst_daytm
+) VALUES (
+        #{meet_req_no}
+      , #{evid_clsf}
+      , #{expns_clsf}
+      , #{expns_cd}
+      , #{accnt_cd}
+      , #{cardno}
+      , #{evid_apprno}
+      , #{card_knd}
+      , #{card_clsf}
+      , #{issu_seqno}
+      , #{evid_date}
+      , #{evid_time}
+      , #{evid_shop}
+      , #{evid_amt}
+      , #{chrg_amt}
+      , #{tax_amt}
+     <if test='syspayno != null'>, #{syspayno} </if>
+     <if test='bankaccnt_no != null'>, #{bankaccnt_no} </if>
+     <if test='bank != null'>, #{bank} </if>
+     <if test='depstr_nm != null'>, #{depstr_nm} </if>
+     <if test='unslip_no != null'>, #{unslip_no} </if>
+     <if test='unslip_odr != null'>, #{unslip_odr} </if>
+     <if test='casg_receipts != null'>, #{casg_receipts} </if>
+      , #{regst_syspayno}
+      , SYSDATE
+)
+</insert>
+
+<!-- 회의참석자 등록 -->
+<insert id="insertFspmeetmntd" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetAttendVo">
+INSERT INTO fspmeetmntd( /* kr.re.kitech.biz.fin.spm.insertFspmeetmntd */
+      meet_req_no
+    , seq
+    , user_clsf
+    , syspayno
+    , nm
+    , dept_nm
+    , posi_nm
+    , mobile_no
+    , rmk
+    , ctr_req_no
+    , meal_cnt
+    , regst_syspayno
+    , regst_daytm
+) VALUES (
+      #{meet_req_no}
+    , #{seq}
+    , #{user_clsf}
+    , #{syspayno}
+    , #{nm}
+    , #{dept_nm}
+    , #{posi_nm}
+    , #{mobile_no}
+    , #{rmk}
+    , #{ctr_req_no}
+    , #{meal_cnt}
+    , #{regst_syspayno}
+    , SYSDATE
+)
+</insert>
+
+<!-- 회의록 마스터 수정 -->
+<update id="updateFspmeetmnth" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetDetlsVo">
+UPDATE fspmeetmnth  /* kr.re.kitech.biz.fin.spm.updateFspmeetmnth */
+   SET meet_start_ymd = #{meet_start_ymd}
+     , meet_cls_ymd = #{meet_start_ymd}
+     , meet_start_time = #{meet_start_time}
+     , meet_cls_time = #{meet_cls_time}
+     , meet_subject = #{meet_subject}
+     , meet_place = #{meet_place}
+     , meet_contents = #{meet_contents}
+     , rmk = #{rmk}
+     , accnt_no = #{accnt_no}
+     , attach_file_no = #{attach_file_no}
+     , slip_syspayno = #{slip_syspayno}
+     , meal_cnt = #{meal_cnt}
+     , refrsh_cnt = #{refrsh_cnt}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+ WHERE meet_req_no = #{meet_req_no}
+</update>
+
+<!-- 회의록 지출증빙 삭제 -->
+<delete id="deleteFspmeetevidh" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.fin.spm.deleteFspmeetevidh */
+ FROM fspmeetevidh 
+WHERE meet_req_no=#{meet_req_no}
+</delete>
+
+<!-- 회의참석자 삭제 -->
+<delete id="deleteFspmeetmntd" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.fin.spm.deleteFspmeetmntd */
+ FROM fspmeetmntd 
+WHERE meet_req_no = #{meet_req_no}
+</delete>
+
+<!-- 회의록 마스터 삭제 -->
+<delete id="deleteFspmeetmnth" parameterType="java.lang.String">
+DELETE /*kr.re.kitech.biz.fin.spm.deleteFspmeetmnth*/
+ FROM fspmeetmnth 
+WHERE meet_req_no = #{meet_req_no}
+</delete>
+
+<!-- 근태미대상자 근태정보조회 -->
+<select id="selectCwsHumInfoLog" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetWorkTimeVo" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo">
+SELECT /*kr.re.kitech.biz.fin.spm.selectCwsHumInfoLog*/
+       CASE WHEN work_day LIKE '%국내출장%' THEN work_day||DECODE(card_meal, null, '', '/카드 ' || card_meal ||'식')
+            ELSE work_day END AS work_detls
+     , cnt
+     , holiday_clsf
+ FROM ( SELECT group_concat(work_day) AS work_day
+              , MAX(card_meal) AS card_meal
+              , MAX(cnt) AS cnt
+          FROM ( SELECT CASE WHEN NVL(f.start_time,'') != '' AND NVL(f.cls_time,'') != ''
+                             THEN ('['|| TRIM(TO_CHAR(a.basedate, '%Y-%m-%d'))
+                                      || CASE WHEN f.start_time IS NOT NULL THEN '/' || f.start_time ELSE '' END 
+                                      || CASE WHEN f.cls_time IS NOT NULL THEN '/'|| f.cls_time ELSE '' END ||']'|| ' ' || '근거리출장')
+                             WHEN NVL(t3.card_meal, '') != '' THEN '국내출장'
+                             ELSE '' END AS work_day
+                      , t3.card_meal
+                      , d.cnt
+                      , CASE WHEN g.outwork_cnt > 0 THEN 'CWM002'
+                             ELSE CASE WHEN e.holiday_clsf IS NOT NULL THEN e.holiday_clsf ELSE '' END
+                             END AS holiday_clsf
+                   FROM cwshuminfolog a
+                   LEFT JOIN (SELECT CASE WHEN MAX(t4.card_meal) is not null THEN MAX(t4.card_meal) ELSE  SUM(t2.card_meal) END AS card_meal
+                                FROM ctrdom t2       -- 국내출장신청서 테이블      
+                                JOIN ctrdomcompn t1 ON t2.req_no = t1.req_no  AND t1.biztrip_psn_syspayno = #{syspayno}
+                                LEFT JOIN ctrdomad t3 ON t3.biztrip_req_no = t2.req_no
+                                LEFT JOIN ctrdomexpns t4 ON t4.req_no = t3.req_no AND t4.syspayno = t1.biztrip_psn_syspayno
+                               WHERE #{meet_start_ymd} BETWEEN t2.biztrip_start_ymd AND t2.biztrip_cls_ymd
+                             )t3 ON 1=1 
+                   LEFT JOIN (SELECT COUNT(*) AS cnt
+                                FROM fspmeetmnth x 
+                                JOIN fspmeetmntd y ON x.meet_req_no = y.meet_req_no AND y.meet_req_no != #{meet_req_no} 
+                               WHERE #{meet_start_ymd} BETWEEN x.meet_start_ymd AND x.meet_cls_ymd) 
+                                 AND ((#{meet_start_time} BETWEEN x.meet_start_time AND x.meet_cls_time) 
+                                            OR (#{meet_cls_time} BETWEEN x.meet_start_time AND x.meet_cls_time)) 
+                                 AND y.syspayno = #{syspayno}
+                             ) d ON 1=1 
+                   LEFT JOIN ( SELECT l.biztrip_psn_syspayno AS syspayno
+                                     , m.biztrip_ymd AS start_ymd
+                                     , m.biztrip_ymd AS cls_ymd
+                                     , m.start_time AS start_time
+                                     , m.arriv_time AS cls_time
+                                     , m.req_no
+                                  FROM ctrlocal m
+                                  JOIN xomxintfatab n ON m.req_no = n.req_no AND n.apr_state >= 'XAD020'
+                                  JOIN ctrlocalcompn l ON m.req_no = l.req_no
+                                 WHERE m.biztrip_ymd = #{meet_start_ymd}
+                                   AND l.biztrip_psn_syspayno = #{syspayno}
+                             ) f ON 1=1
+                   LEFT JOIN (SELECT COUNT(req_no) outwork_cnt 
+                                FROM cwsoutwork 
+                               WHERE #{meet_start_ymd} BETWEEN start_ymd AND cls_ymd 
+                                 AND syspayno = #{syspayno}
+                            ) g ON 1=1
+                   LEFT JOIN (SELECT CASE WHEN ((#{meet_start_time} BETWEEN CAST (holiday_start_hour AS VARCHAR(2)) || '00' AND CAST (holiday_cls_hour AS VARCHAR(2)) || '00') 
+                                            OR (#{meet_cls_time} BETWEEN CAST (holiday_start_hour AS VARCHAR(2)) || '00' AND CAST (holiday_cls_hour AS VARCHAR(2)) || '00'))
+                                            OR (holiday_start_hour = 0 AND holiday_cls_hour = 0 AND holiday_daycnt > 0)
+                                          THEN holiday_clsf
+                                          ELSE '' END AS holiday_clsf
+                                FROM cgslapp 
+                               WHERE req_psn_syspayno = #{syspayno}
+                                 AND ((#{meet_start_ymd} BETWEEN holiday_start_ymd AND holiday_cls_ymd) OR (#{meet_cls_time} BETWEEN holiday_start_ymd AND holiday_cls_ymd))
+                                 AND ((#{meet_start_hour} BETWEEN holiday_start_hour AND holiday_cls_hour) OR (#{meet_cls_hour} BETWEEN holiday_start_hour AND holiday_cls_hour) OR holiday_daycnt > 0)
+                             ) e ON 1=1-
+                  WHERE a.basedate = TO_DATE(#{meet_start_ymd}, '%Y%m%d')
+                    AND a.syspayno = #{syspayno}
+            ) 
+         GROUP BY holiday_clsf
+      )
+</select>
+
+<!-- 회의참석자 과제참여 여부 조회 -->
+<select id="selectMeetPrjAttendYn" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.spm.selectMeetPrjAttendYn */
+       COUNT(*) cnt
+  FROM resbgacctm a 
+  JOIN resinppare b ON a.prj_no = b.prj_no
+ WHERE a.accnt_no = #{accnt_no}
+   AND b.syspayno IN 
+ <foreach item="syspayno" index="index" collection="syspayno.split(',')" open="(" separator="," close=")"> '${syspayno}' </foreach>
+</select>
+
+<!-- 회의록 계정의 국내출장계정과의 일치여부 -->
+<select id="selectCtrToMeetAccnt" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetVo">
+SELECT /* kr.re.kitech.biz.fin.spm.selectCtrToMeetAccnt */
+       a.req_no
+     , group_concat(e.biztrip_psn_nm) AS meet_member
+     , group_concat(DISTINCT c.accnt_no) AS biztrip_accnt_no
+     , group_concat(DISTINCT d.accnt_no) AS accnt_no
+  FROM ctrdom a
+  JOIN ctrdomaccnt c ON a.req_no = c.req_no
+  JOIN ctrdomcompn e ON a.req_no = e.req_no
+  LEFT JOIN ctrdomad b ON a.req_no = b.biztrip_req_no
+  LEFT JOIN ctrdomadaccnt d ON b.req_no = d.req_no
+ WHERE a.req_no IN 
+    <foreach item="req_no" index="index" collection="req_no_list.split(',')" open="(" separator="," close=")"> '${req_no}' </foreach>
+ GROUP BY a.req_no
+</select>
+
+<!-- 회의록 결의생성 후 결의번호 업데이트 -->
+<update id="updateFspMeetEvidUnslipNo" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetEvidVo">
+UPDATE fspmeetevidh /* kr.re.kitech.biz.fin.spm.updateFspMeetEvidUnslipNo */
+   SET unslip_no = #{unslip_no}
+     , unslip_odr = #{unslip_odr} 
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE meet_req_no = #{meet_req_no}
+   AND evid_clsf = #{evid_clsf}
+ <if test='cardno != null and cardno != ""'> AND cardno = #{cardno} </if>
+ <if test='evid_apprno != null and evid_apprno != ""'>  AND evid_apprno = #{evid_apprno} </if>
+ <if test='issu_seqno != null and issu_seqno != ""'>  AND issu_seqno = #{issu_seqno} </if>
+ ;
+ 
+UPDATE fspmeetmnth
+   SET progrs_status = (CASE WHEN (SELECT COUNT(*) FROM fspmeetevidh WHERE meet_req_no = #{meet_req_no} AND NVL(unslip_no, '')='') = 0 
+                             THEN 'FGA003'
+                             ELSE progrs_status END)
+ WHERE meet_req_no = #{meet_req_no}
+ ;
+</update>
+
+<!-- 결의삭제시 지출증빙 결의번호 초기화 -->
+<update id="updateFspMeetEvidDel" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE fspmeetevidh /* kr.re.kitech.biz.fin.spm.updateFspMeetEvidDel */
+   SET unslip_no = ''
+     , unslip_odr = 0
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE meet_req_no = #{req_no}
+    AND unslip_no = #{unslip_no}
+    AND unslip_odr = #{unslip_odr}
+;
+UPDATE fspmeetmnth
+   SET progrs_status = (CASE WHEN req_syspayno = slip_syspayno THEN 'FGA001' ELSE 'FGA002' END)
+ WHERE meet_req_no = #{req_no}
+ ;
+</update>
+
+<!-- 임시조회 -->
+<select id="selectMeetUnslipNo" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetVo">
+select distinct a.meet_req_no, f.unslip_no
+from fspmeetmnth a
+JOIN fspmeetevidh b on a.meet_req_no = b.meet_req_no and not exists (select 1 from fspmeetevidh where meet_req_no = b.meet_req_no and unslip_no !='')
+LEFT JOIN (SELECT distinct e.unslip_no, d.key_val
+            FROM fspevidrptkey d
+            JOIN fspevidattach e ON d.evid_mngmt_no = e.evid_mngmt_no AND d.evid_mngmt_seq = e.evid_mngmt_seq AND NVL(e.unslip_no, '') != ''
+            WHERE d.evid_item_cd = 'F014' 
+            AND d.key_val LIKE 'F252023%'
+            and e.unslip_no[1,3] IN ('110','113','117')
+) f ON f.key_val = a.meet_req_no
+where a.meet_req_no like 'F252023%'
+and a.req_ymd between #{from_ymd} and #{to_ymd}
+and f.unslip_no is not null
+</select>
+<update id="updateFspMeetUnslipNo" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetVo">
+UPDATE fspmeetevidh /* kr.re.kitech.biz.fin.spm.updateFspMeetUnslipNo */
+   SET unslip_no = #{unslip_no}
+     , updt_syspayno = 'system'
+     , updt_daytm = SYSDATE
+ WHERE meet_req_no = #{meet_req_no}
+</update>
+
+<!-- 반려버튼 클릭시 상태값 초기화 -->
+<update id="updateFspMeetMntHProgrs" parameterType="kr.re.kitech.biz.fin.spm.vo.FspMeetSearchVo">
+UPDATE /* kr.re.kitech.biz.fin.spm.updateFspMeetMntHProgrs */
+      fspmeetmnth
+  SET progrs_status = 'FGA001'
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = SYSDATE
+ WHERE meet_req_no = #{meet_req_no}
+</update>
+
+<!-- 전자증빙을 위한 국내출장정보 조회(국내출장증빙 중복제거) -->
+<select id="selectMeetAttendEvid" resultType="kr.re.kitech.biz.fin.spm.vo.FspMeetAttendVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.spm.selectMeetAttendEvid */
+      DISTINCT CASE WHEN INSTR(a.rmk, '국내출장') >= 0 THEN '국내출장' ELSE '' END AS rmk
+     , a.ctr_req_no
+     , b.req_no AS adjst_req_no
+  FROM fspmeetmntd a
+  LEFT JOIN ctrdomad b ON a.ctr_req_no = b.biztrip_req_no
+ WHERE a.meet_req_no = #{meet_req_no}
+   AND a.user_clsf ='1'
+</select>
+</mapper>

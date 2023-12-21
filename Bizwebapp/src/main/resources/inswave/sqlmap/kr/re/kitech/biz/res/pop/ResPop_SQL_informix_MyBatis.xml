@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.res.pop">
+<!-- 사업신청 사업조정회의조회 팝업 -->
+<select id="selectResAppBsnsAdjst" parameterType="kr.re.kitech.biz.res.pop.vo.ResPopSrcVo" resultType="kr.re.kitech.biz.res.app.vo.ResAppBsnsAdjstVo">
+SELECT /* kr.re.kitch.biz.res.pop.selectResAppBsnsAdjst */ 
+       a.req_no
+     , a.dept_typ
+     , a.req_cause
+     , a.resch_rspns
+     , a.bsns_cd_ofic
+     , a.bsns_cd_detls_bsns
+     , h1.dept_nm
+     , h2.empno AS resch_rspns_no
+     , h2.nm AS resch_rspns_nm
+     , x1.bsns_nm AS bsns_ofic_nm
+     , a.bsns_nm_detls_bsns
+     , a.rfp_no
+     , a.bsns_noti_no
+     , a.prj_knd
+     , a.bsns_nm
+     , a.major_contnt
+     , a.totl_bsns_amt
+     , a.cur_yr_bsns_amt
+     , a.totl_perf_amt
+     , a.cur_yr_perf_amt
+     , SUBSTR(a.start_ymd,1,4)||'-'|| SUBSTR(a.start_ymd,5,2) || '-'|| SUBSTR(a.start_ymd,7,2)
+          ||'~'||SUBSTR(a.cls_ymd,1,4)||'-'|| SUBSTR(a.cls_ymd,5,2) || '-'|| SUBSTR(a.cls_ymd,7,2) AS totl_prd
+     , NVL(c.set_yn,'') AS set_yn
+FROM resappbsnsadjst a
+JOIN xodhdeptinfo h1 ON a.dept_cd = h1.dept_cd AND a.dept_new_ymd = h1.dept_new_ymd
+JOIN humbasicinfo h2 ON a.resch_rspns = h2.syspayno
+JOIN xodrbacode x1 ON a.bsns_cd_ofic = x1.bsns_cd
+LEFT JOIN ressuperrvewd b ON a.req_no = b.key_1
+LEFT JOIN ressmlrvewh c ON b.req_no = c.req_no
+WHERE a.req_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+AND   NVL(b.rvew_rst_cd,'') <![CDATA[ <> ]]> 'PME020'
+<if test='dept_typ != null and dept_typ !=""'> AND a.dept_typ = #{dept_typ} </if>
+<if test='bsns_nm_detls_bsns != null and bsns_nm_detls_bsns != ""'> AND a.bsns_nm_detls_bsns LIKE '%'||#{bsns_nm_detls_bsns}||'%' </if>
+<if test='bsns_nm != null and bsns_nm != ""'> AND a.bsns_nm LIKE '%'||#{bsns_nm}||'%' </if>
+<if test='resch_rspns != null and resch_rspns != ""'> AND a.resch_rspns = #{resch_rspns} </if>
+</select>
+</mapper>

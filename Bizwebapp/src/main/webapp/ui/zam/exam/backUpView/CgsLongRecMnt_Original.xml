@@ -1,0 +1,948 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/kitech/css/kitech.css" type="text/css"?>
+<?xml-stylesheet href="/kitech/css/kitech2.0.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head>
+		<title>장기기록물관리</title>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="">
+					<request>
+						<!-- 기록물 조회 -->
+						<getRecordList task="kitech.ccs.cgs.service.CgsLongRecMntService" action="getRecordList" />
+						<!-- 기록물 문서번호 받기 -->
+						<getReqNum task="kitech.ccs.cgs.service.CgsLongRecMntService" action="getReqNum" />
+						<!-- 기록물 저장 / 수정 -->
+						<saveRecordList task="kitech.ccs.cgs.service.CgsLongRecMntService" action="insertRecord" />
+						<!-- 기록물 삭제 -->
+						<delRecord task="kitech.ccs.cgs.service.CgsLongRecMntService" action="delRecord" />
+						<!-- 직원 조회 -->
+						<humBasicEmpnoInfo serviceID="svrHumBasicInfoService02" />
+					</request>
+					<response>
+						<msgType>
+							<vector result="2">
+								<data vectorkey="0"><msgSelectBox><label value="지정" /><value value="지정" /></msgSelectBox></data>
+								<data vectorkey="1"><msgSelectBox><label value="미지정" /><value value="미지정" /></msgSelectBox></data>
+							</vector>
+						</msgType>
+					</response>
+				</data>
+			</xf:instance>
+			
+			<!-- 기록물 추가 / 수정 -->
+			<xf:submission id="saveRecordList" ref="request/saveRecordList" target="response/saveRecordList" method="post" mediatype="application/xml" encoding="UTF-8"
+            	instance="" replace="instance" mode="asynchronous" processMsg="저장중..">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					var vec = WebSquare.collection.toVector(e.responseBody);
+				]]></script>
+			</xf:submission>
+			
+			<!-- 기록물 삭제 -->
+			<xf:submission id="delRecord" ref="request/delRecord" target="response/delRecord" method="post" mediatype="application/xml" encoding="UTF-8"
+            	instance="" replace="instance" mode="asynchronous" processMsg="삭제중..">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					var vec = WebSquare.collection.toVector(e.responseBody);
+				]]></script>
+			</xf:submission>
+			
+			<!-- 기록물 문서번호 받기 -->
+			<xf:submission id="getReqNum" ref="request/getReqNum" target="response/getReqNum" method="post" mediatype="application/xml" encoding="UTF-8"
+            	instance="" replace="instance" mode="asynchronous" processMsg="삭제중..">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					var get_req_no = WebSquare.xml.getValue(e.responseBody, "mdata/req_no", "value");
+
+					grd.insertRow();
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"구분",false);
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"기록물명",false);
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"접수번호",false);
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"접수일자",false);
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"접수자이름",false);
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"최종결재자이름",false);
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"보존기간",false);
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"공개구분",false);
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"공개구분",false);
+			    	grd.setCellReadOnly(grd.getDataLength()-1,"삭제여부",false);
+			    				
+					grd.setFocusedCell(grd.getDataLength()-1, 1, true);
+					grd.setCellChecked(grd.getDataLength()-1,"chk", true);
+					grd.setCellData(grd.getDataLength()-1,"구분", "1");
+					grd.setCellData(grd.getDataLength()-1, "삭제여부", "f");
+					grd.setCellData(grd.getDataLength()-1, "문서번호", get_req_no);
+				]]></script>
+			</xf:submission>
+			
+			
+			<!-- 기록물 조회 -->
+			<xf:submission id="getRecordList" ref="request/getRecordList" target="response/getRecordList" replace="none" processMsg="조회 중..">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					if (!gfnSubmitMessageBar(e)) {
+	                       return;
+	                  }
+	                outputResultCnt.setValue(WebSquare.proworks.getResult(e.responseBody) + "건");
+					grd.setXML(e.responseBody);
+					if( !Menu.isExistRoleCode(codeArr) ) {
+						//사용자
+						for(var i = 0 ; i < grd.getDataLength() ; i++){
+							grd.setCellReadOnly(i, "chk", true);
+							grd.setCellReadOnly(i, "구분", true);
+					    	grd.setCellReadOnly(i, "기록물명", true);
+					    	grd.setCellReadOnly(i, "처리과", true);
+					    	grd.setCellReadOnly(i, "단위업무이름", true);
+					    	grd.setCellReadOnly(i, "접수번호", true);
+					    	grd.setCellReadOnly(i, "접수일자", true);
+					    	grd.setCellReadOnly(i, "접수자이름", true);
+					    	grd.setCellReadOnly(i, "최종결재자이름", true);
+					    	grd.setCellReadOnly(i, "보존기간", true);
+					    	grd.setCellReadOnly(i, "공개구분", true);
+						}
+					}
+				]]></script>
+			</xf:submission>
+			
+			<!-- 직원 조회 -->
+			<xf:submission id="searchHumBasicEmpnoInfo" ref="request/humBasicEmpnoInfo" target="response/humBasicEmpnoInfo" method="post" mediatype="application/xml" encoding="UTF-8"
+				replace="instance" mode="asynchronous">
+				<script type="javascript" ev:event="xforms-submit-done"><![CDATA[
+					if(!gfnSubmitMessageBar(e)) {
+						return;
+					} else {
+						//grid2_setVal("text");
+						
+						var cnt = WebSquare.ModelUtil.getInstanceValue("response/humBasicEmpnoInfo/vector/@result", null); //건수 조회
+						
+						if(cnt == "1") {
+							var empNo = WebSquare.ModelUtil.getInstanceValue("response/humBasicEmpnoInfo/vector[@result='1']/data[@vectorkey='0' and @type='Document']/msgHumBasicInfoMI02/empno/@value");
+							var compnNm = WebSquare.ModelUtil.getInstanceValue("response/humBasicEmpnoInfo/vector[@result='1']/data[@vectorkey='0' and @type='Document']/msgHumBasicInfoMI02/nm/@value");
+							var compnSyspayno = WebSquare.ModelUtil.getInstanceValue("response/humBasicEmpnoInfo/vector[@result='1']/data[@vectorkey='0' and @type='Document']/msgHumBasicInfoMI02/syspayno/@value");
+							var compnDeptCd = WebSquare.ModelUtil.getInstanceValue("response/humBasicEmpnoInfo/vector[@result='1']/data[@vectorkey='0' and @type='Document']/msgHumBasicInfoMI02/dept_cd/@value");
+							var compnDeptNm = WebSquare.ModelUtil.getInstanceValue("response/humBasicEmpnoInfo/vector[@result='1']/data[@vectorkey='0' and @type='Document']/msgHumBasicInfoMI02/dept_nm/@value");
+							var compnPosiNm = WebSquare.ModelUtil.getInstanceValue("response/humBasicEmpnoInfo/vector[@result='1']/data[@vectorkey='0' and @type='Document']/msgHumBasicInfoMI02/posi_nm/@value");
+							var compnMobile = WebSquare.ModelUtil.getInstanceValue("response/humBasicEmpnoInfo/vector[@result='1']/data[@vectorkey='0' and @type='Document']/msgHumBasicInfoMI02/mobile/@value");
+							var compnResId = WebSquare.ModelUtil.getInstanceValue("response/humBasicEmpnoInfo/vector[@result='1']/data[@vectorkey='0' and @type='Document']/msgHumBasicInfoMI02/resid_no/@value");
+
+							if(gridNmRow == 1){
+								grd.setCellData(gridHumRow, "접수자이름", compnNm);
+								grd.setCellData(gridHumRow, "접수부서이름", compnDeptNm);
+								//grd.setCellData(gridHumRow, "posi_nm", compnPosiNm);
+								grd.setCellData(gridHumRow, "접수부서", compnDeptCd);
+								grd.setCellData(gridHumRow, "접수자", compnSyspayno);
+							}else if(gridNmRow == 2){
+								grd.setCellData(gridHumRow, "최종결재자이름", compnNm);
+								grd.setCellData(gridHumRow, "최종결재자", compnSyspayno);
+							}
+		
+							// 근태정보조회
+							//findWrkInfo(gridHumRow, compnSyspayno);
+						} else if(cnt > 1) {
+							popupEmpInfo();
+						} else if(cnt <= 0) {
+							alert("조회된 결과가 없습니다.");
+							popupEmpInfo();
+						}
+					}
+				]]></script>
+			</xf:submission>
+		</xf:model>
+		<style><![CDATA[
+			body { overflow-x:hidden; }
+			div.datarow { position: relative;margin: 4px 0px 8px 0px;padding: 10px 10px;background-color: #eeeeee;border: solid 1px #c5c5c5;box-shadow: 1px 2px 2px rgb(0 0 0 / 30%); }
+			div.grpRow{ position:relative; margin-top:2px;background-color:#eeeeee; }
+			input.txtInput { display:inline-block; vertical-align:middle; margin-left:10px; border:none; border-bottom:solid 0.5px #ccc; width:80px; height:22px; background-color:#eeeeee; }
+			input.w2input { display:inline-block; vertical-align:middle; width:80px; height:22px; }
+			.labelL {display: inline-block;height: 22px;background-color: #ccc;margin-right: 5px;padding: 0 7px;}
+			.w2selectbox_native_select { padding-top:0px; height:22px; font-size:12px; }
+			.w2inputCalendar { position:relative; width:95px; height:24px; vertical-align: middle;}
+			.w2inputCalendar_input { height:22px !important;}
+			.iptReadOnly { display:inline-block; vertical-align:middle; background-color:#EBEBE4; margin-left:5px; height:20px; }
+			.cont-input{ position:relative;display:inline-block;vertical-align:middle;margin-right:10px;width:60px;height:22px;}
+			.searchItem { display:inline-block;background-color:#eeeeee; margin-right:10px;}
+			#sltSearchDate_input_0 { background-color:#ccc; border:none;}
+			.searchActions .btnAction_c{-webkit-border-radius: .5em;-moz-border-radius: .5em;border-radius: .5em;-webkit-box-shadow: 0 1px 2px rgb(0 0 0 / 20%);-moz-box-shadow: 0 1px 2px rgba(0,0,0,.2);box-shadow: 0 1px 2px rgb(0 0 0 / 20%);-webkit-text-shadow: 0 1px 1px rgba(0,0,0,.2);-moz-text-shadow: 0 1px 1px rgba(0,0,0,.2);text-shadow: 0 1px 1px rgb(0 0 0 / 20%);cursor: pointer;padding: 5px 16px;}
+			.searchActions{padding: 0 2px;display: inline-block;float: none;vertical-align: middle;}
+			tr.w2group, th.w2group{border: 1px solid #b9c3d1;}
+			.labelC {color: #3c3d3f;text-align: left;border: none !important;padding-left: 12px;vertical-align: middle;font-size: 1em;line-height: 25px;height: 23px;}
+			.pl-5 {padding-left: 5px;}
+			
+			/* grid */
+			.gridstyle1 caption {display :none;}
+			.gridstyle1 .grid_group {position:relative; clear:both; height:250px;}
+			.gridstyle1 .gridtable {position:relative; height:100px;}
+			.gridstyle1 .gridHeaderTDDefault {border:1px solid #657f96; background-color:#7a96ac; color:#fff; font:normal 12px arial;padding:0}
+			.gridstyle1 .gridHeaderTableDefault {border-top:0px solid #6CA5E3; border-right:0px solid #B1C5D5 ; border-bottom:1px solid #B1C5D5; border-left:1px solid #B1C5D5;}
+			.gridstyle1 .gridBodyDefault {font:normal 12px arial;}
+			.gridstyle1 .grid_body_row:hover td {background-color: #efefef !important;}
+			.gridstyle1 .w2selectbox_label { overflow:hidden; text-overflow:ellipsis; text-align:center; white-space:nowrap; padding-top:2px; border:1px solid #657f96; background-color:#7a96ac; color:#fff; font:normal 12px arial; }
+			.disbg{background-color: #ddd}
+			
+			.drag-n{
+				-ms-user-select: none;
+			    -moz-user-select: -moz-none;
+			    -khtml-user-select: none;
+			    -webkit-user-select: none;
+			    user-select: none;
+			}			
+
+		]]></style>
+		<script src="/kitech/js/kitech.js" />
+		<script src="/kitech/js/kitech_common.js" />
+		<script src="/extlib/raonkupload/js/raonkupload.js" />
+		<script src="/kitech/js/kitech_attach.js" />
+		<script><![CDATA[
+			//롤코드 배열 [개발자공통, 시스템관리자A, 시스템관리자M, 총무담당자]
+			var codeArr = ['1010109', '1010001', '1010102', '1006205'];
+			var today = gfnGetToday();
+			var cuYear = parseInt(today.substring(0, 4));
+			var cuMonth = parseInt(today.substring(4, 6));
+			var cuDay = parseInt(today.substring(6, 8));
+			var reMonth = 13 - cuMonth;
+			var temtem = "";
+			var typeCode = serviceId; // 첨부파일 유형코드
+			var gridHumRow = 0;
+			var gridNmRow = 0;
+			var file_mode ="";
+			
+			receipt_ymd_start.setValue(gfnGetToday(-90));
+			receipt_ymd_close.setValue(today);
+			
+			var Menu = {
+				/**
+				 * 기초데이터 조회
+				 */
+				init: function(){
+					
+					if( this.isExistRoleCode(codeArr) ) {
+						//관리자
+						file_mode = "edit";
+					}else{
+						//사용자
+						open_level_ipt_wrap.hide();
+						trgSave.hide();
+						rowMnt.hide();
+						trgDelete.hide();
+						file_mode = "view";
+					}
+					this.find();
+				},
+				/**
+				 * 조회 버튼 이벤트 핸들러
+				 */
+				find: function(){
+					if (!this.isValidYear()) return;
+					
+					if( this.isExistRoleCode(codeArr) ) {
+						WebSquare.ModelUtil.setInstanceValue("request/getRecordList/open_level/@value",  open_level_ipt.getValue() );
+					}else{
+						WebSquare.ModelUtil.setInstanceValue("request/getRecordList/open_level/@value",  "1" );
+					}
+					
+					WebSquare.ModelUtil.setInstanceValue("request/getRecordList/prod_recei_div/@value",  prod_recei_div_ipt.getValue() );
+					WebSquare.ModelUtil.setInstanceValue("request/getRecordList/record_nm/@value",  record_nm_ipt.getValue() );
+					WebSquare.ModelUtil.setInstanceValue("request/getRecordList/receipt_syspayno/@value",  input_syspayno.getValue() );
+					WebSquare.ModelUtil.setInstanceValue("request/getRecordList/keep_year/@value",  keep_year_ipt.getValue() );
+					
+					gfnExecuteSubmission("getRecordList");
+				},
+				// 기록물 삭제
+				delRecord: function(){
+					var rowArray = grd.getCheckedIndex(grd.getColumnIndex("chk"));
+					var vec = new WebSquare.collection.Vector();
+													
+					if (rowArray.length == 0) {
+    					alert("체크된 행이 없습니다.");
+    					return;
+					} else {
+						for(var i=0; i<rowArray.length; i++) {
+							if( !this.isExist( grd.getCellData(rowArray[i], "문서번호").trim() ) ){
+								alert("문서번호 필수입니다.");
+						 		return;
+							}
+							WebSquare.ModelUtil.setInstanceValue("request/delRecord/req_no/@value", grd.getCellData(rowArray[i], "문서번호") );						
+							gfnExecuteSubmission("delRecord");
+						}
+						alert('삭제완료');
+						this.find();
+					}
+				},		
+				// 룰코드 체크 true일때 관리자
+				isExistRoleCode: function(code) {
+					if (!roleCode) return false;
+					var chk = false;
+				    for (var i = code.length - 1; i >= 0; i--) {
+				        if (roleCode.indexOf(code[i]) > -1) chk = true;
+				    }
+				    return chk;
+				},
+				// 날짜 Front 체크와 형식 체크 함수
+				isValidYear: function() {
+				    var ymdFrom = receipt_ymd_start.getValue();
+				    var ymdTo = receipt_ymd_close.getValue();
+				    if (ymdFrom.trim() != "") {
+				        var isYmdFromChk = WebSquare.date.isValidDate(ymdFrom, ymdFrom);
+				        if (!isYmdFromChk) {
+				            inputFromYmd.focus();
+				            return false;
+				        }
+				    }
+				    if (ymdTo.trim() != "") {
+				        var ymd_to_chk = WebSquare.date.isValidDate(ymdTo, ymdTo);
+				        if (!ymd_to_chk) {
+				            inputToYmd.focus();
+				            return false;
+				        } else {
+				            if (ymdFrom > ymdTo) {
+				                alert("시작일보다 종료일이 이후여야 합니다.");
+				                inputToYmd.focus();
+				                return false;
+				            }
+				        }
+				    }
+				    WebSquare.ModelUtil.setInstanceValue( "request/getRecordList/time/@value", "time");
+				    return true;
+				},
+				menuMove: function (row) {
+					// var param = "&screen_id=" + serviceId
+					var param = ""
+					param += "&syspayno=" + grd.getCellData(row, "개인번호");
+				
+					//gfnSetLocationBySvrId("C802", param);
+					gfnSetPopBySvrId("C802", param, "1400", "800");
+				},
+				//자료형에 상관없이 빈값 유무 확인, true:있음, false:없음 ([], {} 도 빈값으로)
+				isExist: function( val ) {
+					if (val == "" || val == null || val == undefined || (val != null && typeof val == "object" && !Object.keys(val).length)) {
+						return false;
+					} else {
+						return true;
+					}
+				}				
+			};
+			
+			Menu.init();
+			
+			function zero (n) {
+				var num_length = 2;
+				n = n + '';
+				return n.length >= num_length ? n : new Array(num_length - n.length + 1).join('0') + n;
+			}
+			
+			function save(attachObj){
+					
+				var rowArray = grd.getCheckedIndex(grd.getColumnIndex("chk"));
+				var vec = new WebSquare.collection.Vector();
+												
+				if (rowArray.length == 0) {
+   					alert("체크된 행이 없습니다.");
+   					return;
+				} else {
+					for(var i=0; i<rowArray.length; i++) {
+						if( !Menu.isExist( grd.getCellData(rowArray[i], "기록물명").trim() ) ){
+							alert("기록물명 필수입니다.");
+					 		return;
+						}
+						var doc = WebSquare.xml.parse("<mdata/>");
+						WebSquare.xml.setString( doc , "prod_recei_div", grd.getCellData(rowArray[i], "구분"));
+						WebSquare.xml.setString( doc , "req_no", grd.getCellData(rowArray[i], "문서번호"));
+						WebSquare.xml.setString( doc , "process_dept", grd.getCellData(rowArray[i], "처리과"));
+						WebSquare.xml.setString( doc , "business_unit", grd.getCellData(rowArray[i], "단위업무코드"));
+						WebSquare.xml.setString( doc , "record_nm", grd.getCellData(rowArray[i], "기록물명"));
+						WebSquare.xml.setString( doc , "recei_no", grd.getCellData(rowArray[i], "접수번호"));
+						WebSquare.xml.setString( doc , "receipt_ymd", grd.getCellData(rowArray[i], "접수일자"));
+						WebSquare.xml.setString( doc , "receipt_dept", grd.getCellData(rowArray[i], "접수부서"));
+						WebSquare.xml.setString( doc , "receipt_syspayno", grd.getCellData(rowArray[i], "접수자"));
+						WebSquare.xml.setString( doc , "receipt_approver", grd.getCellData(rowArray[i], "최종결재자"));
+						WebSquare.xml.setString( doc , "keep_year", grd.getCellData(rowArray[i], "보존기간"));
+						WebSquare.xml.setString( doc , "open_level", grd.getCellData(rowArray[i], "공개구분"));
+						WebSquare.xml.setString( doc , "regst_psn_syspayno", sn);
+						WebSquare.xml.setString( doc , "is_deleted", grd.getCellData(rowArray[i], "삭제여부"));
+						WebSquare.xml.setString( doc , "attach_file_no", attachObj.upload_A );
+						vec.addElement(doc);													
+					}
+				}
+				WebSquare.ModelUtil.setInstanceNode( vec.toDocument(), "request/saveRecordList/SAVE" , null, "replace");			
+				gfnExecuteSubmission("saveRecordList");
+				alert('저장완료');
+				Menu.find();
+			}			
+			
+			function rowInsert () {
+				gfnExecuteSubmission("getReqNum");
+			}
+			function useYNChange (val) {
+				for (var i = grd.getDataLength() - 1; i >= 0; i--) {
+					grd.setCellData(i, "useYN", val);
+				}
+			}
+			
+			function popupEmpInfo() {
+				var currRowIdx = grd.getFocusedRowIndex();
+				if(gridNmRow == 1){
+					var empNo = grd.getCellData(currRowIdx, "접수자이름").trim();
+				}else if(gridNmRow == 2){
+					var empNo = grd.getCellData(currRowIdx, "최종결재자이름").trim();
+				}
+				WebSquare.ModelUtil.setInstanceValue("SptComHumLst02/searchData/@value", empNo);
+				var param = WebSquare.ModelUtil.findInstanceNode("SptComHumLst02");
+				finCreatePopUp("/kitech/sup/com/SptComHumLst03.xml", param, 775, 367);
+			}
+			
+			function popupUntInfo() {
+				var currRowIdx = grd.getFocusedRowIndex();
+				var param = "";
+				finCreatePopUp("/kitech/hum/bas/HumBasUntPop.xml", param, 1040, 530);
+			}
+			
+			function finCreatePopUp(url, param, paramWidth, paramHeight) {
+				WebSquare.uiplugin.popup.createPopup("pop",
+					"window",
+					"",
+					"top:100px;left:100px;width:" + paramWidth + "px; height: " + paramHeight + "px",
+					"false",
+					"false",
+					url,
+					null,
+					null,
+					param);
+			}
+			
+			function gfnSetSptComHumLstPopupData002(returnData) {
+				var param = WebSquare.xml.parse(returnData);
+				var currRowIdx = gridHumRow;
+				
+				if(gridNmRow == 1){
+					grd.setCellData(currRowIdx, "접수자", WebSquare.xml.getValue(param, "msgv_HumBasIcInfo002/syspayno", "value"));
+					grd.setCellData(currRowIdx, "접수자이름", WebSquare.xml.getValue(param, "msgv_HumBasIcInfo002/nm", "value"));
+					grd.setCellData(currRowIdx, "접수부서이름", WebSquare.xml.getValue(param, "msgv_HumBasIcInfo002/dept_nm", "value"));
+					grd.setCellData(currRowIdx, "접수부서", WebSquare.xml.getValue(param, "msgv_HumBasIcInfo002/dept_cd", "value"));
+				}else if(gridNmRow == 2){
+					grd.setCellData(currRowIdx, "최종결재자", WebSquare.xml.getValue(param, "msgv_HumBasIcInfo002/syspayno", "value"));
+					grd.setCellData(currRowIdx, "최종결재자이름", WebSquare.xml.getValue(param, "msgv_HumBasIcInfo002/nm", "value"));
+				}
+				
+				findWrkInfo(currRowIdx, WebSquare.xml.getValue(param, "msgv_HumBasIcInfo002/syspayno", "value"));
+			}
+			
+			function gfnSetSptComHumLstPopupData003(returnData) {
+				var currRowIdx = gridHumRow;
+				var param = WebSquare.xml.parse(returnData);
+				grd.setCellData(currRowIdx, "단위업무코드", WebSquare.xml.getValue(param, "msgXodhUntJob01/untjob_cd", "value"));
+				grd.setCellData(currRowIdx, "단위업무이름", WebSquare.xml.getValue(param, "msgXodhUntJob01/untjob_nm", "value"));
+				
+			}
+			
+			document.onkeydown = function(e) {
+			    if (e.ctrlKey && e.keyCode === 83) {
+			    	Menu.save();
+			        return false;
+			    }
+			    if (e.altKey && e.keyCode === 68) {
+			    	rowInsert();
+			        return false;
+			    }
+			};
+		]]>
+		</script>
+	</head>
+	<body>
+		<xf:group id="wrapBody" style="position:relative;">
+			<w2:textbox style="width:120px;height:22px;" class="title" label="장기기록물관리" tagname="h1" />
+			<xf:group id="grpSearch" class="datarow searchArea">
+
+				<xf:group class="grpRow">
+				
+					<xf:group class="searchItem">
+
+						<w2:textbox for="prod_recei_div_ipt" label="구분" class="labelC labelL" style="margin-right: 0;" tagname="label" />
+						<xf:select1 id="prod_recei_div_ipt" appearance="minimal" renderType="native" submenuSize="auto" displayMode="label" class="cont-input w2input" chooseOption="true"
+							ref="" chooseOptionLabel="-전체-" style="width:80px;margin: 0;">
+							<xf:choices>
+								<xf:item>
+									<xf:label>생산</xf:label>
+									<xf:value>1</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>접수</xf:label>
+									<xf:value>2</xf:value>
+								</xf:item>
+							</xf:choices>
+						</xf:select1>
+					</xf:group>
+					
+					<xf:group class="searchItem">
+						<w2:textbox for="record_nm_ipt" label="기록물명" class="labelC labelL" tagname="label" style="margin-right: 0;"/>
+						<xf:input id="record_nm_ipt" style="width:60px;margin-left: 0;" dataType="text"/>
+					</xf:group>
+					
+					<xf:group class="searchItem">
+						<w2:textbox for="input_empno" label="접수자" class="labelC labelL" tagname="label" style="margin-right: 0;float: left;"/>
+						<xf:input id="input_empno" style="width:60px;margin-left: 0;" onFocusClass="input_on" class="input">
+					    <script ev:event="onkeypress" type="javascript"><![CDATA[
+							if(event.keyCode == 13){
+								 Kitech.search.empInfo(this,
+								  [  {colName : "empno", obj : this}
+								   , {colName : "nm", obj : input_syspaynm}
+								   , {colName : "syspayno", obj : input_syspayno}
+								 ]);
+							}
+						]]></script>
+					    <script ev:event="onchange" type="javascript"><![CDATA[
+							if (this.getValue() == ""){
+								this.setValue("");
+								input_syspaynm.setValue("");
+								input_syspayno.setValue("");
+							}
+						]]></script>
+						</xf:input>
+						<xf:trigger id="trigger1" style="width:21px;height:19px;display: inline-block;vertical-align: middle;margin: 0 3px;" leftOnImageClass="searchBtn_on" type="image" leftOffImageClass="searchBtn_on" disabled="false">
+						    <script ev:event="onclick" type="javascript"><![CDATA[    				
+			    				Kitech.search.openEmpPopup(input_empno,
+								  [  {colName : "empno", obj : input_empno}
+								   , {colName : "nm", obj : input_syspaynm}
+								   , {colName : "syspayno", obj : input_syspayno}
+								]); 
+			    			]]></script>
+						</xf:trigger>
+						<xf:input id="input_syspaynm" style="width:60px;margin-left: 0;" dataType="text" disabled="true"/>
+						<xf:input id="input_syspayno" style="width:60px;margin-left: 0;display:none" dataType="text" />
+					</xf:group>
+
+					<xf:group class="searchItem">
+						<w2:textbox for="keep_year_ipt" label="보존기간" class="labelC labelL" tagname="label" style="margin-right: 0;"/>
+						<xf:select1 id="keep_year_ipt"
+							activeClass="selectA" appearance="minimal"
+							chooseOptionLabel="-전체-" defaultClass="selectD"
+							displayMode="label"
+							style="height: 22px;width:60px;position: relative;display: inline-block;vertical-align: middle;"
+							submenuSize="auto" chooseOption="true" allOption="">
+							<xf:choices>
+								<xf:item>
+									<xf:label>1년</xf:label>
+									<xf:value>1</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>3년</xf:label>
+									<xf:value>3</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>5년</xf:label>
+									<xf:value>5</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>10년</xf:label>
+									<xf:value>10</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>30년</xf:label>
+									<xf:value>30</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>준영구</xf:label>
+									<xf:value>99</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>영구</xf:label>
+									<xf:value>100</xf:value>
+								</xf:item>
+							</xf:choices>
+						</xf:select1>
+					</xf:group>
+					
+					<xf:group id="open_level_ipt_wrap" class="searchItem">
+						<w2:textbox for="open_level_ipt" label="공개여부" class="labelC labelL" tagname="label" style="margin-right: 0;"/>
+						<xf:select1 id="open_level_ipt"
+							activeClass="selectA" appearance="minimal"
+							chooseOptionLabel="-전체-" defaultClass="selectD"
+							displayMode="label"
+							style="height: 22px;width:70px;position: relative;display: inline-block;vertical-align: middle;"
+							submenuSize="auto" chooseOption="true" allOption="">
+							<xf:choices>
+								<xf:item>
+									<xf:label>공개</xf:label>
+									<xf:value>1</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>부분공개</xf:label>
+									<xf:value>2</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>비공개</xf:label>
+									<xf:value>3</xf:value>
+								</xf:item>
+							</xf:choices>
+						</xf:select1>
+					</xf:group>
+					
+					<xf:group class="searchItem">
+						<w2:textbox for="receipt_ymd_start" label="접수일자" class="labelC labelL" tagname="label" style="margin-right: 0;"/>
+						<w2:inputCalendar id="receipt_ymd_start" ref="request/getRecordList/receipt_ymd_start/@value" class="w2input" maxYear="2027" minYear="2010" footerDiv="true" style="display:inline-block;vertical-align: middle;width:100px;" mandatory="true" calendarValueType="yearMonthDate"/>
+						<w2:textbox for="receipt_ymd_close" label="~" tagname="label" style="margin-right: 0;background-color: #cccccc;padding: 4px;vertical-align: middle;"/>
+						<w2:inputCalendar id="receipt_ymd_close" ref="request/getRecordList/receipt_ymd_close/@value" class="w2input" maxYear="2027" minYear="2010" footerDiv="true" style="display:inline-block;vertical-align: middle;width:100px;" mandatory="true" calendarValueType="yearMonthDate"/>
+					</xf:group>
+					
+					
+				
+					<xf:group class="searchItem" style="display: none;">
+						<w2:textbox for="iptEmpno" label="대상자" class="labelC labelL" tagname="label" style="margin: 0;"/>
+						<xf:input id="hdnSyspayno" style="display:none;" />
+						<xf:input id="iptEmpno" maxlength="6" onFocusClass="input_on" style="display:inline-block;vertical-align:middle;width:50px;height:22px;ime-mode:active;margin-left: 0;">
+							<script ev:event="onkeyup" type="javascript"><![CDATA[
+								if ("13" == event.keyCode){
+									Kitech.search.empInfo( this, [
+										  {colName: "empno", obj: this}
+										, {colName: "nm", obj: iptPsnName}
+										, {colName: "dept_nm", obj: iptDeptName}
+										, {colName: "syspayno", obj: hdnSyspayno}
+									]);
+								}
+							]]></script>
+							<script ev:event="onkeyup" type="javascript"><![CDATA[
+								hdnSyspayno.setValue(""); // 대상자 사원번호 초기화
+								iptDeptName.setValue("");	// 대상자 부서 초기화
+								iptPsnName.setValue("");	// 대상자 이름 초기화
+							]]></script>
+						</xf:input>
+						<xf:trigger id="btnPsn" toolTip="인사정보검색" style="display:inline-block;vertical-align:middle;margin-left:4px;width:24px;">
+							<xf:label>&amp;#x1f50d;</xf:label>
+							<script ev:event="onclick"><![CDATA[
+								Kitech.search.openEmpPopup(iptEmpno,
+									[ {colName : "empno", obj : iptEmpno}
+									, {colName : "nm", obj : iptPsnName}
+									, {colName : "syspayno", obj : hdnSyspayno}
+								]);
+							]]></script>
+						</xf:trigger>
+						<xf:input id="iptPsnName" readOnly="true" onFocusClass="input_on" style="width:60px;" class="iptReadOnly" />
+						<xf:input id="iptDeptName" readOnly="true" onFocusClass="input_on" style="width:100px;" class="iptReadOnly" />
+					</xf:group>
+					
+					<xf:group class="searchActions">
+						<xf:trigger id="trgSearch" type="button" class="btnAction_c btnPrimary">
+							<xf:label>조회</xf:label>
+							<script ev:event="onclick"><![CDATA[
+								Menu.find();
+							]]></script>
+						</xf:trigger>
+					</xf:group>
+				</xf:group>
+
+			</xf:group>
+			
+			<xf:group class="datarow searchArea">
+				<xf:group>
+					<xf:group class="searchActions">
+						<xf:trigger id="trgSave" type="button" class="btnAction_c btnPrimary">
+							<xf:label>저장</xf:label>
+							<script ev:event="onclick"><![CDATA[
+								//Menu.save();
+								if(!confirm("저장 하시겠습니까?")) return;
+								KitechAttach.transport(save);
+							]]></script>
+						</xf:trigger>
+					</xf:group>
+					
+					<xf:group class="searchActions">
+						<xf:trigger id="trgDelete" type="button" class="btnAction_c btnPrimary" style="background: lightcoral;">
+							<xf:label>삭제</xf:label>
+							<script ev:event="onclick"><![CDATA[
+								if(!confirm("삭제 하시겠습니까?")) return;
+								Menu.delRecord();
+							]]></script>
+						</xf:trigger>
+					</xf:group>
+					
+					<xf:group class="searchActions">
+						<xf:trigger id="trgExcel" type="button" class="btnAction_c btnPrimary" style="background: cadetblue;">
+							<xf:label>엑셀</xf:label>
+							<script ev:event="onclick"><![CDATA[
+								if (grd.getRowCount() == 0) {
+									alert("조회된 데이터가 없습니다.");
+								} else {
+									grd.advancedExcelDownload({
+										fileName : "장기기록물.xls",
+										type : "1",
+										startRowIndex : 0,
+										startColumnIndex : 0,
+										removeColumns : "0,13,14,15,16,17,18,19,20"
+									}, []);
+								}
+							]]></script>
+						</xf:trigger>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+		
+			<xf:group class="datarow searchArea">
+			
+				<xf:group id="rowMnt">
+					<xf:group style="display: inline-block;">
+						<w2:textbox id="output001" style="width:137px;height:14px;" class="subtitle" label="행 추가 삭제"></w2:textbox>
+					</xf:group>
+					<xf:group style="display: inline-block;vertical-align: middle;">
+						<xf:trigger id="trigger30" leftOnImageClass="addrowbtn" style="display: inline-block;width:20px;height:20px;margin-right: 5px;" toolTip="행추가" type="image" leftOffImageClass="addrowbtn">
+							<script ev:event="onclick" type="javascript"><![CDATA[
+								rowInsert();
+							]]></script>
+						</xf:trigger>
+						<xf:trigger id="trigger29" leftOnImageClass="delrowbtn" style="display: inline-block;width:20px;height:20px;" toolTip="행삭제" type="image" leftOffImageClass="delrowbtn">
+							<script ev:event="onclick" type="javascript"><![CDATA[
+								var row = grd.getFocusedRowIndex();
+								if(row < 0) {
+									alert("삭제할 row를 선택하세요.");
+								}else{
+									Menu.isExist(grd.getCellData(row, "게시자")) ? alert("저장된 row는 삭제할 수 없습니다") : grd.removeRow(row);
+								}
+							]]></script>
+						</xf:trigger>
+					</xf:group>
+				</xf:group>
+				<xf:group style="display: inline-block;">
+						<w2:textbox id="outputResultLebel" style="width:137px;height:14px;display: inline-block;" class="subtitle" label="결과"></w2:textbox>
+						<w2:textbox id="outputResultCnt" style="width:137px;height:14px;display: inline-block;" />
+				</xf:group>
+			
+			</xf:group>
+			
+			<w2:grid baseNode="vector" repeatNode="data/CgsLongRecMS01"
+				id="grd" class="gridstyle1"
+				style="position: relative;width:100%;height:350px;margin-top: 5px;"
+				rowNumHeaderValue="순번" rowNumVisible="true" autoFit="allColumn"
+				valueNode='value' tooltipDisplay="true" sortable="true"
+				sortEvent="onclick" focusMode="row" enterKeyMove="none"
+				editModeEvent="ondblclick">
+				<w2:header id="header1">
+					<w2:row>
+						<w2:column inputType="checkbox"
+							valueType="binary" style="height:28px" id="chkboxHead" width="30"
+							sortable="false" />
+						<w2:column width="30" value="구분" id="column1"
+							valueType="binary" />
+						<w2:column id="column12" style="height:28px"
+							inputType="text" width="70">
+						</w2:column>
+						<w2:column width="40" value="문서번호" id="column2"
+							valueType="binary" />
+						<w2:column width="40" value="처리과" id="column1_1"
+							valueType="binary" />
+						<w2:column width="80" value="단위업무"
+							id="column1_2" valueType="binary" />
+						<w2:column width="90" value="기록물명" id="column2"
+							valueType="binary" />
+						<w2:column width="40" value="접수번호" id="column3"
+							valueType="binary" />
+						<w2:column width="50" value="접수일시" id="column4"
+							valueType="binary" />
+						<w2:column width="50" value="접수부서" id="column5"
+							valueType="binary" />
+						<w2:column width="50" value="접수자" id="column6"
+							valueType="binary" />
+						<w2:column width="50" value="최종 결재자"
+							id="column7" valueType="binary" />
+						<w2:column width="30" value="보존기간" id="column8"
+							valueType="binary" />
+						<w2:column width="30" value="공개구분" id="column9"
+							valueType="binary" />
+						<w2:column width="50" value="첨부파일 번호"
+							id="column10" valueType="binary" />
+						<w2:column width="50" value="등록일시" id="column11"
+							valueType="binary" />
+					</w2:row>
+				</w2:header>
+				<w2:gBody id="gBody1">
+					<w2:row>
+						<w2:column inputType="checkbox"
+							valueType="binary" style="height:20px" id="chk" width="37" />
+						<w2:column id="구분" valueType="binary"
+							inputType="select" chooseOption="true">
+							<w2:choices>
+								<w2:item>
+									<w2:label>생산</w2:label>
+									<w2:value>1</w2:value>
+								</w2:item>
+								<w2:item>
+									<w2:label>접수</w2:label>
+									<w2:value>2</w2:value>
+								</w2:item>
+							</w2:choices>
+						</w2:column>
+						<w2:column id="column13" style="height:20px"
+							inputType="text" width="70">
+						</w2:column>
+						<w2:column id="문서번호" valueType="binary"
+							readOnly="true" class="disbg" />
+						<w2:column id="처리과" valueType="binary" />
+						<w2:column id="단위업무이름" valueType="binary" />
+						<w2:column id="기록물명" valueType="binary" />
+						<w2:column id="접수번호" valueType="binary" />
+						<w2:column id="접수일자" dataType="date"
+							inputType="calendar" width="120" textAlign="center"
+							displayFormat="yyyy-MM-dd" />
+						<w2:column id="접수부서이름" valueType="binary"
+							readOnly="true" class="disbg" />
+						<w2:column id="접수자이름" valueType="binary"
+							inputType="text" />
+						<w2:column id="최종결재자이름" valueType="binary" />
+						<w2:column id="보존기간" valueType="binary"
+							inputType="select" chooseOption="true">
+							<w2:choices>
+								<w2:item>
+									<w2:label>1년</w2:label>
+									<w2:value>1</w2:value>
+								</w2:item>
+								<w2:item>
+									<w2:label>3년</w2:label>
+									<w2:value>3</w2:value>
+								</w2:item>
+								<w2:item>
+									<w2:label>5년</w2:label>
+									<w2:value>5</w2:value>
+								</w2:item>
+								<w2:item>
+									<w2:label>10년</w2:label>
+									<w2:value>10</w2:value>
+								</w2:item>
+								<w2:item>
+									<w2:label>30년</w2:label>
+									<w2:value>30</w2:value>
+								</w2:item>
+								<w2:item>
+									<w2:label>준영구</w2:label>
+									<w2:value>99</w2:value>
+								</w2:item>
+								<w2:item>
+									<w2:label>영구</w2:label>
+									<w2:value>100</w2:value>
+								</w2:item>
+							</w2:choices>
+						</w2:column>
+						<w2:column id="공개구분" valueType="binary"
+							inputType="select" chooseOption="true">
+							<w2:choices>
+								<w2:item>
+									<w2:label>공개</w2:label>
+									<w2:value>1</w2:value>
+								</w2:item>
+								<w2:item>
+									<w2:label>부분공개</w2:label>
+									<w2:value>2</w2:value>
+								</w2:item>
+								<w2:item>
+									<w2:label>비공개</w2:label>
+									<w2:value>3</w2:value>
+								</w2:item>
+							</w2:choices>
+						</w2:column>
+						<w2:column id="파일번호" valueType="binary"
+							readOnly="true" />
+						<w2:column id="게시일시" valueType="binary"
+							readOnly="true" class="disbg" />
+
+						<w2:column id="단위업무코드" valueType="binary"
+							readOnly="true" hidden="true" />
+						<w2:column id="접수부서" valueType="binary"
+							readOnly="true" hidden="true" />
+						<w2:column id="접수자" valueType="binary"
+							readOnly="true" hidden="true" />
+						<w2:column id="최종결재자" valueType="binary"
+							readOnly="true" hidden="true" />
+						<w2:column id="게시자" valueType="binary"
+							readOnly="true" hidden="true" />
+						<w2:column id="삭제여부" valueType="binary"
+							readOnly="true" hidden="true" />
+
+					</w2:row>
+				</w2:gBody>
+				<script type="javascript"
+					ev:event="onrowindexchange(row,col)"><![CDATA[
+					var row = grd.getFocusedRowIndex();
+					if(row < 0){
+						alert("목록을 선택하세요.");
+						return;
+					}
+					record_nm_ipt_f.setValue(grd.getCellData(row, "기록물명"));
+					recei_no_ipt_f.setValue(grd.getCellData(row, "문서번호"));
+					var attachFileNo_A = grd.getCellData(row, "파일번호");
+					var param_A = {
+						  fileKey: ("" !== attachFileNo_A.trim()) ? attachFileNo_A.trim() : typeCode
+					 	, mode: file_mode
+					 	, allowExtension: "jpg,pptx,tiff,jpeg,hwp,hwpx,bmp,gif,mht,pdf,doc,rtf,tif,ppt,html,docx,txt,png"
+					};	
+					KitechAttach.create("upload_A", param_A);
+				]]></script>
+				<script ev:event="onbeforeedit( row , col, value )"><![CDATA[
+					if ( col == "단위업무이름" ){
+						gridHumRow = row;
+						popupUntInfo();
+					}
+				]]></script>
+				<script
+					ev:event="onafteredit( row , col , newData , oldData )"><![CDATA[
+					if ( col == this.getColumnIndex("접수자이름") || col == this.getColumnIndex("최종결재자이름") ){
+						if ( col == this.getColumnIndex("접수자이름") ){
+							gridNmRow = 1;
+							if( grd.getCellData(row, "접수자이름") == ""){
+									grd.setCellData(row, "접수자", "");
+									grd.setCellData(row, "접수부서", "");
+									grd.setCellData(row, "접수부서이름", "");
+							}
+						}
+						if ( col == this.getColumnIndex("최종결재자이름") ){
+							gridNmRow = 2;
+							if( grd.getCellData(row, "최종결재자이름") == ""){
+									grd.setCellData(row, "최종결재자", "");
+							}
+						}
+						//if ("13" == event.keyCode || "9" == event.keyCode){
+							if(newData.length > 0) {
+								gridHumRow = row;
+								var empnonm = "";
+								empnonm = newData.trim();
+								if(empnonm.num()) {
+									WebSquare.ModelUtil.setInstanceValue("request/humBasicEmpnoInfo/nm/@value", "");
+									WebSquare.ModelUtil.setInstanceValue("request/humBasicEmpnoInfo/empno/@value", '%' + empnonm + '%');
+								} else {
+									WebSquare.ModelUtil.setInstanceValue("request/humBasicEmpnoInfo/empno/@value", "");
+									WebSquare.ModelUtil.setInstanceValue("request/humBasicEmpnoInfo/nm/@value", '%' + empnonm + '%');
+								}
+								gfnExecuteSubmission("searchHumBasicEmpnoInfo");
+							}
+						//}
+					}
+				]]></script>
+			</w2:grid>
+
+			<xf:group style="width: 100%;">
+				<w2:textbox class="subtitle" id="textbox2" label="별첨자료" style="width:139px;height:14px;margin: 5px 0;" />
+				<xf:group tagname="table" id="etcTable" class="dataTable" style="width: 100%;border: 1px solid;border-collapse: collapse;">
+					<xf:group tagname="tbody">
+						<xf:group tagname="tr">
+							<xf:group tagname="th" style="width: 20%">
+								<w2:textbox class="labelC" label="문서번호"/>
+							</xf:group>
+							<xf:group tagname="td" class="pl-5">
+								<w2:textbox id="recei_no_ipt_f" class="" label="문서번호"/>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" style="width: 20%">
+								<w2:textbox class="labelC" label="기록물명"/>
+							</xf:group>
+							<xf:group tagname="td" class="pl-5">
+								<w2:textbox id="record_nm_ipt_f" class="" label="기록물명"/>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" style="vertical-align: middle;height: 150px;">
+								<w2:textbox class="labelC" label="첨부화일" style="height: 100%;vertical-align: middle;"/>
+							</xf:group>
+							<xf:group tagname="td" style="height:150px;">
+								<xf:group id="upload_A" style="height:100%;background-color: #eaeaea;"></xf:group>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			
+		</xf:group>			
+	</body>
+</html>

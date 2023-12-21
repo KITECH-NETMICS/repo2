@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="사후결재" meta_author="이영희" meta_date="2022.07.04.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_cause">
+            		<w2:keyInfo>
+            			<w2:key id="req_no" name="신청번호" dataType="text"></w2:key>
+            			<w2:key id="syspayno" name="시스템개인번호" dataType="text"></w2:key>
+            			<w2:key id="allow_days" name="허용일자" dataType="text"></w2:key>
+            			<w2:key id="is_apr_after" name="사후결재여부" dataType="text"></w2:key>
+            			<w2:key id="diff_days" name="날짜차이" dataType="text"></w2:key>
+            			<w2:key id="action_ymd" name="실제 날짜" dataType="text"></w2:key>
+            			<w2:key id="req_ymd" name="신청일자" dataType="text"></w2:key>
+            			<w2:key id="reason" name="사후결재사유" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+            <xf:submission id="sbm_selectData" ref='data:json,dma_cause'
+				target='data:json,dma_cause' action="SvcComAprComR01.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+				ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<!-- 저장 -->
+			<xf:submission id="sbm_saveData" ref='data:json,dma_cause'
+				target='' action="SvcComAprComM01.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+				ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 사후결재
+ 	 * 변경 이력 : 2022-07-04	이영희	최초 작성
+ 	 ****************************************************/
+	/**
+	 * 페이지 로딩 이벤트
+	 */   
+	scwin.onpageload = function() {
+		dma_cause.setJSON(com.getParameter());
+		
+		com.execute(sbm_selectData, {
+			successCallback : function(e){
+				if (com.getParameter("readOnly")) {
+					txa_reason.setDisabled(true);
+					btn_save.hide("");
+				}			
+			}
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 저장버튼 클릭 이벤트
+	 */ 
+	scwin.btn_save_onclick = function(e) {
+		var reason = dma_cause.get("reason").trim();
+		if ('' == reason || reason.length < 10){
+			com.alert("message.xom.ui.com.001");
+			return;
+		}	
+						
+		com.execute(sbm_saveData, {
+			successCallback : function(e){
+				com.closePopup(true);	
+			}
+		});
+	};	
+		
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		if(txa_reason.getValue() != ""){
+			com.closePopup(true);
+		}else{
+			com.closePopup();
+		}
+	};
+	
+	/**
+	 * 사후결재 사유 입력 keyup event
+	 */
+	scwin.txa_reason_onkeyup = function(e) {
+		spn_length.setValue(txa_reason.getValue().length);
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="신청번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox id="" label="" ref="data:dma_cause.req_no" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="수행일" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox id="" label="" ref="data:dma_cause.action_ymd" style="" tagname="span" dataType="date"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th" style="">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="신청일" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td" style="">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox id="" label="" ref="data:dma_cause.req_ymd" style="" tagname="span" dataType="date"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="" style="">
+    				<w2:textbox class="tit_tbl" id="" label="사후결재 사유" style="" tagname="h3"></w2:textbox>
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="(" style=""></w2:span>
+    					<w2:span class="numtotal" id="spn_length" label="0" style=""></w2:span>
+    					<w2:span id="" label=" / 300 자)" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="re" id="" style="">
+    				<w2:span class="note blue" id="" label="※ 300자 이내로 입력하세요." style=""></w2:span>
+    			</xf:group>
+    		</xf:group>
+    		<xf:textarea id="txa_reason" style="height: 150px;" ref="data:dma_cause.reason" ev:onkeyup="scwin.txa_reason_onkeyup" maxlength="300"></xf:textarea>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_save" type="button" class=" btn pro conf" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

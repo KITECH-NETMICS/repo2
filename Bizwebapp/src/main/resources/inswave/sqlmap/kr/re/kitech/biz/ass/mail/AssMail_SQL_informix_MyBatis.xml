@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ass.mail">
+<!-- 자산이동신청(A13), 자산외부설치(A14) 결재완료 후 메일발송 담당자 조회 -->
+<select id="selectAssMoveMailRec_1" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.ass.mail.selectAssMoveMailRec_1 */
+     b.syspayno
+     , b.email
+     , b.nm 
+FROM elecappinfo a
+JOIN humbasicinfo b ON a.regst_syspayno = b.syspayno
+WHERE a.req_no = #{reqNo}
+AND roll_nm IN ('관리담당', '관리책임')
+</select>
+<select id="selectAssMoveMailRec_2" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.ass.mail.selectAssMoveMailRec_2 */
+	a.syspayno
+	, a.email
+	, a.nm
+FROM humbasicinfo a
+WHERE syspayno IN (#{syspayNo},
+	(SELECT b.depthed FROM humbasicinfo a
+	 JOIN xodhdeptinfo b
+	 ON a.dept_cd = b.dept_cd
+	 AND a.dept_new_ymd = b.dept_new_ymd
+	 WHERE a.syspayno = #{syspayNo})
+)
+</select>
+<select id="selectAssMoveMailSen" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.ass.mail.selectAssMoveMailSen */
+	mngmt_item_1
+FROM xodxcommst
+WHERE cd = #{cd}
+</select>
+<!-- 자산이동신청(A13), 자산외부설치(A14) 정보 조회 -->
+<select id="selectAssMoveInfo" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.ass.mail.selectAssMoveInfo */
+	t1.req_no
+    , t1.aset_no
+    , t2.aset_nm
+	, t1.brin_schdl_ymd
+    , t1.tout_schdl_ymd
+    , t4.nm AS user_nm
+    , t4.empno AS user_empno
+    , FUN_XODXCOMMST_CD_NM(t3.posi_region, 0) ||' '|| FUN_XODXCOMMST_CD_NM(t3.posi_build,  0) ||' '|| t3.posi_floor ||' '|| t3.posi_detls as posi_nm
+    , t1.out_instl_ymd_st
+    , t1.out_instl_ymd_ed
+    , t1.cause
+    , t1.prj_nm
+    , t1.instl_vend_nm
+FROM assmove t1
+JOIN assmastrh t2 ON t1.aset_no = t2.aset_no
+JOIN assmastrb t3 ON t1.aset_no= t3.aset_no
+JOIN humbasicinfo t4 ON t3.user_syspayno = t4.syspayno
+WHERE t1.req_no = #{reqNo}
+</select>
+</mapper>

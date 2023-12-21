@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.pcm">
+  <select id="selectPatBibliography" parameterType="kr.re.kitech.biz.pat.pcm.vo.PatBibliographyVo" resultType="kr.re.kitech.biz.pat.pcm.vo.PatBibliographyVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pcm.selectPatBibliography */ 
+		 mst.req_no
+        , mst.mngmt_no
+        , mst.pat_clsf
+        , mst.patofic_cd
+        , TRIM(pof.patofic_nm) AS patofic_nm
+        , NVL(fun_xodxcommst_cd_nm(mst.pat_clsf, 0), '') pat_clsf_nm
+        , mst.tech_clsf
+        , NVL(fun_xodxcommst_cd_nm(mst.tech_clsf, 0), '') tech_clsf_nm
+        , mst.state
+        , pst.state_desc state_nm
+        , TRIM(mst.invnt_krn_nm::CHAR(400)) invnt_krn_nm
+        , NVL(TRIM(mst.smitapp_no), '') smitapp_no
+        , NVL(TRIM(mst.smitapp_ymd), '') smitapp_ymd
+        , mst.smitapp_natn_cd
+        , TRIM(mst.smitapp_natn_nm::char(100)) smitapp_natn_nm
+        , NVL(TRIM(mst.regst_no), '') regst_no
+        , NVL(TRIM(mst.regst_ymd), '') regst_ymd
+        , mst.invnt_syspayno
+        , mst.invnt_psn_nm
+        , mst.right_expir_ymd
+        , hum1.nm || '  (연락처) ' || hum1.mobile ||'  (메일) ' || hum1.email AS invnt_nm
+        , hum2.nm || '  (연락처) ' || hum2.mobile ||'  (메일) ' || hum2.email AS mandate_psn_nm
+        , '[' || pof.patofic_nm|| ']' || ptmst.hope_patofic_charg_nm || ' (연락처)' || ptmst.hope_patofic_contac_loc ||' (메일)' || poc1.email AS patofic_full_nm
+        , mst.charg_syspayno
+        , NVL(mst.patofic_mng_no, '') patofic_mng_no
+        , mst.dom_oversea_clsf
+        , mst.prityrgt_main_rspns_no
+        , mst.prityrgt_main_rspns_ymd
+        FROM  patmastr mst
+        INNER JOIN patappmastr ptmst ON mst.req_no = ptmst.req_no
+        INNER JOIN humbasicinfo hum1 ON hum1.syspayno = mst.invnt_syspayno
+        INNER JOIN patoffice pof ON mst.patofic_cd = pof.patofic_cd
+        LEFT JOIN humbasicinfo hum2 ON hum2.syspayno = mst.mandate_psn_syspayno
+        LEFT JOIN patoficcharg poc1 ON poc1.patofic_cd = ptmst.hope_patofic_cd AND poc1.nm = ptmst.hope_patofic_charg_nm
+        LEFT JOIN patstatecode pst ON pst.state_cd = mst.state
+        WHERE mst.mngmt_no = #{mngmt_no}
+  </select>
+</mapper>

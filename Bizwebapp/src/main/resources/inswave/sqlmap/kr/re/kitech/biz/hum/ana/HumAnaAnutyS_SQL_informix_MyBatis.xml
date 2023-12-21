@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.hum.ana">
+  <select id="selectHumAnaAnutyS" parameterType="kr.re.kitech.biz.hum.ana.vo.HumAnaAnutySVo" resultType="kr.re.kitech.biz.hum.ana.vo.HumAnaAnutySVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.ana.selectHumAnaAnutyS */ 
+		 a.empno,                                      
+       TRIM(a.nm) nm,                                 
+       a.posi_nm,                           
+       a.occugrp_nm,                            
+       a.resid_no,                                
+--       c.retire_base_amt -  NVL(e.salry_cd_amt,0) AS retire_base_amt,      20190819 선택적복지비 차감부분 제거
+       c.retire_base_amt AS retire_base_amt,                              
+       SUM(DECODE(b.salry_cd,'815',b.salry_cd_amt*d.mngmt_no_1,0)) AS user_amt,   
+       SUM(DECODE(b.salry_cd,'561',b.salry_cd_amt*d.mngmt_no_1,0)) AS person_amt,  
+       SUM(DECODE(b.salry_cd,'562',b.salry_cd_amt*d.mngmt_no_1,0)) AS add_amt,    
+       c.retire_appro AS past_retire_pay ,                      
+       SUM(b.salry_cd_amt*d.mngmt_no_1)+c.retire_appro AS tot_amt,   
+       DECODE(NVL(c.retire_base_amt,0),0,0,ROUND(SUM(decode(b.salry_cd,'815',b.salry_cd_amt*d.mngmt_no_1,0)) / c.retire_base_amt,2)) AS av_base_user,
+       '' AS rmk     
+FROM humslmmpay a
+JOIN humslmmpaycd b ON a.belng_yrmon = b.belng_yrmon AND a.syspayno = b.syspayno AND b.salry_cd IN('815','561','562')
+JOIN humslmmpayamt c ON a.belng_yrmon = c.belng_yrmon AND a.syspayno = c.syspayno  
+JOIN xodxcommst d ON b.pay_typ = d.cd 
+LEFT JOIN (SELECT x.belng_yrmon, x.syspayno, SUM(NVL(salry_cd_amt,0)) AS salry_cd_amt
+           FROM humslmmpaycd x
+           JOIN humslmmpayamt y ON y.belng_yrmon = x.belng_yrmon AND y.syspayno = x.syspayno
+           WHERE x.belng_yrmon = y.belng_yrmon AND x.syspayno = y.syspayno AND x.salry_cd = '118' 
+           GROUP BY 1,2) e ON a.syspayno = e.syspayno AND a.belng_yrmon = e.belng_yrmon
+WHERE a.sci_tech_anuty = 'Y'
+AND b.belng_yrmon BETWEEN #{belng_yrmon_fr} AND #{belng_yrmon_to}
+<if test="empno != null and empno != ''">
+	 AND a.empno LIKE #{empno}
+</if> 
+<if test="nm != null and nm != ''">
+	 AND a.nm LIKE #{nm}
+</if>  
+<if test="dept_cd != null and dept_cd != ''">
+	 AND a.dept_cd LIKE #{dept_cd}
+</if>  
+<if test="dept_nm != null and dept_nm != ''">
+	 AND a.dept_nm LIKE #{dept_nm}
+</if>  
+GROUP BY a.empno, a.nm, a.posi_nm, a.occugrp_nm, a.resid_no, retire_base_amt, c.retire_appro, e.salry_cd_amt
+ORDER BY nm
+  </select>
+</mapper>

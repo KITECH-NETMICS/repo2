@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.pat.mnt">
+<!-- 지식재산권 공동발명자 조회 -->
+<select id="selectPatCoInvntPsnList" parameterType="kr.re.kitech.biz.pat.app.vo.PatSrcVo" resultType="kr.re.kitech.biz.pat.app.vo.PatCoinvntPsnVo">
+SELECT /* kr.re.kitech.biz.pat.mnt.selectPatCoInvntPsnList */
+      a.req_no   /* 의뢰번호     */                 
+     , a.seq      /* 의뢰차수     */  
+     , a.syspayno /* 시스템개인번호 */
+     , DECODE(a.blong_clsf, 'PDT010', h.empno, 'PDT020', '') AS empno   /* 개인번호           */  
+     , a.blong_clsf  /* 소속구분  */  
+     , DECODE(a.blong_clsf, 'PDT010', b.dept_cd, 'PDT020', a.blong_cd) AS blong_cd     /* 소속코드         */ 
+     , DECODE(a.blong_clsf, 'PDT010', b.dept_new_ymd, 'PDT020', a.dept_new_ymd) AS dept_new_ymd /* 소속부서명 */
+     , DECODE(a.blong_clsf, 'PDT010', b.dept_nm, 'PDT020', a.blong_nm)   AS blong_nm     /* 소속명  */  
+     , a.nm_krn         /* 성명국문   */  
+     , a.nm_eng         /* 성명영문   */  
+     , a.resid_regst_no /* 주민등록번호 */  
+     , substr(a.resid_regst_no, 0, 6)||'*******' AS resid_no_dis  /* 주민등록번호 */  
+     , a.contac_loc  /* 연락처  */  
+     , a.email       /* 이메일  */  
+     , a.addr        /* 주소    */  
+     , a.stake_rt    /* 지분율   */ 
+     , a.stake_dept  /* 실적부서  */ 
+     , TRIM(a.invnt_psn_clsf) AS invnt_psn_clsf    /* 발명자구분       */  
+     , a.trans_ex           /* 양도유무  */  
+     , a.attach_file_no     /* 첨부파일  */  
+     , a.co_invnt_affir_ex  /* 공동발명확인유무 */  
+     , a.co_invnt_affir_ymd /* 공동발명확인일자 */  
+     , a.co_invnt_affir_rmk /* 공동발명확인비고 */  
+     , a.co_invnt_retn_ymd  /* 공동발명반송일자 */  
+     , a.co_invnt_retn_rmk   /* 공동발명반송비고 */
+     , h.work_clsf
+     , c.cd_nm AS work_clsf_nm 
+  FROM patcoinvntpsn a
+  LEFT JOIN humbasicinfo h ON a.syspayno = h.syspayno
+  LEFT JOIN xodhdeptinfo b ON h.dept_cd = b.dept_cd AND h.dept_new_ymd = b.dept_new_ymd
+  LEFT JOIN xodxcommst c ON h.work_clsf = c.cd AND c.cd_clsf = 'HAG'
+ WHERE a.req_no = #{req_no}
+   AND a.mngmt_no = #{mngmt_no} /* 관리번호 */
+</select>
+
+<!-- 지식재산권 출원인 조회 -->
+<select id="selectPatCoSmitappVendList" parameterType="kr.re.kitech.biz.pat.app.vo.PatSrcVo" resultType="kr.re.kitech.biz.pat.app.vo.PatCoSmitappVendVo">
+SELECT /* kr.re.kitech.biz.pat.mnt.selectPatCoSmitappVendList */
+       req_no       /* 의뢰번호    */     
+     , vend_type    /* 업체 타입 개인:(1) /업체:(2) */
+     , stake_rt     /* 지분율    */
+     , vend_cd      /* 업체코드   */
+     , vend_nm      /* 업체명    */
+     , vend_bsn_no  /* 사업자,주민번호  */
+     , charg        /* 대표자  */
+     , addr         /* 주소   */
+     , contac_loc   /* 연락처  */
+     , seq          
+  FROM patcosmitappvend 
+ WHERE req_no = #{req_no}
+   AND mngmt_no = #{mngmt_no} /* 관리번호 */
+</select>
+
+<!-- 지식재산권 관련연구과제 조회 -->
+<select id="selectPatRelatReschPrjList" parameterType="kr.re.kitech.biz.pat.app.vo.PatSrcVo" resultType="kr.re.kitech.biz.pat.app.vo.PatRelatReschPrjVo">
+-- 2018.03.19. 연구책임자 조회시 curr_resch_rspns로 검색, work_clsf
+SELECT /* kr.re.kitech.biz.pat.mnt.selectPatRelatReschPrjList */
+       t1.req_no    /* 의뢰번호  */                  
+     , t1.accnt_no  /* 계정번호  */
+     , t1.prj_no    /* 과제번호  */
+     , t1.prj_nm    /* 과제명    */
+     , t3.curr_resch_rspns AS resch_respn_syspayno  /* 연구책임시스템개인번호   */
+     , t2.nm AS resch_respn_nm   /* 연구책임성명  */
+     , t2.work_clsf
+     , t1.prj_term   /* 기간    */
+     , t4.cd_nm  AS bsns_cd_inout_nm  /* 과제구분*/  
+FROM patrelatreschprj t1
+JOIN resinpmast t3 ON t3.prj_no = t1.prj_no
+JOIN xodxcommst t4 ON t4.cd = t3.bsns_cd_inout
+LEFT JOIN humbasicinfo t2 ON t3.curr_resch_rspns = t2.syspayno
+WHERE req_no = #{req_no}
+</select>
+</mapper>

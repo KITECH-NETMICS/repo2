@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="계좌번호조회" meta_vertical_guides="38" meta_horizontal_guides="">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="bank" name="은행" dataType="text"></w2:key>
+            			<w2:key id="bankaccnt_no" name="계좌번호" dataType="text"></w2:key>
+            			<w2:key id="inqr_val" name="성명" dataType="text"></w2:key>
+            			<w2:key id="clsf" name="팝업구분" dataType="text"></w2:key>
+            			<w2:key id="depst_knd" name="예금구분" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="syspayno" name="시스템번호" dataType="text"></w2:column>
+            			<w2:column id="empno" name="사번" dataType="text"></w2:column>
+            			<w2:column id="nm" name="성명" dataType="text"></w2:column>
+            			<w2:column id="dept_nm" name="부서명" dataType="text"></w2:column>
+            			<w2:column id="bank" name="은행" dataType="text"></w2:column>
+            			<w2:column id="bank_nm" name="은행명" dataType="text"></w2:column>
+            			<w2:column id="bankaccnt_no" name="계좌번호" dataType="text"></w2:column>
+            			<w2:column id="depstr_nm" name="예금주명" dataType="text"></w2:column>
+            			<w2:column id="depst_knd_nm" name="예금구분명" dataType="text"></w2:column>
+            			<w2:column id="rmk" name="비고" dataType="text"></w2:column>
+            			<w2:column id="contrct_ymd" name="계약일자" dataType="text"></w2:column>
+            			<w2:column id="expir_ymd" name="만기일자" dataType="text"></w2:column>
+            			<w2:column id="intrst_rt" name="이자율" dataType="text"></w2:column>
+            			<w2:column id="accnt_cd" name="회계코드" dataType="text"></w2:column>
+            			<w2:column id="accnt_cd_abbr" name="회계코드명" dataType="text"></w2:column>
+            			<w2:column id="caseby_adjst_ex" name="건별정산유무" dataType="text"></w2:column>
+            			<w2:column id="bond_debt_clsf" name="채권채무구분" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+            <xf:submission id="sbm_selectData" ref='data:json,dma_search' target=''
+				action="SvcCOMPOPR01.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler=""
+				customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[        
+	scwin.onpageload = function() {
+		sbx_depst_knd.hide();
+		var param = com.getParameter();
+		// 팝업구분(depst : 계좌, apart : 별도계좌)
+		dma_search.set("clsf", param.clsf);
+		dma_search.set("bankaccnt_no", param.bankaccnt_no);
+		
+		if(param.clsf == "apart"){
+			grd_accnt.hide();
+			grd_apart_accnt.show("");
+			tbx_inqr_val.setValue("성명");
+		}else{
+			grd_accnt.show("");
+			grd_apart_accnt.hide();
+			if(param.biz_clsf == "S"){ // 기업지원-외부기술지원(유상) 내역등록
+				tbx_inqr_val.setValue("예금구분");
+				sbx_depst_knd.show("");
+				ibx_inqr_val.hide();
+			}else{
+				tbx_inqr_val.setValue("비고");
+			}
+		}
+		
+		// 검색조건 영역내의 컴포넌트에 엔터키 이벤트 발생시 조회 수행
+		com.setEnterKeyEvent(grp_search, scwin.btn_search_onclick);
+		var codeOptions = [ { code : "FAA", compID :"sbx_bank_cd, grd_apart_accnt:bank, grd_accnt:bank" } //useEx이 'N'인 항목은 재선택 불가
+		];
+		
+		if(param.biz_clsf == "S"){ 
+			codeOptions.push({ code : "FAN", compID :"sbx_depst_knd" });
+		}
+		com.setCmnCd(codeOptions, function() {
+			if(param.biz_clsf == "S"){ 
+				sbx_depst_knd.setValue("FAN905");
+			}
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회버튼 클릭
+	 */
+	scwin.btn_search_onclick = function() {
+		com.execute(sbm_selectData, {
+			successCallback : function(e) {
+				dlt_grd.setJSON(e.responseJSON.bankAccntVoList);
+			}
+		});
+	};
+	
+	/**
+	 * 그리드 더블클릭 이벤트
+	 */ 
+	scwin.grd_apart_accnt_oncelldblclick = function(row,col,colId) {
+		scwin.setBankAccntNo(row);
+	};
+	
+	/**
+	 * 선택한 행의 데이터 넘겨주기
+	 */
+	scwin.setBankAccntNo = function(row){
+		com.closePopup(dlt_grd.getRowJSON(row));
+	}
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	
+	scwin.grd_accnt_oncelldblclick = function(row,col,colId) {
+		scwin.setBankAccntNo(row);
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group style="" id="grp_search" class="searchSection">
+    		<xf:group id="" class="schbox">
+    			<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    				<w2:attributes>
+    					<w2:summary></w2:summary>
+    				</w2:attributes>
+    				<xf:group tagname="caption"></xf:group>
+    				<xf:group tagname="colgroup">
+    					<xf:group tagname="col" style="width:50px;"></xf:group>
+    					<xf:group tagname="col" style="width:180px"></xf:group>
+    					<xf:group style="width:70px;" tagname="col"></xf:group>
+    					<xf:group style="width: 180px" tagname="col"></xf:group>
+    					<xf:group style="width:70px;" tagname="col"></xf:group>
+    					<xf:group style="" tagname="col"></xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr" style="">
+    					<xf:group class="w2tb_th" style="" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:textbox id="" label="은행" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" style="width: 150px" tagname="td">
+    						<xf:select1 appearance="minimal" chooseOption="true" class="sel" direction="auto" disabled="false"
+    							disabledClass="w2selectbox_disabled" id="sbx_bank_cd" ref="data:dma_search.bank" style="width:150px;" submenuSize="auto"
+    							visibleRowNum="10" title="은행명" chooseOptionLabel="- 전체 -" textAlign="center">
+    							<xf:choices></xf:choices>
+    						</xf:select1>
+    					</xf:group>
+    					<xf:group class="w2tb_th" style="" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:textbox id="" label="계좌번호" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" style="" tagname="td">
+    						<xf:input adjustMaxLength="false" class="inp" id="" style="width: 130px;" title="계좌번호"
+    							ref="data:dma_search.bankaccnt_no">
+    						</xf:input>
+    					</xf:group>
+    					<xf:group class="w2tb_th" style="" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:textbox id="tbx_inqr_val" label="성명" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" style="" tagname="td">
+    						<xf:input adjustMaxLength="false" class="inp" id="ibx_inqr_val" ref="data:dma_search.inqr_val" style="width: 150px;"
+    							title="성명">
+    						</xf:input>
+    						<xf:select1 appearance="minimal" chooseOption="true" chooseOptionLabel="- 전체 -" class="sel" direction="auto"
+    							disabled="false" disabledClass="w2selectbox_disabled" id="sbx_depst_knd" ref="data:dma_search.depst_knd" style="width:150px;"
+    							submenuSize="auto" textAlign="center" title="예금구분" visibleRowNum="10">
+    							<xf:choices></xf:choices>
+    						</xf:select1>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" class="schbtn">
+    			<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    				<xf:label><![CDATA[조회]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    		id="grd_apart_accnt" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    		rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    		scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    		visibleRowNum="10" summaryAuto="true" ev:oncelldblclick="scwin.grd_apart_accnt_oncelldblclick" sortable="true" filterFocusMode="outfocus">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column width="100" inputType="text" style="height:28px" id="column12" value="은행" displayMode="label"></w2:column>
+    				<w2:column width="130" inputType="text" style="height:28px" id="column16" value="계좌번호" displayMode="label"></w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="column18" value="예금주명" displayMode="label"></w2:column>
+    				<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="개인번호" width="70"></w2:column>
+    				<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="사원명" width="70"></w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="column10" value="부서명" displayMode="label"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column width="100" inputType="select" style="height:28px" id="bank" value="" displayMode="label" readOnly="true"></w2:column>
+    				<w2:column width="130" inputType="text" style="height:28px" id="bankaccnt_no" value="" displayMode="label"
+    					readOnly="true" class="">
+    				</w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="depstr_nm" value="" displayMode="label"
+    					readOnly="true">
+    				</w2:column>
+    				<w2:column displayMode="label" id="empno" inputType="text" readOnly="true" style="height:28px;" width="70"></w2:column>
+    				<w2:column class="" displayMode="label" id="nm" inputType="text" readOnly="true" style="height:28px;" width="70"></w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="dept_nm" value="" displayMode="label" readOnly="true"
+    					class="le">
+    				</w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    		id="grd_accnt" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    		rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    		scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    		summaryAuto="true" visibleRowNum="10" ev:oncelldblclick="scwin.grd_accnt_oncelldblclick" sortable="true" filterFocusMode="outfocus" readOnly="true">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column displayMode="label" id="column12" inputType="text" style="height:28px" value="은행" width="110"></w2:column>
+    				<w2:column displayMode="label" id="column16" inputType="text" style="height:28px" value="계좌번호" width="130"></w2:column>
+    				<w2:column displayMode="label" id="column18" inputType="text" style="height:28px" value="예금주명" width="150"></w2:column>
+    				<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="계약일자" width="93"></w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px" id="column21" value="예금구분" displayMode="label"></w2:column>
+    				<w2:column width="120" inputType="text" style="height:28px" id="column20" value="비고" displayMode="label"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column displayMode="label" id="bank" inputType="select" readOnly="true" style="height:28px" value="" width="110"></w2:column>
+    				<w2:column class="" displayMode="label" id="bankaccnt_no" inputType="text" readOnly="true" style="height:28px" value=""
+    					width="130">
+    				</w2:column>
+    				<w2:column displayMode="label" id="depstr_nm" inputType="text" readOnly="true" style="height:28px" value=""
+    					width="150">
+    				</w2:column>
+    				<w2:column displayMode="label" id="contrct_ymd" inputType="text" readOnly="true" style="height:28px;" width="93"
+    					dataType="date" displayFormat="yyyy-MM-dd">
+    				</w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px" id="depst_knd_nm" value="" displayMode="label"></w2:column>
+    				<w2:column width="120" inputType="text" style="height:28px" id="rmk" value="" displayMode="label" class="le"
+    					readOnly="true">
+    				</w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+
+    			<xf:trigger class="btn pro" id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

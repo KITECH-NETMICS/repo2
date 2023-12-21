@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="주소검색">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns="" />
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+					<w2:keyInfo>
+						<w2:key id="confmKey" name="인정번호" dataType="text" value="U01TX0FVVEgyMDE1MTExOTE0NTM0MzA="></w2:key>
+						<w2:key id="currentPage" name="시작페이지" dataType="text" value="1"></w2:key>
+						<w2:key id="countPerPage" name="다음페이지" dataType="text" value="10"></w2:key>
+						<w2:key id="resultType" name="결과타입" dataType="text" value="json"></w2:key>
+						<w2:key id="keyword" name="키워드" dataType="text" value=""></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dataList1" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="zipNo" name="우편번호" dataType="text"></w2:column>
+            			<w2:column id="bdMgtSn" name="신청번호" dataType="text"></w2:column>
+            			<w2:column id="roadAddrPart1" name="도로명" dataType="text"></w2:column>
+            			<w2:column id="jibunAddr" name="지번" dataType="text"></w2:column>
+            			<w2:column id="roadAddrPart2" name="상세주소" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		grpFoot.hide("");
+		com.setEnterKeyEvent(grp_search, scwin.btn_search_address_onclick);
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	scwin.btn_search_address_onclick = function(isNotPaginate) {
+		var protocol = location.protocol;
+		$.ajax({
+			  url : protocol + "//www.juso.go.kr/addrlink/addrLinkApiJsonp.do"  //인터넷망
+			, type:"post"
+			//, data:"confmKey=U01TX0FVVEgyMDE1MTExOTE0NTM0MzA=&currentPage=1&resultType=json&countPerPage=10&keyword="+inp_addr.getValue()
+			, data:dma_search.getJSON()
+			, dataType:"jsonp"
+			, crossDomain:true
+			,success:function(jsonStr){
+				var errCode = jsonStr.results.common.errorCode;
+				var errDesc = jsonStr.results.common.errorMessage;
+				var count = jsonStr.results.common.totalCount
+				if(errCode != "0"){
+					alert(errCode+"="+errDesc);
+				}else{
+					if (jsonStr && jsonStr.results && jsonStr.results.juso) {
+						info.hide();
+						//group3.setStyle("visibility", "visible");
+						var data = jsonStr.results.juso;
+						dataList1.setJSON(data, false);
+						
+						// 주소정보 세팅
+						generator1.removeAll();
+						var _len1 = dataList1.getRowCount();
+						for (var i=0; i<_len1; i++ ) {
+			        		generator1.insert();
+			        		generator1.getChild( i , "zipNo" ).setValue(dataList1.getCellData( i , "zipNo" ));
+			        		generator1.getChild( i , "roadAddrPart1" ).setValue(dataList1.getCellData( i , "roadAddrPart1" ));
+			        		generator1.getChild( i , "jibunAddr" ).setValue(dataList1.getCellData( i , "jibunAddr" ));
+			        		generator1.getChild( i , "roadAddrPart2" ).setValue(dataList1.getCellData( i , "roadAddrPart2" ));
+			        		generator1.getChild( i , "bdMgtSn" ).setValue(dataList1.getCellData( i , "bdMgtSn" ));
+			        	}
+			        	if (isNotPaginate != "pageReset") {
+			        		grpFoot.show("");
+			        		scwin.wComponent.setPageListCount(count);
+			        	}
+					}
+				}
+			}
+			, error: function(e) { debugger; }
+		});
+	};
+	
+	scwin.wComponent = {
+		// 페이징 처리.
+		setPageListCount : function(result) {
+			var totalPostRowCount = WebSquare.util.parseInt( result, 0);
+			if(isNaN(totalPostRowCount)) totalPostRowCount = 0;
+			var countPerPage =  WebSquare.util.parseInt( dma_search.get("countPerPage"), 0);
+			var totalPageCount = totalPostRowCount / countPerPage;
+			// ceil 필수.
+			pagesList.setCount( Math.ceil( totalPageCount));
+			pagesControl.setCount( Math.ceil( totalPageCount));
+		}
+	};
+	
+	
+	scwin.jibunAddr_onclick = function() {
+		var arrInfo = {};
+		arrInfo["zipNo"] = generator1.getChild(this.options.g_index,"zipNo").getValue();
+		arrInfo["addrPart1"] = generator1.getChild(this.options.g_index,"jibunAddr").getValue();
+		arrInfo["addrPart2"] = generator1.getChild(this.options.g_index,"roadAddrPart2").getValue();
+		arrInfo["jibunAddr"] = generator1.getChild(this.options.g_index,"jibunAddr").getValue();
+		arrInfo["bdMgtSn"] = generator1.getChild(this.options.g_index,"bdMgtSn").getValue();
+
+		com.closePopup(arrInfo);
+	};
+	
+	scwin.roadAddrPart1_onclick = function() {
+		var arrInfo = {};
+		arrInfo["zipNo"] = generator1.getChild(this.options.g_index,"zipNo").getValue();
+		arrInfo["addrPart1"] = generator1.getChild(this.options.g_index,"roadAddrPart1").getValue();
+		arrInfo["addrPart2"] = generator1.getChild(this.options.g_index,"roadAddrPart2").getValue();
+		arrInfo["jibunAddr"] = generator1.getChild(this.options.g_index,"jibunAddr").getValue();
+		arrInfo["bdMgtSn"] = generator1.getChild(this.options.g_index,"bdMgtSn").getValue();
+
+		com.closePopup(arrInfo);
+	};
+	
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	scwin.pagesList_onclick = function(idx) {
+		
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group style="" id="grp_search" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style=""></xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr" style="">
+    						<xf:group tagname="th" style="" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="주소검색"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" style="" class="w2tb_td">
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_addr" style="width: 300px;" title="주소검색" ref="data:dma_search.keyword"></xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group style="" id="" class="sch_more">
+    					<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    						<w2:attributes>
+    							<w2:summary></w2:summary>
+    						</w2:attributes>
+    						<xf:group tagname="caption"></xf:group>
+    						<xf:group tagname="colgroup">
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col" style="width:300px;"></xf:group>
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col" style="width:290px;"></xf:group>
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col"></xf:group>
+    						</xf:group>
+    						<xf:group tagname="tr" style="">
+    							<xf:group tagname="th" style="" class="w2tb_th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="담당자"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" style="" class="w2tb_td">
+    								<xf:group style="width: 120px;" id="" class="inpSch">
+    									<xf:input adjustMaxLength="false" style="" id="" class="inp"></xf:input>
+    									<xf:trigger style="" id="" type="button" class="btn">
+    										<xf:label><![CDATA[검색]]></xf:label>
+    									</xf:trigger>
+    								</xf:group>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    							<xf:group tagname="th" style="" class="w2tb_th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="담당자"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" style="" class="w2tb_td">
+    								<xf:group style="width: 120px;" id="" class="inpSch">
+    									<xf:input adjustMaxLength="false" style="" id="" class="inp"></xf:input>
+    									<xf:trigger style="" id="" type="button" class="btn">
+    										<xf:label><![CDATA[검색]]></xf:label>
+    									</xf:trigger>
+    								</xf:group>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    							<xf:group tagname="th" class="w2tb_th">
+    								<w2:attributes></w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="신청번호"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" class="w2tb_td">
+    								<w2:attributes></w2:attributes>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="btn_search_addres" type="button" class="btn search" ev:onclick="scwin.btn_search_address_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="helparea" id="" style="">
+	    		<xf:group id="info">
+	    			<w2:textbox style="" id="" label="TIP" class="helptitle"></w2:textbox>
+	    			<xf:group tagname="ul" style="" id="">
+	    				<xf:group tagname="li" id="">
+	    					<w2:textbox tagname="span" style="" id="" label="도로명이나 지역명을 이용해서 검색해 보세요. 건물번호, 번지를 함께 입력하시면 더욱 정확한 결과가 검색됩니다." class="red">
+	    					</w2:textbox>
+	    				</xf:group>
+		    		</xf:group>
+	    			<w2:textbox style="margin-left: 17px;" id="" label="예) 한국생산기술연구원, 양대기로길, 기로리 40-4, 제주 첨담로 242, 한남동 714" class="fs11 grey"></w2:textbox>
+	    		</xf:group>
+	    		<xf:group id="" style="" class="ziplistBox">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:50px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    						<xf:group style="width:200px;" tagname="col"></xf:group>
+    					</xf:group>							
+							<w2:generator tagname="tbody" style="" id="generator1">
+	    						<xf:group tagname="tr">
+	    							<xf:group tagname="td" style="" class="w2tb_td le last">
+	    								<w2:attributes>
+	    									<w2:scope>row</w2:scope>
+	    									<w2:colspan>1</w2:colspan>
+	    									<w2:rowspan>2</w2:rowspan>
+	    								</w2:attributes>
+	    								<w2:textbox tagname="span" style="" id="zipNo" label="11111"></w2:textbox>
+	    							</xf:group>
+	    							<xf:group tagname="td" style="" class="w2tb_td">
+	    								<w2:textbox tagname="span" style="" id="" label="도로명" class="tag"></w2:textbox>
+	    							</xf:group>
+	    							<xf:group tagname="td" style="" class="w2tb_td le">
+	    								<w2:attributes>
+	    									<w2:scope>row</w2:scope>
+	    								</w2:attributes>
+	    								<w2:textbox tagname="a" style="" id="roadAddrPart1" label="서울시 여의도로 111111111111111111" ev:onclick="scwin.roadAddrPart1_onclick"></w2:textbox>
+	    							</xf:group>
+	    							<xf:group tagname="td" style="" class="w2tb_td ri  last">
+	    								<w2:attributes>
+	    									<w2:colspan>1</w2:colspan>
+	    									<w2:rowspan>2</w2:rowspan>
+	    								</w2:attributes>
+	    								<xf:input adjustMaxLength="false" style="" id="roadAddrPart2" class="inp full"></xf:input>
+	    							</xf:group>
+	    						</xf:group>
+	    						<xf:group tagname="tr" style="" class=" last">
+	    							<xf:group tagname="td" style="" class="w2tb_td">
+	    								<w2:textbox tagname="span" style="" id="" label="지 &amp;nbsp;번" class="tag" escape="false"></w2:textbox>
+	    							</xf:group>
+	    							<xf:group tagname="td" style="" class="w2tb_td le">
+	    								<w2:attributes>
+	    									<w2:scope>row</w2:scope>
+	    								</w2:attributes>
+	    								<w2:textbox tagname="a" style="" id="jibunAddr" label="서울시 여의도동 00000000000000000000" ev:onclick="scwin.jibunAddr_onclick"></w2:textbox>
+	    							</xf:group>
+	    						</xf:group>
+	    						<w2:textbox style="display:none;" id="bdMgtSn"></w2:textbox>
+	    					</w2:generator>
+    				</xf:group>
+	    		</xf:group>
+	    		<xf:group id="grpFoot" class="" style="height: 40px;">
+					<xf:group id="grpPageList" style="height:30px;">
+						<w2:pageList id="pagesList" leftPageImageClass="" style="margin: 0 auto;height: 30px;z-index:-3;" buttonShowType="0" pageSize="5" class="addrPageList"
+							displayFormat="#" rightPageBackImage="" leftPageBackImage="" ev:onclick="scwin.pagesList_onclick">
+							<script ev:event="onchange(current,before)" type="javascript"><![CDATA[
+								if (current != before) {
+									debugger;
+									dma_search.set("currentPage", current);
+									scwin.btn_search_address_onclick("pageReset");
+								}
+		      				]]></script>
+						</w2:pageList>
+					</xf:group>
+					<xf:group id="grpPageControl" style="height: 40px;width: 320px;margin: 0 auto;display:none;">
+						<w2:pageControl id="pagesControl" style="height: 35px;width: 320px;margin-top:10px;">
+							<script ev:event="onchange(current,before)" type="javascript"><![CDATA[
+								if (current != before) {
+									debugger;	      
+									dma_search.set("currentPage", current);
+									scwin.btn_search_address_onclick("pageReset");
+								}
+		        			]]></script>
+						</w2:pageControl>
+					</xf:group>
+				</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		
+    	</xf:group>
+    </body>
+</html>

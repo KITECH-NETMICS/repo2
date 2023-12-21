@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.tlt">
+  <select id="selectSptTltActivRptList" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltActivRptList */ 
+        cust_no,
+        NVL(req_no, 'N') AS req_no,
+        req_div,
+        req_state,
+        req_state_nm,
+        SUBSTR(rpt_yrmon, 0, 4)||'-'||SUBSTR(rpt_yrmon, 5, 2)   AS rpt_yrmon,
+        cmpy_nm_krchar,
+        reprs_psn,
+        cmpy_addr,
+        syspayno,
+        empno,
+        nm,
+        posi_nm,
+        dept_nm,
+        dept_cd,
+        mobile,
+        chk_req_no,
+        confirm,
+        TO_CHAR(regst_daytm, '%Y-%m-%d')                        AS regst_daytm,
+        attach_file_no
+FROM    (SELECT  t2.cust_no,
+                 t1.req_no,
+                 t1.req_div,
+                 t1.req_state,
+                 DECODE(NVL(t1.req_state, ''), '', '미작성', 'XAD100', '작성완료', 'XAD070', '담당자확인중', 'XAD010', '작성중', 'XAD015', '반려') AS req_state_nm,
+                 t1.rpt_yrmon,
+                 t2.cmpy_nm_krchar,
+                 t2.reprs_psn,
+                 t2.cmpy_addr,
+                 t2.syspayno,
+                 t2.empno,
+                 t2.nm,
+                 t2.posi_nm,
+                 t2.dept_nm,
+                 t2.dept_cd,
+                 t2.mobile,
+                 DECODE(NVL(t1.req_no, ''), '', 'N', 'Y')                     AS chk_req_no,
+                 DECODE(LENGTH(NVL(t1.mnt_syspayno, '')), 0,'미확인', '확인') AS confirm,
+                 t1.regst_daytm,
+                 t1.attach_file_no
+         FROM    OUTER (SELECT   *
+                        FROM     spttltrptinfo
+                        WHERE    req_div = 'STU010') t1,              
+                 (SELECT  t1.cust_no,
+                          t3.cmpy_nm_krchar,
+                          t3.reprs_psn,
+                          t3.cmpy_addr || ' ' || t3.cmpy_addr_detls AS cmpy_addr,
+                          t2.syspayno,
+                          t4.empno,
+                          t4.nm,
+                          t4.dept_cd,
+                          t4.mobile,
+                          t5.posi_nm,
+                          t6.dept_nm
+                  FROM    sptdispatchbaseinfo t1,
+                          sptdispatchprcond   t2,
+                          sptcustbaseinfo     t3,
+                          humbasicinfo        t4,
+                          xodhposiinfo        t5,
+                          xodhdeptinfo        t6
+                  WHERE   t1.mngmt_no     = t2.mngmt_no
+                  AND     t1.cust_no      = t3.cust_no
+                  AND     t2.syspayno     = t4.syspayno
+                  AND     t4.posi_cd      = t5.posi_cd
+                  AND     t4.dept_cd      = t6.dept_cd
+                  AND     t4.dept_new_ymd = t6.dept_new_ymd
+<if test="date != null and date != ''">
+	   AND     SUBSTR(t2.dispatch_start_ymd, 1, 6) <![CDATA[ <= ]]> #{date}                                    
+	   AND     (SUBSTR(t2.dispatch_cls_ymd, 1, 6)  <![CDATA[ >= ]]> #{date} OR TRIM(t2.dispatch_cls_ymd) = '') 
+</if>
+<if test="syspayno != null and syspayno != ''">
+	  AND     t2.syspayno                  = #{syspayno}
+</if>
+<if test="dept_cd != null and dept_cd != ''">
+	  AND     t4.dept_cd                   = #{dept_cd}
+</if>
+                 ) t2
+         WHERE   t1.cust_no   = t2.cust_no
+         AND     t1.syspayno  = t2.syspayno
+<if test="rpt_yrmon != null and rpt_yrmon != ''">
+	  AND     t1.rpt_yrmon  = #{rpt_yrmon}
+</if>
+         )
+<if test="chk_req_no != null and chk_req_no != ''">
+	  WHERE chk_req_no = #{chk_req_no}
+</if>
+order by nm
+  </select>
+  
+  <select id="selectSptTltActivRptDetail" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltActivRptDetail */ 
+		  t1.cust_no,                                                   -- 고객번호      
+        t3.cmpy_nm_krchar,                                            -- 고객명
+        t3.reprs_psn,                                                 -- 대표자
+        t3.cmpy_addr || ' ' || t3.cmpy_addr_detls   AS cmpy_addr,     -- 주소
+        t1.syspayno,                                                  -- 시스템개인번호
+        t4.nm,                                                        -- 성명
+        t5.posi_nm,                                                   -- 직급
+        t1.req_no,                                                    -- 보고서번호    
+        t1.rpt_yrmon,                                                 -- 보고년월      
+        t1.req_div,                                                   -- 보고서구분    
+        t6.apr_state AS req_state,                                                 -- 보고서상태    
+        t2.cd_nm                                    AS req_state_nm,       
+        t1.rmk,                                                       -- 비고
+        t1.attach_file_no         
+FROM    spttltrptinfo   t1
+        left outer
+        JOIN xomxintfatab t6 ON (t6.req_no = t1.req_no),
+        xodxcommst      t2,
+        sptcustbaseinfo t3,
+        humbasicinfo    t4,
+        xodhposiinfo    t5
+WHERE   t1.req_state = t2.cd
+AND     t1.cust_no   = t3.cust_no
+AND     t1.syspayno  = t4.syspayno
+AND     t4.posi_cd   = t5.posi_cd
+AND     t1.req_no    = #{req_no}
+  </select>
+
+  <select id="selectSkilHumBasIcInfo" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSkilHumBasIcInfo */
+		  t3.syspayno,
+        t3.empno,
+        t3.nm,
+        t3.posi_cd,
+        t5.posi_nm,
+        t4.cust_no, 
+        t4.cmpy_nm_krchar, 
+        t4.reprs_psn
+FROM    sptdispatchbaseinfo   t1,
+        sptdispatchprcond     t2,
+        humbasicinfo          t3,
+        sptcustbaseinfo       t4,
+        xodhposiinfo          t5
+WHERE   t1.mngmt_no   = t2.mngmt_no
+AND     t1.cust_no    = t4.cust_no
+AND     t2.syspayno   = t3.syspayno
+AND     t3.posi_cd    = t5.posi_cd
+AND     t2.syspayno   = #{syspayno}
+AND     t1.cust_no    = #{cust_no}
+  </select>
+  
+  <select id="selectSptTltActivRptCnt" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo" resultType="int">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltActivRptCnt */ 
+		  COUNT(*) AS cnt
+FROM    spttltrptinfo
+WHERE   1 = 1
+<if test="syspayno != null and syspayno != ''">
+	  AND     syspayno		= #{syspayno}
+</if>
+<if test="rpt_yrmon != null and rpt_yrmon != ''">
+	  AND     rpt_yrmon   	= #{rpt_yrmon}
+</if>
+  </select>
+  
+  <select id="selectSptTltBasicRegCnt" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo" resultType="int">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltBasicRegCnt */ 
+		  COUNT(*) AS cnt
+FROM    spttltrptinfo
+WHERE   req_no  = #{req_no}
+  </select>
+  
+	<update id="mergeSptTltActivRpt" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo">
+		MERGE /* kr.re.kitech.biz.sup.tlt.mergeSptTltActivRpt */
+		 INTO spttltrptinfo AS t1
+		USING dual AS t2 ON t1.req_no = #{req_no}
+		 WHEN MATCHED  THEN
+		 UPDATE
+		    SET 
+				cust_no       	= #{cust_no}, --  고객번호  
+				rpt_yrmon       = #{rpt_yrmon}, --  보고년월  
+			<if test="visit_ymd != null and visit_ymd != ''">
+				visit_ymd       = #{visit_ymd}, --  방문일자             
+			</if>   
+			<if test="req_div != null and req_div != ''">
+				req_div         = #{req_div}, --  보고서구분        
+			</if>   
+			<if test="req_state != null and req_state != ''">
+				req_state       = #{req_state}, --  보고서상태        
+			</if>   
+			<if test="rmk != null and rmk != ''">
+				rmk             = #{rmk}, --  비고              
+			</if>   
+			<if test="attach_file_no != null and attach_file_no != ''">
+				attach_file_no  = #{attach_file_no}, --  첨부파일번호 
+			</if>   
+			<if test="mnt_syspayno != null and mnt_syspayno != ''">
+				mnt_syspayno    = #{mnt_syspayno}, --  확인관리자시스템개인번호        
+			    mnt_daytm       = SYSDATE,                    --  확인일시
+			</if>   
+	  			updt_syspayno   = #{updt_syspayno},
+	  			updt_daytm   = SYSDATE
+		 WHEN NOT MATCHED THEN
+		 INSERT (
+		 	cust_no,        --  고객번호          
+            syspayno,       --  시스템개인번호    
+            req_no,         --  보고서번호        
+            rpt_yrmon,      --  보고년월(지원년차-지원분기)
+            visit_ymd,      --  방문일자         
+            req_div,        --  보고서구분        
+            req_state,      --  보고서상태        
+            rmk,            --  비고              
+            attach_file_no,	--  첨부파일번호
+		 	regst_syspayno,
+		 	regst_daytm
+		 ) VALUES(
+		 	#{cust_no},			/* cust_no */          
+            #{syspayno},		/* syspayno */    
+            #{req_no},        	/* req_no */
+            #{rpt_yrmon},		/* rpt_yrmon */
+            #{visit_ymd},       /* visit_ymd */
+            #{req_div},        	/* req_div */
+            #{req_state},       /* req_state */
+            #{rmk},             /* rmk */
+            #{attach_file_no},	/* attach_file_no */
+		 	#{regst_syspayno},	/* regst_syspayno */
+		 	SYSDATE				/* regst_daytm|now */
+		 )
+	</update>
+	
+	<delete id="deleteSptTltActivRpt" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltActivRptVo">
+DELETE /* QueryID : kr.re.kitech.biz.sup.tlt.deleteSptTltActivRpt */ 
+FROM    spttltrptinfo
+WHERE   req_no          = #{req_no}
+  </delete>
+</mapper>

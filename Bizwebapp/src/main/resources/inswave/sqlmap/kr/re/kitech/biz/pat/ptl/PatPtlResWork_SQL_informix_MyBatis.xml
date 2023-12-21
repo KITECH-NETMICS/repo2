@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.ptl">
+  <select id="selectPatPtlResCrtSS01" parameterType="kr.re.kitech.biz.pat.ptl.vo.PatPtlResWorkVo" resultType="kr.re.kitech.biz.pat.ptl.vo.PatPtlResWorkVo">
+  /* XDA : kitech.pat.ptl.res.xda.PatPtlResCrtSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.ptl.selectPatPtlResCrtSS01 */ 
+      fn_ofic_user_nm(rcpt_wri_id) AS rcpt_wri_nm
+        , TO_CHAR(rcpt_daytm, '%Y%m%d') AS rcpt_daytm
+        , fn_ofic_user_nm(rcpt_charg_psn_id) AS rcpt_charg_psn_nm
+        , fn_ofic_user_nm(rcpt_psn_id) AS rcpt_psn_nm
+        , rcpt_trans_date
+        , rcpt_comment
+        , rcpt_attach_file
+        , job_state_cd
+    FROM pattrans
+  WHERE trans_id = #{trans_id}
+    </select>
+  <update id="updatePatPtlResCrtSU01" parameterType="kr.re.kitech.biz.pat.ptl.vo.PatPtlResWorkVo">
+  /* XDA : kitech.pat.ptl.res.xda.PatPtlResCrtSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.ptl.updatePatPtlResCrtSU01 */ 
+      pattrans
+    SET job_state_cd = #{job_state_cd}
+      , eval_psn_syspayno = #{eval_psn_syspayno}
+      , eval_daytm = CURRENT
+      , eval_res_clsf = #{eval_res_clsf}
+      , eval_service_scr = #{eval_service_scr}
+      , eval_result_scr = #{eval_result_scr}
+      , eval_comment = #{eval_comment}
+      , fnsh_daytm = CURRENT
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm = CURRENT
+  WHERE trans_id = #{trans_id}
+    </update>
+  <select id="selectPatPtlResDtlSS01" parameterType="kr.re.kitech.biz.pat.ptl.vo.PatPtlResWorkVo" resultType="kr.re.kitech.biz.pat.ptl.vo.PatPtlResWorkVo">
+  /* XDA : kitech.pat.ptl.dtl.xda.PatPtlResDtlSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.ptl.selectPatPtlResDtlSS01 */ 
+      fn_ofic_user_nm(rcpt_wri_id) AS rcpt_wri_nm
+        , TO_CHAR(rcpt_daytm, '%Y%m%d') AS rcpt_daytm
+        , fn_ofic_user_nm(rcpt_charg_psn_id) AS rcpt_charg_psn_nm
+        , fn_ofic_user_nm(rcpt_psn_id) AS rcpt_psn_nm
+        , rcpt_trans_date
+        , rcpt_comment
+        , rcpt_attach_file
+        , fun_emp_nm(eval_psn_syspayno) AS eval_psn_syspaynm
+        , TO_CHAR(eval_daytm, '%Y%m%d') AS eval_daytm
+        , CASE eval_res_clsf WHEN '0' THEN '승인'
+                              WHEN '1' THEN '미승인'
+                              ELSE '-' END AS eval_res_clsf
+        , eval_service_scr
+        , eval_result_scr
+        , eval_comment
+    FROM pattrans
+  WHERE trans_id = #{trans_id}
+    </select>
+</mapper>

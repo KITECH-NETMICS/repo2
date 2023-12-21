@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/css/sample.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="MDI (자료교환)">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+	
+			/**
+			 * 도움말
+			 */
+			scwin.help = `
+				※ MDI에 메뉴로 등록된 화면을 새탭으로 열기 위해 com.openTabMenu 함수 활용
+				
+				※ MDI에 메뉴로 등록하지 않은 화면 새탭으로 열기 위해 com.openTabUrl 함수 활용
+				
+				※ 새탭 화면에서 파라미터를 얻기 위해서 com.getParameter 함수 사용
+				
+				※ 새탭 화면에서 창을 닫기 위해 com.closeTab 함수를 사용하며, 오픈한 화면의 콜백함수에 전달할 json객체를 파라미터로 전달
+				
+				※ 새탭 화면에서 창을 닫으면 부모화면에서 com.openTabMenu, com.openTabUrl에 정의한 콜백 함수가 수행되며, 리턴값이 콜백 함수의 파라미터로 전달됨
+				
+				※ MDI에 메뉴로 등록된 화면으로 화면전환 하기 위해 com.movePageMenu 함수 활용
+				
+				※ MDI에 메뉴로 등록하지 않은 화면으로 화면전환 하기 위해 com.movePageUrl 함수 활용
+				
+				※ 화면전환된 화면에서 파라미터를 얻기 위해서 com.getParameter 함수 사용
+				
+				※ 이전 화면으로 전환할 때도 com.movePageMenu를 활용해야 하며, 이전 검색조건등을 유지하기 위해서는 검색조건을 전달 받았다가 다시 되돌려줘야 하고, 이전 화면에서는 되돌려 받은 정보를 활용해서 구현해야 함
+			`;
+			
+			/**
+			 * 페이지 로딩 이벤트
+			 */
+			scwin.onpageload = function() {
+				scwin.param = com.getParameter();
+				if (scwin.param.msg) {
+					ibx_receive.setValue(scwin.param.msg);
+				}
+				var tmpMenu = {};
+				tmpMenu[gcm.MENU_INFO.SERVICE_ID] = "PT01";
+				tmpMenu[gcm.MENU_INFO.MENU_ID] = "T001";
+				tmpMenu[gcm.MENU_INFO.MENU_NM] = "새탭(메뉴)";
+				tmpMenu[gcm.MENU_INFO.NEW_PATH] = "/ui/zam/sample/mdiTab.xml";
+				$p.top().wfm_side.getWindow().dlt_menu.setJSON([tmpMenu], true);
+				tmpMenu[gcm.MENU_INFO.SERVICE_ID] = "PT02";
+				tmpMenu[gcm.MENU_INFO.MENU_ID] = "T002";
+				tmpMenu[gcm.MENU_INFO.MENU_NM] = "화면전환(메뉴)";
+				tmpMenu[gcm.MENU_INFO.NEW_PATH] = "/ui/zam/sample/mdiMove.xml";
+				$p.top().wfm_side.getWindow().dlt_menu.setJSON([tmpMenu], true);
+			};
+		
+			/**
+			 *  새탭으로 열기 (메뉴로 등록된 화면을 열 때)
+			 */
+			scwin.btn_tabMenu_onclick = function(e) {
+				var data = { "msg" : ibx_send.getValue() };
+				com.openTabMenu("PT01", data, function(retObj) {
+					// 콜백
+					ibx_receive.setValue( retObj.retValue );
+				});
+			};
+		
+			/**
+			 *  새탭으로 열기 (메뉴로 등록되지 않은 화면을 열 때)
+			 */
+			scwin.btn_tabUrl_onclick = function(e) {
+				var data = { "msg" : ibx_send.getValue() };
+				com.openTabUrl("새탭", "/ui/zam/sample/mdiTab.xml", 1, data, function(retObj) {
+					// 콜백
+					ibx_receive.setValue( retObj.retValue );
+				});
+			};
+		
+			/**
+			 *  화면전환 (메뉴로 등록된 화면)
+			 */
+			scwin.btn_moveMenu_onclick = function(e) {
+				var data = { "msg" : ibx_send.getValue() };
+				com.movePageMenu("PT02", data);
+			};
+		
+			/**
+			 *  화면전환 (메뉴로 등록되지 않은 화면)
+			 */
+			scwin.btn_moveUrl_onclick = function(e) {
+				var data = { "msg" : ibx_send.getValue() };
+				com.movePageUrl("화면전환", "/ui/zam/sample/mdiMove.xml", 1, data);
+			};
+
+			// 결재문서
+			scwin.btn_snapshot_onclick = function(e) {
+				// com.movePageMenu("A001", {});
+				
+//				window.orgDocument = "";
+//				var popupId = $p.getPopupId();
+//				
+//				window.onbeforeprint = function(e) {
+//					window.orgDocument = document.body.innerHTML;
+//					$("body").html(document.getElementById(popupId).innerHTML);
+//				};
+//				
+//				window.onafterprint = function(e) {
+//					$("body").html(window.orgDocument);
+//					window.orgDocument = "";
+//				};
+				opener.document.bod
+
+				debugger;
+				window.print();		
+				
+						
+			};
+			
+			// 양식함
+			scwin.btn_apprDoc_onclick = function(e) {
+				com.openTabMenu("A002", {});
+			};			
+			
+			// 결재대기함
+			scwin.btn_apprWait_onclick = function(e) {
+				com.openTabMenu("A003", {});
+			};
+			
+			// 업무대기함
+			scwin.btn_workWait_onclick = function(e) {
+				com.openTabMenu("A004", {});
+			};
+			
+			// 업무/결재 진행함
+			scwin.btn_running_onclick = function(e) {
+				com.openTabMenu("A005", {});
+			};
+			// 업무/결재 완료함
+			scwin.btn_complet_onclick = function(e) {
+				com.openTabMenu("A006", {});
+			};
+			// 대결완료함
+			scwin.btn_instead_onclick = function(e) {
+				com.openTabMenu("A007", {});
+			};
+			// 담당자완료함
+			scwin.btn_authComplet_onclick = function(e) {
+				com.openTabMenu("A008", {});
+			};
+			// 업무/결재 반려함
+			scwin.btn_rejected_onclick = function(e) {
+				com.openTabMenu("A009", {});
+			};
+	
+			// 작성중문서함
+			scwin.btn_saved_onclick = function(e) {
+				com.openTabMenu("A010", {});
+			};
+			
+			// 결재문서 팝업 네이트브 윈도우
+			scwin.btn_snapWindow_onclick = function(e) { 
+			
+				var url = "/ui/apr/layoutSimple.xml";
+				var option = { type: "browserPopup", width: 1350, height: 1480, id: "snapshotPop", popupName: "결재문서"};
+				var data = { reqNo: "C55202207386", viewMode : "read", instStatus : "Completed" }
+				com.openPopup(url, option, data);
+			};
+			
+			// 결재문서 팝업 레이어
+			scwin.btn_snapLayer_onclick = function(e) {
+
+			};
+			
+			
+			scwin.btn_reloadCodes_onclick = function(e) {
+				let param = '{"grpCd":"HWT","dataPrefix":"CommonCode"}';
+				let action = 'SvcReloadCodes';
+				fetch(`/${action}.pwkjson`, {
+				method: 'POST', // or 'PUT'
+				body: `{"elHeader":{},"elData":${param}}`, // data can be `string` or {object}!
+				headers: {
+					    'Content-Type': 'application/json'
+					  , 'Proworks-Lang' : 'en'
+					}
+				}).then( function( res){
+					if (res.ok) {
+						return res.json();
+					}
+					// 404, Connection Refused 등 서버 WAS 외적인 오류
+					throw new Error('요청을 찾을 수 없음!');
+				}).then( function( response) { 
+					
+					// WAS 예외 처리
+					console.log('Success:', response);
+					debugger;
+				}).catch( function( error) {
+					// console.error('> > > > > > called .catch on %o with arguments: %o', this, arguments);
+					console.error('Error:', error); 
+				});
+					
+			}
+				
+		]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe><xf:group class="pageWrap" id="" style="">
+			
+			<xf:group adaptiveThreshold="" class="dfbox" id="" style="">
+				<w2:textbox class="df_tit" id="" label="자료교환" style="" tagname="h2"></w2:textbox>
+				<xf:group class="fr" id="" style="">
+
+					<xf:trigger ev:onclick="scwin.btn_tabMenu_onclick" style="" id="btn_tabMenu" type="button" class="btn_cm">
+						<xf:label><![CDATA[MDI새탭(메뉴)]]></xf:label>
+					</xf:trigger>
+					<xf:trigger ev:onclick="scwin.btn_tabUrl_onclick" style="" id="btn_tabUrl" type="button" class="btn_cm">
+						<xf:label><![CDATA[MDI새탭(url)]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn_cm" id="btn_moveMenu" style="" type="button" ev:onclick="scwin.btn_moveMenu_onclick">
+						<xf:label><![CDATA[MDI화면전환(메뉴)]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn_cm" id="btn_moveUrl" style="" type="button" ev:onclick="scwin.btn_moveUrl_onclick">
+						<xf:label><![CDATA[MDI화면전환(url)]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			<xf:group class="tbbox" id="" style="">
+				<xf:group id="" class="tb_inner">
+					<xf:group adaptive="layout" adaptiveThreshold="600" tagname="table" style="" id="" class="w2tb tb">
+						<w2:attributes>
+							<w2:summary></w2:summary>
+						</w2:attributes>
+						<xf:group tagname="colgroup">
+							<xf:group tagname="col" style="width:140px;"></xf:group>
+							<xf:group tagname="col"></xf:group>
+						</xf:group>
+						<xf:group tagname="tr" style="">
+							<xf:group tagname="th" style="" class="w2tb_th ">
+								<w2:textbox ref="" tagname="p" style="" userData2="" id="" label="전송 Data" class=""></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" style="" class="w2tb_td">
+								<xf:group style="" id="" class="">
+									<xf:input disabled="" style="" id="ibx_send" placeholder=""></xf:input>
+								</xf:group>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox ref="" tagname="p" style="" userData2="" id="" label="수신 Data" class=""></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes>
+									<w2:colspan>1</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+								<xf:input style="" id="ibx_receive" placeholder="" class=""></xf:input>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			
+			<xf:group adaptiveThreshold="" class="dfbox" id="" >
+				<w2:textbox class="df_tit" id="" label="화면이동"  tagname="h2"></w2:textbox>
+				<xf:group style="height:40px;">
+					<xf:trigger class="btn_cm" id="btn_snapshot" type="button" ev:onclick="scwin.btn_snapshot_onclick">
+						<xf:label><![CDATA[결재문서보기]]></xf:label>
+					</xf:trigger>				
+					<xf:trigger class="btn_cm" id="btn_apprDoc" type="button" ev:onclick="scwin.btn_apprDoc_onclick">
+						<xf:label><![CDATA[신청서양식함]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn_cm" id="btn_apprWait" type="button" ev:onclick="scwin.btn_apprWait_onclick">
+						<xf:label><![CDATA[결재대기함]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn_cm" id="btn_workWait" type="button" ev:onclick="scwin.btn_workWait_onclick">
+						<xf:label><![CDATA[업무대기함]]></xf:label>
+					</xf:trigger>
+					
+					<xf:trigger class="btn_cm" id="btn_running" type="button" ev:onclick="scwin.btn_running_onclick">
+						<xf:label><![CDATA[결재/업무진행함]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn_cm" id="btn_complet" type="button" ev:onclick="scwin.btn_complet_onclick">
+						<xf:label><![CDATA[결재/업무완료함]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn_cm" id="btn_instead" type="button" ev:onclick="scwin.btn_instead_onclick">
+						<xf:label><![CDATA[대결완료함]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn_cm" id="btn_authComplet" type="button" ev:onclick="scwin.btn_authComplet_onclick">
+						<xf:label><![CDATA[담당자완료함]]></xf:label>
+					</xf:trigger>
+					
+					<xf:trigger class="btn_cm" id="btn_rejected" type="button" ev:onclick="scwin.btn_rejected_onclick">
+						<xf:label><![CDATA[반려문서함]]></xf:label>
+					</xf:trigger>					
+					<xf:trigger class="btn_cm" id="btn_saved" type="button" ev:onclick="scwin.btn_saved_onclick">
+						<xf:label><![CDATA[작성중문서함]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			
+			<xf:group adaptiveThreshold="" class="dfbox" id="" >
+				<w2:textbox class="df_tit" id="" label="팝업"  tagname="h2"></w2:textbox>
+				<xf:group style="height:40px;">
+					<xf:trigger class="btn_cm" id="btn_snapWindow" type="button" ev:onclick="scwin.btn_snapWindow_onclick">
+						<xf:label><![CDATA[결재문서보기 팝업]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn_cm" id="btn_snapLayer" type="button" ev:onclick="scwin.btn_snapLayer_onclick">
+						<xf:label><![CDATA[결재문서보기 레이어]]></xf:label>
+					</xf:trigger>
+
+					<xf:trigger class="btn_cm" id="btn_reloadCodes" type="button" ev:onclick="scwin.btn_reloadCodes_onclick">
+						<xf:label><![CDATA[공통 코드 리로딩]]></xf:label>
+					</xf:trigger>
+					
+					<w2:anchor id="anc_snapLink" outerDiv="false" href="https://bizdev.kitech.re.kr/websquare/popup.html?w2xPath=/ui/apr/layoutSimple.xml&amp;reqNo=C55202200001&amp;viewMode=read" target="_blank">
+						<xf:label><![CDATA[결재문서보기 링크]]></xf:label>
+					</w2:anchor>
+				</xf:group>
+			</xf:group>			
+			
+		</xf:group>
+	</body>
+</html>

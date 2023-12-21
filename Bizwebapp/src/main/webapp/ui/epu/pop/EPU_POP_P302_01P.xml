@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="구매요구내역 조회(발주계획)" meta_author="이대훈" meta_date="2023.07.10.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="inout_psn_clsf_cd" name="내외자구분" dataType="text"></w2:key>
+            			<w2:key id="pur_req_no" name="구매요구번호" dataType="text"></w2:key>
+            			<w2:key id="item_nm" name="구매요구건명" dataType="text"></w2:key>
+            			<w2:key id="pur_grp_cd" name="구매구분" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="inout_psn_clsf_cd" name="내외자구분" dataType="text"></w2:column>
+            			<w2:column id="pur_req_no" name="구매번호" dataType="text"></w2:column>
+            			<w2:column id="item_nm" name="품명" dataType="text"></w2:column>
+            			<w2:column id="delvr_plc_nm" name="납품장소" dataType="text"></w2:column>
+            			<w2:column id="delvr_demnd_daycnt" name="납품기간" dataType="text"></w2:column>
+            			<w2:column id="pur_clsf_cd" name="구매구분2" dataType="text"></w2:column>
+            			<w2:column id="pur_grp_cd" name="구매구분1" dataType="text"></w2:column>
+            			<w2:column id="state_text" name="구매요구상태" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataList baseNode="list" id="dlt_item" repeatNode="map" saveRemovedData="true" style="">
+            		<w2:columnInfo>
+            			<w2:column dataType="text" id="chk" name="선택"></w2:column>
+            			<w2:column dataType="text" id="bid_ord_no" name="발주번호"></w2:column>
+            			<w2:column dataType="text" id="pur_req_no" name="구매요구번호"></w2:column>
+            			<w2:column dataType="text" id="item_nm" name="품명"></w2:column>
+            			<w2:column dataType="text" id="unit_cd" name="단위"></w2:column>
+            			<w2:column dataType="text" id="qty" name="수량"></w2:column>
+            			<w2:column dataType="text" id="req_unit_price" name="추정단가"></w2:column>
+            			<w2:column dataType="text" id="req_amt" name="추정금액"></w2:column>
+            			<w2:column dataType="text" id="rmk" name="비고"></w2:column>
+            			<w2:column dataType="text" id="pur_clsf_cd" name="구매구분"></w2:column>
+            			<w2:column dataType="text" id="delvr_plc_nm" name="납품장소"></w2:column>
+            			<w2:column dataType="text" id="delvr_demnd_daycnt" name="납품기간"></w2:column>
+            			<w2:column dataType="text" id="pur_req_item_odr" name="구매품목순번"></w2:column>
+            			<w2:column dataType="text" id="item_cd" name="품목코드"></w2:column>
+            			<w2:column dataType="text" id="req_time_addtax_extexpns" name="부가세"></w2:column>
+            			<w2:column dataType="text" id="incidntl_expns" name="부대비용"></w2:column>
+            			<w2:column dataType="text" id="req_amt_sum" name="요청금액합계"></w2:column>
+            			<w2:column dataType="text" id="order_cd" name="orderCd"></w2:column>
+            			<w2:column dataType="text" id="curncy_unit_nm" name="화폐단위명"></w2:column>
+            			<w2:column dataType="text" id="for_req_unit_price" name="추정단가(외자)"></w2:column>
+            			<w2:column dataType="text" id="cntst_prod_yn" name="중기간경쟁제품여부"></w2:column>
+            			<w2:column id="p_item_nm" name="코드한글품명" dataType="text"></w2:column>
+            			<w2:column id="req_time_exchgr" name="환율" dataType="text"></w2:column>
+            			<w2:column id="item_clsf" name="품명구분" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection/>            
+            <!-- 요구조회 -->
+    		<xf:submission id="sbm_selectList01" ref='data:json,dma_search'
+    			target='' action="SvcEPUORDPOPR01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>    		
+    		<!-- 품목조회 -->
+    		<xf:submission id="sbm_selectList02" ref='data:json,dma_search'
+    			target='' action="SvcEPUORDPLNR02.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>    		
+    		<!-- 부서코드 조회 -->
+    		<xf:submission id="sbm_selectSearchItem03" ref='data:json,dma_region_search'
+    			target='data:json,dma_region' action="SvcEPUORPOPMR03.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>    		
+    		<!-- 재무 편성단위 조회 -->
+    		<xf:submission id="sbm_selectSearchItem04" ref='data:json,dma_unit_search'
+    			target='data:json,dma_unit' action="SvcEPUORPOPMR04.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    		
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 발주계획 품목내역 팝업
+ 	 * 변경 이력 : 2023-07-10	이대훈	최초 작성
+ 	 ****************************************************/
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */ 
+	scwin.onpageload = function() {
+		com.setEnterKeyEvent(grp_search, scwin.search);
+		dma_search.setJSON(com.getParameter());
+
+		if(dma_search.get("inout_psn_clsf_cd") == "1"){
+			grd_item.setColumnVisible("curncy_unit_nm", false);
+			grd_item.setColumnVisible("req_time_exchgr", false);
+		}
+		
+		scwin.search();
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(e) {
+		com.execute(sbm_selectList01, {
+			successCallback : function(e) {
+				dlt_list.setJSON(e.responseJSON.purReqItemVoList);
+			}
+		});			
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+
+	/**
+	 * 확인버튼 클릭 이벤트
+	 */
+	scwin.btn_conf_onclick = function(e) {
+		const data = grd_item.getCheckedJSON("chk");
+		if(data.length < 1){
+			com.warn('구매요구품목을 선택하여 주십시오.');
+			return;
+		}
+		com.closePopup(data);
+	};
+	
+	// 구매요구내역 클릭 이벤트
+	scwin.grd_oncellclick = function(row, col, colid){
+		dma_search.set("pur_req_no", dlt_list.getCellData(row, "pur_req_no"));
+		
+		com.execute(sbm_selectList02, {
+			successCallback : function(e) {
+				dlt_item.setJSON(e.responseJSON.epuOrdReqItemVoList);
+			}
+		});
+	};
+	
+	/** 
+	* 조회조건 변경이벤트
+	*/
+	scwin.ibx_inqr_val_onviewchange = function(info) {
+		if(sbx_src_clsf.getValue() == "1"){
+			dma_search.set("pur_req_no", this.getValue());
+			dma_search.set("item_nm", "");
+		}else{
+			dma_search.set("pur_req_no", "");
+			dma_search.set("item_nm", this.getValue());
+		}
+	};
+	
+	/** 
+	* 조회조건 변경이벤트
+	*/
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection " id="" style="">
+    			<xf:group class="schbox" style="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:200px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<xf:select1 id="sbx_src_clsf" ref="data:dma_search.inout_psn_clsf_cd" submenuSize="auto" appearance="minimal" disabledClass="w2selectbox_disabled"
+									disabled="false" style="width:100%" visibleRowNum="10" class="sel" direction="auto"
+									title="검색구분">
+									<xf:choices>
+										<xf:item>
+											<xf:label><![CDATA[구매요구번호]]></xf:label>
+											<xf:value>1</xf:value>
+										</xf:item>
+										<xf:item>
+											<xf:label><![CDATA[구매요구건명]]></xf:label>
+											<xf:value>2</xf:value>
+										</xf:item>
+									</xf:choices>
+								</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+	    						<xf:group id="grp_search" class="flex">
+	    							<xf:input id="ibx_inqr_val" adjustMaxLength="false" class="inp" ref="" style="width: 100%;margin-right:5px"
+	    								title="검색어" ev:onviewchange="scwin.ibx_inqr_val_onviewchange">
+	   								</xf:input>
+	    						</xf:group>
+    						</xf:group>
+    						
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="flex_lybox" style="">
+    		
+	    		<xf:group style="" class="ly_column col_4">
+	    			<xf:group class="titleSection">
+		    			<xf:group class="le" id="">
+		    				<w2:textbox class="tit_tbl" id="" label="구매요구내역 추가" style="" tagname="h3"></w2:textbox>
+		    			</xf:group>
+		    		</xf:group>
+		    		<w2:gridView id="grd" class="grid" dataList="data:dlt_list" style="height: 85px;" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+		    			noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+		    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue=" " rowStatusVisible="false" rowStatusWidth="50"
+		    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" 
+		    			summaryAuto="true" visibleRowNum="9" tooltipDisplay="true" readOnly="true" autoFit="allColumn" ev:oncellclick="scwin.grd_oncellclick">
+		    			<w2:caption id="caption1" value="this is a grid caption."></w2:caption>
+		    			<w2:header id="header1">
+		    				<w2:row id="row1">
+		    					<w2:column width="100" inputType="text" id="pur_req_no" value="구매요구번호" displayMode="label"></w2:column>
+								<w2:column width="150" inputType="text" id="item_nm" value="구매요구건명" displayMode="label"></w2:column>
+								<w2:column width="80" inputType="text" id="state_text" value="구매요구상태" displayMode="label"></w2:column>
+								<w2:column width="70" inputType="text" id="pur_grp_cd" value="구매구분" displayMode="label"></w2:column>
+		    				</w2:row>
+		    			</w2:header>
+		    			<w2:gBody id="gBody1">
+		    				<w2:row id="row2">
+		    					<w2:column inputType="text" id="pur_req_no" readOnly="true"></w2:column>
+								<w2:column inputType="text" id="item_nm" readOnly="true"></w2:column>
+								<w2:column inputType="text" id="state_text" readOnly="true"></w2:column>
+								<w2:column inputType="select" id="pur_grp_cd" readOnly="true">
+									<w2:choices>
+										<w2:item>
+											<w2:label>물품</w2:label>
+											<w2:value>EGF010</w2:value>
+										</w2:item>
+										<w2:item>
+											<w2:label>용역</w2:label>
+											<w2:value>EGF020</w2:value>
+										</w2:item>
+										<w2:item>
+											<w2:label>공사</w2:label>
+											<w2:value>EGF030</w2:value>
+										</w2:item>
+									</w2:choices>
+								</w2:column>
+		    				</w2:row>
+		    			</w2:gBody>
+		    		</w2:gridView>
+	    		</xf:group>
+	    		
+	    		<xf:group style="" class="ly_column col_6">
+	    			<xf:group class="titleSection">
+		    			<xf:group class="le" id="">
+		    				<w2:textbox class="tit_tbl" id="" label="구매요구품목" style="" tagname="h3"></w2:textbox>
+		    			</xf:group>
+		    		</xf:group>
+		    		<w2:gridView id="grd_item" class="grid" dataList="data:dlt_item" style="height: 85px;" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+		    			noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+		    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue=" " rowStatusVisible="false" rowStatusWidth="50"
+		    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" 
+		    			summaryAuto="true" visibleRowNum="10" tooltipDisplay="true" fixedColumn="2" overflowX="scroll">
+		    			<w2:caption id="caption1" value="this is a grid caption."></w2:caption>
+		    			<w2:header id="header1">
+		    				<w2:row id="row1">
+		    					<w2:column id="hChk" checkboxLabel="전체선택" displayMode="label" fixColumnWidth="true" inputType="checkbox" value="chk" width="37" sortable="false" style="height:28px;"></w2:column>
+		    					<w2:column width="170" inputType="text" id="column1" value="품목명" displayMode="label"></w2:column>
+		    					<w2:column width="50" inputType="text" id="column2" value="품목순번" displayMode="label"></w2:column>
+								<w2:column width="70" inputType="text" id="column3" value="중기간경쟁제품여부" displayMode="label"></w2:column>
+								<w2:column width="50" inputType="text" id="column4" value="단위" displayMode="label"></w2:column>
+								<w2:column width="50" inputType="text" id="column5" value="수량" displayMode="label"></w2:column>
+								<w2:column width="90" inputType="text" id="column6" value="추정단가" displayMode="label"></w2:column>
+								<w2:column width="100" inputType="text" id="column7" value="추정금액" displayMode="label"></w2:column>
+								<w2:column width="100" inputType="text" id="column8" value="부가세" displayMode="label"></w2:column>
+								<w2:column width="100" inputType="text" id="column9" value="부대비" displayMode="label"></w2:column>
+								<w2:column width="100" inputType="text" id="column10" value="합계금액" displayMode="label"></w2:column>
+								<w2:column width="80" inputType="text" id="column11" value="화폐단위" displayMode="label"></w2:column>
+								<w2:column width="70" inputType="text" id="column12" value="환율" displayMode="label"></w2:column>
+								<w2:column width="100" inputType="text" id="column13" value="비고" displayMode="label"></w2:column>
+								<w2:column width="80" inputType="text" id="column14" value="발주상태" displayMode="label"></w2:column>
+								<w2:column width="70" inputType="text" id="column15" value="품명구분" displayMode="label"></w2:column>
+		    				</w2:row>
+		    			</w2:header>
+		    			<w2:gBody id="gBody1">
+		    				<w2:row id="row2">
+		    					<w2:column id="chk" inputType="checkbox"></w2:column>
+		    					<w2:column inputType="text" id="item_nm" readOnly="true" class="le"></w2:column>
+		    					<w2:column inputType="text" id="pur_req_item_odr" readOnly="true"></w2:column>
+								<w2:column inputType="text" id="cntst_prod_yn" readOnly="true"></w2:column>
+								<w2:column inputType="text" id="unit_cd" readOnly="true"></w2:column>
+								<w2:column dataType="number" id="qty" readOnly="true" displayFormat="#,###"></w2:column>
+								<w2:column dataType="number" id="req_unit_price" readOnly="true" displayFormat="#,###"></w2:column>
+								<w2:column dataType="number" id="req_amt" readOnly="true" displayFormat="#,###"></w2:column>
+								<w2:column dataType="number" id="req_time_addtax_extexpns" readOnly="true" displayFormat="#,###"></w2:column>
+								<w2:column dataType="number" id="incidntl_expns" readOnly="true" displayFormat="#,###"></w2:column>
+								<w2:column dataType="number" id="req_amt_sum" readOnly="true" displayFormat="#,###"></w2:column>
+								<w2:column inputType="text" id="curncy_unit_nm" readOnly="true"></w2:column>
+								<w2:column dataType="number" id="req_time_exchgr" readOnly="true" displayFormat="#,###,###,###,###"></w2:column>
+								<w2:column inputType="text" id="rmk" readOnly="true"></w2:column>
+								<w2:column inputType="select" id="order_cd" readOnly="true">
+									<w2:choices>
+										<w2:item>
+											<w2:label>발주계획중</w2:label>
+											<w2:value>10</w2:value>
+										</w2:item>
+									</w2:choices>
+								</w2:column>
+								<w2:column inputType="text" id="item_clsf" readOnly="true"></w2:column>
+		    				</w2:row>
+		    			</w2:gBody>
+		    		</w2:gridView>
+	    		</xf:group>
+    		</xf:group>    		
+    		
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="btn_conf" style="" type="button" ev:onclick="scwin.btn_conf_onclick">
+    					<xf:label><![CDATA[확인]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

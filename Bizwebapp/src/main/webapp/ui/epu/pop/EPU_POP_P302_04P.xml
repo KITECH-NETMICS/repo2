@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="조달청 거래처 등록" meta_author="이영희" meta_date="2023.09.05.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="bsns_psn_regst_no" name="사업자번호" dataType="text"></w2:key>
+            			<w2:key id="vend_cd" name="거래처코드" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_vend">
+            		<w2:keyInfo>
+            			<w2:key id="vend_nm" name="거래처명" dataType="text"></w2:key>
+            			<w2:key id="bsns_psn_regst_no" name="사업자번호" dataType="text"></w2:key>
+            			<w2:key id="ceo_nm" name="대표자" dataType="text"></w2:key>
+            			<w2:key id="vend_addr" name="업체주소" dataType="text"></w2:key>
+            			<w2:key id="tel_no" name="전화번호" dataType="text"></w2:key>
+            			<w2:key id="fax" name="팩스번호" dataType="text"></w2:key>
+            			<w2:key id="vend_cd" name="거래처코드" dataType="text"></w2:key>
+            			<w2:key id="corp_regst_no" name="법인(주민)번호" dataType="text"></w2:key>
+            			<w2:key id="post_no" name="우편번호" dataType="text"></w2:key>
+            			<w2:key id="vend_clsf" name="업태" dataType="text"></w2:key>
+            			<w2:key id="vend_kind" name="종목" dataType="text"></w2:key>
+            			<w2:key id="reprs_ceo_yn" name="대표여부" dataType="text"></w2:key>
+            			<w2:key id="regst_psn_nm" name="등록자" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>            
+            <!-- 업체조회 -->
+			<xf:submission id="sbm_selectData" ref='data:json,dma_search' target='data:json,dma_vend' 
+				action="SvcEPUORDPOPR04.pwkjson" ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+			</xf:submission>
+			<!-- 업체저장 -->
+			<xf:submission id="sbm_saveData" ref='data:json,dma_vend' target='' 
+				action="SvcEPUORDPOPM01.pwkjson" ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 조달청 거래처등록
+ 	 * 변경 이력 : 2023-09-05	이영희	최초 작성
+ 	 ****************************************************/ 	  	  
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */ 
+	scwin.onpageload = function() {
+		dma_search.setJSON(com.getParameter());
+		if(dma_search.get("bsns_psn_regst_no") != ""){
+			ibx_bsns_psn_regst_no.setDisabled(true);
+			scwin.search();
+		}else if(dma_search.get("vend_cd") != ""){
+			btn_post.setDisabled(true);
+			btn_save.hide();
+		}
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(e) {
+		com.execute(sbm_selectData, {
+			successCallback : function(e) {
+				dlt_grd.setJSON(e.responseJSON.epuOrnomVendVoList);
+			}
+		});			
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+
+	/**
+	 * 저장버튼 클릭 이벤트
+	 */
+	scwin.btn_save_onclick = function(e) {
+		if(!com.validateData(dma_vend, [
+			{ id : "vend_nm", mandatory : true},
+			{ id : "bsns_psn_regst_no", mandatory : true},
+			{ id : "ceo_nm", mandatory : true}
+		], false)) return;
+		
+		if(!com.biz.checkBsnsRegstNo(dma_vend.get("bsns_psn_regst_no"))) return;
+		
+		com.confirm("message.xom.wq.017"/*저장 하시겠습니까?*/, function(ret){
+			dma_vend.set("reprs_ceo_yn", "Y");
+			dma_vend.set("regst_psn_nm", com.getLoginInfo("cn"));
+			
+			com.execute(sbm_saveData, {
+				successCallback : function(e){
+					com.closePopup({});
+				}
+			});
+		});
+	};		
+
+	/**
+	 * 우편버튼 클릭 이벤트
+	 */
+	scwin.btn_post_onclick = function(e) {
+		com.pop.open(com.pop.TYPE.ADDR,{ref_yn: "Y"}, function(ret){
+			dma_mstr.set("post_no", ret.zipNo);
+			dma_mstr.set("vend_addr", ret.addrPart1 + ret.addrPart2);
+		});
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group class="pop_contents">
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="계속연차확인서"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:120px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="거래처명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" ref="data:dma_vend.vend_nm" style=""
+    						title="거래처명">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="거래처코드" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp" disabled="true" id="" ref="data:dma_vend.vend_cd"
+    						style="width:120px;" title="거래처코드">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="사업자등록번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="ibx_bsns_psn_regst_no" style="" title="사업자등록번호" ref="data:dma_vend.bsns_psn_regst_no" displayFormat="###-##-#####" allowChar="0-9"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="대표자명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="대표자명" ref="data:dma_vend.ceo_nm"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="법인(주민)번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="법인(주민)번호" ref="data:dma_vend.corp_regst_no"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="우편번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:group class="inpSch" id="grp_equip" style="width: 180px;">
+    						<xf:input adjustMaxLength="false" class="inp" ev:onviewchange="scwin.inputExpnsCd_onviewchange" id=""
+    							style="" title="우편번호" ref="data:dma_vend.post_no">
+    						</xf:input>
+    						<xf:trigger class="btn" id="btn_post" style="" title="우편번호 조회"
+    							type="button" ev:onclick="scwin.btn_post_onclick">
+    							<xf:label><![CDATA[검색]]></xf:label>
+    						</xf:trigger>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="주소" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="주소" ref="data:dma_vend.vend_addr"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="업태" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="업" ref="data:dma_vend.vend_clsf"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="종목" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="종목" ref="data:dma_vend.vend_kind"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="전화번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="전화번호" ref="data:dma_vend.tel_no"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="FAX" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="FAX" ref="data:dma_vend.fax"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

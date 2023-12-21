@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.res.twe">	
+<!-- 공지사항 LIST 조회 -->
+<select id="selectMarket" parameterType="kr.re.kitech.biz.res.twe.vo.ResMarketVo" resultType="kr.re.kitech.biz.res.twe.vo.ResMarketVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.twe.selectMarket */   
+       mkt.reg_no,
+       mkt.title_ko,
+       mkt.title_en,
+       mkt.industry_area_cd,
+       cod.cd_nm,
+       mkt.author,
+       mkt.publisher,
+       mkt.attach_file_no,
+       mkt.open_yn,
+       CASE WHEN open_yn = 'Y' THEN '공개' ELSE '비공개' END open_yn_nm,
+       mkt.regst_syspayno,
+       hum.nm AS wri_psn_syspaynm,
+       TO_CHAR(mkt.regst_daytm, '%Y%m%d') AS regst_daytm, 
+       mkt.del_yn
+  FROM resmktinfo mkt
+ INNER JOIN xodxcommst cod ON cod.cd = mkt.industry_area_cd
+  LEFT JOIN humbasicinfo hum ON hum.syspayno = mkt.regst_syspayno
+ WHERE 1=1
+   AND mkt.del_yn = 'N'
+   <if test="regst_syspayno != null and regst_syspayno != ''"> AND mkt.regst_syspayno like '%' || #{regst_syspayno} || '%'</if>
+   <if test="industry_area_cd != null and industry_area_cd != ''"> AND mkt.industry_area_cd like '%' || #{industry_area_cd} || '%'</if>
+   <if test="author != null and author != ''"> AND mkt.author like '%' || #{author} || '%'</if>
+   <if test="title_ko != null and title_ko != ''"> AND mkt.title_ko like '%' || #{title_ko} || '%'</if> 
+   <if test="rmk != null and rmk != ''"> AND mkt.rmk like '%' || #{rmk} || '%'</if>
+   ORDER BY mkt.regst_daytm DESC
+</select>
+
+<!-- 공지사항 LIST 조회 -->
+<select id="selectDownHist" parameterType="kr.re.kitech.biz.res.twe.vo.ResDownHistVo" resultType="kr.re.kitech.biz.res.twe.vo.ResDownHistVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.twe.selectDownHist */   
+       mkt.reg_no,
+       mkt.title_ko,
+       mkt.title_en,
+       mkt.industry_area_cd,
+       cod.cd_nm as industry_area_nm,
+       mkt.author,
+       mkt.publisher,
+       mkt.attach_file_no,
+       dwn.attach_file_nm,
+       dwn.regst_syspayno,
+       hum.nm AS wri_psn_syspaynm,
+       TO_CHAR(mkt.regst_daytm, '%Y%m%d') AS regst_daytm 
+    
+  FROM resdownhist dwn
+ INNER JOIN resmktinfo mkt on dwn.reg_no = mkt.reg_no
+ INNER JOIN xodxcommst cod ON cod.cd = mkt.industry_area_cd
+  LEFT JOIN humbasicinfo hum ON hum.syspayno = dwn.regst_syspayno
+      WHERE 1=1
+   <if test="regst_syspayno != null and regst_syspayno != ''"> AND mkt.regst_syspayno like '%' || #{regst_syspayno} || '%'</if>
+   <if test="industry_area_cd != null and industry_area_cd != ''"> AND mkt.industry_area_cd like '%' || #{industry_area_cd} || '%'</if>
+   <if test="author != null and author != ''"> AND mkt.author like '%' || #{author} || '%'</if>
+   <if test="title_ko != null and title_ko != ''"> AND mkt.title_ko like '%' || #{title_ko} || '%'</if> 
+   <if test="attach_file_nm != null and attach_file_nm != ''"> AND dwn.attach_file_nm like '%' || #{attach_file_nm} || '%'</if>
+   <if test="start_date != null and start_date != ''"> AND dwn.regst_daytm <![CDATA[ >= ]]> TO_DATE(?, '%Y%m%d') </if>
+   <if test="end_date != null and end_date != ''">  AND dwn.regst_daytm <![CDATA[ <= ]]> TO_DATE(?, '%Y%m%d') </if>
+   ORDER BY mkt.regst_daytm DESC
+</select>
+
+<!-- 공지사항 단건 조회 -->
+<select id="selectItemMarket" parameterType="kr.re.kitech.biz.res.twe.vo.ResMarketVo" resultType="kr.re.kitech.biz.res.twe.vo.ResMarketVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.twe.selectItemMarket */
+       mkt.reg_no,
+       mkt.title_ko,
+       mkt.title_en,
+       mkt.industry_area_cd,
+       cod.cd_nm,
+       mkt.author,
+       mkt.publisher,
+       TO_CHAR(to_date(mkt.publish_date , '%Y%m%d') , '%Y%m%d') as publish_date,
+       mkt.attach_file_no,
+       mkt.open_yn,
+       CASE WHEN mkt.open_yn = 'Y' THEN '공개' ELSE '비공개' END open_yn_nm,
+       mkt.regst_syspayno,
+       hum.nm AS wri_psn_syspaynm,
+       TO_CHAR(mkt.regst_daytm, '%Y%m%d') AS regst_daytm, 
+       mkt.contnt,
+       mkt.rmk,
+       hum.empno
+  FROM resmktinfo mkt
+ INNER JOIN xodxcommst cod ON cod.cd = mkt.industry_area_cd
+  LEFT JOIN humbasicinfo hum ON hum.syspayno = mkt.regst_syspayno
+ WHERE 1=1
+   AND mkt.reg_no = #{reg_no}
+</select>
+
+<!-- 시장정보자료 등록 -->
+<insert id="insertItemMarket" parameterType="kr.re.kitech.biz.res.twe.vo.ResMarketVo">
+INSERT /* QueryID : kr.re.kitech.biz.res.twe.insertItemMarket */ 
+  INTO resmktinfo  ( title_ko,
+                     title_en,
+                     industry_area_cd,
+                     author,
+                     publisher,
+                     publish_date,
+                     contnt,
+                     attach_file_no,
+                     open_yn,
+                     rmk,
+                     del_yn,
+                     regst_syspayno,
+                     regst_daytm
+                     )
+
+           VALUES ( #{title_ko},
+                    #{title_en},
+                    #{industry_area_cd},
+                    #{author},
+                    #{publisher},
+                    #{publish_date},
+                    #{contnt},
+                    #{attach_file_no},
+                    #{open_yn},
+                    #{rmk},
+                    'N',
+                    #{regst_syspayno},
+                    CURRENT)
+</insert>
+
+<!-- 시장정보자료 열람이력 등록 -->
+<insert id="insertItemDownHist" parameterType="kr.re.kitech.biz.res.twe.vo.ResDownHistVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.pbd.insertItemNoticeBoard */ 
+  INTO resdownhist ( reg_no,
+                     attach_file_no,
+                     attach_file_nm,
+                     regst_syspayno,
+                     regst_daytm)
+
+SELECT CAST(#{reg_no} as INTEGER) as reg_no,
+ 	   CAST(#{attach_file_no} as CHAR(13)) as attach_file_no,
+ 	   CAST(#{attach_file_nm} as VARCHAR(255)) as attach_file_nm,
+ 	   CAST(#{regst_syspayno} as CHAR(8)) as regst_syspayno,
+       CURRENT
+ FROM DUAL
+</insert>
+
+<!-- 시장정보자료 삭제 -->
+<delete id="deleteItemMarket" parameterType="kr.re.kitech.biz.res.twe.vo.ResMarketVo">
+DELETE /* QueryID : kr.re.kitech.biz.res.twe.deleteItemMarket */ 
+  FROM resmktinfo
+ WHERE reg_no = #{reg_no}
+</delete>   
+
+<!-- 시장정보자료 수정 -->
+<update id="updateItemMarket" parameterType="kr.re.kitech.biz.res.twe.vo.ResMarketVo">
+UPDATE /* QueryID : kr.re.kitech.biz.res.twe.updateItemMarket */ 
+      resmktinfo
+  SET <if test="title_ko != null"> title_ko = #{title_ko}, </if>
+      <if test="title_en != null"> title_en = #{title_en}, </if> 
+      <if test="industry_area_cd != null"> industry_area_cd = #{industry_area_cd}, </if> 
+      <if test="author != null"> author = #{author}, </if>
+      <if test="publisher != null"> publisher = #{publisher}, </if>
+      <if test="publish_date != null"> publish_date = #{publish_date}, </if>
+      <if test="contnt != null"> contnt = #{contnt}, </if>
+      <if test="attach_file_no != null"> attach_file_no = #{attach_file_no}, </if>
+      <if test="open_yn != null"> open_yn = #{open_yn}, </if>
+      <if test="rmk != null"> rmk = #{rmk}, </if>      
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE reg_no = #{reg_no}
+</update>
+</mapper>

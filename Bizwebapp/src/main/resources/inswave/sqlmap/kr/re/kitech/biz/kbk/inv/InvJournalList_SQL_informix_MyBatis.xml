@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.inv">
+		
+	<select id="selectJournalList" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvJournalVo" resultType="kr.re.kitech.biz.kbk.inv.vo.InvJournalVo">
+SELECT /* kr.re.kitech.biz.kbk.inv.selectJournalList */
+       fun_xodxcommst_cd_nm(a.centr_cd,0) AS centr_cd
+     , a.jurnl_no
+     , a.regst_ymd
+     , a.jurnl_clsf_cd
+     , fun_xodxcommst_cd_nm(a.jurnl_clsf_cd, 0) AS jurnl_clsf_nm
+     , a.jurnl_subj
+     , a.publ_vend
+     , fun_xodxcommst_cd_nm(a.imprnt, 0) AS imprnt
+     , a.cont_yn
+     , a.issn
+     , a.electr_jurnl_homepg
+     , a.rmk   
+     , a.recent_wrhsg_schdl_ymd
+     , a.pspnmt_time 
+     , CASE WHEN (TO_NUMBER(NVL(a.recent_wrhsg_schdl_ymd, 0)) + NVL(a.pspnmt_time, 0)) > TO_NUMBER(SUBSTR(TO_CHAR(SYSDATE, '%Y%m%d'), 0, 8)) THEN 'Vol:'||b.vol||'  No:'||b.no
+            WHEN  a.jurnl_clsf_cd = "BCG002" THEN '' ELSE '결호' END AS chkContnt
+     , CASE WHEN a.jurnl_clsf_cd != 'BCG002' AND a.cont_yn = 'Y' THEN '정보' END AS info
+ FROM kbkjurnlno a 
+ LEFT JOIN (SELECT FIRST 1 no, vol, jurnl_no
+              FROM  kbkjurnlcontnt  
+             WHERE  jurnl_no = 'J003726' 
+             ORDER BY vol DESC, no DESC
+      ) b ON a.jurnl_no = b.jurnl_no
+WHERE 1 = 1
+ <if test="cont_yn != null and cont_yn != ''"> AND  a.cont_yn LIKE '%' || #{cont_yn} || '%' </if>
+ <if test="jurnl_clsf_cd != null and jurnl_clsf_cd != ''"> AND a.jurnl_clsf_cd = #{jurnl_clsf_cd} </if>
+ <if test="centr_cd != null and centr_cd != ''"> AND a.centr_cd = #{centr_cd} </if>
+ <if test="jurnl_subj != null and jurnl_subj != ''"> AND (REPLACE(UPPER(a.jurnl_subj), ' ', '') LIKE '%' || #{jurnl_subj} || '%' OR UPPER(a.jurnl_subj) LIKE '%' || UPPER(#{jurnl_subj}) || '%' ) </if>
+ <if test="issn != null and issn != ''"> AND a.issn LIKE '%' || #{issn} || '%' </if>
+ <if test="publ_vend != null and publ_vend != ''"> AND a.publ_vend LIKE '%' || #{publ_vend} || '%' </if>
+ORDER BY jurnl_no DESC
+</select>
+	
+	<select id="selectJournal" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvJournalVo" resultType="kr.re.kitech.biz.kbk.inv.vo.InvJournalVo">
+		SELECT regst_no,
+		       jurnl_no,
+		       jurnl_clsf_cd,
+		       regst_ymd,
+		       jurnl_subj,
+		       publ_vend,
+		       clsf_cd,
+		       natn_cd,
+		       clsf,
+		       agent_vend,
+		       cont_yn,
+		       startpubl_ymd,
+		       pur_clsf,
+		       issn,
+		       imprnt,
+		       fun_xodxcommst_cd_nm(imprnt, 0) as imprnt_nm,
+		       recent_wrhsg_schdl_ymd,
+		       pspnmt_time,
+		       tong_yn,
+		       subj_fild,
+		       kitech_owshp_yn,
+		       kitech_owshp_yr,
+		       centr_cd,
+		       out_agncy_owshp_item,
+		       electr_jurnl_homepg,
+		       homepg,
+		       rmk
+		  FROM kbkjurnlno
+		 WHERE 1 = 1
+		   AND jurnl_no = {jurnl_no}
+	</select>
+
+	<insert id="insertJournal" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvJournalVo">
+		INSERT INTO kbkjurnlno 
+		(     regst_no, 
+		      jurnl_no, 
+		      jurnl_clsf_cd, 
+		      regst_ymd, 
+		      jurnl_subj, 
+		      publ_vend, 
+		      clsf_cd, 
+		      natn_cd,   
+		      clsf, 
+		      agent_vend, 
+		      cont_yn, 
+		      startpubl_ymd, 
+		      pur_clsf, 
+		      issn, 
+		      imprnt, 
+		      recent_wrhsg_schdl_ymd,
+		      pspnmt_time, 
+		      tong_yn, 
+		      subj_fild, 
+		      kitech_owshp_yn, 
+		      kitech_owshp_yr, 
+		      centr_cd,
+		      out_agncy_owshp_item, 
+		      electr_jurnl_homepg,
+		      homepg, 
+		      rmk, 
+		      regst_psn_syspayno, 
+		      regst_daytm    )
+		VALUES (?, 'J' || (select lpad(trunc(nvl(max(to_number(substr(jurnl_no ,2,7)))+1, 0)), 6, '0')from kbkjurnlno), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT)
+	</insert>
+	
+</mapper>

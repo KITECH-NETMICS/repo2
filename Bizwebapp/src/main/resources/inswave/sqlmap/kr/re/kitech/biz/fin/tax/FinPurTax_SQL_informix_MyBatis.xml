@@ -1,0 +1,863 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.tax">
+<!-- 매입계산서 또는 매입계산서(관) 조회 -->
+<select id="selectKtxIssuMstrList" resultType="kr.re.kitech.biz.fin.tax.vo.KtxIssuMstrVo" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectKtxIssuMstrList */
+       a.issu_seqno
+     , a.regs_date
+     , a.issu_id
+     , a.selr_corp_no
+     , a.selr_corp_nm
+     , a.chrg_amt
+     , a.tax_amt
+     , a.totl_amt
+     , TRIM(NVL(a.unslip_no,'')) AS unslip_no
+     , a.evid_cd 
+     , a.wrte_psn
+     , b.nm AS wrte_psn_nm -- 계산서 등록자
+     , b.email
+     , a.wrte_dept
+     , m.dept_nm AS wrte_dept_nm -- 계산서 작성부서
+     , TRIM(NVL(a.stat_code, 'N')) AS stat_code
+     , NVL(v.issu_seqno,'') AS bfo_issu_id
+     , a.trans_amt
+     , CASE WHEN NVL(a.unslip_no, '') = '' THEN 'N'
+            WHEN LENGTH(a.unslip_no)=8 THEN 'Y'
+            ELSE c.decsn_ex END AS decsn_ex
+     , CASE WHEN NVL(a.unslip_no, '') = '' THEN ''
+            WHEN LENGTH(a.unslip_no)=8 THEN a.unslip_no
+            ELSE c.slip_no END AS slip_no
+     , DECODE(NVL(a.tax_returns_yn,''), '', 'N', a.tax_returns_yn) AS tax_returns_yn
+     , DECODE(d.tax_confirm_yn, 'Y', '확인', '') AS tax_confirm_yn
+     , DECODE(NVL(r.tax_cd, ''), '', 'N', r.tax_cd) AS tax_cd
+     , i.nm AS slip_wrte_psn_nm
+     , j.dept_nm AS slip_dept_nm
+     , DECODE(SUBSTR(a.tax_type,1,2),'01','세금계산서','02','수정세금계산서','03','계산서','04','수정계산서',k.cd_nm) AS evid_cd_nm
+     , CASE WHEN NVL(e.rcms_pay_unslip_no,'') = '' THEN (SELECT MAX(pay_unslip_no) FROM fspsendreq WHERE unslip_no = a.unslip_no) 
+            ELSE e.rcms_pay_unslip_no END AS pay_unslip_no
+     , d.decsn_psn
+     , l.nm AS decsn_psn_nm
+     , CASE WHEN (SELECT COUNT(*) FROM ktx_issu_detail WHERE issu_seqno = a.issu_seqno) > 1 THEN n.item_nm ||' 외' ELSE n.item_nm END AS item_nm
+     , o.nm AS wrte_dept_res_nm
+     , o.email AS wrte_dept_res_email
+     , o.empno AS wrte_dept_res_empno
+  FROM ktx_issu_mstr a
+  JOIN humbasicinfo b ON a.wrte_psn = b.syspayno
+  LEFT JOIN fspsliph c ON c.unslip_no = a.unslip_no
+  LEFT JOIN fspslipdecsnh d ON c.slip_no = d.slip_no
+  LEFT JOIN fspslipd e ON e.unslip_no = c.unslip_no
+       AND e.unslip_odr = (SELECT MIN(unslip_odr) AS unslip_odr FROM fspslipd WHERE unslip_no = c.unslip_no AND bill_no = a.issu_seqno)
+  LEFT JOIN resbgacctm r ON e.accnt_no = r.accnt_no
+  LEFT JOIN ktx_issu_mstr v ON v.bfo_issu_id = a.issu_seqno AND NVL(v.bfo_issu_id, '') != ''
+  LEFT JOIN ktx_issu_detail n ON a.issu_seqno = n.issu_seqno AND NOT EXISTS (SELECT 1 FROM ktx_issu_detail WHERE issu_seqno = n.issu_seqno AND seq_no <![CDATA[ < ]]> n.seq_no)
+  LEFT JOIN humbasicinfo i ON c.wrte_psn = i.syspayno -- 결의서 생성
+  LEFT JOIN xodhdeptinfo j ON i.dept_cd = j.dept_cd AND i.dept_new_ymd = j.dept_new_ymd -- 결의생성부서
+  LEFT JOIN xodxcommst k ON a.evid_cd = k.cd
+  LEFT JOIN humbasicinfo l ON d.decsn_psn = l.syspayno -- 결의확정자
+  LEFT JOIN xodhdeptinfo m ON b.dept_cd = m.dept_cd AND b.dept_new_ymd = m.dept_new_ymd -- 계산서 작성부서
+  LEFT JOIN (SELECT ROW_NUMBER() OVER (PARTITION BY s1.dept_cd, s1.dept_new_ymd ORDER BY s1.syspayno ASC) AS rank
+                  , s1.dept_cd
+                  , s1.dept_new_ymd
+                  , s1.syspayno
+                  , s2.nm
+                  , s2.empno
+                  , s2.email
+               FROM xodrdeptresman s1
+               JOIN humbasicinfo s2 ON s1.syspayno = s2.syspayno AND s2.retire_ymd = ''
+            ) o ON o.dept_cd = b.dept_cd AND o.dept_new_ymd = b.dept_new_ymd AND o.rank = '1'
+ WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+  <if test='selr_corp_no != null and selr_corp_no != ""'> AND (a.selr_corp_no = #{selr_corp_no} OR a.selr_corp_no = #{selr_corp_no_1})</if>
+  <if test='selr_corp_nm != null and selr_corp_nm != ""'> AND a.selr_corp_nm LIKE '%' ||#{selr_corp_nm}||'%' </if>
+  <if test='wrte_psn != null and wrte_psn != ""'> AND (a.wrte_psn = #{wrte_psn} OR a.pur_con_user_id = #{wrte_psn}) </if>
+  <if test='evid_cd != null and evid_cd != ""'> AND a.evid_cd = #{evid_cd} </if>
+  <if test='unslip_no != null and unslip_no != ""'> AND NVL(a.unslip_no,'') LIKE #{unslip_no} ||'%' </if>
+  <if test='issu_seqno != null and issu_seqno != ""'> AND a.issu_seqno LIKE #{issu_seqno} ||'%' </if>
+  <if test='slip_dept_nm != null and slip_dept_nm != ""'> AND j.dept_nm LIKE '%'||#{slip_dept_nm}||'%') </if>
+  <if test='decsn_psn != null and decsn_psn != ""'> AND d.decsn_psn = #{decsn_psn} </if>
+  <if test='dept_nm != null and dept_nm != ""'> AND m.dept_nm LIKE '%'||#{dept_nm}||'%' </if>
+  <if test='slip_wrte_psn != null and slip_wrte_psn != ""'> AND i.syspayno = #{slip_wrte_psn} </if>
+  <if test='prcs_clsf != null and prcs_clsf == "Y"'> AND NVL(a.unslip_no, '') != '' </if>
+  <if test='prcs_clsf != null and prcs_clsf == "N"'> AND NVL(a.unslip_no, '') = '' </if>
+  <if test='slip_no != null and slip_no != ""'> 
+   AND (CASE WHEN NVL(a.unslip_no, '') = '' THEN ''
+             WHEN LENGTH(a.unslip_no)=8 THEN a.unslip_no
+             ELSE c.slip_no END) = #{slip_no} 
+  </if>
+  <if test='tax_returns_yn != null and tax_returns_yn != ""'> 
+   AND DECODE(NVL(a.tax_returns_yn,''), '', 'N', a.tax_returns_yn) = #{tax_returns_yn} 
+  </if>
+  <if test='decsn_ex != null and decsn_ex != ""'> 
+   AND (CASE WHEN NVL(a.unslip_no, '') = '' THEN 'N'
+             WHEN LENGTH(a.unslip_no)=8 THEN 'Y'
+             ELSE c.decsn_ex END) = #{decsn_ex} 
+  </if>
+ ORDER BY a.issu_id, a.regs_date, a.selr_corp_no
+</select>
+
+<!-- 매입계산서(관) 엑셀다운로드  -->
+<select id="selectKtxIssuMstrListExcel" resultType="kr.re.kitech.biz.fin.tax.vo.KtxIssuMstrVo" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectKtxIssuMstrListExcel */
+       a.issu_seqno
+     , a.regs_date
+     , a.issu_id
+     , a.selr_corp_no
+     , a.selr_corp_nm
+     , a.chrg_amt
+     , a.tax_amt
+     , a.totl_amt
+     , TRIM(NVL(a.unslip_no,'')) AS unslip_no
+     , FUN_XODXCOMMST_CD_NM(a.evid_cd, 0) AS evid_cd
+     , a.wrte_psn
+     , b.nm AS wrte_psn_nm -- 계산서 등록자
+     , b.email
+     , a.wrte_dept
+     , m.dept_nm AS wrte_dept_nm -- 계산서 작성부서
+     , TRIM(NVL(a.stat_code, 'N')) AS stat_code
+     , NVL(v.issu_seqno,'') AS bfo_issu_id
+     , a.trans_amt
+     , CASE WHEN NVL(a.unslip_no, '') = '' THEN 'N'
+            WHEN LENGTH(a.unslip_no)=8 THEN 'Y'
+            ELSE c.decsn_ex END AS decsn_ex
+     , CASE WHEN NVL(a.unslip_no, '') = '' THEN ''
+            WHEN LENGTH(a.unslip_no)=8 THEN a.unslip_no
+            ELSE c.slip_no END AS slip_no
+     , DECODE(DECODE(NVL(a.tax_returns_yn,''), '', 'N', a.tax_returns_yn), 'Y', '확인', '미확인') AS tax_returns_yn
+     , DECODE(d.tax_confirm_yn, 'Y', '확인', '') AS tax_confirm_yn
+     , DECODE(DECODE(NVL(r.tax_cd, ''), '', 'N', r.tax_cd), 'FTX001', '과세', '비과세') AS tax_cd
+     , i.nm AS slip_wrte_psn_nm
+     , j.dept_nm AS slip_dept_nm
+     , DECODE(SUBSTR(a.tax_type,1,2),'01','세금계산서','02','수정세금계산서','03','계산서','04','수정계산서',k.cd_nm) AS evid_cd_nm
+     , CASE WHEN NVL(e.rcms_pay_unslip_no,'') = '' THEN (SELECT MAX(pay_unslip_no) FROM fspsendreq WHERE unslip_no = a.unslip_no) 
+            ELSE e.rcms_pay_unslip_no END AS pay_unslip_no
+     , d.decsn_psn
+     , l.nm AS decsn_psn_nm
+     , CASE WHEN (SELECT COUNT(*) FROM ktx_issu_detail WHERE issu_seqno = a.issu_seqno) > 1 THEN n.item_nm ||' 외' ELSE n.item_nm END AS item_nm
+     , o.nm AS wrte_dept_res_nm
+     , o.email AS wrte_dept_res_email
+     , o.empno AS wrte_dept_res_empno
+     , a.pops_code
+     , DECODE(NVL(a.pops_code, ''), '01', '영수', '02', '청구', '') AS pops_nm
+     , a.selr_chrg_email
+     , a.buyr_chrg_email1
+  FROM ktx_issu_mstr a
+  JOIN humbasicinfo b ON a.wrte_psn = b.syspayno
+  LEFT JOIN fspsliph c ON c.unslip_no = a.unslip_no
+  LEFT JOIN fspslipdecsnh d ON c.slip_no = d.slip_no
+  LEFT JOIN fspslipd e ON e.unslip_no = c.unslip_no
+       AND e.unslip_odr = (SELECT MIN(unslip_odr) AS unslip_odr FROM fspslipd WHERE unslip_no = c.unslip_no AND bill_no = a.issu_seqno)
+  LEFT JOIN resbgacctm r ON e.accnt_no = r.accnt_no
+  LEFT JOIN ktx_issu_mstr v ON v.bfo_issu_id = a.issu_seqno AND NVL(v.bfo_issu_id, '') != ''
+  LEFT JOIN ktx_issu_detail n ON a.issu_seqno = n.issu_seqno AND NOT EXISTS (SELECT 1 FROM ktx_issu_detail WHERE issu_seqno = n.issu_seqno AND seq_no <![CDATA[ < ]]> n.seq_no)
+  LEFT JOIN humbasicinfo i ON c.wrte_psn = i.syspayno -- 결의서 생성
+  LEFT JOIN xodhdeptinfo j ON i.dept_cd = j.dept_cd AND i.dept_new_ymd = j.dept_new_ymd -- 결의생성부서
+  LEFT JOIN xodxcommst k ON a.evid_cd = k.cd
+  LEFT JOIN humbasicinfo l ON d.decsn_psn = l.syspayno -- 결의확정자
+  LEFT JOIN xodhdeptinfo m ON b.dept_cd = m.dept_cd AND b.dept_new_ymd = m.dept_new_ymd -- 계산서 작성부서
+  LEFT JOIN (SELECT ROW_NUMBER() OVER (PARTITION BY s1.dept_cd, s1.dept_new_ymd ORDER BY s1.syspayno ASC) AS rank
+                  , s1.dept_cd
+                  , s1.dept_new_ymd
+                  , s1.syspayno
+                  , s2.nm
+                  , s2.empno
+                  , s2.email
+               FROM xodrdeptresman s1
+               JOIN humbasicinfo s2 ON s1.syspayno = s2.syspayno AND s2.retire_ymd = ''
+            ) o ON o.dept_cd = b.dept_cd AND o.dept_new_ymd = b.dept_new_ymd AND o.rank = '1'
+ WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+  <if test='selr_corp_no != null and selr_corp_no != ""'> AND (a.selr_corp_no = #{selr_corp_no} OR a.selr_corp_no = #{selr_corp_no_1})</if>
+  <if test='selr_corp_nm != null and selr_corp_nm != ""'> AND a.selr_corp_nm LIKE '%' ||#{selr_corp_nm}||'%' </if>
+  <if test='wrte_psn != null and wrte_psn != ""'> AND (a.wrte_psn = #{wrte_psn} OR a.pur_con_user_id = #{wrte_psn}) </if>
+  <if test='evid_cd != null and evid_cd != ""'> AND a.evid_cd = #{evid_cd} </if>
+  <if test='unslip_no != null and unslip_no != ""'> AND NVL(a.unslip_no,'') LIKE #{unslip_no} ||'%' </if>
+  <if test='issu_seqno != null and issu_seqno != ""'> AND a.issu_seqno LIKE #{issu_seqno} ||'%' </if>
+  <if test='slip_dept_nm != null and slip_dept_nm != ""'> AND j.dept_nm LIKE '%'||#{slip_dept_nm}||'%') </if>
+  <if test='decsn_psn != null and decsn_psn != ""'> AND d.decsn_psn = #{decsn_psn} </if>
+  <if test='dept_nm != null and dept_nm != ""'> AND m.dept_nm LIKE '%'||#{dept_nm}||'%' </if>
+  <if test='slip_wrte_psn != null and slip_wrte_psn != ""'> AND i.syspayno = #{slip_wrte_psn} </if>
+  <if test='prcs_clsf != null and prcs_clsf == "Y"'> AND NVL(a.unslip_no, '') != '' </if>
+  <if test='prcs_clsf != null and prcs_clsf == "N"'> AND NVL(a.unslip_no, '') = '' </if>
+  <if test='slip_no != null and slip_no != ""'> 
+   AND (CASE WHEN NVL(a.unslip_no, '') = '' THEN ''
+             WHEN LENGTH(a.unslip_no)=8 THEN a.unslip_no
+             ELSE c.slip_no END) = #{slip_no} 
+  </if>
+  <if test='tax_returns_yn != null and tax_returns_yn != ""'> 
+   AND DECODE(NVL(a.tax_returns_yn,''), '', 'N', a.tax_returns_yn) = #{tax_returns_yn} 
+  </if>
+  <if test='decsn_ex != null and decsn_ex != ""'> 
+   AND (CASE WHEN NVL(a.unslip_no, '') = '' THEN 'N'
+             WHEN LENGTH(a.unslip_no)=8 THEN 'Y'
+             ELSE c.decsn_ex END) = #{decsn_ex} 
+  </if>
+ ORDER BY a.issu_id, a.regs_date, a.selr_corp_no
+</select>
+
+<!-- 매입계산서(관) 미확인 조회 -->
+<select id="selectKtxBillUnConfirm" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo" resultType="kr.re.kitech.biz.fin.tax.vo.FinBillUnConfirmVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectKtxBillUnConfirm */
+      f.slip_no
+     , f.accnt_ymd
+     , f.nm AS decsn_psn
+     , g.slip_no AS pay_slip_no
+  FROM (
+         SELECT b.slip_no
+              , b.accnt_ymd
+              , h.nm
+              , DECODE(TRIM(NVL(d.pay_unslip_no, '')), '', e.rcms_pay_unslip_no, d.pay_unslip_no) AS pay_unslip_no
+         FROM ktx_issu_mstr a
+         JOIN fspsliph b ON a.unslip_no = b.unslip_no
+         JOIN fspslipdecsnh c ON b.slip_no = c.slip_no
+         LEFT JOIN fspsendreq d ON a.unslip_no = d.unslip_no
+         LEFT JOIN fspslipd e ON a.unslip_no = e.unslip_no and a.issu_seqno = e.bill_no and e.base_debit_cr = 1
+         JOIN humbasicinfo h ON c.decsn_psn = h.syspayno
+        WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+          AND TRIM(NVL(a.unslip_no, '')) != ''
+          AND b.decsn_ex = 'Y'
+          AND TRIM(NVL(c.tax_confirm_yn,'')) != 'Y'
+        GROUP by 1,2,3,4
+  ) f
+  LEFT JOIN fspsliph g ON f.pay_unslip_no = g.unslip_no
+ ORDER BY 2,1,4
+</select>
+
+<!-- 매출/매입계산서 확인 저장 -->
+<update id="updateFspSlipDecsnHConfirmYn" parameterType="kr.re.kitech.biz.fin.tax.vo.FinBillUnConfirmVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFspSlipDecsnHConfirmYn */
+     fspslipdecsnh
+   SET tax_confirm_yn = #{tax_confirm_yn},
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE 
+ WHERE slip_no = #{slip_no}
+</update>
+
+<!-- 매입계산서(관) 신고파일 -->
+<select id="selectKtxIssuMstrForReport" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo" resultType="kr.re.kitech.biz.fin.tax.vo.KtxIssuMstrExcelVo">
+SELECT DISTINCT /* kr.re.kitech.biz.fin.tax.selectKtxIssuMstrForReport */
+       DECODE(NVL(m.tax_returns_yn, 'N'), 'Y', '신고', 'E', '에러', '미신고') AS tax_returns_yn
+     , CASE WHEN length(m.issu_id) >= 24 AND m.company_code = 'KTX' AND  m.stat_code IS NOT NULL
+            THEN '전자' ELSE '종이' END AS invoice_type
+     , m.issu_seqno
+     , m.bill_type
+     , DECODE(m.bill_type, '1', '매출', '2', '매입', '') AS bill_type_nm
+     , c.cd_nm AS evid_cd_nm
+     , DECODE(SUBSTR(m.tax_type,1,2), '01', '세금계산서', '02', '수정세금계산서', '03', '계산서', '04', '수정계산서', '05', '영수증', '') AS tax_type_1
+     , DECODE(SUBSTR(m.tax_type,3,2), '01', '01', '02', '02', '') AS tax_type
+     , DECODE(SUBSTR(m.tax_type,3,2), '01', '일반', '02', '영세율', '03', '위수탁', '04', '수입', '05', '영세율위수탁', '') AS tax_type_nm
+     , m.mody_code
+     , m.selr_mgr_id1
+     , m.selr_mgr_id2
+     , m.selr_mgr_id3
+     , m.selr_corp_no
+     , m.selr_corp_nm
+     , m.selr_ceo
+     , m.selr_addr
+     , g.cd_nm AS dept_type_nm
+     , DECODE(f.dept_level_3, 'L000', '0003', g.mngmt_item_3) AS selr_code
+     , m.selr_buss_cons
+     , m.selr_buss_type
+     , m.selr_chrg_post
+     , m.selr_chrg_nm
+     , m.selr_chrg_mobl
+     , m.selr_chrg_email
+     , m.regs_date
+     , m.chrg_amt
+     , m.tax_amt
+     , m.totl_amt
+     , m.note1
+     , DECODE(m.pymt_type1, '10', NVL(m.pamt_amt1,0), 0)
+      + DECODE(m.pymt_type2, '10', NVL(m.pamt_amt2,0), 0)
+      + DECODE(m.pymt_type3, '10', NVL(m.pamt_amt3,0), 0)
+      + DECODE(m.pymt_type4, '10', NVL(m.pamt_amt4,0), 0) AS cash_amt
+     , DECODE(m.pymt_type1, '20', NVL(m.pamt_amt1,0), 0)
+      + DECODE(m.pymt_type2, '20', NVL(m.pamt_amt2,0), 0)
+      + DECODE(m.pymt_type3, '20', NVL(m.pamt_amt3,0), 0)
+      + DECODE(m.pymt_type4, '20', NVL(m.pamt_amt4,0), 0) AS check_amt
+     , DECODE(m.pymt_type1, '30', NVL(m.pamt_amt1,0), 0)
+      + DECODE(m.pymt_type2, '30', NVL(m.pamt_amt2,0), 0)
+      + DECODE(m.pymt_type3, '30', NVL(m.pamt_amt3,0), 0)
+      + DECODE(m.pymt_type4, '30', NVL(m.pamt_amt4,0), 0) AS credit_amt
+     , DECODE(m.pymt_type1, '40', NVL(m.pamt_amt1,0), 0)
+      + DECODE(m.pymt_type2, '40', NVL(m.pamt_amt2,0), 0)
+      + DECODE(m.pymt_type3, '40', NVL(m.pamt_amt3,0), 0)
+      + DECODE(m.pymt_type4, '40', NVL(m.pamt_amt4,0), 0) AS prmsnt_amt
+     , DECODE(m.pops_code, '01', '영수', '02', '청구', '') AS pops_code
+     , NVL((SELECT MAX(buy_date) FROM ktx_issu_detail WHERE issu_seqno = m.issu_seqno), m.regs_date) AS buy_date
+     , DECODE(LENGTH(NVL(m.unslip_no,'')), 8, '확정', 0, '미확정', DECODE(a.decsn_ex, 'Y', '확정', '미확정')) AS decsn_ex
+     , NVL(a.accnt_ymd ,'') AS accnt_ymd
+     , NVL(a.rmk, '') AS rmk
+     , DECODE(LENGTH(NVL(m.unslip_no,'')), 8, m.unslip_no, 0, '', a.slip_no) AS slip_no
+     , NVL(m.unslip_no,'') AS unslip_no
+     , DECODE(NVL(x.tax_cd,'FTX002'),'FTX001','과세','비과세') AS tax_cd_nm
+     , m.buyr_chrg_email1
+     , e.nm||'('||e.empno||')' AS wrte_psn_nm
+     , e.email AS wrte_psn_email
+     , e.mobile AS wrte_psn_mobile
+     , e.ext_no AS wrte_psn_ext_no
+     , f.dept_nm AS wrte_dept_nm
+     , i.nm AS dept_res_nm
+     , i.email AS dept_res_email
+  FROM ktx_issu_mstr m
+  JOIN humbasicinfo e ON e.syspayno = m.wrte_psn
+  LEFT JOIN xodhdeptinfo f ON f.dept_cd = e.dept_cd AND f.dept_new_ymd = e.dept_new_ymd
+  LEFT JOIN xodxcommst g ON g.cd = f.dept_typ AND g.cd_clsf = 'HCF'
+  LEFT JOIN xodxcommst c ON c.cd = m.evid_cd AND c.cd_clsf ='FAH'
+  LEFT JOIN fspsliph a ON m.unslip_no = a.unslip_no
+  LEFT JOIN (fspslipd b 
+             JOIN resbgacctm x ON x.accnt_no = b.accnt_no AND x.tax_cd ='FTX001'
+          ) ON b.unslip_no = a.unslip_no AND b.bill_no = m.issu_seqno
+          AND NOT EXISTS ( SELECT 1 FROM fspslipd WHERE unslip_no = b.unslip_no AND accnt_no = x.accnt_no AND bill_no = m.issu_seqno AND unslip_odr <![CDATA[ < ]]> b.unslip_odr)
+  LEFT JOIN (SELECT ROW_NUMBER() OVER(PARTITION BY dept_cd, dept_new_ymd ORDER BY syspayno) AS row_number, * FROM xodrdeptresman ORDER BY dept_cd, dept_new_ymd
+      ) h ON h.dept_cd = f.dept_cd AND h.dept_new_ymd = f.dept_new_ymd AND h.row_number = 1
+  LEFT JOIN humbasicinfo i ON i.syspayno = h.syspayno AND NVL(i.retire_ymd, '') = ''
+ WHERE m.bill_type IN ('2', '4')
+   AND m.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+  <if test='decsn_ex != null and decsn_ex != ""'> AND DECODE(LENGTH(NVL(m.unslip_no,'')), 8, 'Y', 0, 'N', NVL(a.decsn_ex, 'N')) = #{decsn_ex} </if>
+  <if test='slip_no != null and slip_no != ""'> AND DECODE(LENGTH(NVL(m.unslip_no,'')), 8, m.unslip_no, 0, '', a.slip_no) = #{slip_no} </if>
+  <if test='selr_corp_no != null and selr_corp_no != ""'> AND (m.selr_corp_no = #{selr_corp_no} OR m.selr_corp_no = #{selr_corp_no_1})</if>
+  <if test='selr_corp_nm != null and selr_corp_nm != ""'> AND m.selr_corp_nm LIKE '%' ||#{selr_corp_nm}||'%' </if>
+  <if test='wrte_psn != null and wrte_psn != ""'> AND (m.wrte_psn = #{wrte_psn} OR m.pur_con_user_id = #{wrte_psn}) </if>
+  <if test='evid_cd != null and evid_cd != ""'> AND m.evid_cd = #{evid_cd} </if>
+  <if test='unslip_no != null and unslip_no != ""'> AND NVL(a.unslip_no,'') = #{unslip_no} </if>
+  <if test='issu_seqno != null and issu_seqno != ""'> AND m.issu_seqno LIKE #{issu_seqno} ||'%' </if>
+  <if test='tax_returns_yn != null and tax_returns_yn != ""'> 
+   AND DECODE(NVL(m.tax_returns_yn,''), '', 'N', m.tax_returns_yn) = #{tax_returns_yn} 
+  </if>
+ ORDER BY m.issu_seqno, m.selr_corp_no, m.selr_corp_nm
+</select>
+
+<!-- 부가세대급금 엑셀 -->
+<select id="selectKtxIssuMstrForTax" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo" resultType="kr.re.kitech.biz.fin.tax.vo.KtxIssuTaxExcelVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectKtxIssuMstrForTax */
+       ROW_NUMBER() OVER (ORDER BY accnt_ymd ) rownum 
+     , accnt_ymd
+     , DECODE(slip_no, '', NULL, (slip_no || '-' || ROUND(slip_odr))) AS slip_no_odr 
+     , rmk_2
+     , slip_odr
+     , rmk_1
+     , accnt_no
+     , expns_cd
+     , dr_amt
+     , cr_amt
+     , jan_amt
+     , TRIM(ramt_mngmt_1) AS ramt_mngmt_1 
+     , TRIM(ramt_mngmt_2) AS ramt_mngmt_2
+     , slip_no
+     , unslip_no
+     , bill_no
+     , wrte_psn_nm
+     , selr_code
+     , tag
+FROM ( SELECT a.accnt_cd
+            , a.accnt_no
+            , a.rmk_2
+            , a.accnt_ymd
+            , CASE a.base_debit_cr WHEN '1' THEN a.unslip_amt ELSE 0 END AS dr_amt
+            , CASE a.base_debit_cr WHEN '2' THEN a.unslip_amt ELSE 0 END AS cr_amt
+            , 0 AS jan_amt
+            , a.slip_no
+            , a.slip_odr
+            , a.rmk_1
+            , a.expns_cd
+            , a.ramt_mngmt_1
+            , a.ramt_mngmt_2  
+            , b.unslip_no
+            , b.bill_no
+            , e.nm AS wrte_psn_nm
+            , DECODE(f.dept_level_3, 'L000','0003',g.mngmt_item_3) AS selr_code
+            , '2' as tag
+        FROM fspslipdecsnd a 
+        JOIN fspslipd b ON b.unslip_no = a.unslip_no AND b.unslip_odr=a.unslip_odr
+        LEFT JOIN ktx_issu_mstr c ON c.issu_seqno = b.bill_no
+        LEFT JOIN humbasicinfo e ON e.syspayno = c.wrte_psn
+        LEFT JOIN xodhdeptinfo f ON f.dept_cd = e.dept_cd and f.dept_new_ymd = e.dept_new_ymd
+        LEFT JOIN xodxcommst g ON g.cd = f.dept_typ
+       WHERE a.accnt_cd = '11149015'
+         AND a.accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+
+       UNION ALL
+
+       SELECT a.accnt_cd
+            , '' AS accnt_no
+            , '' AS rmk_2
+            , SUBSTR(a.accnt_ymd, 1, 6)||'99' AS accnt_ymd
+            , SUM(a.dr_amt) AS dr_amt
+            , SUM(a.cr_amt) AS cr_amt
+            , SUM(CASE b.base_debit_cr WHEN '1' THEN dr_amt - cr_amt
+                                       WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+            , '소계' AS slip_no
+            , 0 AS slip_odr
+            , '' AS rmk_1
+            , '' AS expns_cd
+            , '' AS ramt_mngmt_1
+            , '' AS ramt_mngmt_2
+            , '' AS unslip_no
+            , '' AS bill_no
+            , '' AS wrte_psn_nm
+            , '' AS selr_code
+            , '2' AS tag
+        FROM ( SELECT accnt_cd
+                    , SUBSTR(accnt_ymd, 1, 6) AS accnt_ymd
+                    , base_debit_cr
+                    , CASE base_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+                    , CASE base_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+                FROM fspslipdecsnd
+               WHERE accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+                 AND accnt_cd = '11149015'
+             )a
+        JOIN xodfaccnt b ON a.accnt_cd = b.accnt_cd
+       GROUP BY a.accnt_cd, a.accnt_ymd
+   
+       UNION ALL
+      SELECT a.accnt_cd
+           , '' AS accnt_no                        
+           , '' AS rmk_2                        
+           , '99999999' AS accnt_ymd
+           , SUM(dr_amt) AS dr_amt
+           , SUM(cr_amt) AS cr_amt
+           , SUM(CASE b.base_debit_cr WHEN '1' THEN dr_amt - cr_amt
+                                      WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+           , '총계' AS slip_no
+           , 0 AS slip_odr
+           , '' AS rmk_1
+           , '' AS expns_cd
+           , '' AS ramt_mngmt_1
+           , '' AS ramt_mngmt_2
+           , '' AS unslip_no
+           , '' AS bill_no
+           , '' AS wrte_psn_nm
+           , '' AS selr_code
+           , '4' AS tag
+       FROM ( SELECT accnt_cd
+                   , accnt_ymd
+                   , base_debit_cr
+                   , CASE base_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+                   , CASE base_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+               FROM fspslipdecsnd
+              WHERE accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+                AND accnt_cd = '11149015'
+                )a
+       JOIN xodfaccnt b ON a.accnt_cd = b.accnt_cd 
+   GROUP BY a.accnt_cd
+    )
+</select>
+
+<!-- 미확인계산서반송 조회 -->
+<select id="selectKtxIssuMstrRetnMail" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo" resultType="kr.re.kitech.biz.fin.tax.vo.KtxIssuMstrVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectKtxIssuMstrRetnMail */ 
+      issu_id
+     , regs_date
+     , selr_corp_nm
+     , REPLACE(selr_corp_no, '-', '') AS selr_corp_no
+     , selr_chrg_nm
+     , selr_chrg_email
+     , REPLACE(buyr_corp_no, '-', '') AS buyr_corp_no
+     , buyr_corp_nm
+     , buyr_chrg_post1
+     , buyr_chrg_nm1
+     , buyr_chrg_email1
+     , chrg_amt
+     , tax_amt
+     , totl_amt
+     , DECODE(rmk, '00', '공급받는자담당자이메일 누락', '01', '퇴직자', '02', '외부메일사용 또는 오기', '03', '인사정보없음', '') AS rmk
+FROM ( SELECT a.issu_id
+            , a.regs_date
+            , a.selr_corp_nm
+            , a.selr_corp_no
+            , a.selr_chrg_nm
+            , a.selr_chrg_email
+            , a.buyr_corp_no
+            , a.buyr_corp_nm
+            , a.buyr_chrg_post1
+            , a.buyr_chrg_nm1
+            , a.buyr_chrg_email1
+            , a.chrg_amt
+            , a.tax_amt
+            , a.totl_amt
+            , DECODE(LENGTH(NVL(b.retire_ymd, '')), 8, SUBSTR(NVL(b.retire_ymd, ''), 0, 4) || '-' || SUBSTR(NVL(b.retire_ymd, ''), 5, 2) || '-' || SUBSTR(NVL(b.retire_ymd, ''), 7, 2), NVL(b.retire_ymd, '')) AS retire_ymd
+            , CASE WHEN TRIM(NVL(a.buyr_chrg_email1, '')) = '' THEN '00'
+                   WHEN b.retire_ymd != '' THEN '01'
+                   WHEN UPPER(a.buyr_chrg_email1) NOT LIKE '%@KITECH.RE.KR' THEN '02'
+                   WHEN b.email IS NULL THEN '03'
+                   ELSE '04' END AS rmk
+        FROM ktx_issu_mstr a
+        LEFT JOIN ( SELECT UPPER(email) AS email
+                         , MIN(NVL(retire_ymd, '')) AS retire_ymd
+                      FROM humbasicinfo
+                     WHERE NVL(email, '') != ''
+                     GROUP BY email
+                  ) b ON email = TRIM(UPPER(a.buyr_chrg_email1))
+       WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+         AND NVL(a.tax_returns_yn, 'N') = 'N'
+         AND NVL(a.unslip_no, '') = ''
+         AND a.company_code = 'KTX'
+         AND a.stat_code IS NOT NULL
+         AND TRIM(NVL(a.selr_chrg_email, '')) != ''
+   ) 
+WHERE 1=1 /*rmk != '04'*/
+<if test='inqr_clsf != null and inqr_clsf == "Y"'> AND rmk != '03' </if>
+</select>
+
+<!-- 부가세 신고 확인 -->
+<update id="updateKtxTaxReturnsYn" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateKtxTaxReturnsYn */
+      ktx_issu_mstr 
+   SET tax_returns_yn = #{tax_returns_yn}
+ WHERE issu_seqno IN
+  <foreach item="issu_seqno" index="index" collection ="issu_seqno.split(',')" open="(" separator="," close=")"> '${issu_seqno}' </foreach>
+</update>
+
+<!-- 매입계산서(관) 등록자 변경이력 저장 -->
+<insert id="insertFspTaxRpsnHis" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertFspTaxRpsnHis */
+  INTO fsptaxrpsnhis (
+   issu_seqno,
+   seq,
+   befr_wrte_psn,
+   befr_wrte_dept,
+   regst_syspayno,
+   regst_daytm
+)VALUES(
+   #{issu_seqno},
+   TRUNC((SELECT NVL(MAX(seq), 0) + 1 FROM fsptaxrpsnhis WHERE issu_seqno = #{issu_seqno})),
+   #{wrte_psn},
+   #{wrte_dept},
+   #{regst_syspayno},
+   SYSDATE
+)
+</insert>
+
+<!-- 매입계산서(관) 등록자 변경-->
+<update id="updateKtxIssuMstrWrtePsn" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateKtxIssuMstrWrtePsn */
+       ktx_issu_mstr
+   SET wrte_psn = #{wrte_psn}
+     , pur_con_user_id = #{wrte_psn}
+     , wrte_dept = #{wrte_dept}
+     , pur_con_org_code = #{wrte_dept}
+ WHERE issu_seqno = #{issu_seqno}
+</update>
+
+<!-- 등록자 변경이력 건수 조회 -->
+<select id="selectFspTaxRpsnHisCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFspTaxRpsnHisCnt */
+       COUNT(*) AS cnt
+  FROM fsptaxrpsnhis
+ WHERE issu_seqno = #{issu_seqno}
+</select>
+
+<!-- 등록자 변경이력 조회 -->
+<select id="selectFspTaxRpsnHis" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFspTaxRpsnHis */
+      a.issu_seqno
+    , a.seq
+    , b.nm AS wrte_psn
+    , TO_CHAR(a.regst_daytm,'%Y%m%d') AS regst_daytm
+  FROM fsptaxrpsnhis a
+  JOIN humbasicinfo b ON a.befr_wrte_psn = b.syspayno
+ WHERE issu_seqno = #{issu_seqno}
+ ORDER BY seq
+</select>
+
+<!-- 자동대사 국세청 데이터 조회 -->
+<select id="selectKtxAattDetb" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo" resultType="kr.re.kitech.biz.fin.tax.vo.KtxIssuMstrVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectKtxAattDetb */
+       a.sel_pur_chk   AS bill_type
+     , CASE WHEN NVL(m.match_cd,'') = '' AND m.issu_id IS NOT NULL THEN '4' ELSE NVL(m.match_cd,'3') END AS match_cd
+     , a.regs_date
+     , DECODE(a.ebill_type, '일반', '0101'
+                          , '일반(수정)', '0201'
+                          , '면세일반', '0301', '면세', '0301'
+                          , '면세일반(수정)', '0401'
+                          , '수입', '0104'
+                          , '영세율', '0102'
+                          , '위수탁', '0103'
+                          , '영세율위수탁', '0105', '9999') AS tax_type
+     , a.approval_code AS issu_id
+     , a.issu_date
+     , a.send_date
+     , a.prov_regno   AS selr_corp_no
+     , a.other_regno  AS selr_code
+     , a.company_name AS selr_corp_nm
+     , a.ceo_name     AS selr_ceo
+     , a.total_amt    AS totl_amt
+     , a.prov_amt     AS chrg_amt
+     , a.tax_amt      AS tax_amt
+     , a.selr_chrg_email   AS selr_chrg_email
+     , a.buyr_chrg_email1  AS buyr_chrg_email1
+     , a.buyr_chrg_email2  AS buyr_chrg_email2 
+  FROM ktx_aattdetb a
+  LEFT JOIN ktx_issu_mstr m ON a.approval_code = m.issu_id AND m.stat_code IN ('00','01')
+ WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+ <if test = 'bill_type != null and bill_type !=""'> AND a.sel_pur_chk = #{bill_type} </if>
+ <if test = 'stat_code != null and stat_code != ""'> AND m.stat_code = #{stat_code} </if>
+ <if test = 'match_cd != null and match_cd == "3"'> 
+   AND m.match_cd IS NULL 
+   AND m.issu_id IS NULL
+ </if>
+ <if test = 'match_cd != null and match_cd != "" and match_cd != "3"'> AND m.match_cd = #{match_cd} </if>
+ <if test = 'selr_corp_nm != null and selr_corp_nm != ""'> AND a.company_name LIKE '%' || #{selr_corp_nm} || '%' </if>
+ <if test = 'selr_corp_no != null and selr_corp_no != ""'> AND a.prov_regno = #{selr_corp_no} </if>
+ <if test = 'invoice_type != null and invoice_type == "E"'> 
+   AND LENGTH(m.issu_id)  = 24
+   AND m.company_code = 'KTX'
+   AND m.stat_code IS NOT NULL
+ </if>
+ <if test = 'invoice_type != null and invoice_type == "M"'> 
+   AND NOT ( LENGTH(m.issu_id)  = 24
+             AND  m.company_code = 'KTX'
+             AND  m.stat_code IS NOT NULL
+           )
+ </if>
+ORDER BY a.regs_date
+</select>
+
+<!-- 자동대사 내부자료 조회 -->
+<select id="selectKtxIssuMstrMove" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo" resultType="kr.re.kitech.biz.fin.tax.vo.KtxIssuMstrVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectKtxIssuMstrMove */
+      m.issu_seqno
+     , m.issu_id
+     , DECODE(m.tax_type, '0301', '4', '0401', '4', '2' ) AS bill_type
+     , m.tax_type
+     , m.match_cd
+     , m.regs_date
+     , DECODE(NVL(m.issu_date, ''), '', m.regs_date, m.issu_date) AS issu_date
+     , '' AS send_date
+     , m.tax_type
+     , m.selr_corp_no
+     , m.selr_code
+     , m.selr_corp_nm
+     , m.selr_ceo             
+     , m.chrg_amt
+     , m.tax_amt
+     , m.totl_amt
+     , m.unslip_no
+     , DECODE(NVL(m.buyr_chrg_email1,''),'', a.email, m.buyr_chrg_email1) AS buyr_chrg_email1     
+     , DECODE(NVL(tax_returns_yn,'N'),'Y','신고','미신고') AS tax_returns_yn 
+     , DECODE(m.pops_code, '01', '영수', '02', '청구', '') AS pops_code
+     , CASE WHEN LENGTH(issu_id)  = 24 AND company_code = 'KTX' AND stat_code IS NOT NULL THEN 'E' 
+            ELSE 'M' END AS invoice_type
+     , MAX(NVL(b.buy_date, m.regs_date)) AS buy_date
+  FROM ktx_issu_mstr m
+  LEFT JOIN ktx_issu_detail b ON m.issu_seqno = b.issu_seqno 
+  LEFT JOIN humbasicinfo a ON m.wrte_psn = a.syspayno
+ WHERE NVL(m.stat_code,'') IN ('','00','01')
+   AND m.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+ <if test = 'bill_type != null and bill_type =="4"'> AND m.tax_type IN ('0301','0401', '0304', '0404') </if>
+ <if test = 'bill_type != null and bill_type =="2"'> AND m.tax_type NOT IN ('0301','0401', '0304', '0404', '0302') </if>
+ <if test = 'stat_code != null and stat_code != ""'> AND m.stat_code = #{stat_code} </if>
+ <if test = 'match_cd != null and match_cd != ""'> AND m.match_cd = #{match_cd} /* 미이관조회조건시 아무것도 조회되지않도록(20231030)*/</if>
+ <if test = 'selr_corp_nm != null and selr_corp_nm != ""'> AND m.selr_corp_nm LIKE '%' || #{selr_corp_nm} || '%' </if>
+ <if test = 'selr_corp_no != null and selr_corp_no != ""'> 
+     AND (m.selr_corp_no = #{selr_corp_no} OR m.selr_corp_no = #{selr_corp_no_1})
+ </if>
+ <if test = 'invoice_type != null and invoice_type == "E"'> 
+   AND LENGTH(m.issu_id)  = 24
+   AND m.company_code = 'KTX'
+   AND m.stat_code IS NOT NULL
+ </if>
+ <if test = 'invoice_type != null and invoice_type == "M"'> 
+   AND NOT ( LENGTH(m.issu_id)  = 24
+             AND  m.company_code = 'KTX'
+             AND  m.stat_code IS NOT NULL
+           )
+ </if> 
+ GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,20,21
+ ORDER BY m.regs_date
+</select>
+
+<!-- 자동(수동) 대사 후 내부자료 수정 -->
+<update id="updateKtxIssuMstrCopy" parameterType="kr.re.kitech.biz.fin.tax.vo.KtxIssuMstrVo">
+UPDATE  /* kr.re.kitech.biz.fin.tax.updateKtxIssuMstrCopy */
+        ktx_issu_mstr 
+   SET  issu_id      = #{issu_id}
+      , regs_date    = #{regs_date}
+      , selr_corp_no = #{selr_corp_no}
+      , selr_code    = #{selr_code}
+      , selr_corp_nm = #{selr_corp_nm}
+      , selr_ceo     = #{selr_ceo}
+      , chrg_amt     = #{chrg_amt}
+      , tax_amt      = #{tax_amt}
+      , totl_amt     = #{totl_amt}
+      , tax_type     = #{tax_type}
+    <if test='company_code != null and company_code != ""'> , company_code = #{company_code} </if>
+    <if test='stat_code != null and stat_code != ""'> , stat_code    = #{stat_code} </if>
+      , match_cd     = #{match_cd}
+ WHERE  issu_seqno = #{issu_seqno}
+</update>
+
+<!-- 자동대사 전체이관(buyr_chrg_email1) -->
+<insert id="insertKtxIssuMstrMoveAll" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertKtxIssuMstrMoveAll */
+  INTO ktx_issu_mstr(
+       issu_seqno, issu_id, selr_mgr_id1,  selr_mgr_id2,  selr_mgr_id3,  regs_date,   tax_type,   pops_code,
+       mody_code, note1, note2,   note3,   impt_no,   acep_stat_date,  acep_end_date,  item_quant,
+       selr_corp_no, selr_code,   selr_corp_nm,  selr_ceo,   selr_addr,   selr_buss_cons,  selr_buss_type,  selr_chrg_post,
+       selr_chrg_nm, selr_chrg_tel,  selr_chrg_email,  selr_chrg_mobl,  selr_chrg_fax,  buyr_gb,   buyr_corp_no,  buyr_code,
+       buyr_corp_nm, buyr_ceo,   buyr_addr,   buyr_buss_cons,  buyr_buss_type,  buyr_chrg_fax,  buyr_chrg_post1,  buyr_chrg_nm1,
+       buyr_chrg_tel1, buyr_chrg_email1,  buyr_chrg_mobl1,  buyr_chrg_post2,  buyr_chrg_nm2,  buyr_chrg_tel2,  buyr_chrg_email2, buyr_chrg_mobl2,
+       brok_corp_no, brok_code,   brok_corp_nm,  brok_ceo,   brok_addr,   brok_buss_cons,  brok_buss_type,  brok_chrg_post,
+       brok_chrg_nm, brok_chrg_tel,  brok_chrg_email,  pymt_type1,  pamt_amt1,   pymt_type2,  pamt_amt2,   pymt_type3 ,
+       pamt_amt3,  pymt_type4 ,  pamt_amt4,   chrg_amt,   tax_amt,   totl_amt,   stat_code,   req_stat_code,
+       recp_cd,  bill_type,   req_chnel,   snd_mal_yn,  snd_sms_yn,  snd_fax_yn,
+       user_r,  bfo_issu_seqno,  bfo_issu_id,  req_nts_date,  emg_issu_yn,  issu_date,   selr_brn_cd,  buyr_brn_cd, 
+       asp_sdatetime, asp_rdatetime,   company_code,  tax_compare,  match_cd,   wrte_psn,   pur_con_user_id,  evid_cd)
+SELECT a.issu_seqno, a.issu_id,  a.selr_mgr_id1, a.selr_mgr_id2,  a.selr_mgr_id3,  a.regs_date, a.tax_type, a.pops_code,
+       a.mody_code, a.note1,  a.note2,  a.note3,   a.impt_no,   a.acep_stat_date, a.acep_end_date, a.item_quant,
+       a.selr_corp_no,  a.selr_code,  a.selr_corp_nm,  a.selr_ceo, a.selr_addr, a.selr_buss_cons, a.selr_buss_type,  a.selr_chrg_post,
+       a.selr_chrg_nm,  a.selr_chrg_tel,  LOWER(a.selr_chrg_email),  a.selr_chrg_mobl, a.selr_chrg_fax, a.buyr_gb,  a.buyr_corp_no,  a.buyr_code,
+       a.buyr_corp_nm,  a.buyr_ceo,  a.buyr_addr,  a.buyr_buss_cons, a.buyr_buss_type, a.buyr_chrg_fax,  a.buyr_chrg_post1, a.buyr_chrg_nm1,
+       a.buyr_chrg_tel1,  LOWER(a.buyr_chrg_email1), a.buyr_chrg_mobl1, a.buyr_chrg_post2, a.buyr_chrg_nm2, a.buyr_chrg_tel2,  a.buyr_chrg_email2, a.buyr_chrg_mobl2,
+       a.brok_corp_no,  a.brok_code, a.brok_corp_nm, a.brok_ceo, a.brok_addr, a.brok_buss_cons, a.brok_buss_type, a.brok_chrg_post,
+       a.brok_chrg_nm,  a.brok_chrg_tel, a.brok_chrg_email, a.pymt_type1, a.pamt_amt1, a.pymt_type2, a.pamt_amt2, a.pymt_type3 ,
+       a.pamt_amt3,  a.pymt_type4, a.pamt_amt4, a.chrg_amt, a.tax_amt,  a.totl_amt, '00',  a.req_stat_code,
+       a.recp_cd,   a.bill_type, a.req_chnel, a.snd_mal_yn, a.snd_sms_yn, a.snd_fax_yn,         
+       a.user_r,   a.bfo_issu_seqno, a.bfo_issu_id, a.req_nts_date, a.emg_issu_yn, a.issu_date, a.selr_brn_cd, a.buyr_brn_cd,
+       a.asp_sdatetime,  a.asp_rdatetime, 'KTX',  '3', '4',  c.syspayno,  c.syspayno,  'FAH010'
+  FROM det_issu_mstr a
+  JOIN (SELECT resid_no, email, MAX(syspayno) AS syspayno 
+          FROM humbasicinfo 
+         GROUP BY 1, 2
+       ) c ON LOWER(a.buyr_chrg_email1) = c.email 
+  LEFT JOIN ktx_issu_mstr b ON a.issu_id = b.issu_id
+ WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+   AND a.bill_type = #{bill_type}
+   AND NVL(b.issu_id, '') = '' 
+   AND LOWER(a.buyr_chrg_email1) LIKE '%@kitech_re.kr'
+</insert>
+
+<!-- 자동대사 전체이관(buyr_chrg_email2) -->
+<insert id="insertKtxIssuMstrMoveAll2" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertKtxIssuMstrMoveAll2 */
+  INTO ktx_issu_mstr(
+       issu_seqno, issu_id, selr_mgr_id1,  selr_mgr_id2,  selr_mgr_id3,  regs_date,   tax_type,   pops_code,
+       mody_code, note1, note2,   note3,   impt_no,   acep_stat_date,  acep_end_date,  item_quant,
+       selr_corp_no, selr_code,   selr_corp_nm,  selr_ceo,   selr_addr,   selr_buss_cons,  selr_buss_type,  selr_chrg_post,
+       selr_chrg_nm, selr_chrg_tel,  selr_chrg_email,  selr_chrg_mobl,  selr_chrg_fax,  buyr_gb,   buyr_corp_no,  buyr_code,
+       buyr_corp_nm, buyr_ceo,   buyr_addr,   buyr_buss_cons,  buyr_buss_type,  buyr_chrg_fax,  buyr_chrg_post1,  buyr_chrg_nm1,
+       buyr_chrg_tel1, buyr_chrg_email1,  buyr_chrg_mobl1,  buyr_chrg_post2,  buyr_chrg_nm2,  buyr_chrg_tel2,  buyr_chrg_email2, buyr_chrg_mobl2,
+       brok_corp_no, brok_code,   brok_corp_nm,  brok_ceo,   brok_addr,   brok_buss_cons,  brok_buss_type,  brok_chrg_post,
+       brok_chrg_nm, brok_chrg_tel,  brok_chrg_email,  pymt_type1,  pamt_amt1,   pymt_type2,  pamt_amt2,   pymt_type3 ,
+       pamt_amt3,  pymt_type4 ,  pamt_amt4,   chrg_amt,   tax_amt,   totl_amt,   stat_code,   req_stat_code,
+       recp_cd,  bill_type,   req_chnel,   snd_mal_yn,  snd_sms_yn,  snd_fax_yn,
+       user_r,  bfo_issu_seqno,  bfo_issu_id,  req_nts_date,  emg_issu_yn,  issu_date,   selr_brn_cd,  buyr_brn_cd, 
+       asp_sdatetime, asp_rdatetime,   company_code,  tax_compare,  match_cd,   wrte_psn,   pur_con_user_id,  evid_cd)
+SELECT a.issu_seqno, a.issu_id,  a.selr_mgr_id1, a.selr_mgr_id2,  a.selr_mgr_id3,  a.regs_date, a.tax_type, a.pops_code,
+       a.mody_code, a.note1,  a.note2,  a.note3,   a.impt_no,   a.acep_stat_date, a.acep_end_date, a.item_quant,
+       a.selr_corp_no,  a.selr_code,  a.selr_corp_nm,  a.selr_ceo, a.selr_addr, a.selr_buss_cons, a.selr_buss_type,  a.selr_chrg_post,
+       a.selr_chrg_nm,  a.selr_chrg_tel,  LOWER(a.selr_chrg_email),  a.selr_chrg_mobl, a.selr_chrg_fax, a.buyr_gb,  a.buyr_corp_no,  a.buyr_code,
+       a.buyr_corp_nm,  a.buyr_ceo,  a.buyr_addr,  a.buyr_buss_cons, a.buyr_buss_type, a.buyr_chrg_fax,  a.buyr_chrg_post1, a.buyr_chrg_nm1,
+       a.buyr_chrg_tel1,  LOWER(a.buyr_chrg_email1), a.buyr_chrg_mobl1, a.buyr_chrg_post2, a.buyr_chrg_nm2, a.buyr_chrg_tel2,  LOWER(a.buyr_chrg_email2), a.buyr_chrg_mobl2,
+       a.brok_corp_no,  a.brok_code, a.brok_corp_nm, a.brok_ceo, a.brok_addr, a.brok_buss_cons, a.brok_buss_type, a.brok_chrg_post,
+       a.brok_chrg_nm,  a.brok_chrg_tel, a.brok_chrg_email, a.pymt_type1, a.pamt_amt1, a.pymt_type2, a.pamt_amt2, a.pymt_type3 ,
+       a.pamt_amt3,  a.pymt_type4, a.pamt_amt4, a.chrg_amt, a.tax_amt,  a.totl_amt, '00',  a.req_stat_code,
+       a.recp_cd,   a.bill_type, a.req_chnel, a.snd_mal_yn, a.snd_sms_yn, a.snd_fax_yn,         
+       a.user_r,   a.bfo_issu_seqno, a.bfo_issu_id, a.req_nts_date, a.emg_issu_yn, a.issu_date, a.selr_brn_cd, a.buyr_brn_cd,
+       a.asp_sdatetime,  a.asp_rdatetime, 'KTX',  '3', '4',  c.syspayno,  c.syspayno, 'FAH010'
+  FROM det_issu_mstr a
+  JOIN (SELECT resid_no, email, MAX(syspayno) AS syspayno 
+          FROM humbasicinfo 
+         GROUP BY 1, 2
+       ) c ON LOWER(a.buyr_chrg_email2) = c.email 
+  LEFT JOIN ktx_issu_mstr b ON a.issu_id = b.issu_id
+ WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+   AND a.bill_type = #{bill_type}
+   AND NVL(b.issu_id, '') = '' 
+   AND LOWER(a.buyr_chrg_email2) LIKE '%@kitech_re.kr'
+</insert>
+
+<!-- 자동대사 전체이관(이메일 없는 건) 또는 선택이관 -->
+<insert id="insertKtxIssuMstrMove" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertKtxIssuMstrMoveAll3 */
+  INTO ktx_issu_mstr(
+      issu_seqno, issu_id,  selr_mgr_id1,  selr_mgr_id2,  selr_mgr_id3,  regs_date,  tax_type,  pops_code,
+      mody_code, note1, note2,  note3,   impt_no,   acep_stat_date,  acep_end_date, item_quant,
+      selr_corp_no, selr_code,  selr_corp_nm,  selr_ceo,   selr_addr,   selr_buss_cons, selr_buss_type, selr_chrg_post,
+      selr_chrg_nm, selr_chrg_tel, selr_chrg_email,  selr_chrg_mobl,  selr_chrg_fax,  buyr_gb,  buyr_corp_no, buyr_code,
+      buyr_corp_nm, buyr_ceo,  buyr_addr,   buyr_buss_cons,  buyr_buss_type,  buyr_chrg_fax, buyr_chrg_post1, buyr_chrg_nm1,
+      buyr_chrg_tel1, buyr_chrg_email1, buyr_chrg_mobl1,  buyr_chrg_post2,  buyr_chrg_nm2,  buyr_chrg_tel2, buyr_chrg_email2, buyr_chrg_mobl2,
+      brok_corp_no, brok_code,  brok_corp_nm,  brok_ceo,   brok_addr,   brok_buss_cons, brok_buss_type, brok_chrg_post,
+      brok_chrg_nm, brok_chrg_tel, brok_chrg_email,  pymt_type1,  pamt_amt1,   pymt_type2, pamt_amt2,  pymt_type3 ,
+      pamt_amt3,  pymt_type4 , pamt_amt4,   chrg_amt,   tax_amt,   totl_amt,  stat_code,  req_stat_code,
+      recp_cd,  bill_type,  req_chnel,   snd_mal_yn,  snd_sms_yn,  snd_fax_yn,
+      user_r,  bfo_issu_seqno, bfo_issu_id,  req_nts_date,  emg_issu_yn,  issu_date,  selr_brn_cd, buyr_brn_cd,  
+      asp_sdatetime, asp_rdatetime,  company_code,  tax_compare,  match_cd, evid_cd
+      , wrte_psn
+      , pur_con_user_id
+  )
+SELECT a.issu_seqno,  a.issu_id,  a.selr_mgr_id1,  a.selr_mgr_id2,  a.selr_mgr_id3,  a.regs_date, a.tax_type, a.pops_code,
+      a.mody_code, a.note1,  a.note2,  a.note3,  a.impt_no,  a.acep_stat_date, a.acep_end_date, a.item_quant,
+      a.selr_corp_no, a.selr_code, a.selr_corp_nm, a.selr_ceo, a.selr_addr, a.selr_buss_cons, a.selr_buss_type, a.selr_chrg_post,
+      a.selr_chrg_nm, a.selr_chrg_tel, a.selr_chrg_email, a.selr_chrg_mobl, a.selr_chrg_fax, a.buyr_gb,  a.buyr_corp_no,  a.buyr_code,
+      a.buyr_corp_nm, a.buyr_ceo, a.buyr_addr, a.buyr_buss_cons, a.buyr_buss_type, a.buyr_chrg_fax, a.buyr_chrg_post1, a.buyr_chrg_nm1,
+      a.buyr_chrg_tel1, LOWER(a.buyr_chrg_email1), a.buyr_chrg_mobl1, a.buyr_chrg_post2, a.buyr_chrg_nm2, a.buyr_chrg_tel2, LOWER(a.buyr_chrg_email2), a.buyr_chrg_mobl2,
+      a.brok_corp_no, a.brok_code, a.brok_corp_nm, a.brok_ceo, a.brok_addr, a.brok_buss_cons, a.brok_buss_type, a.brok_chrg_post,
+      a.brok_chrg_nm, a.brok_chrg_tel, a.brok_chrg_email, a.pymt_type1, a.pamt_amt1, a.pymt_type2, a.pamt_amt2, a.pymt_type3 ,
+      a.pamt_amt3, a.pymt_type4, a.pamt_amt4, a.chrg_amt, a.tax_amt,  a.totl_amt, '00',  a.req_stat_code,
+      a.recp_cd,  a.bill_type, a.req_chnel, a.snd_mal_yn, a.snd_sms_yn, a.snd_fax_yn,         
+      a.user_r,  a.bfo_issu_seqno, a.bfo_issu_id, a.req_nts_date, a.emg_issu_yn, a.issu_date, a.selr_brn_cd, a.buyr_brn_cd,
+      a.asp_sdatetime, a.asp_rdatetime, 'KTX',  '3',  '4', 'FAH010'
+     <if test='inqr_clsf != null and inqr_clsf == "A"'>
+      , x0.syspayno
+      , x0.syspayno
+     </if>
+     <if test='inqr_clsf != null and inqr_clsf == "S"'>
+      , NVL(c.syspayno, x0.syspayno) 
+      , NVL(c.syspayno, x0.syspayno) 
+     </if>
+  FROM det_issu_mstr a 
+  LEFT JOIN ktx_issu_mstr b ON a.issu_id = b.issu_id
+  JOIN (SELECT NVL(MAX(syspayno), '20140580') AS syspayno -- 재정운영실 세무담당자(만일을 대비한 임자경 사무원 사번세팅)
+         FROM roleusertable x0
+         JOIN humbasicinfo x1 ON SUBSTRING_INDEX(x1.email, '@', 1) = x0.empcode
+        WHERE x0.rolecode = '1002207' 
+          AND x1.retire_ymd = ''
+       ) x0 ON 1=1
+ <if test='inqr_clsf != null and inqr_clsf == "S"'>
+   JOIN ktx_aattdetb d ON a.issu_id = d.approval_code 
+   LEFT JOIN (SELECT resid_no, email, MAX(syspayno) AS syspayno 
+               FROM humbasicinfo 
+               GROUP BY 1, 2
+           ) c ON LOWER(a.buyr_chrg_email1) = c.email 
+ </if>
+ WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+   AND a.bill_type = #{bill_type}
+ <if test='inqr_clsf != null and inqr_clsf == "A"'>
+   AND NVL(b.issu_id, '') = '' 
+   AND NVL(b.wrte_psn, '') = ''
+ </if>
+ <if test='inqr_clsf != null and inqr_clsf == "S"'> AND a.issu_id IN 
+    <foreach item="issu_id" index="index" collection="issu_id.split(',')" open="(" separator="," close=")"> '${issu_id}' </foreach>
+ </if>
+</insert>
+
+<!-- 자동대사 전체이관 품목내역 -->
+<insert id="insertKtxIssuDetailMove" parameterType="kr.re.kitech.biz.fin.tax.vo.FinPurTaxSrcVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertKtxIssuDetailMove */
+  INTO ktx_issu_detail(
+      issu_seqno, seq_no,  item_amt,  item_tax,  item_code,  item_nm,  item_qunt,
+      unit_prce,  buy_date,  item_infm,  item_desp,  tran_chk,  tran_msg)
+SELECT a.issu_seqno
+     , a.seq_no
+     , a.item_amt
+     , a.item_tax
+     , a.item_code
+     , a.item_nm
+     , a.item_qunt
+     , a.unit_prce
+     , a.buy_date
+     , a.item_infm
+     , a.item_desp
+     , a.tran_chk
+     , a.tran_msg 
+  FROM ktx_issu_mstr c   
+  JOIN det_issu_detail a ON c.issu_seqno = a.issu_seqno
+  LEFT JOIN ktx_issu_detail b ON a.issu_seqno = b.issu_seqno AND a.seq_no = b.seq_no
+ WHERE c.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+   AND c.match_cd = '4'
+   AND c.bill_type = #{bill_type}
+   AND NVL(b.issu_seqno, '') = ''
+   AND NVL(b.seq_no, '') = ''
+</insert>
+
+</mapper>

@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/css/sample.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="공통코드 다단콤보 셋팅">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap id="dma_sample">
+					<w2:keyInfo>
+						<w2:key id="step1" name="step1" dataType="text"></w2:key>
+						<w2:key id="step2" name="step2" dataType="text"></w2:key>
+					<w2:key id="readOnlyStep2" name="readOnlyStep2" dataType="text"></w2:key></w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList id="dlt_sample" baseNode="list" saveRemovedData="true" repeatNode="map"
+					ev:oncelldatachange="scwin.dlt_sample_oncelldatachange">
+					<w2:columnInfo>
+						<w2:column id="step1" name="step1" dataType="text"></w2:column>
+						<w2:column id="step2" name="step2" dataType="text"></w2:column>
+						<w2:column id="readOnlyStep1" name="readOnlyStep1" dataType="text"></w2:column><w2:column id="readOnlyStep2" name="readOnlyStep2" dataType="text"></w2:column>
+					</w2:columnInfo>
+					<w2:data use="false"></w2:data>
+				</w2:dataList>
+				<w2:linkedDataList bind="dlt_cmnCdTEST2" id="ldt_step2">
+					<w2:condition type="filter"><![CDATA[UPCODE == ref ('data:dlt_sample.step1')]]></w2:condition>
+					<w2:condition type="sort"><![CDATA[]]></w2:condition>
+				</w2:linkedDataList>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_selectList" ref='data:json,{"id":"dma_search","key":"srchBox"}'
+				target='data:json,{"id":"dlt_sample","key":"list"}' action="/sample/msgNoPageList.json" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="scwin.sbm_selectList_submitdone" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<xf:submission abortTrigger="" action="/sample/msgSave.json" customHandler="" encoding="UTF-8" errorHandler="" ev:submit=""
+				ev:submitdone="scwin.sbm_saveList_submitdone" ev:submiterror="" id="sbm_saveList" instance="" mediatype="application/json" method="post"
+				mode="asynchronous" processMsg="" ref='data:json,{"action":"modified","id":"dlt_sample","key":"saveList"}' replace="" target=''
+				style="">
+			</xf:submission>
+			<xf:submission abortTrigger="" action="/sample/test.json" customHandler="" encoding="UTF-8" errorHandler="" ev:submit=""
+				ev:submitdone="scwin.sbm_test_submitdone" ev:submiterror="" id="sbm_test" instance="" mediatype="application/json" method="post"
+				mode="asynchronous" processMsg="" ref='data:json,{"action":"modified","id":"dlt_sample","key":"saveList"}' replace="" target=''
+				style="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 공통코드셋팅 (다단콤보)
+ 	 * 변경 이력 : 2021-11-01	문철주	최초작성
+ 	 ****************************************************/
+
+	/**
+	 * 도움말
+	 */
+	scwin.help = `
+공통코드 다단콤보 셋팅 샘플입니다.
+
+※ com.setCmnCd 함수의 flter 옵션을 활용하고, 2단 이후 콤보에도 chooseOption 속성을 "true"로 설정
+ex) filter : "UP_CD == ref ('data:dma_sample.step1')"
+
+※ 그리드 다단 콤보의 경우 그리드에 바인딩한 dataList의 oncelldatachange 이벤트에서 step1값 변경시 step2값 초기화 로직 구현 필요
+
+※ 그리드 다단 콤보를 읽기 전용으로 설정하고 상세 영역에서 수정하는 경우
+  Step1의 ref는 그리드 dataList의 컬럼으로 바인딩하고, Step2의 ref는 별도의 dataMap으로 바인딩
+	`;
+	
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		var codeOptions = [ { code : "TEST_STEP1", compID :"sbx_step1, sbx_grdStep1, grd_sample:step1, grd_sample:readOnlyStep1" } 
+						  ,	{ code : "TEST_STEP2", compID :"sbx_step2", filter : "cdClsf == ref ('data:dma_sample.step1')" } // 다단콤보 
+						  ,	{ code : "TEST_STEP2", compID :"grd_sample:step2", filter : "cdClsf == ref ('data:dlt_sample.step1')" } // 그리드 다단콤보
+						  ,	{ code : "TEST_STEP2", compID :"sbx_grdStep2", filter : "cdClsf == ref ('data:dlt_sample.readOnlyStep1')" } // 다단콤보 (그리드 읽기전용 연동) 
+						  ,	{ code : "TEST_STEP2", compID :"grd_sample:readOnlyStep2" } // 그리드 다단콤보 (그리드 읽기전용)
+		];
+		com.setCmnCd(codeOptions, function() {
+			// 공통코드 셋팅 콜백에서 초기값 셋팅
+			// 화면을 열때 자동조회되도록 구현하려면 이곳에서 조회 submission 수행
+			setTimeout(scwin.btn_set_onclick, 500);
+		});
+	};
+	
+	/**
+	 * 그리드에 바인딩된 dataList 셀 값 변경시
+	 */
+	scwin.dlt_sample_oncelldatachange = function(info) {
+		if (info.colID == "step1") {
+			console.log("scwin.dlt_sample_oncelldatachange step1");
+			// step1 변경시 step2 초기화
+			dlt_sample.setCellData(info.rowIndex, "step2", "");
+		} else if (info.colID == "readOnlyStep1") {
+			// step1 변경시 step2 초기화
+			dlt_sample.setCellData(info.rowIndex, "readOnlyStep2", "");
+		}
+	};
+	
+	scwin.grd_sample_onrowindexchange = function(row,oldRow) {
+		// 그리드 행 변경시 상세 step2값 셋팅
+		sbx_grdStep2.setValue(dlt_sample.getCellData(row, "readOnlyStep2"));
+	};
+	
+	scwin.sbx_grdStep2_onviewchange = function(info) {
+		// 상세 step2값 변경시 그리드에 반영
+		dlt_sample.setCellData(dlt_sample.getRowPosition(), "readOnlyStep2", info.newValue);
+	};
+	
+	/**
+	 * 초기값 셋팅 클릭 이벤트
+	 */
+	scwin.btn_set_onclick = function(e) {
+		dma_sample.setJSON( { step1:"20", step2:"23" });
+		dlt_sample.setJSON([ { step1:"20", step2:"23", readOnlyStep1:"10", readOnlyStep2:"13"}
+							,{ step1:"30", step2:"32", readOnlyStep1:"10", readOnlyStep2:"13"}
+		]);
+		grd_sample.setFocusedCell(0, "readOnlyStep1");
+	};
+	]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe><xf:group class="pageWrap" id="" style="">
+			
+			<xf:group class="dfbox" id="" style="">
+				<w2:textbox class="df_tit" id="" label="SelectBox 다단콤보" style="" tagname="h2"></w2:textbox>
+				<xf:group id="" class="fr">
+					<xf:trigger class="btn_cm " ev:onclick="scwin.btn_set_onclick" id="btn_set" style="" type="button">
+						<xf:label><![CDATA[초기값 셋팅]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+
+			</xf:group>
+			<xf:group class="tbbox" id="" style="">
+				<xf:group class="w2tb tb" id="" style="width:100%;" tagname="table">
+					<w2:attributes>
+						<w2:summary></w2:summary>
+					</w2:attributes>
+					<xf:group tagname="colgroup">
+						<xf:group style="width:150px;" tagname="col"></xf:group>
+						<xf:group style="" tagname="col"></xf:group>
+						<xf:group style="width:200px;" tagname="col"></xf:group>
+						<xf:group tagname="col"></xf:group>
+					</xf:group>
+					<xf:group id="" tagname="tbody">
+						<xf:group tagname="tr" style="">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox class="" id="" label="다단콤보" style="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes>
+									<w2:colspan>3</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+
+
+								<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="wq_sel"
+									direction="auto" disabled="false" disabledClass="w2selectbox_disabled" displayMode="" id="sbx_step1" ref="data:dma_sample.step1"
+									style="width : 150px;" submenuSize="auto" textAlign="left" visibleColumnFalseValue="">
+									<xf:choices></xf:choices>
+								</xf:select1>
+								<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="wq_sel"
+									direction="auto" disabled="false" disabledClass="w2selectbox_disabled" displayMode="" id="sbx_step2" ref="data:dma_sample.step2"
+									style="width : 150px;" submenuSize="auto" textAlign="left" visibleColumnFalseValue="" ev:onviewchange="">
+									<xf:choices></xf:choices>
+								</xf:select1>
+
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox class="" id="" label="그리드 읽기전용&lt;br/&gt;다단콤보 상세연동" style="" tagname="p" escape="false"></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes>
+									<w2:colspan>3</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+
+
+								<xf:group id="">
+									<xf:select1 chooseOptionLabel="" submenuSize="auto" ev:onchange="" textAlign="left"
+										visibleColumnFalseValue="" chooseOption="true" allOption="" displayMode="" ref="data:dlt_sample.readOnlyStep1"
+										appearance="minimal" disabledClass="w2selectbox_disabled" ev:onviewchange="" disabled="false" style="width : 150px;"
+										id="sbx_grdStep1" class="wq_sel" direction="auto">
+										<xf:choices></xf:choices>
+									</xf:select1>
+									<xf:select1 chooseOptionLabel="" submenuSize="auto" ev:onchange="" textAlign="left"
+										visibleColumnFalseValue="" chooseOption="true" allOption="" displayMode="" ref="data:dma_sample.readOnlyStep2"
+										appearance="minimal" disabledClass="w2selectbox_disabled" ev:onviewchange="scwin.sbx_grdStep2_onviewchange" disabled="false"
+										style="width : 150px;" id="sbx_grdStep2" class="wq_sel" direction="auto">
+										<xf:choices></xf:choices>
+									</xf:select1>
+								</xf:group>
+								<w2:textbox class="" escape="false" id=""
+									label="※ Step1의 ref는 그리드 dataList의 컬럼으로 바인딩하고, Step2의 ref는 별도의 dataMap으로 바인딩" style="" tagname="p">
+								</w2:textbox>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="dfbox" id="">
+				<w2:textbox class="df_tit" id="" label="그리드 다단콤보" style="" tagname="h2"></w2:textbox>
+				<xf:group class="fr" id="" style="">
+
+				</xf:group>
+			</xf:group>
+			<xf:group class="gvwbox" id="" style="height : 150px;">
+				<w2:gridView autoFit="allColumn" class="wq_gvw" dataList="data:dlt_sample" fixedColumnWithHidden="true" focusMode=""
+					id="grd_sample" ignoreCellClick="false" ignoreToggleOnDisabled="false" rowNumHeaderValue="번호" rowNumVisible="false" rowNumWidth="30"
+					rowStatusHeaderValue="상태" scrollByColumn="false" scrollByColumnAdaptive="false" showSortableUseFilter="true" sortable="true"
+					style="height : 100%;" summaryAuto="false" useFilterList="true" useShiftKey="true" visibleRowNum="" sortEvent="" readOnly=""
+					rowStatusVisible="true" ev:onrowindexchange="scwin.grd_sample_onrowindexchange">
+					<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+					<w2:header id="header1" style="">
+						<w2:row id="row1" style="">
+							<w2:column removeBorderStyle="false" width="150" inputType="text" style="height:24px" id="column13"
+								value="step1" blockSelect="false" displayMode="label">
+							</w2:column>
+							<w2:column removeBorderStyle="false" width="150" inputType="text" style="height:24px" id="column15"
+								value="step2" blockSelect="false" displayMode="label">
+							</w2:column>
+							<w2:column width="150" inputType="text" style="height:24px" id="column20" value="step1&lt;br/&gt;(읽기전용)"
+								displayMode="label">
+							</w2:column>
+							<w2:column width="150" inputType="text" style="height:24px" id="column24" value="step2&lt;br/&gt;(읽기전용)"
+								displayMode="label">
+							</w2:column>
+						</w2:row>
+					</w2:header>
+					<w2:gBody id="gBody1" style="">
+						<w2:row id="row2" style="">
+							<w2:column removeBorderStyle="false" width="150" inputType="select" style="height:24px" id="step1" value=""
+								blockSelect="false" displayMode="label" allOption="" chooseOption="true" chooseOptionLabel="" ref="" disabled="" readOnly="">
+								<w2:choices></w2:choices>
+							</w2:column>
+							<w2:column removeBorderStyle="false" width="150" inputType="select" style="height:24px" id="step2" value=""
+								blockSelect="false" displayMode="" allOption="" chooseOption="true" chooseOptionLabel="" ref="" readOnly="">
+								<w2:choices>
+									<w2:itemset nodeset="data:ldt_step2">
+										<w2:label ref="COMNAM"></w2:label>
+										<w2:value ref="COMCOD"></w2:value>
+									</w2:itemset>
+								</w2:choices>
+							</w2:column>
+							<w2:column width="150" inputType="select" style="height:24px" id="readOnlyStep1" value="" displayMode="label"
+								readOnly="true">
+							</w2:column>
+							<w2:column width="150" inputType="select" style="height:24px" id="readOnlyStep2" value="" displayMode="label"
+								readOnly="true">
+							</w2:column>
+						</w2:row>
+					</w2:gBody>
+				</w2:gridView>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.pat.pop">
+<!-- 발명신고서 출원번호 검색 -->
+<select id="selectSmitAppNo" parameterType="kr.re.kitech.biz.pat.pop.vo.PatSmitAppNoVo" resultType="kr.re.kitech.biz.pat.pop.vo.PatSmitAppNoVo">
+SELECT  /* kr.re.kitech.biz.pat.pop.selectSmitAppNo */
+       a.mngmt_no
+     , a.req_no                -- 신청번호
+     , a.smitapp_no            -- 출원번호
+     , a.smitapp_ymd           -- 출원일자
+     , h.nm AS invnt_psn_nm    -- 발명자명
+     , b.syspayno              -- 발명자사번
+     , a.invnt_krn_nm          -- 명칭
+  FROM patmastr a
+  JOIN patcoinvntpsn b ON a.req_no = b.req_no AND a.mngmt_no = b.mngmt_no
+  JOIN humbasicinfo h ON b.syspayno = h.syspayno
+ WHERE TRIM(a.smitapp_no) != ''
+<if test='smitapp_no != null and smitapp_no != ""'> AND a.smitapp_no LIKE '%' || #{smitapp_no} ||'%' </if>
+<choose>
+ <when test='syspayno != null and syspayno != ""'> AND b.syspayno = #{syspayno} </when>
+ <otherwise> AND b.invnt_psn_clsf = '1' </otherwise>
+</choose>
+</select>
+
+<!-- 특허사무소 검색팝업 조회 -->
+<select id="selectPatOfficeList" parameterType="kr.re.kitech.biz.pat.pop.vo.PatOfficeVo" resultType="kr.re.kitech.biz.pat.pop.vo.PatOfficeVo">
+SELECT /* kr.re.kitech.biz.pat.pop.selectPatOfficeList */
+       pof.patofic_cd
+     , pof.patofic_nm
+     , pof.contac_loc AS patofic_contac_loc
+     , poc.id AS charg_id
+     , poc.nm AS charg_nm
+     , poc.contac_loc
+     , pof.fultxt_fild
+     , DECODE(poc.chang_clsf,'0','관리자', '1', '행정관리자', '변리사') AS chang_clsf
+     , TO_CHAR(pom.mou_daytm, '%Y%m%d') AS mou_daytm
+     , DECODE(pof.mou_ex, 'Y', 'Y', 'N') AS mou_ex
+     , poc.email AS email
+  FROM patoffice pof
+  LEFT JOIN patoficcharg poc ON poc.patofic_cd = pof.patofic_cd AND poc.del_ex = 'N'
+      <if test='src_clsf != null and src_clsf == "tab1"'> AND poc.main_ex = 'Y' </if>
+  LEFT JOIN patoficmou pom ON pom.patofic_cd = pof.patofic_cd AND pom.mou_ex = 'Y' AND pom.mou_end_daytm >= CURRENT
+ WHERE pof.del_ex = 'N' 
+  <if test='patofic_cd != null and patofic_cd != ""'> AND pof.patofic_cd = #{patofic_cd} </if>
+  <if test='patofic_nm != null and patofic_nm != ""'> AND pof.patofic_nm LIKE '%' || #{patofic_nm} || '%'</if>
+  <if test='charg_nm != null and charg_nm != ""'> AND poc.nm LIKE '%' || #{charg_nm} || '%'</if>
+  <if test='chang_clsf != null and chang_clsf != ""'> AND poc.chang_clsf = #{chang_clsf} </if>
+  <if test='fultxt_fild != null and fultxt_fild != ""'> AND pof.fultxt_fild LIKE '%' || #{fultxt_fild}|| '%'</if>
+  <if test='mou_ex != null and mou_ex != ""'> AND pof.mou_ex = #{mou_ex} </if>
+ORDER BY mou_ex DESC, patofic_nm, poc.nm
+</select>
+
+<!-- 특허사무소 검색팝업(랭킹조회 탭) 조회 (출원건수, 등록건수별) -->
+<select id="selectPatOfficeScoreList" parameterType="kr.re.kitech.biz.pat.pop.vo.PatOfficeVo" resultType="kr.re.kitech.biz.pat.pop.vo.PatOfficeVo">
+SELECT /* kr.re.kitech.biz.pat.pop.selectPatOfficeScoreList */
+       pof.patofic_cd
+     , pof.patofic_nm
+     , poc.id AS charg_id
+     , poc.nm AS charg_nm
+     , pof.contac_loc AS patofic_contac_loc
+     , DECODE(pof.mou_ex, 'Y', 'Y', 'N') AS mou_ex
+     <if test='src_clsf != null and src_clsf == "0"'>, SUM(DECODE(a.pat_clsf, 'PAT070', 1, 0)) AS score </if>
+     <if test='src_clsf != null and src_clsf == "1"'>, SUM(DECODE(b.pat_clsf, 'PAT070', 1, 0)) AS score </if>
+  FROM patoffice pof
+  LEFT JOIN patoficcharg poc ON poc.patofic_cd = pof.patofic_cd AND poc.del_ex = 'N' And poc.main_ex = 'Y'
+ <if test='src_clsf != null and src_clsf == "0"'>
+  JOIN patapp pap ON pap.com_patofic_cd = pof.patofic_cd
+  JOIN patmastr a ON pap.req_no = a.req_no AND pap.mngmt_no = a.mngmt_no
+ </if>
+ <if test='src_clsf != null and src_clsf == "1"'>
+  JOIN patreg prg ON prg.com_patofic_cd = pof.patofic_cd
+  JOIN patmastr b ON prg.req_no = b.req_no AND prg.mngmt_no = b.mngmt_no
+ </if>
+ WHERE pof.del_ex = 'N'
+  <if test='src_clsf != null and src_clsf == "0"'> 
+   AND pap.job_state_cd = 'P1000' 
+   AND pap.prt_app_date BETWEEN #{from_ymd} AND #{to_ymd}
+  </if>
+  <if test='src_clsf != null and src_clsf == "1"'> 
+   AND prg.job_state_cd = 'P2000'
+   AND prg.prt_reg_date BETWEEN #{from_ymd} AND #{to_ymd}
+  </if>   
+  <if test='mou_ex != null and mou_ex != ""'> AND pof.mou_ex = #{mou_ex} </if>
+GROUP BY 1,2,3,4,5,6
+ORDER BY mou_ex DESC, score DESC, patofic_nm
+</select>
+
+<!-- 특허사무소 검색팝업(랭킹조회 탭) 조회 (서비스 만족도 평균) -->
+<select id="selectPatOfficeScoreList2" parameterType="kr.re.kitech.biz.pat.pop.vo.PatOfficeVo" resultType="kr.re.kitech.biz.pat.pop.vo.PatOfficeVo">
+SELECT /* kr.re.kitech.biz.pat.pop.selectPatOfficeScoreList2 */ 
+      pof.patofic_cd
+     , pof.patofic_nm
+     , poc.id AS charg_id
+     , poc.nm AS charg_nm
+     , pof.contac_loc AS patofic_contac_loc
+     , DECODE(pof.mou_ex, 'Y', 'Y', 'N') AS mou_ex
+     , TRUNC(SUM(a.score) / COUNT(a.patofic_cd),1) AS score
+  FROM patoffice pof
+  LEFT JOIN patoficcharg poc ON poc.patofic_cd = pof.patofic_cd AND poc.del_ex = 'N' And poc.main_ex = 'Y'
+  LEFT JOIN patoficmou pom ON pom.patofic_cd = pof.patofic_cd AND pom.mou_ex = 'Y' AND pom.mou_end_daytm >= CURRENT
+  JOIN (SELECT psh.req_patofic_cd AS patofic_cd
+                , SUM(TO_NUMBER(psr.eval_service_scr)) / COUNT(psr.srhres_id) score
+        FROM patsrh psh
+        JOIN patsrhres psr ON psr.srh_id = psh.srh_id
+        WHERE psr.eval_daytm IS NOT NULL
+        AND psr.eval_daytm BETWEEN TO_DATE(#{from_ymd}, '%Y%m%d') AND TO_DATE(#{to_ymd}, '%Y%m%d')
+        GROUP BY req_patofic_cd
+
+        UNION ALL
+
+        SELECT psc.req_patofic_cd AS patofic_cd
+            , SUM(TO_NUMBER(psr.eval_service_scr)) / COUNT(psr.specres_id) score
+        FROM patspec psc
+        INNER JOIN patspecres psr ON psr.spec_id = psc.spec_id
+        WHERE psr.eval_daytm IS NOT NULL
+        AND psr.eval_daytm BETWEEN TO_DATE(#{from_ymd}, '%Y%m%d') AND TO_DATE(#{to_ymd}, '%Y%m%d')
+        GROUP BY req_patofic_cd
+
+        UNION ALL
+
+        SELECT pap.com_patofic_cd AS patofic_cd
+            , SUM(TO_NUMBER(pap.eval_service_scr)) / COUNT(pap.app_id) score
+        FROM patapp pap
+        WHERE pap.eval_daytm BETWEEN TO_DATE(#{from_ymd}, '%Y%m%d') AND TO_DATE(#{to_ymd}, '%Y%m%d')
+        GROUP BY com_patofic_cd
+
+        UNION ALL
+
+        SELECT pdm.req_patofic_cd AS patofic_cd
+            , SUM(TO_NUMBER(pdm.eval_service_scr)) / COUNT(pdm.demnd_id) score
+        FROM patdemnd pdm
+        WHERE pdm.eval_daytm IS NOT NULL
+        AND pdm.eval_daytm BETWEEN TO_DATE(#{from_ymd}, '%Y%m%d') AND TO_DATE(#{to_ymd}, '%Y%m%d')
+        GROUP BY req_patofic_cd
+
+        UNION ALL
+
+        SELECT ppd.req_patofic_cd AS patofic_cd
+            , SUM(TO_NUMBER(ppd.eval_service_scr)) / COUNT(ppd.prity_demnd_id) score
+        FROM patpritydemnd ppd
+        WHERE ppd.eval_daytm BETWEEN TO_DATE(#{from_ymd}, '%Y%m%d') AND TO_DATE(#{to_ymd}, '%Y%m%d')
+        GROUP BY req_patofic_cd
+
+        UNION ALL
+
+        SELECT poa.rcpt_patofic_cd AS patofic_cd
+            , SUM(TO_NUMBER(NVL(por.eval_service_scr, 0))) / COUNT(por.oares_id) score
+        FROM patoa poa
+        INNER JOIN patoares por ON por.oa_id = poa.oa_id
+        WHERE por.eval_daytm IS NOT NULL
+        AND por.eval_daytm BETWEEN TO_DATE(#{from_ymd}, '%Y%m%d') AND TO_DATE(#{to_ymd}, '%Y%m%d')
+        GROUP BY rcpt_patofic_cd
+
+        UNION ALL
+
+        SELECT prg.com_patofic_cd AS patofic_cd
+            , SUM(TO_NUMBER(prg.eval_service_scr)) / COUNT(prg.reg_id) score
+        FROM patreg prg
+        WHERE prg.eval_daytm IS NOT NULL
+        AND prg.eval_daytm BETWEEN TO_DATE(#{from_ymd}, '%Y%m%d') AND TO_DATE(#{to_ymd}, '%Y%m%d')
+        GROUP BY com_patofic_cd
+
+        UNION ALL
+
+        SELECT pid.rcpt_patofic_cd AS patofic_cd
+            , SUM(TO_NUMBER(pid.eval_service_scr)) / COUNT(pid.ids_id) score
+        FROM patids pid
+        WHERE pid.eval_daytm IS NOT NULL
+        AND pid.eval_daytm BETWEEN TO_DATE(#{from_ymd}, '%Y%m%d') AND TO_DATE(#{to_ymd}, '%Y%m%d')
+        GROUP BY rcpt_patofic_cd
+
+        UNION ALL
+
+        SELECT ptr.rcpt_patofic_cd AS patofic_cd
+            , SUM(TO_NUMBER(ptr.eval_service_scr)) / COUNT(ptr.trans_id) score
+        FROM pattrans ptr
+        WHERE ptr.eval_daytm IS NOT NULL
+        AND ptr.eval_daytm BETWEEN TO_DATE(#{from_ymd}, '%Y%m%d') AND TO_DATE(#{to_ymd}, '%Y%m%d')
+        GROUP BY rcpt_patofic_cd 
+    ) a ON a.patofic_cd = pof.patofic_cd
+ WHERE pof.del_ex = 'N'
+ <if test='mou_ex != null and mou_ex != ""'> AND pof.mou_ex = #{mou_ex} </if>
+ GROUP BY 1,2,3,4,5,6
+ ORDER BY mou_ex DESC, score DESC, patofic_nm
+</select>
+
+<!-- 프로그램 종류 코드 조회 -->
+<select id="selectXodxCommstPPC" parameterType="kr.re.kitech.biz.res.com.vo.XodxCommstVo" resultType="kr.re.kitech.biz.res.com.vo.XodxCommstVo">
+SELECT /* kr.re.kitech.biz.pat.pop.selectXodxCommstPPC */
+      t2.cd_nm AS big_cd_nm
+     , t3.cd_nm AS mid_cd_nm
+     , t1.cd_nm
+     , t1.seq
+  FROM xodxcommst t1
+  JOIN xodxcommst t2 ON t1.mngmt_item_2 = t2.cd
+  JOIN xodxcommst t3 ON t1.mngmt_item_3 = t3.cd
+ WHERE t1.cd_clsf = 'PPC'
+   AND t1.use_ex = 'Y'
+ <if test='mngmt_item_2 != null and mngmt_item_2 != ""'> AND t1.mngmt_item_2 = #{mngmt_item_2} </if>
+ <if test='mngmt_item_3 != null and mngmt_item_3 != ""'> AND t1.mngmt_item_3 = #{mngmt_item_3} </if>
+ <if test='cd_nm != null and cd_nm != ""'> AND (t1.cd_nm LIKE '%'|| #{cd_nm} ||'%' OR t1.seq LIKE '%'|| #{cd_nm} ||'%') </if>
+ORDER BY t1.seq
+</select>
+
+<!-- 출원희망 국가코드 조회 -->
+<select id="selectPatCodeMastr" resultType="kr.re.kitech.biz.pat.pop.vo.PatCodeMastrVo" parameterType="kr.re.kitech.biz.pat.pop.vo.PatPopSrcVo">
+SELECT /* kr.re.kitech.biz.pat.pop.selectPatCodeMastr */
+       cd_no
+     , cd_nm
+     , cd_desc
+  FROM patcodemastr
+ WHERE grp_clsf = '1'
+   AND up_cd_no = '000392'
+   AND del_yn   = 'N'
+   AND cd_no != '007956' 
+ORDER BY cd_desc 
+</select>
+
+<!-- 관련 출원번호 검색 -->
+<select id="selectRelatedSmitAppNo" parameterType="kr.re.kitech.biz.pat.pop.vo.RelatedSmitAppNoVo" resultType="kr.re.kitech.biz.pat.pop.vo.RelatedSmitAppNoVo">
+/* kr.re.kitech.biz.pat.pop.selectRelatedSmitAppNo */
+SELECT a.req_no,
+       a.mngmt_no,
+       c.syspayno,
+       c.empno,
+       c.nm,
+       a.invnt_krn_nm,
+       a.smitapp_no,
+       a.smitapp_ymd,
+       a.regst_no,
+       a.regst_ymd
+FROM patmastr a
+LEFT JOIN patcoinvntpsn b ON b.req_no = a.req_no AND a.mngmt_no = b.mngmt_no AND b.stake_dept = '1'
+LEFT JOIN humbasicinfo c ON c.syspayno = b.syspayno
+WHERE 1=1
+AND a.state <![CDATA[ > ]]> 'P0513'  -- 출원완료이상
+AND a.state <![CDATA[ < ]]> 'P1410'  -- OA접수보고
+<if test="smitapp_no_like != null and smitapp_no_like != ''">
+    AND a.smitapp_no    LIKE '%'||#{smitapp_no}||'%'
+</if>
+<if test="invnt_krn_nm_like != null and invnt_krn_nm_like != ''">
+    AND a.invnt_krn_nm  LIKE '%'||#{invnt_krn_nm}||'%'
+</if>
+<if test="invnt_syspayno != null and invnt_syspayno != ''">
+    AND a.invnt_syspayno = #{invnt_syspayno}
+</if>
+<if test="req_no != null and req_no != ''">
+    AND a.mngmt_no = #{req_no}
+</if>
+ORDER BY 1,2
+</select>
+
+  <!-- 첨부파일 팝업 조회 -->
+  <select id="selectPatMasterFileSearch" parameterType="kr.re.kitech.biz.pat.pop.vo.PatMasterFileSearchPopVo" resultType="kr.re.kitech.biz.pat.pop.vo.PatMasterFileSearchPopVo">
+	-- 2018.05.15. join절에서 patexamobj 삭제, etc_attach_file_no 추가
+	SELECT /* QueryID : kr.re.kitech.biz.pat.ppo.selectPatMasterFileSearch */ 
+		   mst.pat_clsf                  /*권리구분*/
+	     , pre.rpt_srh_attach_file       /*선행기술조사서*/
+	     , pre.rpt_announce_attach_file  /*발표자료*/
+	     , pam.pct_attach_file_no        /*PCT사업화계획서*/
+	     , pam.etc_attach_file_no     -- 기타 (공동소유인 경우 사유를 증명하는 협약서 등 첨부서류
+	     , pam.out_deed_attach_file_no   /*외부인양도증*/
+	     , pam.com_apply_attach_file_no  /*공동출원사유서*/
+	FROM patmastr mst
+	JOIN patappmastr pam ON pam.req_no = mst.req_no
+	LEFT JOIN patsrh psh ON psh.req_no = mst.req_no AND psh.mngmt_no = mst.mngmt_no
+	LEFT JOIN patsrhres pre ON pre.srh_id = psh.srh_id AND pre.srh_sn = (SELECT MAX(srh_sn) FROM patsrhres WHERE srh_id = psh.srh_id)
+	WHERE mst.req_no = #{req_no}
+	AND   mst.mngmt_no = #{mngmt_no}
+  </select>
+  
+  <!-- 소연심의_자유발명신고서 파일조회 -->
+  <select id="selectPatAttachFileSearch" parameterType="kr.re.kitech.biz.pat.pop.vo.PatMasterFileSearchPopVo" resultType="kr.re.kitech.biz.pat.pop.vo.PatMasterFileSearchPopVo">
+	SELECT /* QueryID : kr.re.kitech.biz.pat.ppo.selectPatAttachFileSearch */ 
+			 pat_clsf
+	     , attach_file_no_2
+	  FROM patappmastr
+	 WHERE req_no = #{req_no}
+  </select>
+
+  <select id="selectRelatedSmitAppNoPrdChng" parameterType="kr.re.kitech.biz.pat.pop.vo.RelatedSmitAppNoVo" resultType="kr.re.kitech.biz.pat.pop.vo.RelatedSmitAppNoVo">
+  SELECT /* QueryID : kr.re.kitech.biz.pat.pop.selectRelatedSmitAppNoPrdChng */ 
+      a.req_no,
+        a.mngmt_no,
+        c.syspayno,
+        c.empno,
+        c.nm,
+        a.invnt_krn_nm,
+        a.smitapp_no,
+        a.smitapp_ymd,
+        a.regst_no,
+        a.regst_ymd,
+        b.oa_id,
+        b.oa_sn,
+        b.rcpt_due_date
+    FROM patmastr a
+    JOIN humbasicinfo c on a.invnt_syspayno = c.syspayno
+    JOIN patoa b ON a.req_no = b.req_no AND a.mngmt_no = b.mngmt_no
+  WHERE NVL(b.rpn_attach_file,'')=''
+    AND a.state  <![CDATA[ < ]]>  'P1610'
+  <if test="smitapp_no_like != null and smitapp_no_like != ''">
+      AND a.smitapp_no    LIKE #{smitapp_no_like}
+  </if>
+  <if test="invnt_krn_nm_like != null and invnt_krn_nm_like != ''">
+      AND a.invnt_krn_nm  LIKE #{invnt_krn_nm_like}
+  </if>
+  <if test="invnt_syspayno != null and invnt_syspayno != ''">
+      AND a.invnt_syspayno = #{invnt_syspayno}
+  </if>
+  <if test="req_no != null and req_no != ''">
+      AND ( a.req_no LIKE #{req_no} OR a.mngmt_no LIKE #{req_no})
+  </if>
+  ORDER BY a.req_no, a.mngmt_no, b.oa_sn
+  </select>
+</mapper>

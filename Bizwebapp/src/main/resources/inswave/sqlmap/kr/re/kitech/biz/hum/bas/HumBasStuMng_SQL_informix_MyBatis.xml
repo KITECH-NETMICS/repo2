@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.hum.bas">
+  <select id="selectHumEducInfo" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasStuMngVo" resultType="kr.re.kitech.biz.hum.bas.vo.HumBasStuMngListVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.bas.selectHumEducInfo */ 
+    a.work_clsf -- 근무상태
+    ,DECODE(a.work_clsf, 'HAG090', '종료자', '연수자') AS work_clsf_nm -- 근무상태
+    ,a.empno AS empno  -- 개인번호
+    ,a.nm  -- 성명
+    ,a.syspayno
+    ,a.resid_no  AS resid_no_org -- 주민등록번호
+    ,SUBSTR(a.resid_no, 1,8) || '******' AS resid_no
+    ,NVL(x1.month_work_time,0) AS month_work_time -- 월근무시간
+    ,NVL(x1.week_work_time,0) AS week_work_time -- 주근무시간
+    ,NVL(x1.convsn_rts, 0) AS convsn_rts  -- 추가적용비율
+    ,(NVL(x1.week_work_time,0) / 40) * 100 AS use_rt
+    ,c.posi_nm  -- 직급
+    ,b1.dept_nm AS divsn_dept_nm -- 본부
+    ,a.dept_cd, a.dept_new_ymd
+    ,h.contrct_cls_ymd AS contrct_cls_ymd -- 종료일
+    ,b.dept_nm -- 부서
+    ,g.schl_nm AS entr_schl_nm  -- 진학학교
+    ,g1.cd_nm AS entr_degr  -- 진학학위
+    ,g.degr AS entr_degrcd  -- 진학학위
+    ,d.frs_entr AS frs_entr -- 최초입소일
+    ,decode(e.analsal_contrct_ymd, d.frs_entr,'',e.analsal_contrct_ymd) AS entr_ymd -- 재입소일
+    ,k.retire_ymd -- 최종퇴소일
+    ,decode(g.educ, 'HAL020', '3년', 'HAL010', '7년', 'HAL011', '8년', 'HAL012', '7년', 'HAL022', '3년', '') AS educ  -- 재학연한
+    ,h.req_no AS apy_req_no -- 채용(비정규직)신청서 문서번호
+    ,h1.cd_nm AS contrct_apr_state_nm  -- 입소결재상태
+    ,n.req_no AS ret_req_no -- 퇴직신청 문서번호
+    ,n.apr_state_nm  -- 퇴소결재상태
+    ,h.month_contrct_amt_sum -- 연수장려금월금액
+    ,h.contrct_amt  -- 연수장려금연금액
+    ,p.enter_encrg_state -- 입소독려상태
+    ,p.retire_encrg_state -- 퇴소독려상태
+    ,p.gubn
+    ,f.pruse_respn_man_nm AS pruse_respn_man_nm  -- 활용책임자
+    ,a.pruse_respn_psn
+    ,a1.cd_nm AS work_land -- 근무지
+    ,h.accnt_no -- 활용계정번호
+    ,x.pruse_respn_psn_list -- 활용책임자(공동지도교수)리스트
+    ,TRIM(decode(a.sex, 'HCZ001', '남','HCZ002', '여')) AS sex  -- 성별
+    ,a.email  -- 이메일
+    ,TRIM(a.home_tel) AS home_tel  -- 전화번호
+    ,TRIM(a.mobile) AS mobile  -- 휴대폰번호
+    ,TRIM(a.addr_base)||' '|| TRIM(a.addr_detls) AS addr  -- 현주소
+    ,y.edulist AS edulist -- 진학학교 이전 학교이력
+    ,h.req_syspayno_email -- 담당자이메일
+    ,h.req_syspayno -- 담당자(연수신청서 신청자)
+    ,a.regst_syspayno
+    ,a.updt_syspayno
+    ,fun_xodxcommst_cd_nm(x1.employ_type, '0') AS employ_type -- 고용형태
+    ,x1.sch_grant_vend_cd AS vend_cd
+    ,NVL(y1.vend_abbr,'') AS vend_nm
+    ,x1.sch_grant  -- 학교지원금
+FROM humbasicinfo a -- 인사기본정보
+JOIN xodhdeptinfo b ON b.dept_cd = a.dept_cd AND b.dept_new_ymd = a.dept_new_ymd -- 부서정보
+JOIN xodhdeptinfo b1 ON b1.dept_cd = b.divsn_dept AND b1.dept_new_ymd = b.divsn_dept_new_ymd -- 본부정보
+JOIN xodhposiinfo c ON c.posi_cd = a.posi_cd -- 직급정보
+JOIN humrctbasinfo x1 ON x1.syspayno = a.syspayno AND x1.req_no = a.rct_req_no
+LEFT JOIN xodfvend y1 ON y1.vend_cd = x1.sch_grant_vend_cd
+LEFT JOIN xodxcommst AS a1 ON a1.cd = a.work_land
+LEFT JOIN (humeducinfo g 
+                    LEFT JOIN xodxcommst g1 ON g1.cd = g.degr
+) ON g.syspayno = a.syspayno AND g.apprvl_educ_yn = 'Y' AND g.gradt_state IN ('HAO001', 'HAO003') -- 수료(2016.10.11 이윤민행정원 요청으로 추가), 재학중
+LEFT JOIN humslbasinfo e ON e.syspayno = a.syspayno
+LEFT JOIN humorgencrgstate p ON p.syspayno = a.syspayno  AND p.empno = a.empno
+LEFT JOIN (
+    SELECT a.syspayno AS syspayno
+        , a.pruse_respn_psn AS pruse_respn_psn
+        , b.nm AS pruse_respn_man_nm
+    FROM humpruserespninfo a
+    LEFT JOIN humbasicinfo b ON b.syspayno = a.pruse_respn_psn
+    WHERE a.respn_clsf = 'M' AND a.use_yn = 'Y'
+    ) f ON f.syspayno = a.syspayno
+LEFT JOIN(
+    SELECT
+        a.syspayno
+        ,MIN(a.entr_ymd) AS frs_entr
+        ,MIN(a.retire_ymd) AS frs_retire
+        ,a.resid_no
+        ,a.occutyp_cd
+    FROM humbasicinfo a
+    WHERE a.occutyp_cd IN ('350000', '351000','354000') -- 학생연구원, 연구생, 연수생
+    AND a.posi_cd IN ('350010', '351010','354000','354010','350020', '351020')
+    GROUP BY 1, 4, 5
+) d ON d.syspayno = a.syspayno AND d.resid_no = a.resid_no
+LEFT JOIN(
+    SELECT
+        MAX(a.entr_ymd) AS entr_ymd
+        ,MAX(a.retire_ymd) AS retire_ymd
+        ,a.occutyp_cd
+        ,a.syspayno
+        ,a.resid_no
+        ,a.work_clsf
+    FROM humbasicinfo a
+    WHERE a.work_clsf = 'HAG090'
+    AND a.occutyp_cd  IN ('350000' , '351000','354000') -- 학생연구원, 연구생, 연수생
+    GROUP BY 3, 4, 5, 6
+) k ON k.syspayno = a.syspayno AND k.resid_no = a.resid_no AND k.work_clsf = a.work_clsf
+LEFT JOIN ( (
+    SELECT
+        decode(NVL(b.appont_prcs,''),'HCX030', b.contrct_cls_ymd,'') AS contrct_cls_ymd
+        ,b.contrct_amt_sum AS contrct_amt
+        ,b.month_contrct_amt_sum AS month_contrct_amt_sum	
+        ,b.req_syspayno
+        ,c.email AS req_syspayno_email
+        ,d.accnt_no AS accnt_no
+        ,b.resid_no
+        ,b.syspayno
+        ,b.req_no
+        ,d.seq
+        ,d.resch_respn_syspayno
+        ,e.apr_state AS apr_state
+    FROM (SELECT a.syspayno, MAX(regst_daytm) AS regst_daytm
+        FROM humrctbasinfo a
+        JOIN xomxintfatab b ON a.req_no = b.req_no AND b.apr_state = 'XAD100'
+        WHERE a.appont_prcs = 'HCX030'
+        GROUP BY syspayno) a
+        JOIN humrctbasinfo b ON b.syspayno = a.syspayno AND b.regst_daytm = a.regst_daytm AND b.posi_cd IN ('350010', '351010','354000','354010','350020', '351020')
+        JOIN humbasicinfo c ON c.syspayno = b.req_syspayno
+        JOIN (SELECT * FROM humrctpjt WHERE req_no||seq IN (SELECT req_no||MIN(seq) FROM humrctpjt GROUP BY req_no)) d ON d.req_no = b.req_no AND d.syspayno = b.syspayno
+        JOIN xomxintfatab e ON e.req_no = b.req_no
+) h LEFT JOIN xodxcommst AS h1 ON h1.cd = h.apr_state) ON h.syspayno = a.syspayno
+LEFT JOIN(
+    SELECT
+        a.syspayno
+        ,a.req_no
+        ,TRIM(b.nm) AS nm
+        ,f.cd_nm AS apr_state_nm
+    FROM humapysvr a
+    JOIN v_humbasicinfo b ON b.syspayno = a.syspayno AND b.occutyp_cd IN ('350000', '351000','354000') -- 학생연구원, 연구생, 연수생
+    JOIN xomxintfatab e ON e.req_no = a.req_no
+    JOIN xodxcommst f ON f.cd = e.apr_state AND f.cd NOT IN ('XAD005', 'XAD010', 'XAD013', 'XAD015')
+    WHERE a.middle_adjst_yn = 'N'
+    ORDER BY a.req_no DESC
+) n ON n.syspayno = a.syspayno
+LEFT JOIN (
+    SELECT x1.syspayno, group_concat(x2.nm) AS pruse_respn_psn_list
+    FROM humpruserespninfo x1 
+    JOIN humbasicinfo x2 ON x2.syspayno = x1.pruse_respn_psn
+    WHERE x1.use_yn = 'Y' AND x1.respn_clsf = 'S' GROUP BY x1.syspayno
+) AS x ON x.syspayno = a.syspayno
+LEFT JOIN (
+    SELECT syspayno, group_concat(schl_nm) AS edulist FROM humeducinfo
+    WHERE apprvl_educ_yn = 'N' GROUP BY syspayno
+) AS y ON y.syspayno = a.syspayno
+WHERE a.occutyp_cd IN ('350000', '351000','354000') -- 학생연구원, 연구생, 연수생
+    AND a.posi_cd IN ('350010', '351010','354000','354010','350020', '351020')
+    AND (#{sbx_serv_situn} != 'HAZ010' OR a.work_clsf IN ('HAG010', 'HAG050', 'HAG025'))
+    AND (#{sbx_serv_situn} != 'HAZ020' OR a.work_clsf IN ('HAG090'))
+    AND (#{sbx_serv_situn} in ('HAZ010', 'HAZ020') OR a.work_clsf IN ('HAG010', 'HAG090', 'HAG050', 'HAG025'))  -- 20190319 파견 추가(이윤민 요청) 20200212 육아휴직 추가(이윤민 요청)
+    AND (#{inp_empno} = '' OR a.empno = #{inp_empno})
+    AND (#{inp_nm} = '' OR a.nm LIKE '%'||#{inp_nm}||'%')
+    AND (#{inp_entr_sch} = '' OR g.schl_nm LIKE '%'||#{inp_entr_sch}||'%')
+    AND (#{sbx_entr_dgr} = '' OR g.degr = #{sbx_entr_dgr})
+    AND (#{frs_entr_from} = '' OR d.frs_entr <![CDATA[ >= ]]> #{frs_entr_from})
+    AND (#{frs_entr_to} = '' OR d.frs_entr <![CDATA[ <= ]]>  #{frs_entr_to})
+    AND (#{entr_from} = '' OR a.entr_ymd <![CDATA[ >= ]]>  #{entr_from})
+    AND (#{entr_to} = '' OR a.entr_ymd <![CDATA[ <= ]]>  #{entr_to})
+    AND (#{contrct_cls_from} = '' OR h.contrct_cls_ymd <![CDATA[ >= ]]> #{contrct_cls_from})
+    AND (#{contrct_cls_to} = '' OR h.contrct_cls_ymd <![CDATA[ <= ]]> #{contrct_cls_to})
+    AND (#{retire_from} = '' OR k.retire_ymd <![CDATA[ >= ]]> #{retire_from})
+    AND (#{retire_to} = '' OR k.retire_ymd <![CDATA[ <= ]]> #{retire_to})
+    AND (#{inp_pruse_psn_empno} = '' OR a.pruse_respn_psn = #{inp_pruse_psn_sn})
+    AND (#{sbx_posi_cd} = '' OR a.posi_cd = #{sbx_posi_cd})
+ORDER BY a.nm
+  </select>
+</mapper>

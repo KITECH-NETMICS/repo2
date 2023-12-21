@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.fnd">
+  <select id="selectFinCardUseAmtUpReq" parameterType="kr.re.kitech.biz.fin.fnd.vo.FinCardUseAmtUpReqVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FinCardUseAmtUpReqVo">
+		SELECT /* QueryID : kr.re.kitech.biz.fin.fnd.selectFinCardUseAmtUpReq */ 
+		    req_no,
+		    req_ymd,
+		    req_psn,
+		    req_empno,
+		    req_nm,
+		    req_dept_cd,
+		    req_dept_nm,
+		    req_posi_cd,
+		    req_posi_nm,
+		    use_psn,
+		    use_empno,
+		    use_syspayno,
+		    use_mobile,
+		    use_nm,
+		    use_dept_cd,
+		    use_dept_nm,
+		    use_posi_cd,
+		    use_posi_nm,
+		    card_no,
+		    req_dom_amt,
+		    req_over_amt,
+		    str_ymd,
+		    cls_ymd,
+		    req_term,
+		    rmk,
+		    attach_file_no,
+		    attach_file_no1,
+		    apr_state,
+		    apr_state_nm
+		FROM
+		(
+		SELECT
+		    a.req_no,
+		    a.req_ymd,
+		    a.req_psn,
+		    b.empno AS req_empno,
+		    b.syspayno AS req_syspayno,
+		    TRIM(b.nm) AS req_nm,
+		    b.mobile req_mobile, -- 결재완료건 문자 발송용(2016.10.24)
+		    a.req_dept_cd,
+		    c.dept_nm AS req_dept_nm,
+		    a.req_posi_cd,
+		    fun_posi_nm(a.req_posi_cd) AS req_posi_nm,
+		    a.use_psn,
+		    d.empno AS  use_empno,
+		    d.syspayno AS use_syspayno,
+		    d.mobile AS use_mobile,
+		    TRIM(d.nm) AS use_nm,
+		    a.use_dept_cd,
+		    e.dept_nm AS use_dept_nm,
+		    a.use_posi_cd,
+		    fun_posi_nm(a.use_posi_cd) AS use_posi_nm,
+		    a.card_no,
+		    a.req_dom_amt,
+		    a.req_over_amt,
+		    a.str_ymd,
+		    a.cls_ymd,
+		    a.str_ymd||'~'||a.cls_ymd AS req_term,
+		    TRIM(a.rmk) AS rmk,
+		    a.attach_file_no,
+		    a.attach_file_no1,
+		    f.apr_state,
+		    (select cd_nm from xodxcommst where cd = f.apr_state) AS apr_state_nm
+		FROM fbacardamtupreq a
+		JOIN humbasicinfo b ON b.syspayno = a.req_psn
+		JOIN xodhdeptinfo c ON c.dept_cd = a.req_dept_cd AND c.dept_new_ymd = b.dept_new_ymd
+		JOIN humbasicinfo d ON d.syspayno = a.use_psn
+		JOIN xodhdeptinfo e ON e.dept_cd = a.use_dept_cd AND e.dept_new_ymd = d.dept_new_ymd
+		LEFT JOIN xomxintfatab f ON f.req_no = a.req_no
+		WHERE 1=1 
+		    <if test="fr_req_ymd != null and fr_req_ymd != ''">
+			 <![CDATA[and  a.req_ymd >= #{fr_req_ymd}]]>
+		</if>
+		    <if test="to_req_ymd != null and to_req_ymd != ''">
+			 <![CDATA[and  a.req_ymd <= #{to_req_ymd}]]>
+		</if>
+		    <if test="req_no != null and req_no != ''">
+			 and a.req_no = #{req_no}
+		</if>
+		    <if test="req_psn != null and req_psn != ''">
+			 and a.req_psn = #{req_psn}
+		</if>
+		    <if test="use_psn != null and use_psn != ''">
+			 and a.use_psn = #{use_psn}
+		</if>
+		)
+		ORDER BY req_no
+  </select>
+  
+  <select id="selectFinCardUseAmtUpSingleReq" parameterType="kr.re.kitech.biz.fin.fnd.vo.FinCardUseAmtUpReqVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FinCardUseAmtUpReqVo">
+		SELECT /* QueryID : kr.re.kitech.biz.fin.fnd.selectFinCardUseAmtUpSingleReq */ 
+		    a.req_no,
+		    a.req_ymd,
+		    a.req_psn,
+		    b.empno AS req_empno,
+		    b.nm AS req_nm,
+		    a.req_dept_cd,
+		    c.dept_nm AS req_dept_nm,
+		    a.req_posi_cd,
+		    fun_posi_nm(a.req_posi_cd) AS req_posi_nm,
+		    a.use_psn,
+		    d.empno AS  use_empno,
+		    d.nm AS use_nm,
+		    a.use_dept_cd,
+		    e.dept_nm AS use_dept_nm,
+		    a.use_posi_cd,
+		    fun_posi_nm(a.use_posi_cd) AS use_posi_nm,
+		    a.card_no,
+		    a.req_dom_amt,
+		    a.req_over_amt,
+		    a.str_ymd,
+		    a.cls_ymd,
+		    a.rmk,
+		    a.attach_file_no,
+		    a.attach_file_no1,
+		    f.apr_state
+		FROM fbacardamtupreq a
+		JOIN humbasicinfo b ON b.syspayno = a.req_psn
+		JOIN xodhdeptinfo c ON c.dept_cd = a.req_dept_cd AND c.dept_new_ymd = b.dept_new_ymd
+		JOIN humbasicinfo d ON d.syspayno = a.use_psn
+		JOIN xodhdeptinfo e ON e.dept_cd = a.use_dept_cd AND e.dept_new_ymd = d.dept_new_ymd
+		LEFT JOIN xomxintfatab f ON f.req_no = a.req_no
+		WHERE a.req_no = #{req_no}
+  </select>
+  
+  <select id="selectFndCard" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndCardSelectVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FndCardSelectVo">
+		SELECT /* QueryID : kr.re.kitech.biz.fin.fnd.selectFndCard */ 
+				 a.card_no
+		         ,a.card_knd
+		         ,a.card_clsf
+		         ,fun_xodxcommst_cd_nm(a.card_knd, 0) AS card_knd_nm
+		         ,fun_xodxcommst_cd_nm(a.card_clsf, 0) AS card_clsf_nm
+		         ,a.apprvl_bank
+		         ,a.apprvl_ymd
+		         ,a.apprvl_bankaccnt
+		         ,DECODE(NVL(d.cardno, ''), '', DECODE(NVL(e.cardno, ''), '', '', SUBSTR(e.cardacc, -6)), SUBSTR(d.bk_acct_no, -6)) AS exp_acct_no
+		         ,a.accnt_no
+		         ,a.accnt_cd
+		         ,DECODE(TRIM(NVL(a.keep_dept, '')), '', '', b.dept_cd) AS dept_cd
+		         ,c.dept_nm
+		         ,a.dept_new_ymd
+		         ,a.keep_charg
+		         ,b.nm
+		         ,b.empno
+		         ,fun_posi_nm(b.posi_cd) AS posi_nm
+		         ,fun_xodxcommst_cd_nm(b.duty_cd, 0) AS duty_nm
+		         ,a.valid_ymd
+		         ,a.pay_ymd
+		         ,a.retrn_ymd
+		         ,a.rmk
+		         ,a.card_state
+		         ,a.issu_clsf
+		         ,b.email
+		         ,fun_xodxcommst_cd_nm(a.card_state, 0) AS card_state_nm
+		         ,fun_xodxcommst_cd_nm(a.issu_clsf, 0) AS issu_clsf_nm
+		FROM  fbacard a
+		INNER JOIN humbasicinfo b ON a.keep_charg = b.syspayno
+		INNER JOIN xodhdeptinfo c ON b.dept_cd  = c.dept_cd AND b.dept_new_ymd = c.dept_new_ymd
+		LEFT OUTER JOIN fbcrndcardinfo d ON replace(a.card_no, '-', '') = d.cardno
+		LEFT OUTER JOIN flgrnd_card e ON replace(a.card_no, '-', '') = e.cardno
+		WHERE 
+		a.card_clsf = 'FAI001'
+		AND a.card_state = 'FCK010'
+		AND a.keep_charg = #{keep_charg}
+  </select>
+  <select id="selectFndCardNtSlip" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndCardUseSelectVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FndCardUseSelectVo">
+  	SELECT /* QueryID : kr.re.kitech.biz.fin.fnd.selectFndCardNtSlip */ 
+	  	 b.card_no, --카드번호
+	     SUBSTR(a.rectime,1,8)||':'||SUBSTR(a.rectime,9,6) AS time, --사용일자
+	     a.cnldate, --취소일자
+	     a.apprno AS apprno, --승인번호
+	     a.recamt AS recamt, --사용금액
+	     a.cnlamt, --취소금액
+	     ( ( a.recamt - NVL(a.cnlamt,0) ) - NVL(a.compcost,0) ) AS compcost, --미처리금액
+		 a.shopname AS shop_nm, --가맹점명
+		NVL(a.compyn, 'N')    AS compyn, --결의여부
+		NVL(a.confyn, 'N')    AS confyn, --확정여부
+		h.nm, --보유자
+		a.rmk, --비고
+		a.unslip_no||'-'||a.unslip_seq AS unslip_no,  --결의번호
+		a.local_amt
+		FROM fbc_recogn a
+		JOIN fbacard b ON b.cardno = a.cardno  
+		JOIN humbasicinfo h ON h.syspayno = b.keep_charg AND h.syspayno = #{syspayno}
+		WHERE a.rectime <![CDATA[>=]]> #{from_ymd}||'000000'
+		AND a.rectime <![CDATA[<=]]> #{to_ymd}||'240000'
+		AND a.compyn = 'N'  
+		<if test="card_knd != null and card_knd != 'all'">
+		AND b.card_knd = #{card_knd}
+		</if>
+		<if test="card_clsf != null and card_clsf != 'all'">
+		AND b.card_clsf = #{card_clsf}
+		</if>
+		UNION ALL
+		--연구비BC카드 승인내역
+		SELECT  b.card_no, --카드번호
+		        a.auth_date||':'||a.auth_time AS time , --사용일자
+		        a.cnldate, --취소일자
+		        a.use_no AS apprno, --승인번호
+		        a.auth_amt AS recamt, --사용금액
+		        a.cnlamt, --취소금액
+		        ( ( a.auth_amt - nvl(a.cnlamt,0) ) - nvl(a.compcost,0) ) AS compcost, --미처리금액
+		        a.mer_nm AS shop_nm, --가맹점명
+		        NVL(a.compyn, 'N')    AS compyn, --결의여부
+		        NVL(a.confyn, 'N')    AS confyn, --확정여부
+		        h.nm, --보유자
+		        a.rmk, --비고
+		        a.unslip_no||'-'||a.unslip_seq AS unslip_no, --결의번호
+		        a.local_amt
+		FROM fbcrndauth a
+		JOIN fbacard b ON b.cardno = a.cardno 
+		JOIN humbasicinfo h ON h.syspayno = b.keep_charg AND h.syspayno = #{syspayno}
+		WHERE a.auth_date <![CDATA[>= #{from_ymd}||'000000']]>
+		AND a.auth_date <![CDATA[<= #{to_ymd}||'240000']]>
+		AND a.compyn = 'N'  
+		<if test="card_knd != null and card_knd != 'all'">
+		AND b.card_knd = #{card_knd}
+		</if>
+		<if test="card_clsf != null and card_clsf != 'all'">
+		AND b.card_clsf = #{card_clsf}
+		</if>
+		UNION ALL
+		--연구비신한카드 승인내역
+		SELECT b.card_no, --카드번호
+		       SUBSTR(a.rectime,1,8)||':'||SUBSTR(a.rectime,9,6) AS time, --사용일자
+		       a.cnldate, --취소일자
+		       a.apprno AS apprno, --승인번호
+		       a.recamt AS recamt, --사용금액
+		       a.cnlamt, --취소금액
+		       ( ( a.recamt - NVL(a.cnlamt,0) ) - NVL(a.compcost,0) ) AS compcost, --미처리금액
+		       a.shopname AS shop_nm, --가맹점명
+		       NVL(a.compyn, 'N')    AS compyn, --결의여부
+		       NVL(a.confyn, 'N')    AS confyn, --확정여부
+		       h.nm, --보유자
+		       a.rmk, --비고
+		       a.unslip_no||'-'||a.unslip_seq  AS unslip_no, --결의번호
+		       a.local_amt
+		FROM flgrnd_recogn a
+		JOIN fbacard b ON b.cardno = a.cardno		
+		JOIN  humbasicinfo h ON h.syspayno = b.keep_charg AND h.syspayno = #{syspayno}
+		WHERE  a.rectime <![CDATA[>= #{from_ymd}||'000000']]>
+		AND a.rectime <![CDATA[<= #{to_ymd}||'240000']]>
+		AND NVL(a.compyn,'N') = 'N'
+		<if test="card_knd != null and card_knd != 'all'">
+		AND b.card_knd = #{card_knd}
+		</if>
+		<if test="card_clsf != null and card_clsf != 'all'">
+		AND b.card_clsf = #{card_clsf}
+		</if>
+		UNION ALL
+		--통합이지바로 승인내역 
+		SELECT 
+		  b.card_no, --카드번호 
+		  SUBSTR(a.rectime,1,8)||':'||SUBSTR(a.rectime,9,6) AS time, --사용일자
+		  g.purchdt AS cnldate, --취소일자
+		  a.apprno AS apprno, --승인번호
+		  a.demcost AS recamt, --사용금액  
+		  NVL(g.demcost, 0) AS cnlamt, --취소금액
+		  a.demcost - NVL(g.demcost,0) - NVL(a.compcost,0) AS compcost, --미처리금액
+		  a.mchtnm AS shop_nm, --가맹점명
+		  NVL(a.compyn, 'N')    AS compyn, --결의여부
+		  NVL(a.confyn, 'N')    AS confyn, --확정여부
+		  h.nm, --보유자
+		  a.rmk, --비고
+		  a.unslip_no||'-'||a.unslip_seq  AS unslip_no, --결의번호    
+		  NVL(a.dollarsum, 0) AS local_amt
+		FROM ezbaro_cardorgn a
+		JOIN fbacard b ON a.cardno = b.cardno
+		JOIN humbasicinfo h ON b.keep_charg = h.syspayno
+		JOIN xodhdeptinfo t2 ON h.dept_cd = t2.dept_cd AND h.dept_new_ymd = t2.dept_new_ymd
+		LEFT  JOIN ( fspsliph i --연구비신한카드 승인내역 
+		     JOIN humbasicinfo c ON i.wrte_psn = c.syspayno
+		    ) ON a.unslip_no = i.unslip_no 
+		 LEFT JOIN fspslipd p
+		ON p.unslip_no = a.unslip_no
+		AND p.unslip_odr = a.unslip_seq
+		--LEFT  JOIN fspmeetevidh r ON r.evid_apprno = a.apprno and r.cardno = a.cardno
+		LEFT JOIN (
+		    fspmeetevidh r 
+		    JOIN fspmeetmnth s ON r.meet_req_no = s.meet_req_no) ON r.evid_apprno = a.apprno and r.cardno = a.cardno
+		LEFT JOIN (
+		SELECT  SUM(demcost) AS demcost, SUM(exttax) AS exttax ,MAX(purchdt) AS purchdt , cardno, apprno 
+		FROM ezbaro_cardorgn 
+		WHERE purchdivcd = '02'
+		GROUP BY cardno, apprno
+		) g ON a.cardno = g.cardno AND a.apprno = g.apprno
+		WHERE 1=1 
+		 AND  h.syspayno =  #{syspayno}
+		 AND  a.purchdivcd = '01'
+		 AND  a.purchdt BETWEEN #{from_ymd} AND #{to_ymd}
+		 AND  NVL(a.compyn,'N') = 'N'
+		 <if test="card_knd != null and card_knd != 'all'">
+		 AND b.card_knd = #{card_knd}
+		 </if>
+		 <if test="card_clsf != null and card_clsf != 'all'">
+		 AND b.card_clsf = #{card_clsf}
+		 </if>
+		ORDER BY 2 DESC, 1
+		
+  </select>
+
+  <insert id="insertFinCardUseAmtUpReq" parameterType="kr.re.kitech.biz.fin.fnd.vo.FinCardUseAmtUpReqVo">
+		INSERT /* QueryID : kr.re.kitech.biz.fin.fnd.insertFinCardUseAmtUpReq */ 
+				 INTO fbacardamtupreq ( 
+		    req_no,
+		    req_ymd,
+		    req_psn,
+		    req_dept_cd,
+		    req_posi_cd,
+		    use_psn,
+		    use_dept_cd,
+		    use_posi_cd,
+		    card_no,
+		    req_dom_amt,
+		    req_over_amt,
+		    str_ymd,
+		    cls_ymd,
+		    rmk,
+		    attach_file_no,
+		    attach_file_no1,
+		    regst_syspayno,
+		    regst_daytm)
+		          VALUES(
+		    #{req_no},
+		    #{req_ymd},
+		    #{req_psn},
+		    #{req_dept_cd},
+		    #{req_posi_cd},
+		    #{use_psn},
+		    #{use_dept_cd},
+		    #{use_posi_cd},
+		    #{card_no},
+		    #{req_dom_amt},
+		    #{req_over_amt},
+		    #{str_ymd},
+		    #{cls_ymd},
+		    #{rmk},
+		    #{attach_file_no},
+		    #{attach_file_no1},
+		    #{regst_syspayno},
+		    CURRENT)
+  </insert>
+
+ <update id="updateFinCardUseAmtUpReq" parameterType="kr.re.kitech.biz.fin.fnd.vo.FinCardUseAmtUpReqVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.fin.fnd.updateFinCardUseAmtUpReq */ 
+			 fbacardamtupreq
+	SET req_dom_amt = #{req_dom_amt},
+	req_over_amt = #{req_over_amt},
+	str_ymd =#{str_ymd},
+	cls_ymd = #{cls_ymd},
+	rmk = #{rmk},
+	attach_file_no = #{attach_file_no},
+	attach_file_no1 = #{attach_file_no1},
+	updt_syspayno = #{updt_syspayno},
+	updt_daytm = CURRENT
+	WHERE req_no = #{req_no}
+  </update>
+
+  <delete id="deleteFinCardUseAmtUpReq" parameterType="kr.re.kitech.biz.fin.fnd.vo.FinCardUseAmtUpReqVo">
+	DELETE /* QueryID : kr.re.kitech.biz.fin.fnd.deleteFinCardUseAmtUpReq */ 
+			 FROM fbacardamtupreq WHERE req_no = #{req_no}
+  </delete>          
+</mapper>

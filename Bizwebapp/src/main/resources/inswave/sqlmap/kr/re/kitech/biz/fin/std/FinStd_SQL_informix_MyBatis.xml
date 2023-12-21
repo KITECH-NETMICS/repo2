@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.std">
+<!-- 거래처 담당자 저장 -->
+<update id="updateXodfVendJob" parameterType="kr.re.kitech.biz.fin.std.vo.XodfVendJobVo">
+MERGE INTO xodfvendjob AS a
+USING dual AS b ON 1=1 AND a.vend_cd = #{vend_cd} AND a.odr = #{odr} AND a.charg_clsf = #{charg_clsf}
+WHEN MATCHED THEN
+   UPDATE 
+   SET a.charg  = #{charg}
+    <if test='charg_posi_nm != null'>, a.charg_posi_nm = #{charg_posi_nm} </if> 
+    <if test='charg_dept_nm != null'>, a.charg_dept_nm = #{charg_dept_nm} </if> 
+    <if test='charg_tel != null'>, a.charg_tel = #{charg_tel} </if> 
+    <if test='charg_mobile != null'>, a.charg_mobile = #{charg_mobile} </if> 
+     , a.charg_email = #{charg_email}      
+     , a.updt_syspayno = #{updt_syspayno} 
+     , a.updt_daytm = CURRENT
+WHEN NOT MATCHED THEN
+   INSERT ( 
+          vend_cd
+        , charg_clsf
+        , odr
+        , charg
+       <if test='charg_posi_nm != null'>, charg_posi_nm </if> 
+       <if test='charg_dept_nm != null'>, charg_dept_nm </if> 
+       <if test='charg_tel != null'>, charg_tel </if> 
+       <if test='charg_mobile != null'>, charg_mobile </if>
+        , charg_email
+       <if test='rmk != null'>, rmk </if>
+        , regst_syspayno
+        , regst_daytm )     
+VALUES( #{vend_cd}
+      , #{charg_clsf}
+      , #{odr}
+      , #{charg}
+     <if test='charg_posi_nm != null'>, #{charg_posi_nm} </if> 
+     <if test='charg_dept_nm != null'>, #{charg_dept_nm} </if> 
+     <if test='charg_tel != null'>, #{charg_tel} </if> 
+     <if test='charg_mobile != null'>, #{charg_mobile} </if>
+      , #{charg_email}
+     <if test='rmk != null'> , #{rmk} </if>
+      , #{regst_syspayno}
+      , CURRENT)
+</update>
+
+<!-- 거래처정보 저장 -->
+<insert id="insertXodfVend" parameterType="kr.re.kitech.biz.fin.std.vo.XodfVendVo">
+INSERT /* kr.re.kitech.biz.fin.std.insertXodfVend */
+  INTO xodfvend (
+      vend_cd           /* 고객 번호    */
+    , sys_clsf          /* 시스템 구분 (기술지원)  */
+    , vend_clsf         /* 법인/개인 구분  */
+    , bsns_psn_regst_no /* 사업자 번호*/
+    , corp_resid_no
+    , vend_abbr          /* 회사 명  */
+    , vend_fulnm         /* 회사 명 */
+    , reprs_psn_nm       /* 대표자 성명*/
+    , zero_taxrts_yn
+    , postmt_no          /* 우편 번호 */
+    , addr               /* 주소      */
+   <if test='detls_addr != null'> , detls_addr /* 상세 주소 */ </if>
+    , bizcatg
+    , biztyp
+    , tel_no             /* 전화 번호 */
+    , fax
+    , natn_cd            /* 국가 코드 */
+    , dom_excpt_clsf
+    , pur_use_yn
+    , resch_use_yn
+    , techsup_use_yn
+   <if test='cmpy_typ != null'> , cmpy_typ /* 기업 구분*/ </if>
+    , use_yn
+    , regst_syspayno
+    , regst_daytm
+ ) VALUES(
+        #{vend_cd}
+      , #{sys_clsf}
+      , #{vend_clsf}
+      , #{bsns_psn_regst_no}
+      , #{corp_resid_no}
+      , #{vend_abbr}
+      , #{vend_fulnm}
+      , #{reprs_psn_nm}
+      , #{zero_taxrts_yn}
+      , #{postmt_no}
+      , #{addr}
+     <if test='detls_addr != null'> , #{detls_addr}  </if>
+      , #{bizcatg}
+      , #{biztyp}
+      , #{tel_no}
+      , #{fax}
+      , #{natn_cd}
+      , #{dom_excpt_clsf}
+      , #{pur_use_yn}
+      , #{resch_use_yn}
+      , #{techsup_use_yn}
+     <if test='cmpy_typ != null'> , #{cmpy_typ} </if>
+      , #{use_yn}
+      , #{regst_syspayno}
+      , SYSDATE
+     )
+</insert>
+</mapper>

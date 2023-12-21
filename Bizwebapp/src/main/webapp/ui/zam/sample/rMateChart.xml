@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/ext/rMateChart/rMateChartH5/Assets/Css/rMateChartH5.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head>
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+   /*-------------------------------------------------------------------
+    rMateChart 샘플 페이지
+    rMateChart의 API 정보 확인 :  http://localhost:8080/cm/ext/rMateChart/index.html
+    
+    rMateChart 설정 내역 
+    1. /websquare/config.xml 라이브러리 임포트
+    2. /cm/layout/header.xml rMateChart 데이터 에디터 관련 설정 
+    3. commonScope.js 공통 함수 추가
+        - com.getChartDefOpt  : 빈 차트 옵션 객체 리턴
+        - com.makeChart : 전달받은 옵션으로 차트를 생성 하는 함수
+   ---------------------------------------------------------------------*/
+       
+	scwin.onpageload = function() {	
+		
+		scwin.makeSampleChart();
+        scwin.makeGaugeChart();
+        scwin.makePieChart();
+        scwin.makeWordCloudChart();
+        
+        // 차트 목록 페이지 나갈때 생성된 차트들을 삭제 하기 위해 필요
+        scwin.chartDivList = [
+            chartDiv.getID()+"_chart"
+            , chartBoxGauge.getID()+"_chart"
+            , chartBoxPie.getID()+"_chart"
+            , chartBoxWordCl.getID()+"_chart"
+        ];
+	};
+	
+ 	
+ 
+	// xml layout 파일을 이용한 차트 생성
+	scwin.makeSampleChart = function() {
+        var chartData  =  
+                  [{"Month":"Jan", "2011":2.4},
+                  {"Month":"Feb", "2011":3.8},
+                  {"Month":"Mar", "2011":8.1},
+                  {"Month":"Apr", "2011":5.1},
+                  {"Month":"May", "2011":2.1},
+                  {"Month":"Jun", "2011":5.2},
+                  {"Month":"Jul", "2011":4.2}];
+                 
+        let defChartOp = com.getChartDefOpt();  // 빈 차트 옵션 객체를 리턴한다.
+        
+        defChartOp.layoutUrl = "/ui/zam/sample/chartLayout/sampleChart.xml";          
+        defChartOp.data = chartData;        // json Array   
+        defChartOp.chartBox = chartDiv;     // 차트 생성 영역의 group component          
+        defChartOp.useDataEditor = "true";    // 데이터 에디터 사용 여부
+        
+        // 시각장애인용 패턴 사용 여부
+        // 패턴 적용을 하려면 차트 layout.xml파일에도 옵션을 넣어줘야 함.
+        // 예) <Line2DChart showDataTips="true" enablePattern="true">
+        defChartOp.usePattern = "true";    // 시각장애인용 패턴 사용 여부
+        
+        com.makeChart(defChartOp);
+        
+	}
+    
+    // 페이지 닫기 이벤트 핸들러
+	scwin.onpageunload = function() {
+		// 생성된 차트를 삭제 한다.
+        scwin.chartDivList.forEach(function(dt, ids){
+            if(rMateChartH5.instances[dt]) {
+	           rMateChartH5.instances[dt].destroy();
+	        }
+	    });
+	};
+	
+	// 2dline 차트로 변경
+	scwin.btnChCart_onclick = function(e) {
+		let chartObj = document.getElementById(chartDiv.getID() + "_chart");
+        
+        chartObj.setLayoutURL("/ui/zam/sample/chartLayout/sampleChartLine2D.xml");
+	};
+	
+    // 2D칼럼 차트로 변경
+	scwin.btnChartCol_onclick = function(e) {
+		
+        let chartObj = document.getElementById(chartDiv.getID() + "_chart");
+        
+        chartObj.setLayoutURL("/ui/zam/sample/chartLayout/sampleChart.xml");
+	};
+	
+    // 3d 칼럼 차트로 변경
+	scwin.btnChartCol3d_onclick = function(e) {
+		
+        let chartObj = document.getElementById(chartDiv.getID() + "_chart");
+        
+        chartObj.setLayoutURL("/ui/zam/sample/chartLayout/sampleChartCol3D.xml");
+	};
+	
+    // 드릴다운 차트 칼럼 클릭 이벤트 핸들러
+    // 차트 레이아웃에서 설정. smapChart.xml 파일에 itemClickJsFunction="itemClick" 설정되어있음
+    // 이 함수는 scwin.으로 설정 하면 인식되 않음.
+    function itemClick(seriesId, displayText, index, data, values) {
+
+        var data, depth;
+        depth = document.getElementById(chartDiv.getID() + "_chart").getDrillDownDepth();
+        if(depth == 1){
+            com.alert("드릴다운 차트의 마지막 입니다.");
+            return;
+        }
+        document.getElementById(chartDiv.getID() + "_chart").setDataDrilldown(scwin.makeData(depth, data));
+    }
+    
+    // 드릴다운 데이터 조회 및 리턴 
+    // 드릴다운 차트에 해당 하는 데이터를 조회 하여 리턴 한다.
+    scwin.makeData = function(depth, data) {
+        
+        var i = 0, n, arr = [], obj,
+        categoryDatas = [
+            ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        ];
+        
+        n = categoryDatas[depth].length;
+        for(i ; i < n ; i += 1){
+            obj = {};
+            obj.Month = categoryDatas[depth][i];
+            obj["2011"] = Math.round(Math.random() * 1500);
+            arr.push(obj);
+        }
+        
+        return arr;
+    }
+    
+    
+    /**
+     * 게이지 차트 생성
+     */
+    scwin.makeGaugeChart = function() {
+	    
+        var chartData = [80];
+                 
+        let defChartOp = com.getChartDefOpt();  // 빈 차트 옵션 객체를 리턴한다.
+        
+        defChartOp.layoutUrl = "/ui/zam/sample/chartLayout/sampleChartGauge.xml";          
+        defChartOp.data = chartData;        // json Array   
+        defChartOp.chartBox = chartBoxGauge;     // 차트 생성 영역의 group component 
+        
+        com.makeChart(defChartOp);
+	}
+    
+    /**
+     * 파이 차트 생성
+     */
+    scwin.makePieChart = function() {
+        var chartData =[
+            {"Month":"Jan", "Sales":42000},
+            {"Month":"Feb", "Sales":15000},
+            {"Month":"Mar", "Sales":10000},
+            {"Month":"Apr", "Sales":9000},
+            {"Month":"May", "Sales":18000},
+            {"Month":"Jun", "Sales":20000}];
+            
+        
+        let defChartOp = com.getChartDefOpt();  // 빈 차트 옵션 객체를 리턴한다.
+        
+        defChartOp.layoutUrl = "/ui/zam/sample/chartLayout/sampleChartPie.xml";          
+        defChartOp.data = chartData;        // json Array   
+        defChartOp.chartBox = chartBoxPie;     // 차트 생성 영역의 group component          
+        defChartOp.useDataEditor = "true";    // 데이터 에디터 사용 여부
+        
+        com.makeChart(defChartOp);    
+    }
+    
+    /**
+     * 워드클라우드 차트 생성
+     */
+    scwin.makeWordCloudChart = function() {
+        var chartData = [
+            {"text":"용기", "value":12},
+            {"text":"치유", "value":8},
+            {"text":"행복하다", "value":9},
+            {"text":"좋아요", "value":3},
+            {"text":"함께해요", "value":3},
+            {"text":"사람들", "value":1},
+            {"text":"블랙홀", "value":11},
+            {"text":"우리", "value":8},
+            {"text":"엄마","value":9},
+            {"text":"클로드모네", "value":9},
+            {"text":"힘내자", "value":2},
+            {"text":"은하수", "value":3},
+            {"text":"맛있다", "value":1},
+            {"text":"오늘하루", "value":1},
+            {"text":"본능", "value":4},
+            {"text":"빛", "value":8},
+            {"text":"비밀", "value":9},
+            {"text":"즐겁게", "value":9},
+            {"text":"혁명", "value":2},
+            {"text":"감성", "value":1},
+            {"text":"우주", "value":10},
+            {"text":"새벽", "value":16},
+            {"text":"냉정", "value":6},
+            {"text":"여행", "value":8}];
+            
+        
+        let defChartOp = com.getChartDefOpt();  // 빈 차트 옵션 객체를 리턴한다.
+        
+        defChartOp.layoutUrl = "/ui/zam/sample/chartLayout/sampleChartWordCloud.xml";          
+        defChartOp.data = chartData;        // json Array   
+        defChartOp.chartBox = chartBoxWordCl;     // 차트 생성 영역의 group component
+        
+        com.makeChart(defChartOp);    
+        
+    }]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+        <w2:textbox id="" label="rmate차트 테스트" style="width: 150px;height: 23px;" tagname="span"></w2:textbox>
+        <w2:textbox id="btnChCart" label="차트변경(2D_LINE)" style="" ev:onclick="scwin.btnChCart_onclick" class="btn blue ml10" tagname="a"></w2:textbox>
+        <w2:textbox class="btn blue" id="btnChartCol" label="차트변경(2D_COL)" style="" tagname="a" ev:onclick="scwin.btnChartCol_onclick"></w2:textbox>
+        <w2:textbox class="btn blue" id="btnChartCol3d" label="차트변경(3D_COL)" style="" tagname="a"
+            ev:onclick="scwin.btnChartCol3d_onclick">
+        </w2:textbox>
+        <xf:group style="height: 400px;" id="chartDiv"></xf:group>
+        <xf:group style="height:400px;width:500px;border: solid 1px" id="chartBoxGauge"></xf:group>
+        <xf:group id="chartBoxPie" style="height:400px;width:500px;border: solid 1px;"></xf:group>
+        <xf:group id="chartBoxWordCl" style="height:400px;width:500px;border: solid 1px;"></xf:group>
+    </body>
+</html>

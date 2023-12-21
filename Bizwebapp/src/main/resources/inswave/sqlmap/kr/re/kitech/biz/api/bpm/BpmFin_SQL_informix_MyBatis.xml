@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.apr.bpm">
+<!-- 입금구분 조회 -->
+<select id="selectDepstClsf" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.apr.bpm.selectDepstClsf */
+       MAX(depst_clsf) AS depst_clsf
+FROM   fcpdepstreq
+WHERE  unslip_no = #{unslip_no}
+</select>
+
+<!-- 결재완료시 입회검수일자 업데이트 -->
+<update id="updateFspSmlItmCheckupHApr" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE /* kr.re.kitech.biz.apr.bpm.updateFspSmlItmCheckupHApr */
+      fspsmlitmcheckuph
+SET 
+ <choose>
+    <when test='aprState != null and aprState == "XAD070"'> 
+    	inspect_ymd = TO_CHAR(SYSDATE, '%Y%m%d'),
+   	</when>
+    <otherwise> 
+    	entsch_check_ymd = TO_CHAR(SYSDATE, '%Y%m%d'), 
+    	entsch_check_psn = #{syspayno},
+   		entsch_check_dept = #{deptCd},
+   		entsch_check_dept_new_ymd = (SELECT dept_new_ymd FROM xodhdeptinfo WHERE dept_cd = #{deptCd} AND abol_ymd IS NULL),
+    </otherwise>
+  </choose>
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = SYSDATE
+WHERE check_no = #{reqNo}
+</update>
+
+<!-- 소액물품 결재완료시 화학물질 조회 -->
+<select id="selectSfcChmClssafEdcdfpInfoList" parameterType="java.lang.String" resultType="kr.re.kitech.biz.api.server.vo.biz.SfcChmclVo">
+SELECT /* kr.re.kitech.biz.apr.bpm.selectSfcChmClssafEdcdfpInfoList */
+      sc1.req_no, 
+      sc3.prduct_cd,
+      sc3.item_qty,
+      sc2.space_cd    
+  FROM sfcchmclssafedcdfprinfo sc1
+  JOIN csfspace sc2 ON sc1.lab_no = sc2.lab_no
+  LEFT JOIN sfcchmclssafedcdfprdetail sc3 ON sc1.req_no = sc3.req_no
+ WHERE (sc1.req_no = #{req_no} OR sc1.pur_req_no = #{req_no})
+   AND sc1.pur_req_no != ''
+</select>
+
+<!--  소액물품 결재완료시 화학물질 등록 -->
+<insert id="insertSfcPrductQyInfo" parameterType="kr.re.kitech.biz.api.server.vo.biz.SfcChmclVo">
+INSERT /* kr.re.kitech.biz.apr.bpm.insertSfcPrductQyInfo */
+   INTO sfcprductqyinfo
+(
+    req_no
+  <if test='space_cd != null'> , space_cd </if>
+  <if test='prduct_cd != null'> , prduct_cd </if>
+  , seq 
+  <if test='item_qty != null'> , item_qty </if>
+  <if test='item_unit != null'> , item_unit </if>
+  , prdu_state
+  <if test='use_daytm != null'> , use_daytm </if>
+  , use_req_no
+  , regst_psn_syspayno
+  , regst_daytm
+)
+VALUES
+(     #{req_no}
+   <if test='space_cd != null'> , #{space_cd} </if>
+   <if test='prduct_cd != null'> , #{prduct_cd} </if>
+    , #{seq} 
+   <if test='item_qty != null'> , #{item_qty} </if>
+   <if test='item_unit != null'> , #{item_unit} </if>
+    , 'SFB010'
+    <if test='use_daytm != null'> , #{use_daytm} </if>
+    , #{use_req_no}
+    , #{regst_syspayno}
+    , SYSDATE
+)
+</insert>
+
+<select id="selectSfcChmSafeReqNo" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT 	req_no
+FROM	sfcchmclssafedcdfprinfo
+WHERE	pur_req_no = #{req_no}
+</select>
+
+<delete id="deleteSfcPrductQyInfo" parameterType="java.lang.String">
+DELETE	sfcprductqyinfo
+WHERE	req_no = #{req_no}
+;
+UPDATE	sfcchmclssafedcdfprinfo
+SET		pur_req_no = ''
+WHERE	req_no = #{req_no}
+;
+</delete>
+
+
+<!--  결의서 결재반려 이력 메인 테이블 저장 -->
+<insert id="insertFspSlipRjct" useGeneratedKeys="true" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipRjctVo">
+
+	INSERT
+		/* kr.re.kitech.biz.ccs.ctr.insertFspSlipRjct */ 
+		INTO fspsliprjct (
+	      unslip_no
+	    , <if test='attach_no != null'> attach_no </if>
+	    , apr_state
+	    , rct_content
+	    , regst_syspayno
+	) VALUES (
+	      #{unslip_no}
+	    , <if test='attach_no != null'> #{attach_no}</if>
+	    , #{apr_state}
+	    , #{rct_content}, #{regst_syspayno}
+	)
+   	<selectKey keyProperty="reject_no" resultType="int" order="AFTER">
+        SELECT dbinfo('sqlca.sqlerrd1') AS reject_no FROM systables WHERE tabid=1
+	</selectKey>
+</insert>
+
+<!--  결의서 결재반려 이력  fspsliph/fspslipd 및 sendreq 테이블 저장 -->
+<insert id="insertFspSlipRjctEtc" useGeneratedKeys="true" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipRjctVo">
+	INSERT INTO fspsliphrjct (
+	    reject_no, unslip_no, slip_typ_cd, wrte_dept, wrte_dept_new_ymd, wrte_psn, slip_ymd, wrte_ymd, accnt_ymd
+	  , decsn_ex, slip_no, rmk, confirm_psn, regst_syspayno, regst_daytm, updt_syspayno, updt_daytm)
+	SELECT
+	      ${reject_no} AS reject_no
+	    , unslip_no, slip_typ_cd, wrte_dept, wrte_dept_new_ymd, wrte_psn, slip_ymd, wrte_ymd, accnt_ymd
+	  	, decsn_ex, slip_no, rmk, confirm_psn, regst_syspayno, regst_daytm, updt_syspayno, updt_daytm
+	FROM fspsliph
+	WHERE unslip_no = #{unslip_no}
+	;
+	
+	INSERT INTO fspslipdrjct (
+	      reject_no, unslip_no, unslip_odr, mngmt_clsf, fomat_unit, journ_cd, journ_odr, base_debit_cr, accnt_no, accnt_rspns
+	    , accnt_cd, expns_cd, total_amt, unslip_amt, tax_amt, bugt_item_cd, bugt_ctrl_way, ctrl_ex, ctrl_no, evid_cd, ramt_mngmt_1
+	    , ramt_mngmt_2, contpat_accnt_cd, rmk_1, rmk_2, rmk_3, req_no, attach_file_no, occr_slip_no, occr_slip_odr, occr_unslip_odr
+	    , pay_clsf, bill_no, bsns_psn_regst_no, part_all_clsf, accnt_no_clsf, pay_accnt_cd, rcms_pay_clsf, rcms_pay_state
+	    , rcms_pay_unslip_no, rcms_pay_unslip_odr, regst_req_daytm, regst_req_psn, apprvl_req_daytm, apprvl_req_psn, apprvl_daytm
+	    , apprvl_psn, apprvl_amt, rcms_rmk, upfile_nm, regst_syspayno, regst_daytm, updt_syspayno, updt_daytm)
+	SELECT
+	      ${reject_no} AS reject_no
+	    , unslip_no, unslip_odr, mngmt_clsf, fomat_unit, journ_cd, journ_odr, base_debit_cr, accnt_no, accnt_rspns
+	    , accnt_cd, expns_cd, total_amt, unslip_amt, tax_amt, bugt_item_cd, bugt_ctrl_way, ctrl_ex, ctrl_no, evid_cd, ramt_mngmt_1
+	    , ramt_mngmt_2, contpat_accnt_cd, rmk_1, rmk_2, rmk_3, req_no, attach_file_no, occr_slip_no, occr_slip_odr, occr_unslip_odr
+	    , pay_clsf, bill_no, bsns_psn_regst_no, part_all_clsf, accnt_no_clsf, pay_accnt_cd, rcms_pay_clsf, rcms_pay_state
+	    , rcms_pay_unslip_no, rcms_pay_unslip_odr, regst_req_daytm, regst_req_psn, apprvl_req_daytm, apprvl_req_psn, apprvl_daytm
+	    , apprvl_psn, apprvl_amt, rcms_rmk, upfile_nm, regst_syspayno, regst_daytm, updt_syspayno, updt_daytm
+	FROM fspslipd
+	WHERE unslip_no = #{unslip_no}
+	;
+	
+	INSERT INTO fspsendreqrjct (
+	      reject_no, unslip_no, unslip_odr, send_odr, pay_clsf, send_req_amt, send_amt, vend_cd, vend_nm, syspayno, bankaccnt_no
+	    , bank, depstr_nm, card_no, use_ymd, apprvl_no, bsns_psn_regst_no, joinsto_nm, focurr_send_req_amt, focurr_send_amt, exchgr
+	    , giro_cash_clsf, pay_unslip_no, pay_unslip_odr, occr_slip_no, occr_slip_odr, rmk, is_account, regst_syspayno
+	    , regst_daytm, updt_syspayno, updt_daytm)
+	SELECT
+	      ${reject_no} AS reject_no
+	    , unslip_no, unslip_odr, send_odr, pay_clsf, send_req_amt, send_amt, vend_cd, vend_nm, syspayno, bankaccnt_no, bank
+	    , depstr_nm, card_no, use_ymd, apprvl_no, bsns_psn_regst_no, joinsto_nm, focurr_send_req_amt, focurr_send_amt, exchgr
+	    , giro_cash_clsf, pay_unslip_no, pay_unslip_odr, occr_slip_no, occr_slip_odr, rmk, is_account, regst_syspayno
+	    , regst_daytm, updt_syspayno, updt_daytm
+	FROM fspsendreq
+	WHERE unslip_no = #{unslip_no}
+	;
+</insert>
+</mapper>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.itd">
+  <select id="selectPatItdLst" parameterType="kr.re.kitech.biz.pat.itd.vo.PatItdLstVo" resultType="kr.re.kitech.biz.pat.itd.vo.PatItdLstVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.itd.selectPatItdLst */ 
+		 ptd.req_no
+    , ptd.mngmt_no
+    , ptd.work_id AS ref_no
+    , mst.invnt_krn_nm
+    , hum.nm AS invnt_psn_nm
+    , pof.patofic_nm
+    , ptd.job_title
+    , ptd.todo_title
+    , ptd.todo_due_date
+    , CASE WHEN DATE(TO_DATE(ptd.todo_due_date, '%Y%m%d')) - TODAY <![CDATA[ <= ]]> 7 THEN '1'
+           WHEN DATE(TO_DATE(ptd.todo_due_date, '%Y%m%d')) - TODAY <![CDATA[ > ]]> 7 THEN '2'
+           ELSE '3' END todo_pro
+    , ptd.page_id
+    , ptd.page_detail_id
+  FROM pattodo ptd
+INNER JOIN patmastr mst ON mst.req_no = ptd.req_no AND mst.mngmt_no = ptd.mngmt_no
+INNER JOIN humbasicinfo hum ON hum.syspayno = mst.invnt_syspayno
+INNER JOIN patoffice pof ON pof.patofic_cd = mst.patofic_cd
+ WHERE ptd.end_yn = 'N'
+   AND ptd.todo_auth = '0'
+   AND (mst.invnt_syspayno = #{invnt_syspayno} OR mst.mandate_psn_syspayno = #{mandate_psn_syspayno})
+   <if test = 'req_no != null and req_no != ""'>
+   AND mst.req_no = #{req_no}
+   </if>
+   <if test = 'mngmt_no != null and mngmt_no != ""'>
+   AND mst.mngmt_no = #{mngmt_no}
+   </if>
+   <if test = 'invnt_krn_nm != null and invnt_krn_nm != ""'>
+   AND mst.invnt_krn_nm LIKE #{invnt_krn_nm}
+   </if>
+   <if test = 'pat_clsf != null and pat_clsf != ""'>
+   AND mst.pat_clsf = #{pat_clsf}
+   </if>
+  </select>
+</mapper>

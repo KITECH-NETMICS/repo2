@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="묻고답하기">
+    	<w2:type>DEFAULT</w2:type>
+    	<w2:buildDate />
+    	<xf:model>
+    		<xf:instance>
+    			<data xmlns="" />
+    		</xf:instance>
+    		<w2:dataCollection baseNode="map">
+    			<w2:dataMap baseNode="map" id="dma_qna">
+    				<w2:keyInfo>
+    					<w2:key id="quest_title" name="quest_title" dataType="text"></w2:key>
+    					<w2:key id="quest_psn_syspayno" name="quest_psn_syspayno" dataType="text"></w2:key>
+    					<w2:key id="qna_id" name="qna_id" dataType="text"></w2:key>
+    					<w2:key id="quest_daytm" name="quest_daytm" dataType="text"></w2:key>
+    					<w2:key id="answer_ex" name="answer_ex" dataType="text"></w2:key>
+    					<w2:key id="patofic_cd" name="patofic_cd" dataType="text"></w2:key>
+    					<w2:key id="start_daytm" name="start_daytm" dataType="text"></w2:key>
+    					<w2:key id="end_daytm" name="end_daytm" dataType="text"></w2:key>
+    					<w2:key id="patofic_nm" name="patofic_nm" dataType="text"></w2:key>
+    					<w2:key id="patofic_charg_id" name="patofic_charg_id" dataType="text"></w2:key>
+    					<w2:key id="patofic_charg_nm" name="patofic_charg_nm" dataType="text"></w2:key>
+    				</w2:keyInfo>
+    			</w2:dataMap>
+    			<w2:dataList baseNode="list" repeatNode="map" id="dlt_qnaList" saveRemovedData="true">
+    				<w2:columnInfo>
+    					<w2:column id="qna_id" name="묻고답하기 ID" dataType="text"></w2:column>
+    					<w2:column id="quest_title" name="묻고답하기 제목" dataType="text"></w2:column>
+    					<w2:column id="patofic_cd" name="특허사무소명" dataType="text"></w2:column>
+    					<w2:column id="quest_title" name="묻고답하기 제목" dataType="text"></w2:column>
+    					<w2:column id="quest_psn_syspayno" name="질문 작성자" dataType="text"></w2:column>
+    					<w2:column id="quest_daytm" name="질문 작성일" dataType="text"></w2:column>
+    					<w2:column id="answer_psn_syspayno" name="답변 작성자" dataType="text"></w2:column>
+    					<w2:column id="answer_daytm" name="답변 작성일" dataType="text"></w2:column>
+    					<w2:column id="answer_ex" name="상태" dataType="text"></w2:column>
+    					<w2:column id="send_clsf" name="이관유무" dataType="text"></w2:column>
+    					<w2:column id="start_daytm" name="start_daytm" dataType="text"></w2:column>
+    					<w2:column id="end_daytm" name="end_daytm" dataType="text"></w2:column>
+    					<w2:column id="patofic_nm" name="patofic_nm" dataType="text"></w2:column>
+    					<w2:column id="send_clsf_stat" name="send_clsf_stat" dataType="text"></w2:column>
+    					<w2:column id="answer_psn_syspaynm" name="answer_psn_syspaynm" dataType="text"></w2:column>
+    					<w2:column id="wri_psn_syspaynm" name="wri_psn_syspaynm" dataType="text"></w2:column>
+    					<w2:column id="answer_ex_stat" name="answer_ex_stat" dataType="text"></w2:column>
+    				</w2:columnInfo>
+    			</w2:dataList>
+    		</w2:dataCollection>
+    		<w2:workflowCollection></w2:workflowCollection>
+    		<xf:submission id="sbm_selectPatQnaList" ref='data:json,dma_qna'
+    			target='data:json,{"id":"dlt_qnaList","key":"patQnaVoList"}' action="SvcPATPBDQNAL01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    	</xf:model>
+    	<script src="/cm/js/biz/pat.js" cache="false" />
+    	<script type="text/javascript" lazy="false"><![CDATA[
+        
+    // 페이지 로드 이벤트
+	scwin.onpageload = function() {
+		var today = com.getServerDateTime();
+		var codeOptions = [
+		 ];
+		
+		com.setCmnCd(codeOptions, function() {
+			com.initDataMap(dma_qna);
+		});
+		
+		scwin.schQnaList();
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/******
+	*
+	*    사용자 정의 함수
+	*
+	*******/
+	
+	// 공지사항 목록 검색
+	scwin.schQnaList = function() {
+		// 목록 조회
+		com.execute(sbm_selectPatQnaList, {
+			successCallback : function(e) {
+				tbx_result.setValue(dlt_qnaList.getTotalRow());
+			}
+		});
+	};
+	
+	// 등록 페이지로 이동
+	scwin.openDetail = function(data) {
+		com.openTabMenu("IC59", data, function() {
+			scwin.schQnaList();
+		});
+	};
+	
+	/******
+	*
+	*    컴포넌트 이벤트
+	*
+	*******/
+	
+	// 검색 버튼 클릭 이벤트
+	scwin.btn_search_onclick = function() {
+		scwin.schQnaList();
+	};
+	
+	
+	// 그리드 클릭 이벤트 ( 상세 페이지로 이동 "공지사항 제목" 컬럼 클릭 시에만 실행함)
+	scwin.grd_qnaList_oncellclick = function(row,col,colId) {
+		if (colId === "quest_title") {
+			var data = {
+				qna_id : dlt_qnaList.getCellData(row, "qna_id")
+			};
+			scwin.openDetail(data);
+		}
+	};
+	
+	// 사원검색 돋보기 아이콘 클릭 이벤트
+	scwin.btn_search_pat_onclick = function(e) {
+		scwin.selectPatBtn("img");
+	};
+	
+	// 사원검색 돋보기 아이콘 클릭 이벤트
+	scwin.btn_search_pat_psn_onclick = function(e) {
+		scwin.selectPatPsnBtn("img");
+	};
+	
+	// 사무소 팝업 호출
+	scwin.selectPatBtn = function(data) {
+		var data ={
+			mou_ex : "Y",
+			patofic_nm : ibx_patofic_nm.getValue()	
+		};
+		
+		biz.pat.pop.open(biz.pat.pop.TYPE.PAT_OFFICE, data, function(ret) {
+			dma_qna.set("patofic_cd", ret.patofic_cd);
+			dma_qna.set("patofic_nm", ret.patofic_nm);
+		});
+	};
+	
+	// 사무소 작성자 팝업 호출
+	scwin.selectPatPsnBtn = function(data) {
+		var data ={
+			mou_ex : "Y",
+			patofic_nm : ibx_patofic_nm.getValue(),
+			startTabValue : "psn"	
+		};
+		
+		biz.pat.pop.open(biz.pat.pop.TYPE.PAT_OFFICE, data, function(ret) {
+			dma_qna.set("patofic_charg_id", ret.charg_id);
+			dma_qna.set("patofic_charg_nm", ret.charg_nm);
+		});
+	};
+	
+	// 신규 버튼 클릭 이벤트
+	scwin.btn_req_onclick = function(e) {
+		scwin.openDetail({});
+	};
+	
+	scwin.inp_empno_onchange = function(info) {
+		if(info.newValue == "") {	
+			tb_nm.setValue("");
+			dma_qna.set("wri_psn_syspayno", "");
+		}
+	};
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="width:240px" tagname="col"></xf:group>
+    						<xf:group style="width:156px;" tagname="col"></xf:group>
+    						<xf:group style="width:287px;" tagname="col"></xf:group>
+    						<xf:group style="width:159px;" tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="작성일자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpcalWrap" id="" style="">
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    									footerDiv="false" id="inputSlipYmdFrom" ref="data:dma_qna.start_daytm" placeholder="시작일" renderDiv="true"
+    									rightAlign="false" style="">
+    								</w2:inputCalendar>
+    								<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    									footerDiv="false" id="inputSlipYmdTo" ref="data:dma_qna.end_daytm" placeholder="종료일" renderDiv="true" rightAlign="false"
+    									style="">
+    								</w2:inputCalendar>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="사무소" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" ev:onchange="scwin.inp_empno_onchange"
+    								ev:onkeypress="scwin.inp_empno_onkeypress" id="ibx_patofic_cd" ref="data:dma_qna.patofic_cd" style="width:120px" title="성명">
+    							</xf:input>
+    							<xf:trigger class="btn"  id="btn_pat_search" style="" title="특허사무소 조회" type="button"
+    								ev:onclick="scwin.btn_search_pat_onclick">
+    								<xf:label><![CDATA[검색]]></xf:label>
+    							</xf:trigger>
+    							<xf:input adjustMaxLength="false" class="inp" disabled="true" id="ibx_patofic_nm" ref="data:dma_qna.patofic_nm"
+    								style="width: 100px;" title="특허사무소 상세">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="작성자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpSch" id="" style="width: 120px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="inp_emp_no" style="" ref="data:dma_qna.patofic_charg_id"
+    									title="성명" ev:onkeypress="scwin.inp_empno_onkeypress" ev:onchange="scwin.inp_empno_onchange">
+    								</xf:input>
+    								<xf:trigger class="btn" id="btn_pat_psn_search" style="" title="성명 조회" type="button"
+    									ev:onclick="scwin.btn_search_pat_psn_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_nm" style="width: 100px;" ref="data:dma_qna.patofic_charg_nm"
+    								title="성명 상세" disabled="true">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="제목" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes><w2:colspan>3</w2:colspan><w2:rowspan>1</w2:rowspan></w2:attributes><xf:input adjustMaxLength="false" class="inp" id="inputSlipNo" ref="data:dma_qna.quest_title" style="width:665px"
+    								title="신청번호">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="상태" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-전체-" class="sel"
+    									direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_inout_psn_clsf_cd"
+    									ref="data:dma_qna.answer_ex" style="width:118px;" submenuSize="auto" title="내외자구분" visibleRowNum="10">
+    									<xf:choices>
+    										<xf:item>
+    											<xf:label><![CDATA[답변준비중]]></xf:label>
+    											<xf:value><![CDATA[N]]></xf:value>
+    										</xf:item>
+    										<xf:item>
+    											<xf:label><![CDATA[답변완료]]></xf:label>
+    											<xf:value><![CDATA[Y]]></xf:value>
+    										</xf:item>
+    									</xf:choices>
+    								</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search_list" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<xf:group class="le" id="" style="">
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:group style="" id="" class="btnarea">
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_qnaList" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_qnaList"
+    			visibleRowNum="20" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_qnaList_oncellclick"
+    			fixedRow="0" filterFocusMode="outfocus" sortEvent="onclick" sortable="true">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="365" inputType="text" style="height:28px;" id="column7" value="제목" displayMode="label"></w2:column>
+    					<w2:column width="98" inputType="text" style="height:28px" id="column21" value="사무소" displayMode="label"></w2:column>
+    					<w2:column width="71" inputType="text" style="height:28px;" id="column3" value="작성자" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column20" value="작성일" displayMode="label"></w2:column>
+    					<w2:column width="75" inputType="text" style="height:28px;" id="column23" value="답변자" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column24" value="답변일" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column25" value="상태" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column26" value="이관유무" displayMode="label"></w2:column>
+    					<w2:column width="114" inputType="text" style="height:28px;" id="qna_id_hd" value="qna_id" displayMode="label"
+    						hidden="true">
+    					</w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="365" inputType="link" readOnly="true" style="height:28px;align:left" id="quest_title" class="le"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="98" inputType="text" readOnly="true" style="" id="patofic_nm" displayMode="label"></w2:column>
+    					<w2:column width="71" inputType="text" readOnly="true" style="height:28px;" id="wri_psn_syspaynm"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="quest_daytm" displayMode="label"
+    						displayFormat="yyyy-MM-dd" dataType="date">
+    					</w2:column>
+    					<w2:column width="75" inputType="text" readOnly="true" style="height:28px;" id="answer_psn_syspaynm"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="answer_daytm" displayFormat="yyyy-MM-dd" dataType="date"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="answer_ex_stat"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="send_clsf_stat"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="114" inputType="text" style="height:28px;" id="qna_id" value="" displayMode="label"
+    						hidden="true">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

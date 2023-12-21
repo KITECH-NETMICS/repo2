@@ -1,0 +1,1007 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="kr.re.kitech.biz.api.eip">
+<!-- 참여회의록 조회 -->
+<select id="selectMNoteList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipMNoteVo">
+SELECT /* kr.re.kitech.biz.api.eip.selectMNoteList */
+      a.req_ymd,
+      CASE WHEN a.meet_start_ymd <![CDATA[ <> ]]> a.meet_cls_ymd THEN a.meet_start_ymd||'~'||a.meet_cls_ymd ELSE a.meet_start_ymd END AS meet_ymd,
+      a.meet_subject AS meet_nm,
+      fun_humbasicinfo_cd_nm(a.req_syspayno, 0) AS nm ,-- 작성자
+      a.meet_req_no AS meet_no, -- 회의록 신청번호
+      a.accnt_no, --계정번호
+      <![CDATA['/filter/index.jsp?serviceid=F241&meet_req_no=']]>||a.meet_req_no AS URL --회의록 상세 주소               
+FROM fspmeetmnth a
+JOIN fspmeetmntd b ON a.meet_req_no = b.meet_req_no
+WHERE a.meet_start_ymd  > TO_CHAR(today-10, '%Y%m%d') -- 최근 10일
+AND b.syspayno = #{syspayno}
+AND a.req_syspayno <![CDATA[ <> ]]> #{syspayno}
+GROUP BY 1,2,3,4,5,6,7
+</select>
+	
+<!-- 미처리회의록 조회 (작성한회의록)-->
+<select id="selectMNoteWriteList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipMNoteVo">
+SELECT /* kr.re.kitech.biz.api.eip.selectMNoteWriteList */
+       a.req_ymd,
+       CASE WHEN a.meet_start_ymd <![CDATA[<>]]> a.meet_cls_ymd THEN a.meet_start_ymd||'~'||a.meet_cls_ymd ELSE a.meet_start_ymd END AS meet_ymd,
+       a.meet_subject AS meet_nm,
+       fun_humbasicinfo_cd_nm(a.req_syspayno, 0) AS nm ,-- 작성자
+       a.meet_req_no AS meet_no, -- 회의록 신청번호
+       a.accnt_no, -- 계정번호
+       GROUP_CONCAT(h.unslip_no) AS unslip_no, --결의번호
+       <![CDATA['https://biz.kitech.re.kr/kitech/index.jsp?serviceid=F241&meet_req_no=' ]]> ||a.meet_req_no AS URL --회의록 상세 주소              
+FROM fspmeetmnth a 
+JOIN fspmeetmntd b ON a.meet_req_no = b.meet_req_no
+LEFT JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+LEFT JOIN humbasicinfo d ON c.accnt_rspns = d.syspayno
+LEFT JOIN xodrdeptresman  e ON d.dept_cd = e.dept_cd AND d.dept_new_ymd = e.dept_new_ymd
+JOIN fspmeetevidh f ON a.meet_req_no = f.meet_req_no
+LEFT JOIN fspevidrptkey g ON f.meet_req_no = g.key_val
+LEFT JOIN fspevidattach h ON g.evid_mngmt_no = h.evid_mngmt_no AND g.evid_item_cd = h.evid_item_cd AND g.evid_mngmt_seq = h.evid_mngmt_seq
+LEFT JOIN xomxintfatab i ON i.req_no = h.unslip_no -- 상태값 추가
+WHERE a.meet_start_ymd  > TO_CHAR(today-15, '%Y%m%d') -- 최근 15일
+AND (a.req_syspayno = #{syspayno} OR e.syspayno = #{syspayno})
+AND i.apr_state <![CDATA[ < ]]> 'XAD016'
+GROUP BY 1,2,3,4,5,6
+
+UNION ALL
+
+SELECT /* kr.re.kitech.biz.api.eip.selectMNoteWriteList */
+       a.req_ymd,
+       CASE WHEN a.meet_start_ymd <![CDATA[<>]]> a.meet_cls_ymd THEN a.meet_start_ymd||'~'||a.meet_cls_ymd ELSE a.meet_start_ymd END AS meet_ymd,
+       a.meet_subject AS meet_nm,
+       fun_humbasicinfo_cd_nm(a.req_syspayno, 0) AS nm ,-- 작성자
+       a.meet_req_no AS meet_no, -- 회의록 신청번호
+       a.accnt_no, -- 계정번호
+       GROUP_CONCAT(h.unslip_no) AS unslip_no, --결의번호
+       <![CDATA['https://biz.kitech.re.kr/kitech/index.jsp?serviceid=F241&meet_req_no=' ]]> ||a.meet_req_no AS URL --회의록 상세 주소             
+FROM fspmeetmnth a 
+JOIN fspmeetmntd b ON a.meet_req_no = b.meet_req_no
+LEFT JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+LEFT JOIN humbasicinfo d ON c.accnt_rspns = d.syspayno
+LEFT JOIN xodrdeptresman  e ON d.dept_cd = e.dept_cd AND d.dept_new_ymd = e.dept_new_ymd
+JOIN fspmeetevidh f ON a.meet_req_no = f.meet_req_no
+LEFT JOIN fspevidrptkey g ON f.meet_req_no = g.key_val
+LEFT JOIN fspevidattach h ON g.evid_mngmt_no = h.evid_mngmt_no AND g.evid_item_cd = h.evid_item_cd AND g.evid_mngmt_seq = h.evid_mngmt_seq
+LEFT JOIN xomxintfatab i ON i.req_no = h.unslip_no -- 상태값 추가
+WHERE a.meet_start_ymd  > TO_CHAR(today-15, '%Y%m%d') -- 최근 15일
+AND (a.req_syspayno = #{syspayno} OR e.syspayno = #{syspayno})
+GROUP BY 1,2,3,4,5,6
+HAVING NVL(GROUP_CONCAT(h.unslip_no),'')='';
+</select>
+
+<!-- 미처리회의록 조회 (작성한회의록)-->
+<select id="selectMNoteWriteList_old" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipMNoteVo">
+SELECT /* kr.re.kitech.biz.api.eip.selectMNoteWriteList */
+       a.req_ymd,
+       CASE WHEN a.meet_start_ymd <![CDATA[<>]]> a.meet_cls_ymd THEN a.meet_start_ymd||'~'||a.meet_cls_ymd ELSE a.meet_start_ymd END AS meet_ymd,
+       a.meet_subject AS meet_nm,
+       fun_humbasicinfo_cd_nm(a.req_syspayno, 0) AS nm ,-- 작성자
+       a.meet_req_no AS meet_no, -- 회의록 신청번호
+       a.accnt_no, -- 계정번호
+       MAX(h.unslip_no) AS unslip_no, --결의번호
+       <![CDATA['/filter/index.jsp?serviceid=F241&meet_req_no=']]>||a.meet_req_no AS URL --회의록 상세 주소              
+FROM fspmeetmnth a 
+JOIN fspmeetmntd b ON a.meet_req_no = b.meet_req_no
+LEFT JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+LEFT JOIN humbasicinfo d ON c.accnt_rspns = d.syspayno
+LEFT JOIN xodrdeptresman  e ON d.dept_cd = e.dept_cd AND d.dept_new_ymd = e.dept_new_ymd
+JOIN fspmeetevidh f ON a.meet_req_no = f.meet_req_no
+LEFT JOIN fspevidrptkey g ON f.meet_req_no = g.key_val
+LEFT JOIN fspevidattach h ON g.evid_mngmt_no = h.evid_mngmt_no AND g.evid_item_cd = h.evid_item_cd AND g.evid_mngmt_seq = h.evid_mngmt_seq
+LEFT JOIN xomxintfatab i ON i.req_no = h.unslip_no -- 상태값 추가
+WHERE a.meet_start_ymd <![CDATA[ > ]]> TO_CHAR(today-10, '%Y%m%d') -- 최근 10일
+AND (a.req_syspayno = #{syspayno} OR e.syspayno = #{syspayno})
+AND i.apr_state <![CDATA[ < ]]> 'XAD016'
+GROUP BY 1,2,3,4,5,6
+
+UNION ALL
+
+SELECT /* kr.re.kitech.biz.api.eip.selectMNoteWriteList */
+       a.req_ymd,
+       CASE WHEN a.meet_start_ymd <![CDATA[<>]]> a.meet_cls_ymd THEN a.meet_start_ymd||'~'||a.meet_cls_ymd ELSE a.meet_start_ymd END AS meet_ymd,
+       a.meet_subject AS meet_nm,
+       fun_humbasicinfo_cd_nm(a.req_syspayno, 0) AS nm ,-- 작성자
+       a.meet_req_no AS meet_no, -- 회의록 신청번호
+       a.accnt_no, -- 계정번호
+       MAX(h.unslip_no) AS unslip_no, --결의번호
+       <![CDATA['/filter/index.jsp?serviceid=F241&meet_req_no=']]>||a.meet_req_no AS URL --회의록 상세 주소             
+FROM fspmeetmnth a 
+JOIN fspmeetmntd b ON a.meet_req_no = b.meet_req_no
+LEFT JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+LEFT JOIN humbasicinfo d ON c.accnt_rspns = d.syspayno
+LEFT JOIN xodrdeptresman  e ON d.dept_cd = e.dept_cd AND d.dept_new_ymd = e.dept_new_ymd
+JOIN fspmeetevidh f ON a.meet_req_no = f.meet_req_no
+LEFT JOIN fspevidrptkey g ON f.meet_req_no = g.key_val
+LEFT JOIN fspevidattach h ON g.evid_mngmt_no = h.evid_mngmt_no AND g.evid_item_cd = h.evid_item_cd AND g.evid_mngmt_seq = h.evid_mngmt_seq
+LEFT JOIN xomxintfatab i ON i.req_no = h.unslip_no -- 상태값 추가
+WHERE a.meet_start_ymd <![CDATA[ > ]]> TO_CHAR(today-10, '%Y%m%d') -- 최근 10일
+AND (a.req_syspayno = #{syspayno} OR e.syspayno = #{syspayno})
+AND h.unslip_no IS NULL
+GROUP BY 1,2,3,4,5,6;
+</select>
+	
+<!-- 교육마감일정 조회 -->
+<select id="selectEduDeadLineList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipEduDeadlineVo">
+SELECT /* kr.re.kitech.biz.api.eip.selectEduDeadLineList */
+      A.educ_year
+    , B.empno
+    , B.nm
+    , REPLACE(B.email, '@kitech.re.kr','') AS id
+    , D.cd_nm AS cd_gb--교육구분
+    , C.cd_nm AS cd_nm--교육명
+    , NVL(A.educ_enddate,'') AS educ_enddate --교육이수마감일
+    , ((TO_DATE(A.educ_enddate, '%Y%m%d') - TO_DATE(to_char(sysdate, '%Y%m%d'), '%Y%m%d'))::INTERVAL DAY(9) TO DAY +1 units DAY)::VARCHAR(12)::INT AS dday--디데이
+    , A.duty_cnt AS duty_cnt--의무횟수
+    , A.duty_time AS duty_time--의무시간
+    , NVL(E.educ_count, F.educ_count) AS educ_count--이수횟수
+    , NVL(E.educ_times, F.educ_times) AS educ_times--이수시간
+    , NVL(NVL(E.self_chk, F.self_chk), Z.self_chk) AS self_chk--자가이수점검여부
+    , <![CDATA['/filter/index.jsp?serviceid=H170&syspayNo=']]>||b.syspayno AS URL 
+FROM humeducmngmt A
+JOIN humbasicinfo B ON B.occutyp_cd = DECODE(A.target_occutyp_cd, '000000', B.occutyp_cd, A.target_occutyp_cd) AND B.posi_cd = DECODE(A.target_posi_cd, '000000', B.posi_cd, A.target_posi_cd)
+JOIN xodxcommst C ON C.cd = A.educ_cd
+JOIN xodxcommst D ON D.cd = A.educ_typ
+LEFT JOIN (SELECT X.yr, X.educ_typ, X.educ_knd, X.educ_psn_syspayno, Y.self_chk, COUNT(X.educ_typ) AS educ_count, NVL(SUM(X.complt_time),0) AS educ_times
+             FROM csfsecrtedu X
+             LEFT JOIN humeducmngmtslfchk Y ON Y.educ_year = X.yr AND Y.educ_typ = X.educ_typ AND Y.educ_cd = X.educ_knd  AND Y.target_syspayno = X.educ_psn_syspayno
+             WHERE X.educ_psn_syspayno = #{syspayno}
+             GROUP BY 1,2,3,4,5
+             ) E ON E.yr = A.educ_year AND E.educ_typ = A.educ_typ AND E.educ_knd = A.educ_cd AND E.educ_psn_syspayno = B.syspayno
+
+LEFT JOIN (SELECT Y.cls_ymd[1,4] AS yr, Y.educ_typ, Y.educ_cd, X.syspayno, P.self_chk, COUNT(Y.educ_typ) AS educ_count, NVL(SUM(Y.educ_time),0) AS educ_times
+            FROM humapyeducpacp X
+            JOIN humapyeduc Y ON Y.req_no = X.req_no
+            JOIN xomxintfatab Z ON Z.req_no = Y.rpt_req_no AND Z.apr_state > 'XAD015'
+            LEFT JOIN humeducmngmtslfchk P ON P.educ_year = Y.cls_ymd[1,4] AND P.educ_typ = Y.educ_typ AND P.educ_cd = Y.educ_cd  AND P.target_syspayno = X.syspayno
+            WHERE X.attend_yn = 'Y'
+            AND X.syspayno = #{syspayno}
+            GROUP BY 1,2,3,4,5
+           ) F ON F.yr = A.educ_year AND F.educ_typ = A.educ_typ AND F.educ_cd = A.educ_cd AND F.syspayno = B.syspayno
+LEFT JOIN humeducmngmtslfchk Z ON Z.educ_typ = A.educ_typ AND Z.educ_cd = A.educ_cd AND Z.educ_year =  SUBSTR(TO_CHAR(sysdate, '%Y%m%d'), 0, 4)  AND Z.syspayno = B.syspayno AND Z.target_posi_cd = B.posi_cd
+WHERE A. educ_year = SUBSTR(TO_CHAR(sysdate, '%Y%m%d'), 0, 4)
+AND B.syspayno = #{syspayno}
+AND NVL(E.educ_count, F.educ_count) IS NULL
+AND NVL(E.self_chk, '') <![CDATA[<>]]> 'Y'
+AND NVL(F.self_chk, '') <![CDATA[<>]]> 'Y'
+AND NVL(Z.self_chk, '') <![CDATA[<>]]> 'Y'
+ORDER BY 8, (CASE WHEN D.cd_nm IN ('보안(법정)교육','안전(법정)교육') THEN 1 WHEN  D.cd_nm = '기타 법정교육' THEN 2 ELSE 3 END);
+</select>
+	
+	<!-- 회의실신청 -->		
+	<select id="selectMRoomReqList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipMRoomReqVo">
+		select /* kr.re.kitech.biz.api.eip.selectMRoomReqList */ 
+				   a.req_psn_syspayno as syspayno,
+		           a.meet_ymd,  --회의일자
+		           a.use_orign_time, --회의시작시간
+		           a.use_cls_time, --회의종료시간
+		           a.meet_subj, --회의제목
+		           b.meet_ofic_nm, --회의장소
+		           fun_xodxcommst_cd_nm(a.req_state, 0) as status --상태
+		from cgsmroomreq a 
+		join cgsmroom b on a.mroom_cd = b.mroom_cd and a.req_psn_syspayno = #{syspayno} and a.meet_ymd >= TO_CHAR(TODAY, '%Y%m%d')
+	</select>
+	
+	<!-- 기숙사신청 -->
+	<select id="selectDormReqList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipDormReqVo">
+		select /* kr.re.kitech.biz.api.eip.selectDormReqList */ 
+		           a.use_psn_syspayno as syspayno, --사용자 syspayno
+		           a.use_psn_nm,  --사용자 이름
+		           a.use_from_ymd,  --사용 시작일
+		           fun_xodxcommst_cd_nm(a.region_cd, 0) as region_nm,  --사용지역
+		           fun_xodxcommst_cd_nm(a.req_room_clsf, 0) as req_room_nm, --사용룸타입
+		           b.room_no, --룸번호
+		           fun_xodxcommst_cd_nm(a.req_state, 0) as status --상태
+		from cgsdorm2req a 
+		join cgsdorm2 b on a.region_cd = b.region_cd and a.use_room_cd = b.room_cd
+		where  a.use_psn_syspayno = #{syspayno}
+		and a.use_from_ymd > TO_CHAR(TODAY-1, '%Y%m%d')
+	</select>
+	
+	<!-- 목표근무시간 -->
+	<select id="selectWrkGoalTimeList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipWrkGoalTimeVo">
+		select /* kr.re.kitech.biz.api.eip.selectWrkGoalTimeList */
+		           a.syspayno,                     
+		           a.yyyymm,         --기준월  
+		           TO_CHAR(today-1, '%Y%m%d') as baseday, --집계기준일자
+		           SUM(sum_wrk_time) as worktime, --근무시간           
+		           MAX(b.wrkgoalTime) as wrkgoalTime --목표근무시간
+		from cwsworktime a
+		JOIN  (SELECT 
+		            syspayno
+		            , SUM(tgt_time) AS wrkgoalTime
+		            , yyyymm
+		        FROM cwshuminfolog 
+		        WHERE syspayno = #{syspayno}
+		        AND yyyymm = SUBSTR(TO_CHAR(sysdate, '%Y%m%d'), 0, 6)
+		        AND is_holiday = 'f'
+		        GROUP BY 1,3
+		) b ON a.syspayno = b.syspayno
+		where a.syspayno =#{syspayno}
+		and a.yyyymm = SUBSTR(TO_CHAR(sysdate, '%Y%m%d'), 0, 6)
+		group by a.syspayno, a.yyyymm
+	</select>
+	
+	<!-- 출장정산미처리현황조회 -->
+	<select id="selectTripUnproList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipTripUnproVo">
+      SELECT /* kr.re.kitech.biz.api.eip.selectTripUnproList */
+					  a.req_no,
+		              '('||fun_xodxcommst_cd_nm(a.biztrip_goal_clsf,0)||')'||a.biztrip_goal AS biztrip_goal,
+		              a.biztrip_region AS biztrip_land,
+		              fun_get_trip_compn_list(a.req_no, 'TQ') AS biztrip_psn_nm,
+		              CASE WHEN a.biztrip_start_ymd <![CDATA[ <> ]]>a.biztrip_cls_ymd THEN a.biztrip_start_ymd||'~'||a.biztrip_cls_ymd ELSE a.biztrip_start_ymd END AS biztrip_ymd,
+		              NVL(b.req_no, '미제출') AS status,
+		              CASE WHEN a.req_psn_syspayno = #{syspayno} THEN <![CDATA['/?serviceid=A004&reqNo=']]>||a.req_no 
+              		  ELSE '' END AS  URL
+		FROM ctrdom a 
+		LEFT JOIN ctrdomad b ON a.req_no = b.biztrip_req_no
+		JOIN ctrdomcompn c ON a.req_no = c.req_no
+		JOIN xomxintfatab d ON a.req_no = d.req_no 	AND d.apr_state = 'XAD100'
+		WHERE b.req_no is null
+		AND a.req_no not like 'S14%'
+		AND a.biztrip_start_ymd LIKE SUBSTR(TO_CHAR(today, '%Y%m%d'), 0, 4)||'%'  --당해년도 기준 
+		AND a.biztrip_cls_ymd <![CDATA[ <= ]]>TO_CHAR(today, '%Y%m%d')  -- 출장 미도래건 제외
+		AND c.biztrip_psn_syspayno = #{syspayno}
+		GROUP BY 1,2,3,4,5,6,7
+		
+		UNION 
+		
+		SELECT a.req_no,
+		              '('||fun_xodxcommst_cd_nm(a.biztrip_goal_clsf,0)||')'||a.biztrip_goal AS biztrip_goal,
+		              fun_xodxcommst_cd_nm(a.biztrip_region, 0) AS biztrip_land,
+		              fun_get_trip_compn_list(a.req_no, 'FQ') AS biztrip_psn_nm,
+		              CASE WHEN a.biztrip_start_ymd <![CDATA[ <> ]]>a.biztrip_cls_ymd THEN a.biztrip_start_ymd||'~'||a.biztrip_cls_ymd ELSE a.biztrip_start_ymd END AS biztrip_ymd,
+		              NVL(b.rep_req_no, '미제출') AS status,
+		              CASE WHEN a.req_psn_syspayno = #{syspayno} THEN <![CDATA['/?serviceid=A004&reqNo=']]>||a.req_no 
+              		  ELSE '' END AS  URL
+		FROM ctrover a 
+		LEFT JOIN ctroverrep b ON a.req_no = b.biztrip_req_no
+		JOIN ctrovercompn c ON a.req_no = c.req_no
+		JOIN xomxintfatab d ON a.req_no = d.req_no AND d.apr_state = 'XAD100'
+		WHERE b.rep_req_no is null
+		AND a.biztrip_start_ymd LIKE SUBSTR(TO_CHAR(today, '%Y%m%d'), 0, 4)||'%'  --당해년도 기준 
+		AND a.biztrip_cls_ymd <![CDATA[ <= ]]>TO_CHAR(today, '%Y%m%d')  -- 출장 미도래건 제외
+		AND c.biztrip_psn_syspayno = #{syspayno}
+		GROUP BY 1,2,3,4,5,6,7
+	</select>
+	
+	<!-- 카드미처리현황 -->
+	<select id="selectCardUnproList" parameterType="kr.re.kitech.biz.api.server.vo.ApiEipCardUnproVo" resultType="kr.re.kitech.biz.api.server.vo.ApiEipCardUnproVo">
+		SELECT /* kr.re.kitech.biz.api.eip.selectCardUnproList */
+					  b.card_no||'('||fun_humbasicinfo_cd_nm(b.keep_charg, 0)||')' AS card_no,
+		              SUBSTR(a.rectime, 0,8) AS use_ymd,
+		              ( ( a.recamt - NVL(a.cnlamt,0) ) - NVL(a.compcost,0) ) AS use_amt, --미처리금액
+		              a.indcode AS expns_cd, --업종코드
+		              a.indcodename AS expns_nm, --업종코드명
+		              a.shopname AS shopnm,
+		              --fun_humbasicinfo_cd_nm(b.keep_charg, 0) AS charg_nm, --카드소유자
+		              '' AS expns_clsf,
+		             <![CDATA['?serviceid=F222&isPortal=Y&syspayNo=']]> || b.keep_charg  AS URL --서비스ID  
+		FROM fbc_recogn a 
+		JOIN fbacard b ON a.cardno = b.cardno
+		JOIN humbasicinfo c ON b.keep_charg = c.syspayno
+		LEFT JOIN xodrdeptresman d ON d.dept_cd = c.dept_cd AND c.dept_new_ymd = d.dept_new_ymd
+		WHERE 1=1
+		AND a.recamt - NVL(a.cnlamt,0) - NVL(a.compcost, 0)<![CDATA[ > ]]>0
+		AND (a.unslip_no is null OR a.unslip_no  = '')
+		AND a.compyn = 'N'  
+		AND a.rectime <![CDATA[ > ]]> '2021000000000'
+		AND (b.keep_charg = #{syspayno} OR d.syspayno = #{syspayno}) -- 근접지원자는 연구책임자 카드정보까지 조회 되도록
+		GROUP BY 1,2,3,4,5,6, 7, 8
+		
+		UNION 
+		
+		SELECT b.card_no||'('||fun_humbasicinfo_cd_nm(b.keep_charg, 0)||')' AS card_no,
+		              a.auth_date  AS use_ymd,
+		               ( ( a.auth_amt - nvl(a.cnlamt,0) ) - nvl(a.compcost,0) ) AS use_amt, --미처리금액
+		              a.tp_buz_code AS expns_cd, --업종코드
+		              a.tp_buz_nm AS expns_nm, --업종코드명
+		              a.mer_nm AS shopnm,
+		              --fun_humbasicinfo_cd_nm(b.keep_charg, 0) AS charg_nm, --카드소유자
+		              '' AS expns_clsf,
+		             <![CDATA['?serviceid=F222&isPortal=Y&syspayNo=']]>||b.keep_charg AS URL --서비스ID
+		FROM fbcrndauth a 
+		JOIN fbacard b ON a.cardno = b.cardno
+		JOIN humbasicinfo c ON b.keep_charg = c.syspayno
+		LEFT JOIN xodrdeptresman d ON d.dept_cd = c.dept_cd AND c.dept_new_ymd = d.dept_new_ymd
+		WHERE 1=1
+		AND   a.auth_amt - nvl(a.cnlamt,0) - nvl(a.compcost,0)  <![CDATA[ > ]]> 0
+		AND (a.unslip_no is null OR a.unslip_no  = '')
+		AND a.compyn = 'N'  
+		AND a.auth_date <![CDATA[ > ]]> '20210000'
+		AND (b.keep_charg = #{syspayno} OR d.syspayno = #{syspayno}) -- 근접지원자는 연구책임자 카드정보까지 조회 되도록
+		GROUP BY 1,2,3,4,5,6, 7, 8
+		
+		UNION
+		
+		SELECT b.card_no||'('||fun_humbasicinfo_cd_nm(b.keep_charg, 0)||')' AS card_no,
+		              SUBSTR(a.rectime, 0,8) AS use_ymd,
+		              ( ( a.recamt - NVL(a.cnlamt,0) ) - NVL(a.compcost,0) ) AS use_amt, --미처리금액
+		              a.indcode AS expns_cd, --업종코드
+		              '' AS expns_nm, --업종코드명
+		              a.shopname AS shopnm,
+		              --fun_humbasicinfo_cd_nm(b.keep_charg, 0) AS charg_nm, --카드소유자
+		              '' AS expns_clsf,
+		             <![CDATA['?serviceid=F222&isPortal=Y&syspayNo=']]>||b.keep_charg AS URL --서비스ID
+		FROM flgrnd_recogn a 
+		JOIN fbacard b ON a.cardno = b.cardno
+		JOIN humbasicinfo c ON b.keep_charg = c.syspayno
+		LEFT JOIN xodrdeptresman d ON d.dept_cd = c.dept_cd AND c.dept_new_ymd = d.dept_new_ymd
+		WHERE 1=1
+		AND a.recamt - NVL(a.cnlamt,0) - NVL(a.compcost, 0) <![CDATA[ > ]]> 0
+		AND (a.unslip_no is null OR a.unslip_no  = '')
+		AND a.compyn = 'N'  
+		AND a.rectime <![CDATA[ > ]]> '2021000000000'
+		AND (b.keep_charg = #{syspayno} OR d.syspayno = #{syspayno}) -- 근접지원자는 연구책임자 카드정보까지 조회 되도록
+		GROUP BY 1,2,3,4,5,6, 7, 8
+		
+		UNION 
+		
+		
+		SELECT b.card_no||'('||fun_humbasicinfo_cd_nm(b.keep_charg, 0)||')' AS card_no,
+		              SUBSTR(a.rectime, 0,8) AS use_ymd,
+		              ( ( a.demcost - NVL(e.demcost,0) ) - NVL(a.compcost,0) ) AS use_amt, --미처리금액
+		              a.itpcd AS expns_cd, --업종코드
+		              a.itpnm AS expns_nm, --업종코드명
+		              a.mchtnm AS shopnm,
+		              --fun_humbasicinfo_cd_nm(b.keep_charg, 0) AS charg_nm, --카드소유자
+		              '' AS expns_clsf,
+		             <![CDATA['?serviceid=F222&isPortal=Y&syspayNo=']]>||b.keep_charg AS URL --서비스ID
+		FROM ezbaro_cardorgn a 
+		JOIN fbacard b ON a.cardno = b.cardno
+		JOIN humbasicinfo c ON b.keep_charg = c.syspayno
+		LEFT JOIN xodrdeptresman d ON d.dept_cd = c.dept_cd AND c.dept_new_ymd = d.dept_new_ymd
+		LEFT JOIN ezbaro_cardorgn e ON a.cardno = e.cardno AND a.apprno = e.apprno AND e.purchdivcd = '02'
+		WHERE 1=1
+		AND a.demcost - NVL(e.demcost,0) - NVL(a.compcost, 0) <![CDATA[ > ]]> 0
+		AND (a.unslip_no is null OR a.unslip_no  = '')
+		AND a.compyn = 'N'  
+		AND a.rectime <![CDATA[ > ]]> '2021000000000'
+		AND (b.keep_charg = #{syspayno} OR d.syspayno = #{syspayno}) -- 근접지원자는 연구책임자 카드정보까지 조회 되도록
+		GROUP BY 1,2,3,4,5,6, 7, 8
+	</select>
+	
+	<!-- 보직자 재신형환 집계 -->
+	<select id="selectPosiCompTotalList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipPosiCompVo">
+		SELECT /* kr.re.kitech.biz.api.eip.selectPosiCompTotalList */
+		      CASE WHEN  NVL(b.flag, 0) IN ('1', '2', '3') THEN '출장' 
+		                WHEN NVL(b.flag, 0) IN ('4') THEN '휴가'
+		                WHEN NVL(b.flag, 0) IN ('5') THEN '휴직_파견'
+		                ELSE '근무' END  AS flag,
+		       COUNT(*) cnt     
+		FROM humbasicinfo a
+		LEFT OUTER JOIN (
+		       SELECT a.biztrip_psn_syspayno AS syspayno
+		             , b.biztrip_goal         AS goal
+		             , b.biztrip_region       AS region
+		             , '국내출장'             AS clsf
+		             , '국내출장'             AS clsf_nm
+		             , '1'                    AS flag
+		       FROM ctrdomcompn a
+		       JOIN ctrdom b ON a.req_no = b.req_no
+		       JOIN xomxintfatab c ON a.req_no = c.req_no AND c.apr_state <![CDATA[ > ]]>'XAD015'
+		       WHERE a.req_no NOT IN( SELECT a.biztrip_req_no
+		                                  FROM ctrdomrep a  
+		                                  INNER JOIN xomxintfatab b ON a.rep_req_no = b.req_no AND b.apr_state <![CDATA[ >= ]]>'XAD020' AND TO_CHAR(today, '%Y%m%d') BETWEEN a.truth_orign_ymd AND a.truth_cls_ymd
+		                                 WHERE a.chng_resn = 'FBQ020')  --출장취소
+		       AND TO_CHAR(today, '%Y%m%d') BETWEEN b.biztrip_start_ymd AND b.biztrip_cls_ymd
+		    UNION ALL
+		       SELECT a.biztrip_psn_syspayno AS syspayno
+		            , b.biztrip_goal          AS goal
+		            , fun_xodxcommst_cd_nm(b.biztrip_region, 0) AS region
+		            , '국외출장'              AS clsf
+		            , '국외출장'              AS clsf_nm
+		            , '2'                     AS flag
+		       FROM ctrovercompn a
+		       JOIN ctrover b ON a.req_no = b.req_no
+		       JOIN xomxintfatab c ON a.req_no = c.req_no AND c.apr_state <![CDATA[ > ]]>'XAD015'
+		       WHERE a.req_no NOT IN ( SELECT a.biztrip_req_no
+		                                   FROM ctroverrep a 
+		                            INNER JOIN xomxintfatab b ON a.rep_req_no = b.req_no AND b.apr_state <![CDATA[ >= ]]> 'XAD020' AND a.chng_resn = 'FBQ020' AND TO_CHAR(today, '%Y%m%d') BETWEEN a.truth_orign_ymd AND a.truth_cls_ymd ) --출장취소
+		       AND TO_CHAR(today, '%Y%m%d') BETWEEN b.biztrip_start_ymd AND b.biztrip_cls_ymd
+		    UNION ALL
+		       SELECT c.biztrip_psn_syspayno   AS syspayno
+		            , a.major_intrv_psn         AS goal
+		            , a.biztrip_land            AS region
+		            , '근거리'                  AS clsf
+		            , '근거리'                  AS clsf_nm
+		            , '3'                       AS flag --근거리
+		       FROM ctrlocal a
+		       JOIN xomxintfatab b ON a.req_no = b.req_no AND b.apr_state <![CDATA[ > ]]>'XAD015'
+		       JOIN ctrlocalcompn c ON a.req_no = c.req_no
+		       WHERE a.biztrip_ymd = TO_CHAR(today, '%Y%m%d')
+		    UNION ALL
+		       SELECT a.req_psn_syspayno   AS syspayno
+		            , a.holiday_cause       AS goal
+		            , a.destin              AS region
+		            , '휴가원'              AS clsf
+		            , b.cd_nm               AS clsf_nm
+		            , '4'                   AS flag --휴가
+		       FROM cgslapp a
+		       JOIN xodxcommst b ON a.holiday_clsf = b.cd
+		       JOIN xomxintfatab c ON a.req_no = c.req_no AND c.apr_state <![CDATA[ > ]]>'XAD015'
+		       WHERE TO_CHAR(today, '%Y%m%d') BETWEEN a.holiday_start_ymd AND a.holiday_cls_ymd
+		    UNION ALL
+		       SELECT a.syspayno
+		            , a.appont_resn    AS goal
+		            , a.dispatch_loc   AS region
+		            , '발령처리'       AS clsf
+		            , b.cd_nm          AS clsf_nm
+		            , '5'              AS flag --휴직/파견
+		       FROM humappnthst a
+		       JOIN xodxcommst b ON a.appont_typ = b.cd AND b.mngmt_item_1 IN('휴직','파견')
+		       WHERE TO_CHAR(today, '%Y%m%d') BETWEEN a.appont_start_ymd AND a.appont_cls_ymd
+		    ) b ON a.syspayno = b.syspayno
+		JOIN xodhdeptinfo x ON a.dept_cd = x.dept_cd AND a.dept_new_ymd = x.dept_new_ymd
+		WHERE 1=1 -- (a.dept_cd = 'H650' OR x.divsn_dept = 'H650')
+		AND x.abol_ymd is null
+		AND a.work_clsf = 'HAG010'
+		AND a.duty_cd <![CDATA[ <> ]]> 'HAB091' --품책제외
+		AND a.duty_cd is not null
+		AND a.duty_cd <![CDATA[ <> ]]>''
+		AND x.dept_typ = #{dept_cd} --변수, (SELECT b.dept_typ from humbasicinfo a join xodhdeptinfo b on a.dept_cd = b.dept_cd and a.dept_new_ymd = b.dept_new_ymd where a.syspayno = '20130576' ) 최초세팅은 본인 소속  select * from xodxcommst where cd_clsf = 'HCF
+		GROUP BY 1
+	</select>
+	
+	<!-- 보직자 재실 현황 상제 팝업제공 -->
+	<select id="selectPosiCompList" resultType="kr.re.kitech.biz.api.server.vo.ApiEipPosiCompVo">
+		SELECT  /* kr.re.kitech.biz.api.eip.selectPosiCompList */
+			fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm
+		     , a.nm
+		     , a.empno
+		     , b.goal
+		     , b.region
+		     , fun_xodxcommst_cd_nm(a.duty_cd, 0) as duty_nm
+		     , NVL(b.clsf_nm, '근무') AS state_nm
+		     , NVL(b.flag, '0') AS flag
+		     , fun_posi_nm(a.posi_cd) AS posi_nm
+		     , a.ext_no
+		     , a.mobile
+		     , a.email
+		     , a.dept_cd
+		FROM humbasicinfo a
+		LEFT JOIN (
+		       SELECT a.biztrip_psn_syspayno AS syspayno
+		             , b.biztrip_goal         AS goal
+		             , b.biztrip_region       AS region
+		             , '국내출장'             AS clsf
+		             , '국내출장'             AS clsf_nm
+		             , '1'                    AS flag
+		       FROM ctrdomcompn a
+		       JOIN ctrdom b ON a.req_no = b.req_no
+		       JOIN xomxintfatab c ON a.req_no = c.req_no AND c.apr_state <![CDATA[ > ]]>'XAD015'
+		       WHERE a.req_no NOT IN( SELECT a.biztrip_req_no
+		                                  FROM ctrdomrep a  
+		                                  INNER JOIN xomxintfatab b ON a.rep_req_no = b.req_no AND b.apr_state <![CDATA[ >= ]]>'XAD020' AND TO_CHAR(today, '%Y%m%d') BETWEEN a.truth_orign_ymd AND a.truth_cls_ymd
+		                                 WHERE a.chng_resn = 'FBQ020')  --출장취소
+		       AND TO_CHAR(today, '%Y%m%d') BETWEEN b.biztrip_start_ymd AND b.biztrip_cls_ymd
+		    UNION ALL
+		       SELECT a.biztrip_psn_syspayno AS syspayno
+		            , b.biztrip_goal          AS goal
+		            , fun_xodxcommst_cd_nm(b.biztrip_region, 0) AS region
+		            , '국외출장'              AS clsf
+		            , '국외출장'              AS clsf_nm
+		            , '2'                     AS flag
+		       FROM ctrovercompn a
+		       JOIN ctrover b ON a.req_no = b.req_no
+		       JOIN xomxintfatab c ON a.req_no = c.req_no AND c.apr_state <![CDATA[ > ]]>'XAD015'
+		       WHERE a.req_no NOT IN ( SELECT a.biztrip_req_no
+		                                 FROM ctroverrep a 
+		                                 JOIN xomxintfatab b ON a.rep_req_no = b.req_no AND b.apr_state <![CDATA[ >= ]]>'XAD020' AND a.chng_resn = 'FBQ020' AND TO_CHAR(today, '%Y%m%d') BETWEEN a.truth_orign_ymd AND a.truth_cls_ymd ) --출장취소
+		       AND TO_CHAR(today, '%Y%m%d') BETWEEN b.biztrip_start_ymd AND b.biztrip_cls_ymd
+		    UNION ALL
+		       SELECT c.biztrip_psn_syspayno   AS syspayno
+		            , a.major_intrv_psn         AS goal
+		            , a.biztrip_land            AS region
+		            , '근거리'                  AS clsf
+		            , '근거리'                  AS clsf_nm
+		            , '3'                       AS flag --근거리
+		       FROM ctrlocal a
+		       JOIN xomxintfatab b ON a.req_no = b.req_no AND b.apr_state <![CDATA[ > ]]>'XAD015'
+		       JOIN ctrlocalcompn c ON a.req_no = c.req_no
+		       WHERE a.biztrip_ymd = TO_CHAR(today, '%Y%m%d')
+		    UNION ALL
+		       SELECT a.req_psn_syspayno   AS syspayno
+		            , a.holiday_cause       AS goal
+		            , a.destin              AS region
+		            , '휴가원'              AS clsf
+		            , b.cd_nm               AS clsf_nm
+		            , '4'                   AS flag --휴가
+		       FROM cgslapp a
+		       JOIN xodxcommst b ON a.holiday_clsf = b.cd
+		       JOIN xomxintfatab c ON a.req_no = c.req_no AND c.apr_state <![CDATA[ > ]]>'XAD015'
+		       WHERE TO_CHAR(today, '%Y%m%d') BETWEEN a.holiday_start_ymd AND a.holiday_cls_ymd
+		    UNION ALL
+		       SELECT a.syspayno
+		            , a.appont_resn    AS goal
+		            , a.dispatch_loc   AS region
+		            , '발령처리'       AS clsf
+		            , b.cd_nm          AS clsf_nm
+		            , '5'              AS flag --휴직/파견
+		       FROM humappnthst a
+		       JOIN xodxcommst b ON a.appont_typ = b.cd AND b.mngmt_item_1 IN('휴직','파견')
+		       WHERE TO_CHAR(today, '%Y%m%d') BETWEEN a.appont_start_ymd AND a.appont_cls_ymd
+		    ) b ON a.syspayno = b.syspayno
+		JOIN xodhdeptinfo x ON a.dept_cd = x.dept_cd AND a.dept_new_ymd = x.dept_new_ymd
+		WHERE 1=1 -- (a.dept_cd = 'H650' OR x.divsn_dept = 'H650')
+		AND x.abol_ymd is null
+		AND a.work_clsf = 'HAG010'
+		AND a.duty_cd <![CDATA[ <> ]]>'HAB091' --품책제외
+		AND a.duty_cd is not null
+		AND a.duty_cd <![CDATA[ <> ]]>''
+		AND x.dept_typ = #{deptCd}  -- select * from xodxcommst where cd_clsf = 'HCF
+		ORDER BY x.disp_seq,a.duty_cd desc, a.posi_cd, a.dept_cd, a.nm
+	</select>
+	
+	<!-- 과제정보조회 -->
+	<select id="selectPrjInfo" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipPrjInfoVo">
+	SELECT   /* kr.re.kitech.biz.api.eip.selectPrjInfo */
+	CASE WHEN (A.syspayno = J.syspayno) THEN '책임' WHEN (A.syspayno = I.syspayno) THEN 'Sub책임' ELSE '참여' END AS reschr_clsf
+	--, DECODE(B.reschr_clsf, 'RAL002', '참여', '책임') AS reschr_clsf --참여구분
+	, A.syspayno
+	, A.empno --개인번호
+	, A.nm --성명
+	, REPLACE(A.email, '@kitech.re.kr','') AS ID
+	, E.cd_nm AS prj_state--과제상태
+	, D.prj_no --과제번호
+	, D.prj_nm || DECODE( NVL(D.step,''), '' ,'',  '(' || D.step || '/' || D.step_tot_yrs || '단계' || ')' ) AS prj_nm --과제명
+	, J.empno AS prj_charge_empno --과제책임자개인번호
+	, J.nm AS prj_charge_nm --과제책임자성명
+	, C.accnt_no -- 계정번호
+	, I.empno AS accnt_charge_empno -- 계정책임자개인번호
+	, I.nm AS accnt_charge_nm --계정책임자성명
+	, G.cd_nm AS prj_clsf --과제구분
+	, H.cd_nm
+	, TRIM(SUBSTR(C.start_ymd, 1, 4)||'-'||SUBSTR(C.start_ymd, 5, 2)||'-'||SUBSTR(C.start_ymd, 7, 2)||'~'||SUBSTR(C.cls_ymd, 1, 4)||'-'||SUBSTR(C.cls_ymd,5,2)||'-'||SUBSTR(C.cls_ymd,7,2)) AS prj_ymd --과제기간
+	, TRIM(SUBSTR(C.tot_prj_start_ymd, 1, 4)||'-'||SUBSTR(C.tot_prj_start_ymd, 5, 2)||'-'||SUBSTR(C.tot_prj_start_ymd, 7, 2)||'~'||SUBSTR(C.tot_prj_cls_ymd, 1, 4)||'-'||SUBSTR(C.tot_prj_cls_ymd,5,2)||'-'||SUBSTR(C.tot_prj_cls_ymd,7,2)) AS tot_prj_ymd--총연구기간
+	, NVL(F.gov_cntrbamt, 0) + NVL(F.gov_subsidy, 0) + NVL(F.area_share_wide, 0) + NVL(F.area_share_base, 0) 
+	    + NVL(F.self_share, 0) + NVL(F.cmpy_cash, 0) + NVL(F.cmpy_goods, 0) + NVL(F.contpat_goods, 0) + NVL(F.intrst_amt, 0)
+	    + NVL(F.cryfwd_amt, 0) + NVL(F.local_gov_cash, 0) + NVL(F.univ_cash, 0) + NVL(F.etc_cash, 0) AS prj_cash--과제연구비
+	, <![CDATA['/filter/index.jsp?serviceid=RC21&callXmlId=RC11&crud_tag=U&prj_no=' ]]>|| D.prj_no AS prj_detail_move--과제상세정보이동
+	, <![CDATA['/pop.jsp?w2xPath=/ui/com/pop/COM_Z008_00P.xml&accnt_no=']]>||c.accnt_no AS ysPopup--예실팝업
+	, <![CDATA['/pop.jsp?w2xPath=/ui/com/pop/COM_Z003_00P.xml&accnt_no=']]>||c.accnt_no AS prjInfo--과제정보
+	FROM humbasicinfo A
+	JOIN resinppare B ON B.syspayno = A.syspayno
+	JOIN resbgacctm C ON C.prj_no = B.prj_no AND C.mngmt_clsf = 'R' AND C.accnt_state IN ('RAK031','RAK041','RAK061')
+	JOIN resinpmast D ON D.prj_no = C.prj_no
+	JOIN xodxcommst E ON E.cd = C.accnt_state
+	JOIN resinpbugt F ON F.prj_no = D.prj_no  
+	JOIN xodxcommst G ON G.cd = D.prj_clsf
+	JOIN xodxcommst H ON H.cd = C.accnt_clsf
+	JOIN humbasicinfo I ON I.syspayno = C.accnt_rspns
+	JOIN humbasicinfo J ON J.syspayno = D.curr_resch_rspns
+	WHERE A.syspayno = #{syspayno}
+	AND J.syspayno = #{syspayno}
+	AND H.cd_nm = 'Main계정'
+	AND C.cls_ymd <![CDATA[>=]]> TO_CHAR(sysdate, '%Y%m%d')
+	
+	UNION ALL
+	
+	
+	--SUB계정 책임과제
+	SELECT   /* kr.re.kitech.biz.api.eip.selectPrjInfo */
+	CASE WHEN (A.syspayno = J.syspayno) THEN '책임' WHEN (A.syspayno = I.syspayno) THEN 'Sub책임' ELSE '참여' END AS reschr_clsf
+	--, DECODE(B.reschr_clsf, 'RAL002', '참여', '책임') AS reschr_clsf --참여구분
+	, A.syspayno
+	, A.empno --개인번호
+	, A.nm --성명
+	, REPLACE(A.email, '@kitech.re.kr','') AS ID
+	, E.cd_nm AS prj_state--과제상태
+	, D.prj_no --과제번호
+	, D.prj_nm || DECODE( NVL(D.step,''), '' ,'',  '(' || D.step || '/' || D.step_tot_yrs || '단계' || ')' ) AS prj_nm --과제명
+	, J.empno AS prj_charge_empno --과제책임자개인번호
+	, J.nm AS prj_charge_nm --과제책임자성명
+	, C.accnt_no -- 계정번호
+	, I.empno AS accnt_charge_empno -- 계정책임자개인번호
+	, I.nm AS accnt_charge_nm --계정책임자성명
+	, G.cd_nm AS prj_clsf --과제구분
+	, H.cd_nm
+	, TRIM(SUBSTR(C.start_ymd, 1, 4)||'-'||SUBSTR(C.start_ymd, 5, 2)||'-'||SUBSTR(C.start_ymd, 7, 2)||'~'||SUBSTR(C.cls_ymd, 1, 4)||'-'||SUBSTR(C.cls_ymd,5,2)||'-'||SUBSTR(C.cls_ymd,7,2)) AS prj_ymd --과제기간
+	, TRIM(SUBSTR(C.tot_prj_start_ymd, 1, 4)||'-'||SUBSTR(C.tot_prj_start_ymd, 5, 2)||'-'||SUBSTR(C.tot_prj_start_ymd, 7, 2)||'~'||SUBSTR(C.tot_prj_cls_ymd, 1, 4)||'-'||SUBSTR(C.tot_prj_cls_ymd,5,2)||'-'||SUBSTR(C.tot_prj_cls_ymd,7,2)) AS tot_prj_ymd--총연구기간
+	, NVL(F.gov_cntrbamt, 0) + NVL(F.gov_subsidy, 0) + NVL(F.area_share_wide, 0) + NVL(F.area_share_base, 0) 
+	    + NVL(F.self_share, 0) + NVL(F.cmpy_cash, 0) + NVL(F.cmpy_goods, 0) + NVL(F.contpat_goods, 0) + NVL(F.intrst_amt, 0)
+	    + NVL(F.cryfwd_amt, 0) + NVL(F.local_gov_cash, 0) + NVL(F.univ_cash, 0) + NVL(F.etc_cash, 0) AS prj_cash--과제연구비
+	, <![CDATA['/filter/index.jsp?serviceid=RC21&callXmlId=RC11&crud_tag=U&prj_no=']]> || D.prj_no AS prj_detail_move--과제상세정보이동
+	, <![CDATA['/pop.jsp?w2xPath=/ui/com/pop/COM_Z008_00P.xml&accnt_no=']]>||c.accnt_no AS ysPopup--예실팝업
+	, <![CDATA['/pop.jsp?w2xPath=/ui/com/pop/COM_Z003_00P.xml&accnt_no=']]>||c.accnt_no AS prjInfo--과제정보
+	FROM humbasicinfo A
+	JOIN resinppare B ON B.syspayno = A.syspayno
+	JOIN resbgacctm C ON C.prj_no = B.prj_no AND C.mngmt_clsf = 'R' AND C.accnt_state IN ('RAK031','RAK041','RAK061')
+	JOIN resinpmast D ON D.prj_no = C.prj_no
+	JOIN xodxcommst E ON E.cd = C.accnt_state
+	JOIN resinpbugt F ON F.prj_no = D.prj_no  
+	JOIN xodxcommst G ON G.cd = D.prj_clsf
+	JOIN xodxcommst H ON H.cd = C.accnt_clsf
+	JOIN humbasicinfo I ON I.syspayno = C.accnt_rspns
+	JOIN humbasicinfo J ON J.syspayno = D.curr_resch_rspns
+	WHERE A.syspayno = #{syspayno}
+	AND J.syspayno <![CDATA[<>]]> #{syspayno}
+	AND I.syspayno = #{syspayno}
+	AND H.cd_nm <![CDATA[<>]]> 'Main계정'
+	AND C.cls_ymd >= TO_CHAR(sysdate, '%Y%m%d')
+	
+	UNION ALL
+	
+	--참여과제
+	SELECT   /* kr.re.kitech.biz.api.eip.selectPrjInfo */
+	CASE WHEN (A.syspayno = J.syspayno) THEN '책임' WHEN (A.syspayno = I.syspayno) THEN 'Sub책임' ELSE '참여' END AS reschr_clsf
+	--, DECODE(B.reschr_clsf, 'RAL002', '참여', '책임') AS reschr_clsf --참여구분
+	, A.syspayno
+	, A.empno --개인번호
+	, A.nm --성명
+	, REPLACE(A.email, '@kitech.re.kr','') AS ID
+	, E.cd_nm AS prj_state--과제상태
+	, D.prj_no --과제번호
+	, D.prj_nm || DECODE( NVL(D.step,''), '' ,'',  '(' || D.step || '/' || D.step_tot_yrs || '단계' || ')' ) AS prj_nm --과제명
+	, J.empno AS prj_charge_empno --과제책임자개인번호
+	, J.nm AS prj_charge_nm --과제책임자성명
+	, C.accnt_no -- 계정번호
+	, I.empno AS accnt_charge_empno -- 계정책임자개인번호
+	, I.nm AS accnt_charge_nm --계정책임자성명
+	, G.cd_nm AS prj_clsf --과제구분
+	, H.cd_nm
+	, TRIM(SUBSTR(C.start_ymd, 1, 4)||'-'||SUBSTR(C.start_ymd, 5, 2)||'-'||SUBSTR(C.start_ymd, 7, 2)||'~'||SUBSTR(C.cls_ymd, 1, 4)||'-'||SUBSTR(C.cls_ymd,5,2)||'-'||SUBSTR(C.cls_ymd,7,2)) AS prj_ymd --과제기간
+	, TRIM(SUBSTR(C.tot_prj_start_ymd, 1, 4)||'-'||SUBSTR(C.tot_prj_start_ymd, 5, 2)||'-'||SUBSTR(C.tot_prj_start_ymd, 7, 2)||'~'||SUBSTR(C.tot_prj_cls_ymd, 1, 4)||'-'||SUBSTR(C.tot_prj_cls_ymd,5,2)||'-'||SUBSTR(C.tot_prj_cls_ymd,7,2)) AS tot_prj_ymd--총연구기간
+	, NVL(F.gov_cntrbamt, 0) + NVL(F.gov_subsidy, 0) + NVL(F.area_share_wide, 0) + NVL(F.area_share_base, 0) 
+	    + NVL(F.self_share, 0) + NVL(F.cmpy_cash, 0) + NVL(F.cmpy_goods, 0) + NVL(F.contpat_goods, 0) + NVL(F.intrst_amt, 0)
+	    + NVL(F.cryfwd_amt, 0) + NVL(F.local_gov_cash, 0) + NVL(F.univ_cash, 0) + NVL(F.etc_cash, 0) AS prj_cash--과제연구비
+	, <![CDATA['/filter/index.jsp?serviceid=RC21&callXmlId=RC11&crud_tag=U&prj_no=']]>|| D.prj_no AS prj_detail_move--과제상세정보이동
+	, <![CDATA['/pop.jsp?w2xPath=/ui/com/pop/COM_Z008_00P.xml&accnt_no=']]>||c.accnt_no AS ysPopup--예실팝업
+	, <![CDATA['/pop.jsp?w2xPath=/ui/com/pop/COM_Z003_00P.xml&accnt_no=']]>||c.accnt_no AS prjInfo--과제정보
+	FROM humbasicinfo A
+	JOIN resinppare B ON B.syspayno = A.syspayno
+	JOIN resbgacctm C ON C.prj_no = B.prj_no AND C.mngmt_clsf = 'R' AND C.accnt_state IN ('RAK031','RAK041','RAK061')
+	JOIN resinpmast D ON D.prj_no = C.prj_no
+	JOIN xodxcommst E ON E.cd = C.accnt_state
+	JOIN resinpbugt F ON F.prj_no = D.prj_no  
+	JOIN xodxcommst G ON G.cd = D.prj_clsf
+	JOIN xodxcommst H ON H.cd = C.accnt_clsf
+	JOIN humbasicinfo I ON I.syspayno = C.accnt_rspns
+	JOIN humbasicinfo J ON J.syspayno = D.curr_resch_rspns
+	WHERE A.syspayno = #{syspayno}
+	AND I.syspayno <![CDATA[<>]]> #{syspayno}
+	AND J.syspayno <![CDATA[<>]]> #{syspayno}
+	AND H.cd_nm = 'Main계정'
+	AND C.cls_ymd >= TO_CHAR(sysdate, '%Y%m%d');
+	</select>
+	
+	<!-- 과제정보건수조회 -->
+	<select id="selectAssiInfoCount" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipPrjInfoVo">
+	SELECT  /* kr.re.kitech.biz.api.eip.selectAssiInfoCount */
+	  DECODE(b.reschr_clsf, 'RAL002', '참여', '책임') AS reschr_clsf --구분
+	, b.syspayno
+	, c.empno --개인번호
+	, c.nm --성명
+	, d.cd_nm --과제상태
+	, COUNT(*) AS count--계정수
+	FROM resbgacctm a 
+	JOIN resinppare b ON a.prj_no = b.prj_no
+	JOIN humbasicinfo c ON b.syspayno = c.syspayno
+	JOIN xodxcommst d ON a.accnt_state = d.cd AND d.cd_clsf = 'RAK'
+	WHERE a.accnt_state IN ('RAK031','RAK041','RAK061')
+	AND b.syspayno = #{syspayno}
+	AND a.cls_ymd > TO_CHAR(sysdate,  '%Y%m%d')
+	AND a.accnt_no = a.main_accnt_no
+	GROUP BY 1,2,3,4,5
+	</select>
+	
+	<!-- 출장현황결재내역 -->
+	<select id="selectTripPayList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipTripPayVo">
+		SELECT '국내출장' as flag --출장구분
+		              ,a.biztrip_start_ymd --출장시작일
+		              ,a.biztrip_cls_ymd  --출장종료일
+		              ,a.biztrip_goal --출장목적,
+		              ,c.biztrip_psn_syspayno --출장자              
+		              ,a.biztrip_region as region -- 출장지역,
+		              ,MAX(d.accnt_no) as accnt_no -- 계정번호,
+		              ,fun_xodxcommst_cd_nm(b.apr_state, 0) status --결재상태
+		              ,<![CDATA['/pop.jsp?w2xPath=/ui/apr/layoutSimple.xml&viewMode=read&reqNo=']]>||a.req_no as URL 
+		FROM ctrdom a 
+		JOIN xomxintfatab b	ON a.req_no = b.req_no
+		JOIN ctrdomcompn c ON a.req_no = c.req_no
+		JOIN ctrdomaccnt d ON a.req_no = d.req_no
+		WHERE c.biztrip_psn_syspayno = #{syspayno}
+		AND b.apr_state NOT IN ('XAD100', 'XAD005', 'XAD010')
+		GROUP BY 1,2,3,4,5,6,8,9
+		
+		UNION
+		
+		SELECT '해외출장' as flag --출장구분
+		              ,a.biztrip_start_ymd --출장시작일
+		              ,a.biztrip_cls_ymd  --출장종료일
+		              ,a.biztrip_goal --출장목적,
+		              ,c.biztrip_psn_syspayno --출장자
+		              ,fun_xodxcommst_cd_nm(a.biztrip_region, 0) as region -- 출장지역,
+		              ,MAX(d.accnt_no) as accnt_no -- 계정번호,
+		              ,fun_xodxcommst_cd_nm(b.apr_state, 0) status --결재상태
+		              ,<![CDATA['/pop.jsp?w2xPath=/ui/apr/layoutSimple.xml&viewMode=read&reqNo=']]>||a.req_no as URL
+		FROM ctrover a 
+		JOIN xomxintfatab b ON a.req_no = b.req_no
+		JOIN ctrovercompn c ON a.req_no = c.req_no
+		JOIN ctroveraccnt d ON a.req_no = d.req_no
+		WHERE c.biztrip_psn_syspayno = #{syspayno}
+		AND b.apr_state NOT IN ('XAD100', 'XAD005', 'XAD010')
+		GROUP BY 1,2,3,4,5,6,8,9
+		
+		
+		UNION
+		
+		SELECT '근거리출장' as flag --출장구분
+		              ,a.biztrip_ymd as biztrip_start_ymd--출장시작일
+		              ,a.biztrip_ymd as biztrip_cls_ymd  --출장종료일
+		              ,a.biztrip_goal --출장목적,
+		              ,a.biztrip_psn_syspayno --출장자
+		              ,biztrip_land as region -- 출장지역,
+		              ,a.accnt_no as accnt_no -- 계정번호,
+		              ,fun_xodxcommst_cd_nm(b.apr_state, 0) status --결재상태
+		              ,<![CDATA['/pop.jsp?w2xPath=/ui/apr/layoutSimple.xml&viewMode=read&reqNo=']]>||a.req_no as URL
+		FROM ctrlocal a 
+		JOIN xomxintfatab b ON a.req_no = b.req_no
+		JOIN ctrlocalcompn c ON a.req_no = c.req_no
+		WHERE c.biztrip_psn_syspayno = #{syspayno}
+		AND b.apr_state NOT IN ('XAD100', 'XAD005', 'XAD010')
+	</select>
+	
+	<!-- 휴가신청내역 -->
+	<select id="selectVacaReq" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipVacaReqVo">
+	SELECT /* kr.re.kitech.biz.api.eip.selectVacaReq */
+				  a.req_no, --신청번호
+	              fun_xodxcommst_cd_nm(a.holiday_clsf, 0) AS holiday_clsf, --휴가구분
+	              CASE WHEN a.holiday_clsf = 'HBI019' THEN  a.holiday_start_ymd||'('||trunc(a.holiday_start_hour)||'~'||trunc(a.holiday_cls_hour)||')' ELSE a.holiday_start_ymd||'~'||a.holiday_cls_ymd END AS holiday_ymd, --휴가기간
+	              fun_humbasicinfo_cd_nm(a.agent_psn_syspayno, 0) AS agent_psn_syspayno, --업무대행자
+	              fun_xodxcommst_cd_nm(b.apr_state, 0) status --결재상태
+	FROM cgslapp a 
+	JOIN xomxintfatab b ON a.req_no = b.req_no
+	WHERE 1=1
+	AND a.holiday_start_ymd LIKE SUBSTR(TO_CHAR(today, '%Y%m%d'), 0, 4)||'%'  --당해년도 기준 
+	AND a.holiday_cls_ymd > TO_CHAR(today, '%Y%m%d')  -- 출장 미도래건 제외
+	AND a.req_psn_syspayno =  #{syspayno}
+	</select>
+	
+	<!-- 카드결제진행현황 -->
+	<select id="selectCardPayProList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipCardPayProVo">
+		SELECT a.unslip_no , --결의번호
+		              a.rmk , --적요
+		               fun_xodxcommst_cd_nm(b.apr_state, 0) status, --결재상태
+		              <![CDATA['/pop.jsp?w2xPath=/ui/apr/layoutSimple.xml&viewMode=read&reqNo=']]>||b.req_no as URL 
+		FROM fspsliph a 
+		JOIN xomxintfatab b ON a.unslip_no = b.req_no
+		WHERE 1=1
+		AND b.apr_state NOT IN ('XAD100', 'XAD005', 'XAD010')
+		AND a.slip_typ_cd = '117'
+		AND a.wrte_psn = #{syspayno}
+	</select>
+		
+	<!-- 연차결제진행현황 -->
+	<select id="selectAnnPayProList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipAnnPayProVo">
+		SELECT /* kr.re.kitech.biz.api.eip.selectVacaReq */
+				a.req_no, --신청번호
+		        fun_xodxcommst_cd_nm(a.holiday_clsf, 0) AS holiday_clsf, --휴가구분
+		        CASE WHEN a.holiday_clsf = 'HBI019' THEN  a.holiday_start_ymd||'('||trunc(a.holiday_start_hour)||'~'||trunc(a.holiday_cls_hour)||')' ELSE a.holiday_start_ymd||'~'||a.holiday_cls_ymd END AS holiday_ymd, --휴가기간
+		        fun_humbasicinfo_cd_nm(a.agent_psn_syspayno, 0) AS agent_psn_syspayno, --업무대행자
+		        fun_xodxcommst_cd_nm(b.apr_state, 0) status, --결재상태
+		        <![CDATA['/pop.jsp?w2xPath=/ui/apr/layoutSimple.xml&viewMode=read&reqNo=']]>||a.req_no as URL 
+		FROM cgslapp a 
+		JOIN xomxintfatab b ON a.req_no = b.req_no
+		WHERE 1=1
+		AND a.holiday_start_ymd LIKE SUBSTR(TO_CHAR(today, '%Y%m%d'), 0, 4)||'%'  --당해년도 기준 
+		AND a.req_psn_syspayno =  #{syspayno}
+		AND b.apr_state NOT IN ('XAD100', 'XAD005', 'XAD010')
+	</select>
+	
+	<!-- 인사평가 -->
+	<select id="selectHumEvaluationLogList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipHumEvalVo">
+		SELECT  /* kr.re.kitech.biz.api.eip.selectHumEvaluationLogList */
+				eval_yr --평가년도
+		       ,adjst_fact_persn_eval  --
+		       ,adjst_fact_quttt_eval
+		       ,adjst_fact_qulit_eval
+		       ,adjst_fact_actrslt_eval
+		       ,adjst_fact_team_eval --조직점수
+		       ,adjst_aftr_overl_score  --종합접수
+		       ,fun_xodxcommst_cd_nm(overl_score_grd,0 ) overl_score_grd  --평가등급       
+		       ,syspayno
+		       ,eval_objct_grp
+		  FROM humevalrst
+		 WHERE syspayno = #{syspayno}
+		 ORDER BY eval_yr DESC
+	</select>
+	
+	<!-- 교육이력 -->
+	<select id="selectHumEducationLogList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipHumEducVo">
+		SELECT	/* kr.re.kitech.biz.api.eip.selectHumEducationLogList */
+		        f.cd_nm as educ_clsf_nm,
+		        e.cd_nm as educ_detls_nm,        
+		        c.educ_nm,
+		        c.educ_agncy,
+		        d.empno,
+		        d.nm,
+		        a.start_ymd,
+		        a.cls_ymd,
+		        a.educ_time,
+		        a.educ_amt
+		   FROM humapyeducpacp a
+		   JOIN xomxintfatab b ON a.rpt_req_no = b.req_no JOIN humapyeduc c ON a.req_no = c.req_no
+		   JOIN humbasicinfo d ON a.syspayno = d.syspayno
+		   JOIN xodxcommst e ON c.educ_cd = e.cd  AND e.cd_clsf = 'HDO'
+		   JOIN xodxcommst f ON c.educ_typ = f.cd  AND f.cd_clsf = 'HDI'
+		  WHERE b.apr_state = 'XAD100'
+		    AND a.syspayno = #{syspayno}
+		  ORDER BY a.start_ymd
+	</select>
+	
+	<!-- 발령사항 -->
+	<select id="selectHumAppointLogList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipHumAppoVo">
+		SELECT  /* kr.re.kitech.biz.api.eip.selectHumAppointLogList */
+				a.appont_start_ymd --발령일자
+		       ,a.appont_cls_ymd --발령종료일자
+		       ,fun_xodxcommst_cd_nm(a.appont_typ,0 ) appont_typ  --발령유형
+		       ,a.appont_resn --발령사유
+		       ,decode(a.appont_typ,'HBL070',fun_dept_nm(g.dept_cd,g.dept_new_ymd),c.dept_nm) as dept_nm --부서
+		       ,d.occutyp_nm --직종
+		       ,e.posi_nm --직급
+		       ,fun_xodxcommst_cd_nm(a.duty_cd,0 ) duty_nm  --직책       
+		       ,f.job_nm --직무
+		       ,fun_xodxcommst_cd_nm(a.work_land,0 ) work_land --근무지역              
+		       ,a.appont_no
+		       ,a.syspayno
+		   FROM humappnthst a JOIN humbasicinfo b ON  a.syspayno = b.syspayno
+		   JOIN xodhdeptinfo c ON a.dept_cd = c.dept_cd AND a.dept_new_ymd = c.dept_new_ymd
+		   JOIN xodhoccutyp d ON a.occutyp_cd = d.occutyp_cd
+		   JOIN xodhposiinfo e ON a.posi_cd = e.posi_cd
+		   JOIN xodhjobinfo f ON a.job_cd = f.job_cd
+	  LEFT JOIN humadjobhis g ON a.syspayno =g.syspayno AND a.appont_prcs_ymd = g.appont_ymd
+		  WHERE a.appont_prcs = 'HCX030'
+		    AND a.syspayno = #{syspayno}
+		  ORDER BY a.appont_start_ymd desc, a.appont_typ DESC
+	</select>
+	
+	<!-- 상벌사항 -->
+	<select id="selectHumRewardLogList" parameterType="String" resultType="kr.re.kitech.biz.api.server.vo.ApiEipHumRewardVo">
+		SELECT  /* kr.re.kitech.biz.api.eip.selectHumRewardLogList */
+				a.syspayno
+		       ,'상'  repu_clsf
+		       ,a.occr_ymd
+		       ,a.cls_ymd
+		       ,a.reward_no
+		       ,a.repu_knd
+		       ,b.cd_nm as repu_knd_nm
+		       ,a.restrc_resn
+		       ,a.order_no
+		       ,a.impl_agncy
+		       ,a.repu_contnt
+		       ,a.regst_syspayno
+		       ,a.regst_daytm
+		       ,a.updt_syspayno
+		       ,a.updt_daytm
+		  FROM humpiznpuni a -- 상벌사항
+	 LEFT JOIN xodxcommst b on a.repu_knd = b.cd and b.cd_clsf = 'HBF'
+		 WHERE syspayno = #{syspayno}
+		   AND repu_clsf = 'PIZ'
+		
+		UNION ALL
+		
+		SELECT  a.syspayno
+		       ,'상'  repu_clsf
+		       ,a.occr_ymd
+		       ,a.cls_ymd
+		       ,a.reward_no
+		       ,a.repu_knd
+		       ,b.cd_nm as repu_knd_nm
+		       ,a.restrc_resn
+		       ,a.order_no
+		       ,a.impl_agncy
+		       ,a.repu_contnt
+		       ,a.regst_syspayno
+		       ,a.regst_daytm
+		       ,a.updt_syspayno
+		       ,a.updt_daytm
+		  FROM humpiznpuni a -- 상벌사항
+	 LEFT JOIN xodxcommst b on a.repu_knd = b.cd and b.cd_clsf = 'HBL'
+		WHERE syspayno = #{syspayno}
+		AND repu_clsf = 'PUN'
+		
+		-- 일반사용자 징계내용은 날짜종료되었을 조회않됨
+		
+		UNION ALL
+		
+		SELECT 
+		       xx.syspayno
+		       ,xx.repu_clsf
+		       ,xx.occr_ymd
+		       ,xx.cls_ymd
+		       ,xx.reward_no
+		       ,xx.repu_knd
+		       ,xx.repu_knd_nm
+		       ,xx.restrc_resn
+		       ,xx.order_no 
+		       ,xx.impl_agncy
+		       ,xx.reward_contnt
+		       ,xx.regst_syspayno
+		       ,xx.regst_daytm
+		       ,xx.updt_syspayno
+		       ,xx.updt_daytm
+		FROM (
+		       SELECT 
+		       		  a.syspayno
+		             ,'포상' as repu_clsf
+		             ,a.reward_ymd as occr_ymd
+		             ,'' as cls_ymd
+		             ,a.reward_no
+		             ,a.reward_knd as repu_knd
+		             ,c.cd_nm as repu_knd_nm
+		             ,a.reward_contnt as restrc_resn -- 20231010 최지영 요청 : 사유에 내용 조회되도록
+		             ,a.reward_no as order_no -- 20231010 최지영 요청 : 명령번호에 상장번호 조회되도록 
+		             ,impl_agncy
+		             ,a.reward_contnt
+		             ,a.regst_syspayno
+		             ,a.regst_daytm
+		             ,a.updt_syspayno
+		             ,a.updt_daytm
+		             ,b.apr_state 
+		        FROM  humapypiz a -- 포상경력
+		   LEFT JOIN  xomxintfatab b on a.req_no = b.req_no
+		   LEFT JOIN  xodxcommst c on a.repu_knd = b.cd and b.cd_clsf = 'HBF'
+		        WHERE syspayno = #{syspayno}
+		      ) xx
+		WHERE (xx.apr_state='XAD100' or xx.apr_state is null)
+		ORDER BY occr_ymd DESC
+	</select>
+
+	<!-- 연구보고서 -->
+	<select id="selectResReportList" parameterType="kr.re.kitech.biz.api.server.vo.ApiEipResReportVo" resultType="kr.re.kitech.biz.api.server.vo.ApiEipResReportVo">
+			SELECT a.rcpt_no  -- 접수번호
+			     , a.rcpt_state  -- 접수상태
+			     , a.req_ymd     -- 사유발생일
+			     , a.rptp_clsf   -- 보고서구분(RRG)   
+			     , a.eval_yn --평가반영여부
+			     , a.rcpt_complt_ymd -- 평가기준일
+			     , a.rptp_nm -- 보고서명
+			     , a.accnt_no   
+			     , a.prj_no
+			     , c.curr_resch_rspns -- 연구책임자
+			     , d.bsns_nm -- 세부사업명
+			     , CONCAT( CONCAT( b.start_ymd, '~'), b.cls_ymd) AS ymd  -- 당해연도 연구기간
+			     , b.cls_ymd  -- 당해년도 과제  종료일
+			     , c.prj_nm
+			     , c.bsns_cd_inout
+			     , fun_res_pjvendlist(c.prj_no) AS attnce_cmpy -- 참여업체
+			     , f.nm  -- 연구책임자명
+			     , f.work_clsf
+			     , t1.dept_nm
+			     , t2.posi_nm
+			     , e.bsns_nm AS bsns_cd_ofic
+			     , i.empno AS main_auth_empno -- 주저자개인번호
+			     , a.main_auth_resch_rspns -- 주저자
+			     , a.main_auth_nm -- 주저자명
+			     , a.outsd_rptp_open_yn -- 보고서공개여부
+			     , a.outsd_unopn_prd_cls_ymd --비공개기간
+			     , a.unopen_resn -- 비공개사유
+			     , a.attach_file_no_2 --비공개사유서 첨부화일
+			     , a.attach_file_no_3 --위탁기관 연구보고서
+			     , t3.attach_file_no AS attach_file
+			     , a.rcpt_agncy --보고서 제출처
+			     , a.rcpt_agncy_ymd -- 보고서발간일
+			     , privt_info_auto_detct
+			     , h.resch_contnt
+			     , c.secrt_prj_ex
+			     , NVL(c.secrt_prj_yn,'Y') AS secrt_prj_yn
+			  FROM resrtrepor a
+		INNER JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+		INNER JOIN resinpmast c ON a.prj_no =c.prj_no
+		INNER JOIN humbasicinfo f ON c.curr_resch_rspns = f.syspayno
+		INNER JOIN xodhdeptinfo t1 ON f.dept_cd = t1.dept_cd AND f.dept_new_ymd = t1.dept_new_ymd
+		INNER JOIN xodhposiinfo t2 ON f.posi_cd = t2.posi_cd
+		INNER JOIN xodrbacode d ON c.bsns_cd_detls_bsns = d.bsns_cd
+		INNER JOIN xodrbacode e ON c.bsns_cd_ofic = e.bsns_cd
+		 LEFT JOIN resinptgct h ON b.prj_no = h.prj_no
+		 LEFT JOIN humbasicinfo i ON a.main_auth_resch_rspns = i.syspayno
+		 LEFT JOIN xomxcomattachfile t3 ON a.attach_file = t3.attach_file_no
+			 WHERE a.main_auth_resch_rspns = #{main_auth_resch_rspns}
+		<if test="start_ymd != null and start_ymd != ''">b.start_ymd <![CDATA[>=]]> #{start_ymd}</if>
+		<if test="cls_ymd != null and cls_ymd != ''">b.cls_ymd <![CDATA[<=]]> #{cls_ymd}</if>
+		<if test="regst_syspayno != null and regst_syspayno != ''">a.regst_syspayno = #{regst_syspayno}</if>
+	</select>
+
+</mapper>

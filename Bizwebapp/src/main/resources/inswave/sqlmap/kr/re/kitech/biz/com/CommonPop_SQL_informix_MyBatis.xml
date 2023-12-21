@@ -1,0 +1,1312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.com">
+<!-- 회계코드 조회 -->
+<select id="selectAccntCdList" resultType="kr.re.kitech.biz.com.vo.AccntCdPopupVo" parameterType="kr.re.kitech.biz.com.vo.AccntCdPopupVo">
+SELECT	/* kr.re.kitech.biz.com.selectAccntCdList */  
+       accnt_cd
+     , accnt_cd_abbr
+     , caseby_adjst_ex
+     , bond_debt_clsf
+  FROM xodfaccnt 
+ WHERE level = '5'
+  <if test='accnt_cd != null and accnt_cd != ""'> AND (accnt_cd LIKE #{accnt_cd} || '%' OR  accnt_cd_abbr LIKE '%' || #{accnt_cd}|| '%' ) </if>
+  <if test='accnt_cd_clsf != null and accnt_cd_clsf != ""'> AND accnt_cd_clsf = #{accnt_cd_clsf} </if>
+  <if test='ramt_mngmt_ex != null and ramt_mngmt_ex != ""'> AND ramt_mngmt_ex = #{ramt_mngmt_ex} </if>
+  <if test='caseby_adjst_ex != null and caseby_adjst_ex != ""'> AND caseby_adjst_ex = #{caseby_adjst_ex} </if>
+  <if test='bugt_item_use_ex != null and bugt_item_use_ex != ""'> AND bugt_item_use_ex = #{bugt_item_use_ex} </if>
+  <if test='bond_debt_clsf != null and bond_debt_clsf != ""'> AND bond_debt_clsf= #{bond_debt_clsf} </if>
+ ORDER BY accnt_cd
+</select>
+
+<!-- 계정번호 목록 조회 -->
+<select id="selectListAccntNoPopup" parameterType="kr.re.kitech.biz.com.vo.AccntNoSrcVo" resultType="kr.re.kitech.biz.com.vo.AccntNoPopupVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectListAccntNoPopup */
+       r.accnt_no
+     , r.main_accnt_no
+     , r.accnt_rspns
+     , r.bugt_ctrl_psn
+     , r.accnt_clsf
+     , r.prj_no
+     , r.mngmt_clsf
+     , r.accnt_no_nm
+     , r.fin_bsns_clsf
+     , r.accnt_state
+     , fun_xodxcommst_cd_nm(r.accnt_state,0) AS accnt_state_nm
+     , r.start_ymd
+     , r.cls_ymd
+     , r.tot_prj_start_ymd
+     , r.tot_prj_cls_ymd
+     , r.itm_solve_base
+     , r.tax_cd
+     , r.card_use_ex
+     , r.fomat_unit
+     , r.accnt_grp
+     , r.dept_res_psn -- 연구지원담당자 
+     , a.bsns_cd_inout
+     , a.bsns_cd_exclsv_agncy /* 경비결의,일반결의에서 사용*/
+     , a.first_pre_prj_no  /* 사업신청 선행과제에서 사용 */
+     , a.student_cost_use  -- 학생인건비풀링여부
+     , a.bsns_cd_ofic
+     , fun_res_prj_evid(r.accnt_no,'', 3) AS evid_chk /* 카드결의에서 사용*/
+     , TRIM(h.empno) AS accnt_rspns_empno   /* 계정책임자개인번호 */
+     , TRIM(h.nm) AS accnt_rspns_nm      /* 계정책임자명 */
+     , NVL(f.gov_cntrbamt, 0) 
+        + NVL(f.gov_subsidy, 0) 
+        + NVL(f.area_share_wide, 0) 
+        + NVL(f.area_share_base, 0) 
+        + NVL(f.self_share, 0) 
+        + NVL(f.cmpy_cash, 0) 
+        + NVL(f.local_gov_cash, 0) 
+        + NVL(f.univ_cash, 0) 
+        + NVL(f.etc_cash, 0) AS resch_fund
+    <if test='clsf != null and clsf == "sup"'> , b.srpt_cd </if>
+    <if test='clsf != null and clsf == "prjEnd"'> 
+     , DECODE(NVL(c.anal_adjst_decsn_yn, ''), 'Y', 'Y', 'N') AS anal_adjst_decsn_yn
+     , NVL(e.req_no, '') AS req_no
+    </if>
+  FROM resbgacctm r
+  JOIN humbasicinfo h ON r.accnt_rspns = h.syspayno
+  LEFT JOIN resinpmast a ON r.prj_no = a.prj_no
+  LEFT JOIN resinpbugt f ON r.prj_no = f.prj_no
+ <if test='clsf != null and clsf == "sup"'> LEFT JOIN resadxreqm b ON r.accnt_no = b.creat_accnt_no </if>
+  <if test='clsf != null and clsf == "prjEnd"'>
+  -- 과제잔액반납
+  LEFT JOIN resenyradj c ON r.prj_no = c.prj_no
+  LEFT JOIN resenyradjreqh e on c.prj_no = e.prj_no
+  </if>
+ WHERE 1=1
+ <if test='accnt_no != null and accnt_no != ""'> AND r.accnt_no LIKE #{accnt_no} || '%' </if>
+ <if test='prj_no != null and prj_no != ""'> AND r.prj_no = #{prj_no} </if>
+ <if test='accnt_no_nm != null and accnt_no_nm != ""'> AND r.accnt_no_nm LIKE #{accnt_no_nm} || '%' </if>
+ <if test='accnt_rspns != null and accnt_rspns != ""'> AND r.accnt_rspns = #{accnt_rspns} </if>
+ <if test='start_ymd != null and start_ymd != ""'> AND r.start_ymd <![CDATA[ >= ]]> #{ start_ymd }</if>
+ <if test='cls_yr != null and cls_yr != ""'> AND (SUBSTR(r.accnt_no,1,4) = 'FF21' OR r.cls_ymd[1,4] <![CDATA[ >= ]]> #{cls_yr})  </if>
+ <if test='cls_ymd != null and cls_ymd != ""'> AND r.cls_ymd <![CDATA[ >= ]]> #{cls_ymd}  </if>
+ <if test='mngmt_clsf != null and mngmt_clsf != ""'> AND r.mngmt_clsf = #{mngmt_clsf}  </if>
+ <if test='bsns_req_no != null and bsns_req_no != ""'> AND a.bsns_req_no = #{bsns_req_no}  </if> -- 계정목록
+ <if test='accnt_clsf != null and accnt_clsf != ""'> AND r.accnt_clsf = #{accnt_clsf}  </if>
+ <if test='clsf != null and clsf == "gen"'> AND r.accnt_grp NOT IN ('FAK041', 'FAK042', 'FAK043' , 'FAK044', 'FAK061', 'FAK076', 'FAK080', 'FAK081','FAK082','FAK083') AND r.accnt_no != 'FF030004' </if> <!--경비,일반결의 일반 -->
+ <if test='clsf != null and clsf == "con"'> AND r.accnt_grp IN ('FAK041', 'FAK042', 'FAK043' , 'FAK044', 'FAK061', 'FAK076', 'FAK080', 'FAK081','FAK082','FAK083') </if> <!--경비,일반결의 수탁 -->
+ <if test='clsf != null and clsf == "sup"'> AND r.accnt_grp IN ('FAK061', 'FAK080', 'FAK081','FAK082') </if> <!--기업지원 -->
+ <if test='clsf != null and clsf == "fin"'> AND r.accnt_state IN ('RAK041','RAK061','RAK091') </if> <!--일반결의 기타 -->
+ <if test='rtpaper == "Y"'> AND a.prj_state != 'RBA005' </if>
+ <if test='clsf != null and clsf == "prePrj"'> 
+   AND EXISTS ( SELECT 1 FROM resinppare WHERE syspayno = #{syspayno} AND prj_no = r.prj_no) 
+   AND r.accnt_clsf = 'RAR001'
+ </if>
+ <if test='clsf != null and clsf == "prjEnd"'> 
+   AND EXISTS ( SELECT 1 FROM resinppare WHERE syspayno = #{syspayno} AND prj_no = r.prj_no) 
+   AND r.accnt_clsf = 'RAR001'
+   AND c.anal_adjst_decsn_yn = 'Y'
+   AND a.prj_state = 'RBA002'
+ </if>
+ ORDER BY r.cls_ymd desc, r.accnt_no
+</select> 
+
+<!-- 예실현황 팝업 계정정보조회(조회조건의) -->
+<select id="selectAccntNo" parameterType="kr.re.kitech.biz.com.vo.BblBugtActRsltVo" resultType="kr.re.kitech.biz.com.vo.BblBugtActRsltVo">
+SELECT  /* kr.re.kitech.biz.com.selectAccntNo(kitech.fin.bud.frc.xda.ResBgAcctmSS03) */
+       a.accnt_no
+     , a.accnt_rspns
+     , b.empno as accnt_empno
+     , b.nm as accnt_nm
+     , a.bugt_ctrl_psn
+     , c.nm as bugt_nm
+     , a.itm_solve_base
+     , d.itm_solve_base_nm
+     , a.accnt_no_nm
+     , a.start_ymd
+     , a.cls_ymd
+     , a.prj_no
+     , e.bsns_cd_bsns
+     , e.bsns_cd_inout
+  FROM resbgacctm a
+  JOIN humbasicinfo b ON a.accnt_rspns = b.syspayno
+  LEFT JOIN humbasicinfo c ON a.bugt_ctrl_psn = c.syspayno
+  LEFT JOIN fbaitmbase d ON a.itm_solve_base = d.itm_solve_base
+  LEFT JOIN resinpmast e ON a.prj_no = e.prj_no
+ WHERE 0 = 0 
+ <if test="accnt_no != null and accnt_no != ''">
+   AND a.accnt_no LIKE #{accnt_no}
+ </if>
+ <if test="accnt_no_nm != null and accnt_no_nm != ''">
+   AND a.accnt_no_nm LIKE #{accnt_no_nm}
+ </if>
+</select>
+
+<select id="selectBblBugtList" parameterType="kr.re.kitech.biz.com.vo.BblBugtActRsltVo" resultType="kr.re.kitech.biz.com.vo.BblBugtActRsltVo">
+SELECT /* kr.re.kitech.biz.com.selectBblBugtList */  
+       x.cd_nm itm_clsf_nm, /* 비목구분 */
+       f.accnt_cd_abbr||'('||b.accnt_cd||')' accnt_cd_abbr, /* 회계코드명 */
+       b.bugt_amt bugt_amt, /* 예산 */
+       b.preyr_enfrc_amt preyr_enfrc_amt, /* 전년집행 */
+       b.enfrc_amt thyr_enfrc_amt, /* 금년집행 */
+       b.cause_amt cause_amt, /* 원인행위 */
+       b.preyr_enfrc_amt + b.enfrc_amt + b.cause_amt enfrc_amt, /* 집행계 */
+       b.bugt_amt - (b.preyr_enfrc_amt + b.enfrc_amt + b.cause_amt) ramt /* 잔액 */
+  FROM bblbugtactrslt b
+  JOIN resbgacctm p on b.accnt_no = p.accnt_no 
+  JOIN xodfaccnt f on b.accnt_cd = f.accnt_cd
+  JOIN fbaitmaccnt i on b.accnt_cd = i.accnt_cd and i.itm_solve_base = #{itm_solve_base} 
+  JOIN xodxcommst x on i.itm_clsf = x.cd AND x.cd_clsf = 'FAE'
+ WHERE b.accnt_no = #{accnt_no}
+ ORDER BY i.itm_clsf, b.accnt_cd
+</select>
+
+<!-- 별도계좌 조회 -->
+<select id="selectListFbaApartAccnt" parameterType="kr.re.kitech.biz.com.vo.BankAccntVo" resultType="kr.re.kitech.biz.com.vo.BankAccntVo">
+SELECT	/* QueryID : kr.re.kitech.biz.com.selectListFbaApartAccnt */ 
+       a.syspayno 
+     , a.empno 
+     , a.nm 
+     , d.dept_nm
+     , DECODE(NVL(b.bankaccnt_no,''), '', NVL(c.bankaccnt_no,''), b.bankaccnt_no) as bankaccnt_no 
+     , DECODE(NVL(b.depstr_nm,''), '', NVL(a.nm,''), b.depstr_nm) as depstr_nm 
+     , DECODE(NVL(b.bank,''), '', NVL(c.salry_bank,''), b.bank) as bank 
+  FROM humbasicinfo a  
+  JOIN xodhdeptinfo d ON a.dept_cd = d.dept_cd AND  NVL(d.abol_ymd, '') = ''
+  LEFT JOIN fbaapartaccnt b  ON a.syspayno = b.syspayno 
+  LEFT JOIN humslbasinfo c ON a.syspayno = c.syspayno  
+ WHERE a.work_clsf !='HAG090'
+   AND (NVL(b.bankaccnt_no,'') != '' OR NVL(c.bankaccnt_no,'') != '')
+<if test='bank != null and bank != ""'> AND b.bank = #{bank} </if>
+<if test='bankaccnt_no != null and bankaccnt_no != ""'> AND b.bankaccnt_no LIKE #{bankaccnt_no}|| '%'</if>
+<if test='inqr_val != null and inqr_val != ""'> AND a.nm LIKE #{inqr_val}||'%'</if>
+</select>
+	
+<select id="selectExpnsList" parameterType="kr.re.kitech.biz.com.vo.FbaItmExpnsVo" resultType="kr.re.kitech.biz.com.vo.FbaItmExpnsVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectExpnsList */ 
+     r.accnt_no
+    , r.accnt_no_nm
+    , d.expns_cd_nm 
+    , d.expns_cd 
+    , c.accnt_cd_abbr
+    , c.accnt_cd
+    , d.desc
+    , a.itm_clsf
+    , a.bugt_ctrl_way
+    , c.bugt_ctrl_ex
+    , c.resch_accnt_clsf
+    , e.itm_solve_base
+    , e.itm_solve_base_nm
+  FROM resbgacctm r
+  JOIN fbaitmbase e ON r.itm_solve_base = e.itm_solve_base
+  JOIN fbaitmaccnt a ON e.itm_solve_base = a.itm_solve_base
+  JOIN fbaitmaccntexpns b ON a.accnt_cd = b.accnt_cd AND a.itm_solve_base = b.itm_solve_base AND b.use_ex = 'Y'
+  JOIN xodfaccnt c ON a.accnt_cd = c.accnt_cd
+  JOIN xodfexpns d ON b.expns_cd = d.expns_cd
+ WHERE r.accnt_no = #{accnt_no}
+   AND a.use_ex = 'Y'
+<if test="itm_clsf != null and itm_clsf != ''">
+   AND a.itm_clsf LIKE '%' || #{itm_clsf} || '%'
+</if>
+<if test="expns_cd != null and expns_cd != ''">
+   AND d.expns_cd LIKE '%' || #{expns_cd} || '%'
+</if>
+ ORDER BY d.expns_cd, c.accnt_cd
+</select>
+
+<!-- 입금현황조회(재무,연구,기술료,기업지원) -->
+<select id="selectFibkAccntHisList" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndDepstSrcVo" resultType="kr.re.kitech.biz.com.vo.FibkAccntHisVo">
+SELECT /* kr.re.kitech.biz.com.selectFibkAccntHisList */
+       a.acct_txday 
+     , a.acct_txday_seq
+     , b.bankaccnt_no 
+     , a.remark 
+     , a.acct_no
+     , TRUNC(a.tx_amt, 0) AS tx_amt 
+     , NVL(g.unslip_repay_amt, 0) + NVL(g.won_adjst_amt, 0) AS rcmny_req_amt --처리금액
+     , TRUNC(a.tx_amt, 0)  -( NVL(g.unslip_repay_amt, 0) + NVL(g.won_adjst_amt,0) ) AS ramt     
+     , NVL(g.unslip_repay_amt, 0) AS unslip_repay_amt
+     , DECODE(f.slip_no, NULL, 'Y', 'N') AS tx_flag
+     , NVL(g.won_occr_amt, 0) - NVL(g.won_adjst_amt, 0) - NVL(g.unslip_repay_amt, 0) AS slip_ramt /* 잔액 */  
+     , a.branch 
+     , b.bank AS bank_cd
+     , a.unslip_no AS depst_unslip_no
+     , a.unslip_seq AS depst_unslip_odr
+     , f.slip_no  -- 가수결의 확정번호
+     , f.slip_odr     
+     , h.vacct_no
+     , h.accnt_no       
+  FROM fibk_acct_his a
+  JOIN fcpdepst b ON a.acct_no = REPLACE(b.bankaccnt_no, '-','')
+  LEFT JOIN fspslipdecsnd f ON a.unslip_no = f.unslip_no AND a.unslip_seq = f.unslip_odr
+  LEFT JOIN fspramtcreat g ON f.slip_no = g.slip_no AND f.slip_odr = g.slip_odr
+  LEFT JOIN( ffnvacct h
+             LEFT JOIN ( resinpmast t1
+                         JOIN resbgacctm t2 ON t1.prj_no = t2.prj_no AND t2.accnt_clsf = 'RAR001'
+                       ) ON h.bsns_req_no = t1.bsns_req_no AND h.bankaccnt_state = '1'  
+           ) ON a.vacct_no = h.vacct_no           
+ WHERE a.acct_txday BETWEEN #{acct_txday_st} AND #{acct_txday_ed}
+   AND a.inout_gubun = '2' /* 입금 */
+   AND TRUNC(a.tx_amt, 0)  - NVL(g.unslip_repay_amt, 0) - NVL(g.won_adjst_amt,0) > 0
+  <if test='acct_no != null and acct_no != ""'> AND a.acct_no LIKE '%'||#{acct_no} </if>
+  <if test='tx_amt_from != null and tx_amt_from != ""'> AND a.tx_amt >= #{tx_amt_from} </if>
+  <if test='tx_amt_to != null and tx_amt_to != ""'> AND a.tx_amt <![CDATA[ <= ]]> #{tx_amt_to} </if>
+  <if test='remark != null and remark != ""'> AND a.remark LIKE '%'|| #{remark} ||'%' </if>
+  <if test='vacct_no != null and vacct_no != ""'> AND NVL(h.vacct_no, '') LIKE CONCAT('%', #{vacct_no}) </if>
+  <if test='depst_knd != null and depst_knd != ""'> AND b.depst_knd = #{depst_knd}</if>
+ ORDER BY a.acct_txday, a.acct_txday_seq
+</select>
+
+<!-- 기업지원 입금현황 팝업에서 예금구분별 계좌번호 조회 -->
+<select id="selectBankAccntList" parameterType="kr.re.kitech.biz.fin.std.vo.FcpDepstVo" resultType="kr.re.kitech.biz.fin.std.vo.FcpDepstVo">
+SELECT /* kr.re.kitech.biz.com.selectBankAccntList */  
+       bankaccnt_no AS cd 
+  FROM fcpdepst
+ WHERE depst_knd = #{depst_knd}
+</select>
+
+<select id="selectSptCusCunslList" parameterType="kr.re.kitech.biz.com.vo.SptCtiCunslVo" resultType="kr.re.kitech.biz.com.vo.SptCtiCunslVo">
+SELECT /* kr.re.kitech.biz.com.selectSptCusCunslList */
+      x1.cust_no
+    , x1.cmpy_nm_krchar
+    , x1.reprs_psn
+    , x1.bsns_psn_regst_no
+    , x1.cmpy_reprs_tel
+    , x1.cmpy_post_no
+    , x1.cmpy_addr
+    , x1.cmpy_addr_detls
+    , x1.cmpy_addr_dis
+   <if test='type == "cunsl"'>
+   	/* 상담의뢰팝업 */
+    , t4.supt_clsf /* 지원구분 */
+    , t4.cmpy_typ /* 기업유형코드 */
+    , t3.cd_nm AS cmpy_typ_nm /* 기업유형명 */
+    , t2.cunsl_req_psn /* 상담의뢰자성명 */
+    , t2.cunsl_req_psn_posi /* 상담의뢰자직책 */
+    , t2.cunsl_req_psn_tel /* 상담의뢰자일반전화번호 */
+    , t2.cunsl_req_psn_mobile_no /* 상담의뢰자모바일 */
+    , t2.cunsl_req_psn_email /* 상담의뢰자이메일 */
+   </if>
+   <if test='type == "trip"'>
+      /* 국내출장 방문처검색*/
+    , t5.cunsl_rcpt_no /* 기술지도 신청번호*/
+   </if>
+  FROM (SELECT DISTINCT 
+              t1.cust_no /* 고객번호 */
+            , t1.cmpy_nm_krchar /* 고객명(한글) */
+            , t1.reprs_psn /* 대표자성명 */
+            , t1.bsns_psn_regst_no /* 사업자번호 */
+            , t1.cmpy_reprs_tel /* 회사대표번호 */
+            , t1.cmpy_post_no /* 회사우편번호 */
+            , t1.cmpy_addr /* 회사주소 */
+            , t1.cmpy_addr_detls /* 회사주소상세 */
+            , (t1.cmpy_addr || t1.cmpy_addr_detls) AS cmpy_addr_dis /* 회사주소(디스플레이용) */
+         FROM sptcustbaseinfo t1
+        WHERE t1.use_yn != 'N'
+        <if test='cust_no != null and cust_no != ""'> AND t1.cust_no LIKE '%' || #{cust_no} || '%' </if>
+        <if test='cmpy_nm_krchar != null and cmpy_nm_krchar != ""'> AND  UPPER(t1.cmpy_nm_krchar) LIKE UPPER('%' || #{cmpy_nm_krchar} || '%') </if>
+        <if test='reprs_psn != null and reprs_psn != ""'> AND t1.reprs_psn LIKE '%' || #{reprs_psn} || '%' </if>
+        <if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND t1.bsns_psn_regst_no LIKE '%' || #{bsns_psn_regst_no} || '%' </if>     
+        UNION
+        SELECT DISTINCT
+               t1.vend_cd AS cust_no /* 고객번호 */
+             , t1.vend_abbr AS cmpy_nm_krchar /* 고객명(한글) */
+             , t1.reprs_psn_nm AS reprs_psn /* 대표자성명 */
+             , t1.bsns_psn_regst_no /* 사업자번호 */
+             , t1.tel_no AS cmpy_reprs_tel /* 회사대표번호 */
+             , t1.postmt_no AS cmpy_post_no /* 회사우편번호 */
+             , t1.addr   AS cmpy_addr /* 회사주소 */
+             , t1.detls_addr   AS cmpy_addr_detls /* 회사주소상세 */
+             , (t1.addr || t1.detls_addr) AS cmpy_addr_dis /* 회사주소(디스플레이용) */
+         FROM xodfvend t1
+        WHERE t1.use_yn != 'N'
+          AND 1 = DECODE(#{type}, "trip", 2, 1)
+          AND NOT EXISTS (SELECT 1 FROM sptcustbaseinfo WHERE cust_no = t1.vend_cd)      
+      <if test='cust_no != null and cust_no != ""'> AND t1.vend_cd LIKE '%' || #{cust_no} || '%' </if>
+      <if test='cmpy_nm_krchar != null and cmpy_nm_krchar != ""'> AND  UPPER(t1.vend_abbr) LIKE UPPER('%' || #{cmpy_nm_krchar} || '%') </if>
+      <if test='reprs_psn != null and reprs_psn != ""'> AND t1.reprs_psn_nm LIKE '%' || #{reprs_psn} || '%' </if>
+      <if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND t1.bsns_psn_regst_no LIKE '%' || #{bsns_psn_regst_no} || '%' </if>
+      ) x1
+ <if test='type == "cunsl"'>
+  LEFT JOIN sptcticunslcontnt t2 ON x1.cust_no = t2.cust_no
+  LEFT JOIN sptcustbaseinfo t4 ON x1.cust_no = t4.cust_no
+  LEFT JOIN xodxcommst t3 ON t4.cmpy_typ = t3.cd
+ </if>
+ <if test='type == "trip"'>
+  JOIN spttecinfosuply t5 ON x1.cust_no = t5.cust_no
+ </if>
+ WHERE 1=1
+ <if test='cunsl_req_psn != null and cunsl_req_psn != ""'> AND t2.cunsl_req_psn LIKE '%' || #{cunsl_req_psn} || '%' </if>
+ <if test='type == "trip" and from_ymd != null and from_ymd != ""' >AND t5.tech_supt_ymd >= #{from_ymd} </if>
+ <if test='type == "trip" and to_ymd != null and to_ymd != ""' > AND t5.tech_supt_ymd <![CDATA[<= ]]> #{to_ymd} </if>
+ <if test='type == "cunsl"'> ORDER BY x1.cust_no, t2.cunsl_req_psn  </if>
+</select>
+
+<!-- 거래처 정보 조회 -->	
+<select id="selectXodfVendList" parameterType="kr.re.kitech.biz.com.vo.ComPopSearchVo" resultType="kr.re.kitech.biz.com.vo.XodfVendVo">
+SELECT /* kr.re.kitech.biz.com.selectXodfVendList */
+      t1.vend_cd
+    , t1.vend_abbr
+    , t1.bsns_psn_regst_no
+    , t1.reprs_psn_nm
+    , t1.addr AS main_addr
+    , t1.detls_addr
+    , TRIM(t1.addr||' '||t1.detls_addr) AS addr
+    , a.main_bankaccnt_yn
+    , a.tran_bank
+    , a.bankaccnt_no
+    , a.depstr
+    , t1.vend_clsf
+    , t1.corp_resid_no
+    , t1.tel_no
+    , t1.fax
+    , t1.email_addr
+    , t1.bizcatg -- 업태
+    , t1.biztyp -- 업종
+    , t1.cmpy_joinsto_no
+    , t1.sihn_joinsto_no
+    , t1.pepl_joinsto_no
+    , t1.postmt_no
+    , TO_CHAR(t1.regst_daytm,'%Y%m%d') AS regst_daytm
+    , t4.nm AS regst_nm
+    , t1.zero_taxrts_yn
+    , t1.use_yn
+    , TRIM(NVL(a.rmk, '')) AS rmk
+   	, TRIM(NVL(a.is_account,'')) AS is_account
+  FROM xodfvend t1
+  LEFT JOIN xodfvendaccnt a ON t1.vend_cd = a.vend_cd
+  LEFT JOIN humbasicinfo t4 ON t1.regst_syspayno=t4.syspayno
+ WHERE (t1.tran_stop_ymd IS NULL OR t1.tran_stop_ymd = '')
+ <if test='bsns_psn_regst_no !=null and bsns_psn_regst_no != ""'> AND (t1.bsns_psn_regst_no = #{bsns_psn_regst_no} OR t1.bsns_psn_regst_no = #{bsns_psn_regst_no_1}) </if>
+ <if test='vend_abbr !=null and vend_abbr != ""'>  AND UPPER(t1.vend_abbr) LIKE '%' || UPPER(#{vend_abbr}) || '%' </if>
+ <if test='reprs_psn_nm !=null and reprs_psn_nm != ""'>  AND UPPER(t1.reprs_psn_nm) LIKE UPPER(#{reprs_psn_nm}) || '%' </if>
+ <if test='vend_cd != null and vend_cd != ""'> AND t1.vend_cd = #{vend_cd} </if>
+ <if test='corp_resid_no != null and corp_resid_no != ""'> AND (t1.corp_resid_no = REPLACE(#{corp_resid_no}, '-', '') OR t1.corp_resid_no = #{corp_resid_no}) </if>
+ <if test='vend_clsf != null and vend_clsf != ""'> AND t1.vend_clsf = #{vend_clsf}</if>
+ <if test='bankaccnt_no != null and bankaccnt_no != ""'>AND REPLACE(a.bankaccnt_no,'-','') LIKE '%'|| REPLACE(#{bankaccnt_no},'-','') || '%' </if>
+ORDER BY main_bankaccnt_yn DESC
+</select>
+
+<select id="selectListHumComUserSel" parameterType="kr.re.kitech.biz.com.vo.HumComUserSelVo" resultType="kr.re.kitech.biz.com.vo.HumComUserSelVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectListHumComUserSel */ 
+       a.nm
+     , a.nm_eng 
+     , a.empno
+     , a.syspayno
+     , a.occutyp_cd
+     , x3.occutyp_nm
+     , a.occugrp_cd
+     , a.posi_cd
+     , d.posi_nm
+     , a.duty_cd
+     , x7.cd_nm AS duty_nm
+     , a.dept_cd
+     , a.dept_new_ymd
+     , b.dept_nm
+     , b.fomat_unit
+     , b.depthed
+     , a1.nm as depthed_nm
+     , b.dept_typ
+     , x8.cd_nm as dept_typ_nm
+     , b.divsn_dept
+     , fun_dept_nm(b.divsn_dept, b.divsn_dept_new_ymd)  AS divsn_dept_nm
+     , b.divsn_dept_new_ymd   
+     , a.entr_ymd
+     , a.retire_ymd
+     , a.job_clsf
+     , fun_xodxcommst_cd_nm(a.job_clsf,0 ) AS job_clsf_nm
+     , fun_xodxcommst_cd_nm(b.fomat_unit, 0) as region_nm
+     , x5.job_nm -- 직무명
+     , a.commute_cd
+     , a.sci_tech_regst_no
+     , NVL(a.res_person_no, '') AS res_person_no
+     , a.resid_no
+     , a.addpostn_yn -- 겸직여부
+     , a.work_clsf
+     , fun_xodxcommst_cd_nm(a.work_clsf, 0) AS work_clsf_nm 
+     , a.work_land
+     , x.cd_nm || ' '|| a.work_land_build_info AS work_land_nm
+     , x.mngmt_item_4 AS work_land_addr
+     , x.mngmt_item_5 AS work_land_postmt_no
+     , a.work_land_build_info
+     , a.ext_no  
+     , a.mobile
+     , a.email      
+     , a.fax_no
+     , a.addr_base
+     , a.addr_detls
+     , a.job_cd
+     , a2.syspayno as divsn_rspns_syspayno
+     , a2.nm as divsn_rspns_nm
+     , TRIM(a.addr_base)||TRIM(a.addr_detls) AS addr 
+     , fun_emp_untjob_desc(a.syspayno) as unitjob
+     , CASE WHEN b.dept_shape = '5' THEN b.dept_level_4 ELSE '' END AS dept_level_4_cd
+     , CASE WHEN b.dept_shape = '5' THEN b.dept_level_4_new_ymd ELSE '' END AS dept_level_4_new_ymd
+     , CASE WHEN b.dept_shape = '5' THEN fun_dept_nm(b.dept_level_4, b.dept_level_4_new_ymd) ELSE '' END AS dept_level_4_nm
+     , c.longwk_cntfr_ymd
+     , a.home_tel
+     , a.addr_postmt_no
+     , c.sci_tech_anuty
+     , c.tot_bankaccnt_no
+     , c.savng_shape_dedct
+  FROM humbasicinfo a
+  JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+  JOIN humslbasinfo c ON a.syspayno = c.syspayno
+  JOIN xodhposiinfo d ON a.posi_cd = d.posi_cd
+  JOIN xodhdeptinfo e ON e.dept_cd = b.divsn_dept and e.dept_new_ymd = b.divsn_dept_new_ymd
+  JOIN xodhoccutyp x3 ON a.occutyp_cd = x3.occutyp_cd
+  JOIN xodhjobinfo x5 ON a.job_cd = x5.job_cd
+  LEFT JOIN xodxcommst x ON a.work_land = x.cd AND x.cd_clsf = 'HBX'
+  LEFT JOIN xodxcommst x7 ON a.duty_cd = x7.cd AND x7.cd_clsf = 'HAB'
+  LEFT JOIN xodxcommst x8 ON b.dept_typ = x8.cd AND x8.cd_clsf = 'HCF'
+  LEFT JOIN humbasicinfo a1 ON a1.syspayno = b.depthed 
+  LEFT JOIN humbasicinfo a2 ON a2.syspayno = e.depthed
+ WHERE 1=1
+ <if test='empno != null and empno != ""'>  AND ( a.empno LIKE '%'|| #{empno} ||'%' OR a.nm LIKE '%'|| #{empno} ||'%') </if>
+ <if test='dept_cd != null and dept_cd != ""'> AND a.dept_cd = #{dept_cd} </if>
+ <if test='dept_nm != null and dept_nm != ""'> AND b.dept_nm LIKE '%' || #{dept_nm} || '%' </if>
+ <if test='dept_new_ymd != null and dept_new_ymd != ""'> AND a.dept_new_ymd = #{dept_new_ymd} </if>
+ <if test='work_clsf != null and work_clsf != ""'> AND a.work_clsf = #{work_clsf} </if>  
+ <if test='occutyp_cd != null and occutyp_cd != ""'> AND a.occutyp_cd = #{occutyp_cd} </if>  
+ <if test='user_div == "1"'> AND a.posi_cd NOT IN('350010', '351010', '354000', '330020') </if>
+ <if test='user_div == "5"'> AND a.posi_cd IN('350010', '351010', '354000', '330020') </if>
+ ORDER BY b.disp_seq, DECODE(a.duty_cd, '', 0), a.posi_cd, a.nm
+</select>
+	
+    <select id="selectCodhDeptInfo" parameterType="kr.re.kitech.biz.com.vo.DeptInfoVo" resultType="kr.re.kitech.biz.com.vo.DeptInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectCodhDeptInfo */
+   <if test='full_info == true'> dept_cd||'-'||dept_new_ymd||'-'||dept_nm||'-'||dept_job||'-'||decode(job_cd, null, '', job_cd)||'-'||work_region AS dept_cd </if>
+   <if test='full_info != true'> dept_cd </if>
+     , dept_nm
+     , dept_typ
+     , dept_eng_nm
+     , disp_seq
+     , dept_shape
+     , divsn_dept
+     , divsn_dept_new_ymd
+     , fun_dept_nm(divsn_dept, divsn_dept_new_ymd) as divsn_dept_nm
+  FROM xodhdeptinfo
+ WHERE dept_shape IN ('1','2','3','4', '5')
+   AND abol_ymd is null
+  <if test="dept_cd != null and dept_cd != ''"> AND ( dept_cd LIKE '%'|| #{dept_cd} ||'%' OR dept_nm LIKE '%'|| #{dept_cd} ||'%') </if>
+  <if test="dept_nm != null and dept_nm != ''"> AND dept_nm LIKE '%' || #{dept_nm} || '%' </if>
+  <if test="dept_new_ymd != null and dept_new_ymd != ''"> AND dept_new_ymd = #{dept_cd} </if>
+  <if test="dept_shape != null and dept_shape != ''"> AND dept_shape >= #{dept_shape} </if>
+ ORDER BY disp_seq
+</select>
+    
+    <select id="selectHumBasicInfoListDetail" parameterType="kr.re.kitech.biz.com.vo.HumBasicInfoVo" resultType="kr.re.kitech.biz.com.vo.HumBasicInfoVo">
+    	select  /* QueryID : kr.re.kitech.biz.com.selectHumBasicInfoListDetail */
+    		TRIM(ctrl_content)  AS ctrl_content, biztrip_ymd
+    	FROM (	
+        SELECT	
+		    TO_CHAR(TO_DATE(a.start_ymd,'%Y%m%d'),'%Y.%m.%d')
+		    ||'~'||TO_CHAR(TO_DATE(a.cls_ymd,'%Y%m%d'),'%Y.%m.%d')
+		    || ' : ' || a.type || ' / ' || a.location || ' / '
+		    || a.purpose || '(직무대행:' || c.nm || ')' AS ctrl_content,
+		    a.biztrip_ymd
+		FROM
+		    (
+		        SELECT --근거리출장
+		            req_no,
+		            biztrip_ymd AS start_ymd,
+		            biztrip_ymd AS cls_ymd,
+		            '근거리' AS type,
+		            biztrip_land AS location,
+		            biztrip_goal AS purpose,
+		            agent_psn_syspayno,
+		            biztrip_ymd
+		        FROM
+		            ctrlocal
+		        WHERE
+		            biztrip_psn_syspayno = #{syspayno}
+		            AND biztrip_ymd BETWEEN #{biztrip_from_ymd} AND #{biztrip_to_ymd} 
+		
+		        UNION --------------------------------------------------
+		
+		        SELECT --해외출장
+		            t2.req_no,
+		            t2.biztrip_start_ymd AS start_ymd,
+		            t2.biztrip_cls_ymd AS cls_ymd,
+		            '해외' AS type,
+		            t2.biztrip_land_info AS location,
+		            t2.biztrip_goal AS purpose,
+		            t1.agent_psn_syspayno AS agent_psn_syspayno,
+		            t2.biztrip_start_ymd AS biztrip_ymd
+		        FROM
+		            ctrovercompn t1
+		            JOIN ctrover t2
+		                ON t2.req_no = t1.req_no
+		                <![CDATA[
+		                AND t2.biztrip_cls_ymd >= #{biztrip_from_ymd} AND t2.biztrip_start_ymd <= #{biztrip_to_ymd}
+		                ]]>
+		        WHERE
+		            t1.biztrip_psn_syspayno = #{syspayno}
+		
+		        UNION --------------------------------------------------
+		
+		        SELECT --국내출장
+		            t2.req_no,
+		            t2.biztrip_start_ymd AS start_ymd,
+		            t2.biztrip_cls_ymd AS cls_ymd,
+		            '국내' AS type,
+		            t2.biztrip_region AS location,
+		            t2.biztrip_goal AS purpose,
+		            t1.agent_psn_syspayno AS agent_psn_syspayno,
+		            t2.biztrip_start_ymd AS biztrip_ymd
+		        FROM
+		            ctrdomcompn t1
+		            JOIN ctrdom t2
+		                ON t2.req_no = t1.req_no
+		                <![CDATA[
+		                AND t2.biztrip_cls_ymd >= #{biztrip_from_ymd} AND t2.biztrip_start_ymd <= #{biztrip_to_ymd}
+		                ]]>
+		        WHERE
+		            t1.biztrip_psn_syspayno = #{syspayno}
+		    ) a
+		    JOIN xomxintfatab b
+		        ON b.req_no = a.req_no
+		    JOIN humbasicinfo c
+		        ON c.syspayno = a.agent_psn_syspayno
+		WHERE
+			<![CDATA[
+		    b.apr_state >= 'XAD020'
+		    ]]>
+		
+		UNION --------------------------------------------------
+		
+		--보상휴가, 대체휴일 변경 적용을 위하여 휴가원 분리
+		SELECT
+		    CASE WHEN e.type != '대체휴일'
+		            THEN TO_CHAR(TO_DATE(e.start_ymd,'%Y%m%d'),'%Y.%m.%d')||'~'||TO_CHAR(TO_DATE(e.cls_ymd,'%Y%m%d'),'%Y.%m.%d') ||' : '||e.type||DECODE(TRIM(e.location),'','',' / '||TRIM(e.location))||' / '||e.purpose||' ( 직무대행 : '||e.nm||')'
+		            ELSE TO_CHAR(TO_DATE(e.start_ymd,'%Y%m%d'),'%Y.%m.%d')||'~'||TO_CHAR(TO_DATE(e.cls_ymd,'%Y%m%d'),'%Y.%m.%d') ||' : '||e.type||' / '||e.purpose END AS ctrl_content,
+		    e.biztrip_ymd
+		FROM (
+		    SELECT /* 휴가원 */
+		        t1.req_no,
+		        t1.holiday_start_ymd AS start_ymd,
+		        t1.holiday_cls_ymd AS cls_ymd,
+		        /* 2019-08-12, 보상휴가 시간제연차와 같은 형식으로 표시 */
+		        CASE WHEN t1.holiday_clsf  IN ('HBI019','HBI080') THEN fun_xodxcommst_cd_nm(t1.holiday_clsf, 2)||' '|| LPAD(holiday_start_hour,2)|| '~' || LPAD(holiday_cls_hour,2) ELSE fun_xodxcommst_cd_nm(t1.holiday_clsf, 2) END AS type,
+		        /* 2017-08-16, 입양휴가 및 유사산 휴가의 화면 표기 명칭 변경 */
+		        NVL(t1.destin, '') AS location,
+		        t1.holiday_cause AS purpose,
+		        NVL(c.nm, '') AS nm,
+		        t1.holiday_start_ymd AS biztrip_ymd
+		    FROM cgslapp t1
+		    JOIN imis:xodxcommst t2 ON t2.cd = t1.holiday_clsf
+		    LEFT JOIN humbasicinfo c ON c.syspayno = t1.agent_psn_syspayno
+		    LEFT JOIN xomxintfatab b ON b.req_no = t1.req_no
+		    LEFT JOIN xomxintfatab d ON d.req_no = t1.ctr_req_no
+		    <![CDATA[
+		    WHERE t1.req_psn_syspayno = #{syspayno}
+		    AND t1.holiday_cls_ymd >= #{biztrip_from_ymd}
+		    AND t1.holiday_start_ymd <= #{biztrip_to_ymd}
+		    AND (b.apr_state IS NULL OR b.apr_state >= 'XAD020') /* 저장중,작성중,회수,반려 제외 */
+		    AND (d.apr_state IS NULL OR d.apr_state >= 'XAD020')
+		    ]]>
+		) e
+		ORDER BY biztrip_ymd
+		)            
+			
+    </select>
+
+<!-- 과제정보 팝업 참여연구원 조회 -->    
+<select id="selectResInpPare" parameterType="kr.re.kitech.biz.com.vo.PrjNoSrcVo" resultType="kr.re.kitech.biz.com.vo.ResInpPareVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectResInpPare */ 
+      a.accnt_no,
+      h.cd_nm as tax_nm,
+      b.psnexpns_clsf,
+      b.reschr_clsf,
+      CASE WHEN fun_emp_nm(b.syspayno) = '' THEN b.nm ELSE fun_emp_nm(b.syspayno) END AS inpparenm,
+      e.cd_nm,
+      b.nm,
+      NVL(c.empno,'') AS empno,
+      CONCAT(SUBSTR(b.resid_regst_no, 1, 6), '-*******') AS resid_regst_no,
+      NVL(x1.dept_nm,'') AS dept_nm,
+      NVL(x2.posi_nm,'') AS posi_nm,
+      NVL(b.cash_attnce_rt, 0) AS cash_attnce_rt,
+      NVL(b.goods_attnce_rt, 0) AS goods_attnce_rt,
+      NVL(b.cash_amt, 0) + NVL(b.goods_amt, 0) AS tot_amt,
+      NVL(g.middle_attach_file,'') AS middle_attach_file,
+      NVL(g.final_attach_file,'') AS final_attach_file,
+      b.attnce_prd_orign_ymd,
+      b.attnce_prd_cls_ymd
+  FROM resbgacctm a
+  JOIN resinppare b ON a.prj_no = b.prj_no
+  LEFT JOIN humbasicinfo c ON b.syspayno = c.syspayno
+  LEFT JOIN xodhdeptinfo x1 ON c.dept_cd = x1.dept_cd AND c.dept_new_ymd = x1.dept_new_ymd
+  LEFT JOIN xodhposiinfo x2 ON c.posi_cd = x2.posi_cd
+  JOIN xodxcommst d ON b.reschr_clsf = d.cd
+  JOIN xodxcommst e ON b.psnexpns_clsf = e.cd
+  JOIN xodxcommst h ON h.cd = a.tax_cd  -- 과세 비과세 표시
+  JOIN resinpmast f ON a.prj_no = f.prj_no
+  JOIN resappmast g ON f.bsns_req_no = g.bsns_req_no
+ WHERE a.accnt_no = #{accnt_no}
+<if test="syspayno != null and syspayno != ''"> AND c.syspayno = #{syspayno} </if>
+ ORDER BY 1,2,3,4
+</select>
+
+<!-- 과제정보 참여업체 탭 조회 및 참여업체현황 팝업 조회 -->    
+<select id="selectResInpPaco" parameterType="kr.re.kitech.biz.com.vo.ResInpPacoVo" resultType="kr.re.kitech.biz.com.vo.ResInpPacoVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectResInpPaco */ 
+       r.accnt_no
+     , r.accnt_no_nm
+     , r.start_ymd || '~' || r.cls_ymd AS prj_ymd
+     , a.prj_no
+     , a.vend_cd
+     , e.vend_clsf
+     , e.bsns_psn_regst_no
+     , e.reprs_psn_nm
+     , a.vend_nm  -- 업체명
+     , a.attnce_clsf
+     , CASE WHEN a.attnce_clsf IN ('RCA099', 'RCA100') THEN a.attnce_agncy ELSE b.cd_nm END AS attnce_nm -- 참여구분
+     , NVL(a.resch_amt_cash, 0) AS resch_amt_cash
+     , NVL(a.resch_amt_goods, 0) AS resch_amt_goods
+     , NVL(a.resch_amt_sum, 0) AS resch_amt_sum
+     , a.trust_prj_nm
+     , a.trust_orign_ymd
+     , a.trust_cls_ymd
+     , a.attnce_state
+     , x.cd_nm AS attnce_state_nm
+     , h.nm AS accnt_rspns_nm
+     , t1.dept_nm
+     , CASE WHEN c.restrc_prd_orign_ymd <![CDATA[ <= ]]> TO_CHAR(SYSDATE,'%Y%m%d') AND restrc_prd_cls_ymd >= TO_CHAR(SYSDATE,'%Y%m%d') THEN '제한중' ELSE '' END AS retrc_yn -- 참여제한여부
+  FROM resinppaco a
+  JOIN resbgacctm r ON a.prj_no = r.prj_no 
+  JOIN humbasicinfo h ON r.accnt_rspns = h.syspayno
+  JOIN xodhdeptinfo t1 ON h.dept_cd = t1.dept_cd AND h.dept_new_ymd = t1.dept_new_ymd
+  JOIN xodxcommst b ON b.cd = a.attnce_clsf AND b.cd_clsf ='RCA'
+  JOIN xodxcommst x ON a.attnce_state = x.cd AND x.cd_clsf ='RCB'
+  JOIN xodfvend e ON e.vend_cd = a.vend_cd  
+  LEFT JOIN resbacpapn c ON e.bsns_psn_regst_no = c.bsns_psn_regst_no  
+ WHERE 1=1
+  <if test='accnt_no != null and accnt_no != ""'> AND r.accnt_no = #{accnt_no} </if>
+  <if test= 'attnce_clsf != null and attnce_clsf != ""'> AND a.attnce_clsf = #{attnce_clsf} </if> 
+  <if test= 'bsns_psn_regst_no != null and bsns_psn_regst_no !=""'> AND b.bsns_psn_regst_no LIKE #{bsns_psn_regst_no}||'%' </if>
+  <if test= 'from_ymd != null and from_ymd !=""'> AND r.start_ymd BETWEEN #{from_ymd} AND #{to_ymd} </if> 
+  <if test= 'vend_abbr != null and vend_abbr !=""'> AND e.vend_abbr LIKE '%'||#{vend_abbr} ||'%' </if>   
+  <if test= 'accnt_rspns != null and accnt_rspns != ""'> AND r.accnt_rspns = #{accnt_rspns} </if>
+ ORDER BY a.attnce_clsf, a.vend_nm
+</select>
+
+<!-- 과제정보 팝업 연구기자재 검색 -->    
+<select id="selectListResInpMate" parameterType="kr.re.kitech.biz.com.vo.PrjNoSrcVo" resultType="kr.re.kitech.biz.com.vo.ResinpmateVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectListResInpMate */
+       a.prj_no
+     , c.main_accnt_no AS accnt_no
+     , a.equip_odr
+     , a.equip_clsf
+     , b.cd_nm AS equip_clsf_nm
+     , a.gdnm
+     , a.qty
+     , a.amt
+     , a.etub_id
+     , a.consttn_clsf
+     , a.consttn_plce_clsf
+     , a.consttn_resn
+     , a.consttn_plce
+     , a.consttn_no
+     , a.consttn_ymd
+     , a.attach_file AS attach_file_no
+     , MAX(CASE WHEN d.equip_odr IS NULL THEN e.check_no ELSE d.pur_req_no END) AS pur_req_no
+  FROM resinpmate a  
+  JOIN resbgacctm c ON a.prj_no = c.prj_no
+  LEFT JOIN xodxcommst b ON a.equip_clsf = b.cd
+  LEFT JOIN purreqaccnt d ON c.accnt_no = d.accnt_no AND a.equip_odr = d.equip_odr
+  LEFT JOIN fspsmlitmcheckuph e ON c.accnt_no = e.accnt_no AND a.equip_odr = e.equip_odr
+ WHERE 1=1
+  <if test="accnt_no != null and accnt_no != ''"> AND c.main_accnt_no = SUBSTR(#{accnt_no},1,7) ||'0' </if>
+  <if test="prj_no != null and prj_no != ''"> AND a.prj_no LIKE #{prj_no} </if>
+  <if test="equip_clsf != null and equip_clsf != ''"> AND a.equip_clsf LIKE #{equip_clsf} </if>
+  <if test="equip_odr != null and equip_odr != ''"> AND a.equip_odr = #{equip_odr} </if>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+ORDER BY a.prj_no, a.equip_odr
+</select>
+ 
+<select id="selectMainAccntInfo" parameterType="kr.re.kitech.biz.com.vo.PrjNoSrcVo" resultType="kr.re.kitech.biz.com.vo.ResMainAccntVo">
+SELECT 	/* QueryID : kr.re.kitech.biz.com.selectMainAccntInfo */
+	   a.accnt_no	/* 계정번호 */
+     , a.prj_no /* 프로젝트번호 */
+     , a.accnt_no_nm AS prj_nm	/* 프로젝트명 */ 
+     , b.bsns_cd_inout /* 사업구분 */
+     , h.nm       AS curr_resch_rspns_nm   /* 현연구책임자 */ 
+     , g.dept_nm  AS curr_resch_rspns_dept_nm  /* 소속 */
+     , fun_posi_nm(h.posi_cd) AS curr_resch_rspns_posi_nm   /* 직급 */       
+     , b.prj_state /* 과제상태 */
+     , DECODE(NVL(TRIM(c.thyr_yr_orign_ymd), ''), '', '', SUBSTR(c.thyr_yr_orign_ymd, 1, 4) || '-' || SUBSTR(c.thyr_yr_orign_ymd, 5, 2) || '-' || SUBSTR(c.thyr_yr_orign_ymd, 7, 2)) || ' ~ ' ||
+       DECODE(NVL(TRIM(c.thyr_yr_cls_ymd)  , ''), '', '', SUBSTR(c.thyr_yr_cls_ymd  , 1, 4) || '-' || SUBSTR(c.thyr_yr_cls_ymd  , 5, 2) || '-' || SUBSTR(c.thyr_yr_cls_ymd  , 7, 2)) AS thyr_yr_ymd /* 연구기간 */
+FROM resbgacctm a
+JOIN resbgacctm x1 on x1.main_accnt_no = a.accnt_no
+JOIN resinpmast b ON a.prj_no = b.prj_no
+JOIN resinpyear c ON a.prj_no = c.prj_no AND a.accnt_no  = c.accnt_no
+LEFT JOIN humbasicinfo h ON b.curr_resch_rspns = h.syspayno
+LEFT JOIN xodhdeptinfo g ON h.dept_cd = g.dept_cd AND h.dept_new_ymd = g.dept_new_ymd
+WHERE x1.accnt_no = #{accnt_no}
+</select>
+
+<!-- 연차과제 개수 조회 --> 
+<select id="selectChkAccnt" parameterType="kr.re.kitech.biz.com.vo.PrjNoSrcVo" resultType="int">
+SELECT 	/* QueryID : kr.re.kitech.biz.com.selectChkAccnt */
+		COUNT(*) AS cnt
+  FROM resinpmast
+ WHERE NVL(first_pre_prj_no, '') != ''
+   AND first_pre_prj_no = ( SELECT first_pre_prj_no FROM resinpmast WHERE prj_no = #{prj_no} )
+</select>
+
+<!-- 연차과제 전체 조회 -->
+<select id="selectInpYearAccntCnt" parameterType="kr.re.kitech.biz.com.vo.PrjNoSrcVo" resultType="kr.re.kitech.biz.com.vo.PrjNoInpYearVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectInpYearAccntCnt */
+       NVL(a.curr_prj_anal,0) + NVL( b.anal, 0) - 1 AS anal    
+     , DECODE(NVL(trim(b.thyr_yr_orign_ymd), ''), '', ''
+           , SUBSTR(b.thyr_yr_orign_ymd, 1, 4) || '-' || SUBSTR(b.thyr_yr_orign_ymd, 5, 2) || '-' || SUBSTR(b.thyr_yr_orign_ymd, 7, 2)) || '~' ||
+       DECODE(NVL(trim(b.thyr_yr_cls_ymd) , ''), '', ''
+           , SUBSTR(b.thyr_yr_cls_ymd  , 1, 4) || '-' || SUBSTR(b.thyr_yr_cls_ymd  , 5, 2) || '-' || SUBSTR(b.thyr_yr_cls_ymd  , 7, 2)) AS ymd -- 연구기간
+     , fun_emp_nm( b.accnt_rspns ) AS accnt_rspns_nm
+     , b.accnt_rspns  AS  acnt_rspns
+     , b.accnt_no 
+     , a.prj_no 
+     , case when SUBSTR(a.prj_no_yr,0,1) ='9' then  concat('19',a.prj_no_yr) else concat('20',a.prj_no_yr)  end  AS prj_no_yr
+     , c.empno , fun_posi_nm(c.posi_cd)  posi_nm , fun_dept_nm ( c.dept_cd, c.dept_new_ymd )  AS dept_nm  , c.ext_no
+     , b.anal AS prj_anal
+     , b.reschamt_card_prj_no
+     , b.reschamt_card_use_clsf
+     , b.exclsv_agncy_prj_no
+  FROM resinpmast a  
+  JOIN resinpyear b ON a.prj_no = b.prj_no 
+  JOIN humbasicinfo c ON b.accnt_rspns = c.syspayno 
+ WHERE a.first_pre_prj_no = ( SELECT first_pre_prj_no FROM resinpmast WHERE prj_no = #{prj_no} )
+ ORDER BY 7
+</select>
+
+<!-- 당해연도 연차과제 조회 --> 
+<select id="selectResInpYear" parameterType="kr.re.kitech.biz.com.vo.PrjNoSrcVo" resultType="kr.re.kitech.biz.com.vo.PrjNoInpYearVo">
+SELECT  /* QueryID : kr.re.kitech.biz.com.selectResInpYear */
+       a.prj_no        /* 과제번호 */
+     , a.anal          /* 년차 */
+     , a.anal AS prj_anal       /* 년차  기본정보에서 조회 시 */
+     , f.accnt_no      /* 계정번호 */
+     , f.accnt_rspns   /* 계정책임자 */
+     , b.nm AS accnt_rspns_nm  /* 계정책임자(성명) */
+     , b.nm AS rspns_nm  /* 계정책임자(성명)  기본정보에서 조회 시 */
+     , b.empno  /* 기본정보에서 조회 시 */
+     , fun_posi_nm(b.posi_cd)  AS posi_nm
+     , fun_dept_nm(b.dept_cd, b.dept_new_ymd) AS dept_nm
+     , b.ext_no
+     , f.bugt_ctrl_psn         /* 예산통제자 */
+     , c.nm AS bugt_ctrl_psn_nm  /* 예산통제자(성명) */
+     , a.thyr_yr_orign_ymd       /* 당해연도시작일자 */
+     , a.thyr_yr_cls_ymd         /* 당해연도종료일자 */
+     , a.reschamt_card_use_clsf  /* 연구비카드사용구분 */
+     , a.reschamt_card_ofic_cd   /* 연구비카드부처코드 */
+     , a.reschamt_card_prj_no    /* 연구비카드과제번호 */
+     , a.exclsv_agncy_prj_no  /* 전담기관과제번호 */
+     , a.resch_finnc             /* 연구재원 */
+     , a.finnc_amt               /* 재원금액 */
+     , a.thyr_yr_cls_ymd AS old_cls_ymd
+     , CASE WHEN NVL(e.bsns_contnt, "") <![CDATA[ <>  ]]>""  THEN '보기' ELSE '평가' END AS saup_button    /* 사업평가내용 */
+     , DECODE(NVL(TRIM(a.thyr_yr_orign_ymd), ''), '', '', SUBSTR(a.thyr_yr_orign_ymd, 1, 4) || '-' || SUBSTR(a.thyr_yr_orign_ymd, 5, 2) 
+              || '-' || SUBSTR(a.thyr_yr_orign_ymd, 7, 2)) || '~' ||
+       DECODE(NVL(TRIM(a.thyr_yr_cls_ymd)  , ''), '', '', SUBSTR(a.thyr_yr_cls_ymd  , 1, 4) || '-' || SUBSTR(a.thyr_yr_cls_ymd  , 5, 2)
+              || '-' || SUBSTR(a.thyr_yr_cls_ymd  , 7, 2)) AS ymd            /* 연구기간 */
+     , f.dept_res_psn
+     , h.nm AS dept_res_psn_nm
+     , a.agreestep
+     , a.agreedegr
+     , a.rndbizno
+  FROM resinpyear a
+  JOIN resbgacctm f ON a.prj_no = f.prj_no
+  LEFT JOIN humbasicinfo b ON b.syspayno = f.accnt_rspns
+  LEFT JOIN humbasicinfo c ON c.syspayno = f.bugt_ctrl_psn
+  LEFT JOIN humbasicinfo h ON h.syspayno = f.dept_res_psn
+  LEFT JOIN resenyradj e ON e.prj_no = a.prj_no AND e.anal = a.anal
+ WHERE a.prj_no = #{prj_no}
+ ORDER BY f.accnt_no
+</select>
+
+<!-- 매뉴 조회 -->	
+<select id="selectListXomxMenu" parameterType="kr.re.kitech.biz.com.vo.XomxMenuVo" resultType="kr.re.kitech.biz.com.vo.XomxMenuVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectListXomxMenu */
+      scrn_id,
+      docu_id,
+      scrn_nm,
+      docu_nm
+  FROM xomxbizmenulist
+ <if test="scrn_nm != null and scrn_nm != ''">
+ WHERE scrn_nm LIKE '%'|| #{scrn_nm} ||'%'
+ </if>
+</select>
+    
+<!-- 계좌번호 조회 -->
+<select id="selectFcpDepstForAccntCd" resultType="kr.re.kitech.biz.com.vo.BankAccntVo" parameterType="kr.re.kitech.biz.com.vo.BankAccntVo">
+SELECT /* kr.re.kitech.biz.com.selectFcpDepstForAccntCd */
+       a.bankaccnt_no
+     , a.bank
+     , a.depstr_nm
+     , a.rmk
+     , a.contrct_ymd
+     , a.expir_ymd
+     , a.intrst_rt
+     , x.cd_nm AS depst_knd_nm
+     , a.accnt_cd
+     , a.depst_knd
+     , b.accnt_cd_abbr
+     , b.caseby_adjst_ex
+     , b.bond_debt_clsf
+     , a1.cd_nm AS bank_nm
+  FROM fcpdepst a
+  JOIN xodxcommst x ON a.depst_knd = x.cd AND x.cd_clsf ='FAN'
+  JOIN xodxcommst a1 ON a.bank = a1.cd AND a1.cd_clsf = 'FAA'
+  LEFT JOIN xodfaccnt b ON a.accnt_cd = b.accnt_cd  
+ WHERE 1=1
+<if test='bank != null and bank != ""'> AND a.bank = #{bank} </if>
+<if test='bankaccnt_no != null and bankaccnt_no != ""'> AND a.bankaccnt_no LIKE '%' || #{bankaccnt_no} </if>
+<if test='rmk != null and rmk != ""'> AND a.rmk LIKE '%'||#{inqr_val}||'%' </if>
+<if test='depst_knd != null and depst_knd != ""'> AND a.depst_knd = #{depst_knd} </if>
+</select>
+
+<!-- 학술대회 Pool 이력팝업 그리드 조회 -->
+<select id="selectResConfPoolReqList" resultType="kr.re.kitech.biz.res.std.vo.ResConfPoolReqVo" parameterType="kr.re.kitech.biz.com.vo.ComPopSearchVo">
+SELECT /* kr.re.kitech.biz.com.selectResConfPoolReqList */
+       a.req_no
+     , b.rcpt_no
+     , a.odr
+     , a.part_strdt
+     , a.part_clsdt
+     , a.part_clsf
+     , a.conf_thesis_nm
+     , a.conf_ptthm_nm
+     , TRIM(a.attach_file_no) AS attach_file_no
+     , TRIM(a.attach_file_no2) AS attach_file_no2
+     , b.conf_nm
+     , b.scitech_cd
+     , b.event_strdt
+     , b.event_clsdt
+  FROM resconfpoolmaster b 
+  LEFT JOIN resconfpoolreq a ON a.rcpt_no = b.rcpt_no
+ WHERE 1=1
+  <if test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </if>
+  <if test='conf_nm != null and conf_nm != ""'> 
+   AND (UPPER(b.conf_nm) LIKE '%' ||UPPER(#{conf_nm}) ||'%' 
+       OR UPPER(b.rscharea) LIKE '%' ||UPPER(#{conf_nm}) ||'%' 
+       OR UPPER(b.society_nm_ko) LIKE '%' ||UPPER(#{conf_nm}) ||'%' 
+       ) 
+  </if>
+  <if test='yr != null and yr != ""'> AND b.yr = #{yr} </if>
+  <if test='state_code != null and state_code != ""'> AND b.state_code = #{state_code} </if>
+</select>
+
+<!-- 학습이력Pool신청 저장 -->
+<update id="updateResConfPoolReq" parameterType="kr.re.kitech.biz.res.std.vo.ResConfPoolReqVo">
+MERGE INTO resconfpoolreq AS a /* kr.re.kitech.biz.com.updateResConfPoolReq */
+USING dual AS b ON 1=1 AND a.req_no = #{req_no} AND a.rcpt_no = #{rcpt_no}
+WHEN MATCHED THEN
+   UPDATE 
+      SET a.part_strdt = #{part_strdt}
+        , a.part_clsdt = #{part_clsdt}
+        , a.part_clsf = #{part_clsf}
+        , a.conf_thesis_nm = #{conf_thesis_nm}
+        , a.conf_ptthm_nm = #{conf_ptthm_nm}
+        , a.attach_file_no = #{attach_file_no}
+        , a.attach_file_no2 = #{attach_file_no2}
+        , a.updt_syspayno = #{updt_syspayno}
+        , a.updt_daytm = CURRENT
+        
+WHEN NOT MATCHED THEN
+   INSERT (
+        a.req_no
+      , a.rcpt_no 
+      , a.odr
+      , a.part_strdt 
+      , a.part_clsdt
+      , a.part_clsf
+      , a.conf_thesis_nm 
+      , a.conf_ptthm_nm
+      , a.attach_file_no
+      , a.attach_file_no2 
+      , a.regst_syspayno
+      , a.regst_daytm)
+   VALUES ( #{req_no}
+          , #{rcpt_no}
+          , 1
+          , #{part_strdt} 
+          , #{part_clsdt}
+          , #{part_clsf}
+          , #{conf_thesis_nm} 
+          , #{conf_ptthm_nm}
+          , #{attach_file_no}
+          , #{attach_file_no2} 
+          , #{regst_syspayno}
+          , CURRENT
+      )
+</update>
+
+<!-- 학습이력Pool신청 삭제 -->
+<delete id="deleteResConfPoolReq" parameterType="kr.re.kitech.biz.res.std.vo.ResConfPoolReqVo">
+DELETE  /* kr.re.kitech.biz.com.deleteResConfPoolReq */
+  FROM resconfpoolreq
+ WHERE req_no = #{req_no}
+    AND rcpt_no = #{rcpt_no}
+</delete>
+
+<!-- os report info 조회 -->
+<select id="selectOzrInfo" parameterType="kr.re.kitech.biz.com.vo.OzrInFoVo" resultType="kr.re.kitech.biz.com.vo.OzrInFoVo">
+SELECT /*  kr.re.kitech.biz.com.selectOzrInfo */
+       evid_item_nm AS displayName
+     , SUBSTR(ozr_path,2) AS ozrPath
+     , odi_path AS odiNm
+  FROM fbaevidmngmt
+ WHERE evid_item_cd = #{ozrCode}
+ <if test='clsf != null and clsf != ""'> AND clsf = #{clsf} </if>
+</select>
+
+<!-- os report info 리스트 조회 -->
+<select id="selectOzrInfoList" parameterType="kr.re.kitech.biz.com.vo.OzrInFoVo" resultType="kr.re.kitech.biz.com.vo.OzrInFoVo">
+SELECT /*  kr.re.kitech.biz.com.selectOzrInfo */
+       a.evid_item_nm AS displayName
+     , SUBSTR(a.ozr_path,2) AS ozrPath
+     , a.odi_path AS odiNm 
+     , a.form_alias AS formAlias
+  <if test='formAlias != null and formAlias == "P26"'> , b.req_no </if>
+  <if test='formAlias != null and formAlias == "P44"'> , c.contrct_chng_req_no AS req_no </if>
+  <if test='formAlias != null and formAlias == "P51"'> , d.elecapp_docu_no AS req_no </if>
+  <if test='formAlias != null and formAlias == "R78"'> , e.req_no </if>
+  <if test='formAlias != null and formAlias == "P81"'> , f.bid_ord_no||'-'||f.chg_no AS req_no </if>
+  <if test='formAlias != null and formAlias == "P32"'> , g.contrct_no||'-'||g.chng_seq AS req_no </if>
+     , (SELECT group_concat(key_col) FROM fbaevidozkcol WHERE evid_item_cd = a.evid_item_cd) AS key_col
+  FROM fbaevidmngmt a
+<if test='formAlias != null and formAlias == "P26"'> 
+  JOIN puraccntchngh b ON a.evid_item_cd = (CASE WHEN SUBSTR(b.contrct_no, 1, 3) IN ('P22', 'P32') THEN 'P121' ELSE 'P122' END) AND b.req_no IN 
+        <foreach collection ='formList' index ='index' item='item' open='(' close=')' separator=','>
+          #{item.req_no}
+        </foreach>  
+</if>
+<if test='formAlias != null and formAlias == "P44"'>
+  JOIN purcontrctchng c ON c.contrct_chng_req_no IN
+        <foreach collection ='formList' index ='index' item='item' open='(' close=')' separator=','>
+          #{item.req_no}
+        </foreach>  
+        AND a.clsf = (CASE WHEN c.contrct_prd_chng_yn = 'Y' AND c.contrct_amt_chng_yn ='Y' THEN 'prd,amt'
+                           WHEN c.contrct_prd_chng_yn = 'Y' AND c.contrct_amt_chng_yn ='N' THEN 'prd'
+                           WHEN c.contrct_prd_chng_yn = 'N' AND c.contrct_amt_chng_yn ='Y' THEN 'amt'
+                           WHEN c.contrct_prd_chng_yn = 'N' AND c.contrct_amt_chng_yn ='N' AND c.contrct_etc_chng_yn = 'Y' THEN 'etc'
+                           ELSE 'none' END)
+ </if>
+ <if test='formAlias != null and formAlias == "P51"'>
+  JOIN purpayplan d ON d.elecapp_docu_no IN 
+        <foreach collection ='formList' index ='index' item='item' open='(' close=')' separator=','>
+          #{item.req_no}
+        </foreach> 
+       AND a.clsf = d.pay_clsf
+ </if>
+ <if test='formAlias != null and formAlias == "R78"'>
+  JOIN rescrtpsrectl e ON e.req_no IN 
+        <foreach collection ='formList' index ='index' item='item' open='(' close=')' separator=','>
+          #{item.req_no}
+        </foreach> 
+       AND a.clsf = DECODE(e.depst_clsf,'FBD034', 'demnd', 'depst') 
+ </if>
+ <if test='formAlias != null and formAlias == "P81"'>
+  JOIN epuordmastr f ON f.bid_ord_no||f.chg_no IN 
+        <foreach collection ='formList' index ='index' item='item' open='(' close=')' separator=','>
+          #{item.req_no}||#{item.chg_no}
+        </foreach> 
+       AND a.clsf = f.pur_clsf_cd
+ </if>
+ <if test='formAlias != null and formAlias == "P32"'>
+  JOIN epucontrctmastr g ON g.contrct_no||g.chng_seq IN 
+        <foreach collection ='formList' index ='index' item='item' open='(' close=')' separator=','>
+          #{item.req_no}||#{item.chg_no}
+        </foreach> 
+       AND a.clsf = g.pur_grp_cd
+ </if>
+ WHERE 1=1
+ <choose>
+  <when test='formAlias != null and formAlias != ""'> AND a.form_alias = #{formAlias} </when>
+  <otherwise> 
+    AND a.form_alias IN 
+           <foreach collection ='formList' index ='index' item='item' open='(' close=')' separator=','>
+              #{item.formAlias}
+           </foreach>  
+  </otherwise>
+ </choose>
+</select>
+<select id="selectXodfVend" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.std.vo.XodfVendComVo">
+SELECT /* kr.re.kitech.biz.com.selectXodfVend */
+       vend_cd
+     , REPLACE(bsns_psn_regst_no, '-', '') AS bsns_psn_regst_no
+     , vend_abbr
+     , reprs_psn_nm
+     , addr || detls_addr AS addr
+     , biztyp
+     , bizcatg        
+  FROM xodfvend    
+ WHERE vend_cd = #{vend_cd}
+</select>
+
+<!-- 구매요구 계정내역 - 계정번호 검색 -->
+<select id="selectPurAccntNoList" parameterType="kr.re.kitech.biz.com.vo.AccntNoSrcVo" resultType="kr.re.kitech.biz.com.vo.AccntNoPopupVo">
+SELECT /* kr.re.kitech.biz.com.selectPurAccntNoList */
+       accnt_no  
+      , mngmt_clsf  
+      , accnt_no_nm
+      , inout_psn_clsf_cd
+      , CASE WHEN ((inout_psn_clsf_cd = '1' AND date_between >= 0 AND date_between <![CDATA[< ]]> 20 ) 
+                OR (inout_psn_clsf_cd = '2' AND date_between >= 0 AND date_between <![CDATA[ < ]]> 40 )) THEN '1'
+             ELSE '0'  END AS gbn 
+      , inout_psn_clsf_cd_nm
+      , accnt_rspns_nm
+      , accnt_rspns_empno
+      , emp_nm
+      , start_ymd
+      , cls_ymd
+      , date_between
+      , accnt_rspns
+      , itm_solve_base
+      , fomat_unit
+      , card_use_ex
+      , ctrl_gbn 
+      , tax_cd
+      , bsns_cd_inout
+      , prj_no
+      , tot_prj_cls_ymd
+FROM (  SELECT  a.accnt_no    
+              , a.mngmt_clsf         
+              , a.accnt_no_nm
+              , d.inout_psn_clsf_cd
+              , DECODE (d.inout_psn_clsf_cd, '1', '내자', '2', '외자') AS inout_psn_clsf_cd_nm
+              , b.nm AS accnt_rspns_nm
+              , b.empno AS accnt_rspns_empno
+              , (TRIM(b.nm)||'('||TRIM(b.empno)||')') AS emp_nm
+              , a.start_ymd
+              , a.cls_ymd  
+              , DATE(TO_DATE(a.cls_ymd,'%Y%m%d') ) - DATE(SYSDATE) AS date_between
+              , a.accnt_rspns
+              , a.itm_solve_base
+              , a.fomat_unit
+              , a.card_use_ex
+              , DECODE(NVL(e.accnt_no, ''),'', 'N', 'Y') AS ctrl_gbn
+              , DECODE(NVL(a.tax_cd,''), '', 'FTX002', a.tax_cd) AS tax_cd
+              , c.bsns_cd_inout
+              , c.prj_no
+              , a.tot_prj_cls_ymd
+        FROM resbgacctm a
+        JOIN humbasicinfo b ON a.accnt_rspns = b.syspayno
+        LEFT JOIN resinpmast c ON a.prj_no = c.prj_no
+        JOIN ( SELECT CAST(#{inout_psn_clsf_cd} AS CHAR(1)) AS inout_psn_clsf_cd FROM dual ) d ON  1=1
+        LEFT JOIN purreqclsmastr e ON a.accnt_no = e.accnt_no AND e.apply_cls_ymd >= TO_CHAR(SYSDATE, '%Y%m%d')
+        WHERE a.accnt_state IN ('RAK041','RAK061') 
+        <if test='accnt_no != null and accnt_no != ""'> AND a.accnt_no LIKE #{accnt_no}||'%' </if>
+        <if test='accnt_rspns != null and accnt_rspns != ""'> AND a.accnt_rspns = #{accnt_rspns} </if>
+      )
+WHERE ( (ctrl_gbn = 'N' AND inout_psn_clsf_cd = '2' AND date_between  >  40)
+     OR (inout_psn_clsf_cd = '1' AND date_between >= 0 )
+     OR (ctrl_gbn = 'Y' AND inout_psn_clsf_cd = '2' AND date_between >=0 ))
+ORDER BY cls_ymd DESC
+</select>
+
+<!-- 연구기자재 검색 -->
+<select id="selectResInpMatePop" parameterType="kr.re.kitech.biz.com.vo.ResInpMatePopVo" resultType="kr.re.kitech.biz.com.vo.ResInpMatePopVo">
+SELECT /* kr.re.kitech.biz.com.selectResInpMatePop */
+       a.prj_no, 
+       c.main_accnt_no AS accnt_no,
+       a.equip_odr, 
+       a.equip_clsf,
+       b.cd_nm AS equip_clsf_nm, 
+       a.gdnm, 
+       a.qty,        
+       a.amt,
+       a.etub_id,
+       a.consttn_clsf, -- 심의여부(RBH)
+       a.consttn_plce_clsf,  -- 심의기구코드
+       a.consttn_resn, -- 심의사유(미심의일경우)
+       a.consttn_plce, -- 심의기구
+       a.consttn_no, -- 심의번호
+       a.consttn_ymd,  -- 심의일자
+       TRIM(a.attach_file) AS attach_file_no,
+       MAX(CASE WHEN d.equip_odr IS NULL THEN e.check_no ELSE d.pur_req_no END) AS pur_req_no
+FROM resinpmate a  
+JOIN resbgacctm c ON a.prj_no = c.prj_no
+LEFT JOIN xodxcommst b ON a.equip_clsf = b.cd
+LEFT JOIN purreqaccnt d ON c.accnt_no = d.accnt_no AND a.equip_odr = d.equip_odr
+LEFT JOIN fspsmlitmcheckuph e ON c.accnt_no = e.accnt_no AND a.equip_odr = e.equip_odr
+WHERE 1=1
+<if test='accnt_no != null and accnt_no != ""'> AND c.main_accnt_no = SUBSTR(#{accnt_no}, 1, 7) ||'0' </if>
+<if test='prj_no != null and prj_no != ""'> AND a.prj_no  = #{prj_no} </if>
+<if test='equip_clsf != null and equip_clsf != ""'> AND a.equip_clsf = #{equip_clsf} </if>
+<if test='equip_odr != null and equip_odr != 0'> AND a.equip_odr = #{equip_odr} </if>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+ORDER BY a.prj_no, a.equip_odr
+</select>
+
+<!-- 사전안정성검토 조회(팝업) -->
+<select id="selectSfcChmclsSafe" parameterType="kr.re.kitech.biz.com.vo.SfcChmclsSafeVo" resultType="kr.re.kitech.biz.com.vo.SfcChmclsSafeVo">
+SELECT /* kr.re.kitech.biz.com.selectSfcChmclsSafe */
+       sc1.req_no
+     , sc1.lab_no
+     , sc2.lab_nm
+     , sc1.pur_req_no
+     , sc1.req_date
+     , sc1.reqst_syspayno
+     , prm.req_usg
+     , h1.nm AS reqst_nm
+     , x1.apr_state 
+     , sc2.main_secrt_rspns_syspayno
+  FROM sfcchmclssafedcdfprinfo sc1
+  JOIN csfspace sc2 ON sc1.lab_no = sc2.lab_no  
+  JOIN humbasicinfo h1 ON sc1.reqst_syspayno = h1.syspayno
+  LEFT JOIN purreqmastr prm ON sc1.pur_req_no = prm.pur_req_no
+  LEFT JOIN xomxintfatab x1 ON sc1.req_no = x1.req_no
+  JOIN (
+       SELECT lab_no  
+         FROM  csfspace s1
+         JOIN humbasicinfo h1 ON s1.main_secrt_rspns_syspayno = h1.syspayno
+         JOIN xodrdeptpurman x1 ON h1.dept_cd = x1.dept_cd AND h1.dept_new_ymd = x1.dept_new_ymd
+        WHERE x1.syspayno = #{syspayno}
+          AND x1.role_type = 'D02'
+       UNION
+       SELECT lab_no 
+         FROM csfspace s1
+         JOIN csfspaceuser s2 ON s1.space_cd = s2.space_cd
+       WHERE s2.user_syspayno = #{syspayno}
+    ) d1 ON sc2.lab_no = d1.lab_no
+ WHERE LENGTH(TRIM(NVL(sc1.pur_req_no,''))) = 0
+ <if test='req_no != null and req_no != ""'> AND sc1.req_no = #{req_no} </if>
+ <if test='lab_nm != null and lab_nm != ""'> AND sc2.lab_nm LIKE '%'||#{lab_nm}||'%' </if>
+ <if test='reqst_nm != null and reqst_nm != ""'> AND h1.nm LIKE  '%'||#{reqst_nm}||'%' </if>
+ ORDER BY 1
+</select>
+
+<!-- 기업지원 외부기술지원(유상)내역등록 - 업체조회팝업 -->
+<select id="selectSptTecRcptInfoVend" parameterType="java.lang.String" resultType="kr.re.kitech.biz.com.vo.XodfVendVo">
+SELECT /* kr.re.kitech.biz.com.selectSptTecRcptInfoVend */
+       a.cust_no AS vend_cd /* 고객 번호 */
+     , b.cmpy_nm_krchar AS vend_abbr     /* 회사명 - 한글 */
+     , b.reprs_psn AS reprs_psn_nm       /* 대표자 */
+     , b.bsns_psn_regst_no  /* 사업자 등록 번호 */
+     , TRIM(b.cmpy_addr || b.cmpy_addr_detls) AS addr  /* 회사주소  */
+     , b.cmpy_post_no AS postmt_no
+     , c.vend_clsf
+     , b.bizcatg -- 업태
+     , b.item AS biztyp -- 업종
+     , b.corp_resid_no
+     , b.cmpy_reprs_tel AS tel_no
+     , b.cmpy_fax_no AS fax
+     , b.reprs_psn_email AS email_addr
+  FROM (SELECT DISTINCT cust_no
+          FROM spttecrcptinfo
+         WHERE rcpt_ymd BETWEEN TO_CHAR(CURRENT - 6 UNITS MONTH,'%Y%m%d') AND TO_CHAR(CURRENT,'%Y%m%d' )
+           AND regst_syspayno = #{regst_syspayno}
+       )  a  
+  JOIN sptcustbaseinfo b ON a.cust_no = b.cust_no
+  LEFT JOIN xodfvend c ON b.cust_no = c.vend_cd
+</select>
+
+<!-- 기업지원 고객정보 조회 -->
+<select id="selectSptCustBaseInfo" resultType="kr.re.kitech.biz.com.vo.XodfVendVo" parameterType="kr.re.kitech.biz.com.vo.ComPopSearchVo">
+SELECT /* kr.re.kitech.biz.com.selectSptCustBaseInfo */
+       a.cust_no AS vend_cd     /* 고객 번호    */
+     , a.cmpy_nm_krchar AS vend_abbr  /* 회사명 - 한글 */
+     , a.reprs_psn AS reprs_psn_nm     /* 대표자 */
+     , a.bsns_psn_regst_no /* 사업자 등록 번호 */
+     , TRIM(a.cmpy_addr || a.cmpy_addr_detls) AS addr  /* 회사주소 */
+     , a.cmpy_addr AS main_addr
+     , a.cmpy_addr_detls AS detls_addr
+     , a.cmpy_post_no AS postmt_no
+     , b.vend_clsf
+     , a.bizcatg -- 업태
+     , a.item AS biztyp -- 업종
+     , a.corp_regst_no AS corp_resid_no
+     , a.cmpy_reprs_tel AS tel_no
+     , a.cmpy_fax_no AS fax
+     , a.reprs_psn_email AS email_addr
+     , a.supt_clsf /* 회원구분 */
+     , c.main_bankaccnt_yn
+     , c.tran_bank
+     , c.bankaccnt_no
+     , c.depstr
+<if test='isPartner != null and isPartner eq "Y"'>
+     , d.appont_no
+     , d.join_ex
+</if>
+  FROM sptcustbaseinfo a
+<if test='isPartner != null and isPartner eq "Y"'>
+  JOIN sptparbaseinfo d on a.cust_no = d.cust_no
+</if>
+  LEFT JOIN xodfvend b ON a.cust_no = b.vend_cd AND (b.tran_stop_ymd IS NULL OR b.tran_stop_ymd = '')
+  LEFT JOIN xodfvendaccnt c ON b.vend_cd = c.vend_cd AND c.main_bankaccnt_yn = 'Y'
+ WHERE a.use_yn != 'N'
+<if test='vend_cd != null and vend_cd != ""'> AND cust_no = #{vend_cd} </if>
+<if test='vend_abbr != null and vend_abbr != ""'>  AND UPPER(cmpy_nm_krchar) LIKE '%' || UPPER(#{vend_abbr}) || '%' </if>
+<if test='reprs_psn_nm != null and reprs_psn_nm != ""'> AND reprs_psn LIKE UPPER(#{reprs_psn_nm}) || '%'</if>
+<if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND (a.bsns_psn_regst_no = #{bsns_psn_regst_no} OR a.bsns_psn_regst_no = #{bsns_psn_regst_no_1}) </if>
+<if test='corp_resid_no != null and corp_resid_no != ""'> AND (a.corp_regst_no = REPLACE(#{corp_resid_no}, '-', '') OR a.corp_regst_no = #{corp_resid_no}) </if>
+<if test='vend_clsf != null and vend_clsf != ""'> AND b.vend_clsf = #{vend_clsf}</if>
+</select>
+
+<!-- 비목해소기준 조회 -->
+<select id="selectItmBaseList" parameterType="kr.re.kitech.biz.com.vo.FbaItmBaseVo" resultType="kr.re.kitech.biz.com.vo.FbaItmBaseVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.selectFbaItmBase */ 
+      a.itm_solve_base, 
+      a.itm_solve_base_nm, 
+      a.impl_ymd, 
+      a.rmk,   
+      NVL(a.agncy_cd,'') AS agncy_cd, 
+      NVL(c.ofname,'') AS ofname 
+  FROM fbaitmbase a
+  LEFT JOIN flgrnd_dep c ON c.ofcode = NVL(a.agncy_cd,'')
+ WHERE a.use_ex = 'Y'
+  <if test='fin_bsns_clsf != null and fin_bsns_clsf != ""'> AND a.fin_bsns_clsf = #{fin_bsns_clsf} </if>
+  <if test='itm_solve_base != null and itm_solve_base != ""'> AND a.itm_solve_base = #{itm_solve_base} </if>
+  <if test='itm_solve_base_nm != null and itm_solve_base_nm != ""'> AND a.itm_solve_base_nm LIKE '%' || #{itm_solve_base_nm} || '%' </if>
+ ORDER BY a.impl_ymd DESC, a.itm_solve_base ASC
+</select>
+
+<!-- 연구(연구노트) -->
+<select id="selectResAccntInfoList" parameterType="kr.re.kitech.biz.com.vo.AccntNoSrcVo" resultType="kr.re.kitech.biz.com.vo.AccntNoPopupVo">
+SELECT /*  kr.re.kitech.biz.com.selectResAccntInfoList */ 
+       a.accnt_no
+     , a.accnt_no_nm
+     , a.start_ymd
+     , a.cls_ymd
+     , b.tot_resch_prd_orign_ymd AS tot_prj_start_ymd
+     , b.tot_resch_prd_cls_ymd AS tot_prj_cls_ymd
+     , a.prj_no
+     , b.note_use_ex
+     , b.note_type_cd
+     , a.accnt_rspns
+     , h1.empno AS accnt_respns_empno
+     , TRIM(h1.nm) AS accnt_rspns_nm
+     , TRIM(h1.nm) || '(' || h1.empno || ')' AS accnt_rspns_detl_nm
+     , x.dept_nm AS accnt_rspns_dept_nm
+     -- 예산통제자
+     , a.bugt_ctrl_psn
+     , h3.empno AS bugt_ctrl_psn_empno
+     , TRIM(h3.nm) AS bugt_ctrl_psn_nm
+     , TRIM(h3.nm) || '(' || h3.empno || ')' AS bugt_ctrl_psn_detl_nm    
+     , e.dept_nm AS bugt_ctrl_psn_dept_nm
+     -- 연구책임자
+      , b.curr_resch_rspns AS resch_rspns
+     ,  h2.empno AS resch_rspns_empno
+     , TRIM(h2.nm) AS resch_rspns_nm
+     , TRIM(h2.nm) || '(' || h2.empno || ')' AS resch_rspns_detl_nm
+     , z.dept_nm AS resch_rspns_dept_nm
+     , b.secrt_prj_ex
+	 , b.secrt_prj_yn
+	 , ba1.bsns_nm as bsns_cd_ofic_nm
+	 , ba2.bsns_nm as bsns_cd_detls_bsns_nm
+  FROM resbgacctm a
+  JOIN humbasicinfo h1 ON a.accnt_rspns = h1.syspayno
+  JOIN xodhdeptinfo x ON h1.dept_cd = x.dept_cd AND h1.dept_new_ymd = x.dept_new_ymd 
+  JOIN humbasicinfo h3 ON a.bugt_ctrl_psn = h3.syspayno
+  JOIN xodhdeptinfo e ON h3.dept_cd = e.dept_cd AND h3.dept_new_ymd = e.dept_new_ymd
+  JOIN resinpmast b ON a.prj_no = b.prj_no
+  JOIN humbasicinfo h2 ON b.curr_resch_rspns = h2.syspayno
+  JOIN xodhdeptinfo z ON h2.dept_cd = z.dept_cd AND h2.dept_new_ymd = z.dept_new_ymd
+  JOIN xodrbacode ba1 on b.bsns_cd_ofic = ba1.bsns_cd
+  JOIN xodrbacode ba2 on b.bsns_cd_detls_bsns = ba2.bsns_cd
+ WHERE 1=1
+  <if test='accnt_no != null and accnt_no != ""'> AND a.accnt_no LIKE #{accnt_no} || '%' </if>
+  <if test='accnt_rspns != null and accnt_rspns != ""'> AND a.accnt_rspns = #{accnt_rspns} </if>
+  <if test='note_use_ex != null and note_use_ex != ""'> AND b.note_use_ex = #{note_use_ex} </if>
+  <if test='bsns_req_no != null and bsns_req_no != ""'> AND b.bsns_req_no = #{bsns_req_no} </if>
+  <if test='clsf != null and clsf == "Res_Note"'> 
+   AND a.accnt_clsf = 'RAR001' 
+   AND b.bsns_cd_inout != 'RHA002'  /* 2023. 01. 30. 내부연구 검색되지 않도록 수정 */
+  </if>
+ORDER BY a.accnt_no
+</select>
+</mapper>

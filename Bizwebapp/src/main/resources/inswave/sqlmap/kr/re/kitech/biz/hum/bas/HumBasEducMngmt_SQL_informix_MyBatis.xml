@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.hum.bas">
+  <select id="selectHumBasEducMngmt" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo" resultType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.bas.selectHumBasEducMngmt */ 
+	t1.educ_year
+	,t1.educ_cd
+	,t1.educ_typ
+	,NVL(t1.target_occutyp_cd, '') AS target_occutyp_cd
+	,NVL(t1.target_posi_cd, '') AS target_posi_cd
+	,t1.target_syspayno
+	,NVL(t2.nm, '') AS target_nm
+	,t1.duty_cnt
+	,t1.duty_time
+	,t1.educ_way
+	,t1.link
+	,t1.calendar_info
+	,t1.etc_guide
+	,t1.charg_dept_cd
+	,t1.charg_dept_new_ymd
+	,t4.dept_nm AS charg_dept_nm
+	,t1.charg_syspayno
+	,t3.nm AS charg_nm
+	,t1.regst_syspayno
+	,t1.regst_daytm
+	,t1.updt_syspayno
+	,t1.updt_daytm
+	,x1.target_count
+	,t1.educ_enddate
+	,'U' AS cud_type
+FROM humeducmngmt AS t1
+JOIN humbasicinfo t3 ON t1.charg_syspayno = t3.syspayno
+JOIN xodhdeptinfo AS t4 ON t1.charg_dept_cd = t4.dept_cd AND t1.charg_dept_new_ymd = t4.dept_new_ymd
+LEFT JOIN humbasicinfo t2 ON t1.target_syspayno = t2.syspayno
+LEFT JOIN (
+	SELECT x0.educ_year
+	, x0.educ_typ
+	, x0.educ_cd
+	, x0.target_occutyp_cd
+	, x0.target_posi_cd
+	, x0.target_syspayno
+	,SUM((SELECT COUNT(*) FROM humbasicinfo
+	WHERE (entr_ymd[1,4] <![CDATA[ <= ]]> #{educ_year} AND (retire_ymd = '' OR retire_ymd[1,4] <![CDATA[ >= ]]> #{educ_year}))
+	AND (x0.target_occutyp_cd = '000000' OR  occutyp_cd = x0.target_occutyp_cd)
+	AND (x0.target_posi_cd = '000000' OR  posi_cd = x0.target_posi_cd)
+	AND (x0.target_syspayno = '00000000' OR  syspayno = x0.target_syspayno)
+	)) AS target_count
+	FROM humeducmngmt AS x0
+	WHERE 1=1
+	<if test="educ_year != null and educ_year != ''">
+	AND x0.educ_year = #{educ_year}
+	</if>
+	GROUP BY 1,2,3,4,5,6
+) AS x1 ON x1.educ_year = t1.educ_year AND x1.educ_typ = t1.educ_typ AND x1.educ_cd = t1.educ_cd AND x1.target_occutyp_cd = t1.target_occutyp_cd AND x1.target_posi_cd = t1.target_posi_cd AND x1.target_syspayno = t1.target_syspayno
+WHERE 1=1
+<if test="educ_year != null and educ_year != ''">
+	AND t1.educ_year = #{educ_year}
+</if>
+<if test="educ_typ != null and educ_typ != ''">
+	AND t1.educ_typ = #{educ_typ}
+</if>
+<if test="educ_cd != null and educ_cd != ''">
+	AND t1.educ_cd = #{educ_cd}
+</if>
+ORDER BY t1.educ_cd
+</select>
+<select id="selectHumOccutypCdList" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo" resultType="kr.re.kitech.biz.hum.bas.vo.HumOccutypCdVo">
+SELECT '' AS occugrp_cd	/* QueryID : kr.re.kitech.biz.hum.bas.selectHumOccutypCd */ 
+      	  ,'000000' AS occutyp_cd
+      	  ,'전직원' AS occutyp_nm
+      	  ,'' AS occutyp_desc
+      	  ,'' AS occutyp_grp
+      	  ,0 AS disp_seq
+      	  ,'1' AS use_yn
+      	  ,'' AS creat_ymd
+      	  ,'' AS abol_ymd
+FROM xodhoccutyp
+WHERE use_yn = 'Y'
+UNION
+SELECT occugrp_cd	/* QueryID : kr.re.kitech.biz.hum.bas.selectHumOccutypCd */ 
+      	  ,occutyp_cd
+      	  ,occutyp_nm
+      	  ,occutyp_desc
+      	  ,occutyp_grp
+      	  ,disp_seq
+      	  ,decode(use_yn, 'Y', '1', '0') AS use_yn
+      	  ,creat_ymd
+      	  ,abol_ymd
+FROM xodhoccutyp
+WHERE use_yn = 'Y'
+ORDER BY disp_seq ASC
+</select>
+<select id="selectHumPosiCdList" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo" resultType="kr.re.kitech.biz.hum.bas.vo.HumPosiCdVo">
+SELECT '000000' AS posi_cd,	/* QueryID : kr.re.kitech.biz.hum.bas.selectHumPosiCd */ 
+	   '전직급' AS posi_nm,
+       0 AS disp_seq
+FROM xodhposiinfo 
+WHERE use_yn = 'Y'
+UNION
+SELECT posi_cd,
+	   posi_nm,
+       disp_seq
+FROM xodhposiinfo 
+WHERE use_yn = 'Y'
+<if test="occutyp_cd != null and occutyp_cd != ''">
+AND occutyp_cd = #{occutyp_cd}
+</if>
+ORDER BY disp_seq ASC
+</select>
+<select id="selectHumComCdList" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasComCdVo" resultType="kr.re.kitech.biz.hum.bas.vo.HumBasComCdVo">
+SELECT /* QueryID : kr.re.kitech.biz.com.xda.selectComCodeMaster */ 
+		cd,
+		cd_nm,
+		cd_desc,
+		cd_clsf,
+		sys_clsf,
+		seq,
+		use_ex,
+		mngmt_item_1,
+		mngmt_item_2,
+		mngmt_item_3,
+		mngmt_item_4,
+		mngmt_item_5,
+		mngmt_item_6,
+		mngmt_item_7,
+		mngmt_no_1,
+		mngmt_no_2,
+		mngmt_no_3,
+		mngmt_no_4,
+		mngmt_no_5,
+		mngmt_no_6,
+		mngmt_no_7,
+		'U' AS cud_type
+FROM xodxcommst
+WHERE seq != '000'
+<if test="cd_clsf != null and cd_clsf != ''">
+	and cd_clsf = #{cd_clsf}
+</if>
+<if test="use_ex != null and use_ex != ''">
+	and use_ex = #{use_ex}
+</if>
+<if test="mngmt_item_1 != null and mngmt_item_1 != ''">
+	and mngmt_item_1 = #{mngmt_item_1}
+</if> 
+ORDER BY seq, cd
+</select>
+<insert id="insertHumComCd" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasComCdVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.bas.insertHumComCd */ 
+		 INTO xodxcommst(
+     cd ,
+     cd_nm ,
+     cd_desc ,
+     cd_clsf ,
+     sys_clsf ,
+     seq ,
+     use_ex ,
+     mngmt_item_1 ,
+     regst_psn_syspayno ,
+     regst_daytm
+) VALUES (#{cd}, #{cd_nm}, #{cd_desc}, #{cd_clsf}, #{sys_clsf}, (select lpad(nvl(to_char(trunc(max(seq))+1),0), 3, '0') from xodxcommst where cd_clsf = #{cd_clsf}), 'Y', #{mngmt_item_1}, #{regst_syspayno}, CURRENT)
+</insert>
+<update id="updateHumComCd" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasComCdVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.bas.updateHumComCd */ 
+		 xodxcommst SET    
+     cd_nm=#{cd_nm} ,
+     cd_desc=#{cd_desc} ,
+     cd_clsf=#{cd_clsf} ,
+     sys_clsf=#{sys_clsf} ,
+     seq=#{seq} ,
+     use_ex=#{use_ex} ,
+     mngmt_item_1=#{mngmt_item_1} ,
+     updt_psn_syspayno=#{updt_syspayno} ,
+     updt_daytm=CURRENT
+WHERE cd=#{cd}
+</update>
+<delete id="deleteHumComCd" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasComCdVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.bas.deleteHumComCd */ 
+		 FROM xodxcommst
+WHERE cd=#{cd}
+</delete>
+<select id="selectHumCmpCdInfo" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo" resultType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo">
+SELECT * 
+FROM xodxcommst
+WHERE 1=1
+AND cd = #{educ_cd}
+AND mngmt_item_1 = #{educ_typ}
+</select>
+<insert id="insertEducMngmt" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.bas.insertEducMngmt */ 
+INTO humeducmngmt(
+	educ_year
+	, educ_cd
+	, educ_typ
+	, target_occutyp_cd
+	, target_posi_cd
+	, target_syspayno
+	, duty_cnt
+	, duty_time
+	, educ_way
+	, link
+	, calendar_info
+	, etc_guide
+	, charg_dept_cd
+	, charg_dept_new_ymd
+	, charg_syspayno
+	, regst_syspayno
+	, regst_daytm
+	, educ_enddate
+) VALUES (
+	#{educ_year},
+	#{educ_cd},
+	#{educ_typ},
+	#{target_occutyp_cd},
+	#{target_posi_cd},
+	DECODE(#{target_syspayno} , '00000000', '00000000', (SELECT syspayno FROM humbasicinfo WHERE empno = #{target_syspayno})),
+	#{duty_cnt},
+	#{duty_time},
+	#{educ_way},
+	#{link},
+	#{calendar_info},
+	#{etc_guide},
+	(SELECT dept_cd FROM humbasicinfo WHERE empno= #{charg_syspayno}),
+	(SELECT dept_new_ymd FROM humbasicinfo WHERE empno= #{charg_syspayno}),
+	(SELECT syspayno FROM humbasicinfo WHERE empno= #{charg_syspayno}),
+	#{regst_syspayno},
+	CURRENT,
+	#{educ_enddate}
+)
+</insert>
+<update id="updateEducMngmt" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.bas.updateEducMngmt */ 
+	humeducmngmt 
+SET
+	duty_cnt = #{duty_cnt} ,
+	duty_time = #{duty_time} ,
+	educ_way = #{educ_way} ,
+	link = #{link} ,
+	calendar_info = #{calendar_info} ,
+	etc_guide = #{etc_guide} ,
+	charg_dept_cd = #{charg_dept_cd} ,
+	charg_dept_new_ymd = #{charg_dept_new_ymd} ,
+	charg_syspayno = (SELECT syspayno FROM humbasicinfo WHERE empno = #{charg_syspayno}),
+	updt_syspayno = #{updt_syspayno} ,
+	updt_daytm = CURRENT,
+	educ_enddate = #{educ_enddate}
+WHERE educ_year = #{educ_year}
+AND educ_typ = #{educ_typ}
+AND educ_cd = #{educ_cd}
+AND target_occutyp_cd = #{target_occutyp_cd}
+AND target_posi_cd = #{target_posi_cd}
+AND target_syspayno = #{target_syspayno}
+</update>
+<delete id="deleteEducMngmt" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.bas.deleteEducMngmt */ 
+FROM humeducmngmt
+WHERE educ_year = #{educ_year}
+AND educ_typ = #{educ_typ}
+AND educ_cd = #{educ_cd}
+AND target_occutyp_cd = #{target_occutyp_cd}
+AND target_posi_cd = #{target_posi_cd}
+AND target_syspayno = #{target_syspayno}
+</delete>
+<select id="selectEducMngmtInfoExcel_1" resultType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.bas.selectEducMngmtInfoExcel_1 */ 
+TO_CHAR(SYSDATE,'%Y%m%d') base_date,
+TRIM(a.nm) AS nm, 
+TRIM(a.nm_chchar) AS nm_chchar, 
+TRIM(a.nm_eng) AS nm_eng, 
+a.mobile,
+REPLACE(a.mobile,'-','') AS mobile_replace,     
+a.email,       
+a.empno,
+a.resid_no,
+b.dept_nm,
+a.entr_ymd,
+a.retire_ymd,
+b.disp_seq,
+c.cd_nm AS work_clsf_nm,
+e.cd_nm AS retire_resn,
+f.month_work_time
+FROM humbasicinfo a
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+JOIN xodxcommst c ON c.cd = a.work_clsf
+LEFT JOIN humapysvr d ON d.syspayno = a.syspayno AND d.middle_adjst_yn = 'N'
+LEFT JOIN xodxcommst e ON e.cd = d.retire_resn 
+LEFT JOIN humslbasinfo f ON f.syspayno = a.syspayno
+WHERE ( a.work_clsf <![CDATA[ <> ]]> 'HAG090' OR a.retire_ymd <![CDATA[ >= ]]> SUBSTR(TO_CHAR(SYSDATE, '%Y')-7, 0,4) || TO_CHAR(SYSDATE, '%m%d') )
+ORDER BY b.disp_seq, a.nm ASC
+</select>
+<select id="selectEducMngmtInfoExcel_2" parameterType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo" resultType="kr.re.kitech.biz.hum.bas.vo.HumBasEducMngmtVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.bas.selectEducMngmtInfoExcel_2 */ 
+	TRIM(k.nm) AS nm, --성명 
+	k.empno, --개인번호 
+	TRIM(k.nm_eng) AS nm_eng,
+	t3.cd_nm AS educ_typ_nm,  -- 교육구분
+	c.cd_nm AS educ_cd_nm,  -- 교육종류
+	k.dept_nm,  --부서명
+	k.mobile, 
+	REPLACE(k.mobile,'-','') AS mobile_replace,    
+	a.educ_nm,  --교육명
+	a.educ_agncy, --교육기관
+	a.start_ymd,
+	a.cls_ymd
+FROM humapyeduc a -- 교육훈련신청
+JOIN xodxcommst c ON a.educ_cd = c.cd 
+JOIN xomxintfatab d ON d.req_no = a.req_no AND d.apr_state = 'XAD100'
+JOIN humapyeducpacp i ON i.req_no = a.req_no
+JOIN v_humbasicinfo k ON k.syspayno = i.syspayno
+LEFT JOIN xodxcommst t3 ON t3.cd =  a.educ_typ
+WHERE  a.start_ymd BETWEEN #{educ_year} || '0101'  AND #{educ_year} || '1231'
+UNION
+SELECT
+	TRIM(b.nm) AS nm, 
+	b.empno,
+	TRIM(b.nm_eng) AS nm_eng,
+	c.cd_nm AS educ_typ_nm,
+	c.cd_nm AS educ_cd_nm,
+	b.dept_nm,
+	b.mobile,
+	REPLACE(b.mobile,'-','') AS mobile_replace, 
+	c.cd_nm AS educ_nm,
+	'총무보안실' AS educ_agncy,
+	a.educ_ymd AS start_ymd,
+	a.educ_ymd AS cls_ymd
+FROM csfsecrtedu a
+JOIN v_humbasicinfo b ON a.educ_psn_syspayno = b.syspayno
+JOIN xodxcommst c ON a.educ_knd = c.cd
+WHERE a.educ_ymd BETWEEN #{educ_year} || '0101'  AND #{educ_year} || '1231'
+</select>
+</mapper>

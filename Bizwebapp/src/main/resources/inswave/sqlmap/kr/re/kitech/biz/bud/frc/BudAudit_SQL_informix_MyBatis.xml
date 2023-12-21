@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.bud.frc">
+
+	<select id="selectBudAuditList" parameterType="kr.re.kitech.biz.bud.frc.vo.BudAuditVo" resultType="kr.re.kitech.biz.bud.frc.vo.BudAuditVo">
+		SELECT /* QueryID : kr.re.kitech.biz.bud.frc.selectListItemBudAudit */ 
+				p1.rcpt_no, -- 접수번호                  
+				p1.region_clsf, -- 지역구분              
+				p1.doc_type,
+				p1.region_nm, -- 지역명
+				p1.doc_typenm,     
+				p1.rcpt_ymd , -- 접수일자                
+				p1.rcpt_contnt, -- 내용                  
+				p1.curncy_nm, -- 화폐단위명     
+				p1.curncy_unit, -- 화폐단위              
+				p1.req_amt, -- 금액                      
+				p1.req_psn, -- 신청자                    
+				p1.mngmt_dept, -- 관리부서               
+				p1.mngmt_dept_nm, -- 관리부서명
+				p1.revw_opnon, -- 검토의견               
+				p1.apply_yn         , -- 반영여부        
+				p1.audit_psn        , -- 감사자          
+				p1.elecapp_docu_no,                      
+				p1.pur_req_no,                           
+				p1.rmk,                                  
+				p1.elec_yn,                               
+				c.empno AS audit_psn_empno,
+				c.nm AS audit_psn_nm,
+				left(c.email, charindex('@', c.email)-1) AS req_psn_uid,
+				t1.pur_clsf_cd,
+				t2.apr_state                        
+		  FROM
+			  (SELECT
+				      a.rcpt_no, -- 접수번호
+				      a.region_clsf, -- 지역구분
+				      a.doc_type,
+				      NVL(g.appname, h.slip_typ_nm) AS doc_typenm,
+				      e.cd_nm AS region_nm, -- 지역명
+				      a.rcpt_ymd , -- 접수일자
+				      a.rcpt_contnt, -- 내용
+				      f.cd_nm AS curncy_nm, -- 화폐단위명
+				      a.curncy_unit, -- 화폐단위
+				      a.req_amt, -- 금액
+				      a.req_psn, -- 신청자       
+				      a.mngmt_dept, -- 관리부서
+				      d.dept_nm AS mngmt_dept_nm, -- 관리부서명
+				      a.revw_opnon, -- 검토의견
+				      a.apply_yn         , -- 반영여부
+				      a.audit_psn        , -- 감사자
+				      a.elecapp_docu_no,
+				      a.pur_req_no,
+				      a.rmk, 
+				      elec_yn
+				 FROM bblauditdetls a
+		   INNER JOIN xodhdeptinfo d ON a.mngmt_dept = d.dept_cd AND dept_new_ymd = (SELECT MAX(dept_new_ymd) FROM xodhdeptinfo WHERE dept_cd= d.dept_cd)
+		   INNER JOIN xodxcommst e ON a.region_clsf = e.cd
+		   INNER JOIN xodxcommst f ON a.curncy_unit = f.cd
+		    LEFT JOIN appv_applicationmap g ON a.doc_type = g.procdefalias
+		    LEFT JOIN fbasliptyph h ON h.slip_typ_cd = a.doc_type
+		        WHERE a.rcpt_ymd BETWEEN #{rcpt_ymd_start} AND #{rcpt_ymd_cls}
+                   <if test="pur_req_no != null and pur_req_no != ''">
+			      AND (a.pur_req_no			=	#{pur_req_no})
+                   </if>
+                   <if test="region_clsf != null and region_clsf != ''">
+			      AND (a.region_clsf		=	#{region_clsf})
+                   </if>
+                   <if test="elec_yn != null and elec_yn != ''">
+			      AND (NVL(elec_yn, 'N')	=	#{elec_yn})
+                   </if>
+                   <if test="elecapp_docu_no != null and elecapp_docu_no != ''">
+			      AND (elecapp_docu_no		=	#{elecapp_docu_no})
+                   </if>
+				)p1
+		LEFT OUTER JOIN humbasicinfo c ON p1.audit_psn = c.syspayno
+		LEFT OUTER JOIN purreqmastr t1 ON p1.pur_req_no = t1.pur_req_no
+		LEFT OUTER JOIN xomxintfatab t2 ON p1.elecapp_docu_no = t2.req_no
+		ORDER BY rcpt_ymd DESC
+	</select>
+	
+	<select id="selectBudAuditElecList" parameterType="kr.re.kitech.biz.bud.frc.vo.BudAuditVo" resultType="kr.re.kitech.biz.bud.frc.vo.BudAuditElecVo">
+		SELECT /* QueryID : kr.re.kitech.biz.bud.frc.selectBudAuditElecList */ 
+				   a.rcpt_no          , -- 접수번호
+		         a.seq,
+		         a.region_clsf      , -- 지역구분
+		         nvl(g.appname,h.slip_typ_nm) as doc_typenm,
+		         e.cd_nm AS region_nm  , -- 지역명
+		         a.rcpt_ymd         , -- 접수일자
+		         a.rcpt_contnt      , -- 내용
+		         f.cd_nm AS curncy_nm  , -- 화폐단위명
+		         a.curncy_unit      , -- 화폐단위
+		         a.req_amt          , -- 금액
+		         a.req_psn          , -- 신청자        
+		         a.mngmt_dept       , -- 관리부서 
+		         a.mngmt_dept_new_ymd,   
+		         d.dept_nm AS mngmt_dept_nm, -- 관리부서명
+		         a.revw_opnon       , -- 검토의견
+		         a.apply_yn         , -- 반영여부
+		         a.audit_psn        , -- 감사자
+		         c.nm AS audit_psn_nm  ,
+		         a.rej_opnon, --반려의견
+		         a.apr_typ, --결재유형
+		         a.enddate, -- 결재일자
+		         a.rmk,
+		         NVL(left(i.endpoints, charindex(';', i.endpoints)-1), i.endpoints) AS req_psn_uid
+		FROM  bblauditdetls a
+		INNER JOIN humbasicinfo c ON a.audit_psn = c.syspayno
+		INNER JOIN humbasicinfo hum ON a.req_syspayno = hum.syspayno
+		INNER JOIN xodhdeptinfo d ON a.mngmt_dept = d.dept_cd AND a.mngmt_dept_new_ymd = d.dept_new_ymd
+		INNER JOIN xodxcommst e ON a.region_clsf = e.cd
+		INNER JOIN xodxcommst f ON a.curncy_unit = f.cd
+		LEFT JOIN appv_applicationmap g ON a.doc_type = g.procdefalias
+		LEFT JOIN fbasliptyph h ON h.slip_typ_cd = a.doc_type
+		LEFT JOIN xomxintfatab i ON i.req_no = a.rcpt_no
+		WHERE rcpt_ymd BETWEEN #{rcpt_ymd_start} AND #{rcpt_ymd_cls}
+		<if test="region_clsf != null and region_clsf != ''">
+		  AND (a.region_clsf 		=	#{region_clsf})
+		</if>
+	    <if test="elec_yn != null and elec_yn != ''">
+	      AND (NVL(elec_yn, 'N')	=	#{elec_yn})
+	    </if>
+		ORDER BY a.enddate DESC
+	</select>
+  
+	<delete id="deleteBudAuditElec" parameterType="kr.re.kitech.biz.bud.frc.vo.BudAuditVo">
+		DELETE	/* QueryID :  kr.re.kitech.biz.bud.frc.deleteBudAuditElec */
+		  FROM bblauditdetls
+		 WHERE  rcpt_ymd between #{rcpt_ymd_start} and #{rcpt_ymd_cls}
+		   AND    elec_yn = 'Y'
+	</delete>
+	
+	<!-- 감사전자결재관리(집계) -->
+	<select id="selectBudAuditElecAgg01" parameterType="kr.re.kitech.biz.bud.frc.vo.BudAuditElecVo" resultType="kr.re.kitech.biz.bud.frc.vo.BudAuditElecVo">
+		SELECT /* QueryID : kr.re.kitech.biz.bud.frc.selectBudAuditElecAgg01 */ 
+				 rcpt_no,
+		       region_clsf,
+		       rcpt_ymd,
+		       substr(rcpt_no,0,3) as doc_type, 
+		       NVL(rcpt_contnt, '') AS rcpt_contnt,
+		       curncy_unit,
+		       NVL(req_amt, 0) AS req_amt,
+		       req_psn,
+		       req_syspayno,
+		       mngmt_dept,
+		       dept_new_ymd AS mngmt_dept_new_ymd,
+		       revw_opnon,
+		       apply_yn, 
+		       audit_psn,
+		       rmk,
+		       elec_yn,
+		       contents AS rej_opnon, --반려의견
+		       CASE WHEN opt_type='rejecttop' THEN '반려' ELSE '결재' END AS apr_typ, -- 결재유형
+		       TO_CHAR(enddate, '%Y%m%d') AS enddate  --결재(반려)일시
+		FROM (           
+		        SELECT  a.name AS rcpt_no --문서번호 
+		               , i.fomat_unit AS region_clsf
+		               , to_char(b.enddate, '%Y%m%d')  AS rcpt_ymd
+		               , CASE WHEN  a.alias = 'F31' OR a.alias = 'F32' OR a.alias = 'F33' OR a.alias = 'F34' OR a.alias = '116' OR a.alias = '174'
+		                           THEN (SELECT rmk FROM fspsliph WHERE unslip_no = a.name )
+		                    WHEN  a.alias = 'F31' THEN (SELECT req_cause FROM fsppayadvcreq           WHERE req_no = a.name)
+		                    WHEN  a.alias = 'F21' THEN (SELECT DECODE(NVL(rmk, ''), '', a.defname, rmk) FROM bblenfrc WHERE req_no = a.name)
+		                    WHEN  a.alias = 'F02' THEN (SELECT y.rmk     FROM fspequiph x, fspsliph y WHERE x.req_no = a.name and x.unslip_no = y.unslip_no)
+		                    WHEN  a.alias = 'P22' OR a.alias = 'P23' THEN
+		                                                      (  SELECT MAX(rcpt_contnt)
+		                                                        FROM (SELECT DECODE(TRIM(krchar_gdnm), '', eng_gdnm, krchar_gdnm) AS rcpt_contnt
+		                                                               FROM purreqitem WHERE pur_req_no = a.name ))
+		                    WHEN  a.alias = 'P26' THEN (SELECT max(gdnm) FROM puraccntchngh WHERE req_no = a.name)                             
+		                    WHEN  a.alias = 'R06' THEN (SELECT '연구비송금('||MAX(accnt_no)||')'   FROM resbgremtl WHERE req_no = a.name )
+		                    WHEN  a.alias = 'R22' THEN (SELECT '연구수당지급('||MAX(accnt_no)||')' FROM resbgallow WHERE req_no = a.name)
+		                    WHEN  a.alias = 'C72' THEN (SELECT NVL(biztrip_goal, '') FROM ctrdom  WHERE req_no = a.name)
+		                    WHEN  a.alias = 'C74' THEN (SELECT NVL(biztrip_goal, '') FROM ctrover WHERE req_no = a.name)
+		                    WHEN  a.alias = 'C90' THEN (SELECT '해외출장정산:'||adjst_contnt FROM ctroverad WHERE req_no = a.name)
+		                    WHEN  a.alias = 'P32' THEN  (SELECT contrct_nm FROM epucontrctmastr WHERE contrct_no  = substr(a.name,0,12) and chng_seq=substr(a.name,14,15))
+		                    WHEN  a.alias = 'P33' THEN (SELECT contrct_nm FROM epucontrctmastr WHERE contrct_no  = substr(a.name,0,12) and chng_seq=substr(a.name,14,15))
+		                    WHEN  a.alias = 'R71' THEN  (SELECT TECH_NM FROM RESPSTMAST WHERE tech_fee_no = a.name)
+		                    ELSE  a.defname  END AS rcpt_contnt
+		             , 'FAM022'   AS curncy_unit 
+		             , case WHEN  a.alias = 'F31' OR a.alias = 'F32' OR a.alias = 'F33' OR a.alias = 'F34' OR a.alias = '116' OR a.alias = '174'
+		                           THEN (SELECT SUM(unslip_amt) FROM fspslipd WHERE unslip_no = a.name AND base_debit_cr ='1')
+		                    WHEN  a.alias = 'F31' THEN (SELECT SUM(req_amt) FROM fsppayadvcreq WHERE req_no = a.name)
+		                    WHEN  a.alias = 'F21' THEN (SELECT SUM(req_amt) FROM bblenfrc  WHERE req_no = a.name)
+		                    WHEN  a.alias = 'F02' THEN (SELECT SUM(req_amt) FROM fspequiph WHERE req_no = a.name)                
+		                    WHEN  a.alias = 'P22'THEN (SELECT SUM(req_amt_sum)   FROM purreqmastr   WHERE pur_req_no = a.name ) /*kdw*/
+		                    WHEN  a.alias = 'P23'THEN (SELECT SUM(req_amt_sum)   FROM purreqmastr   WHERE pur_req_no = a.name )/*kdw*/
+		                    WHEN  a.alias = 'R06' THEN (SELECT SUM(ofic_send_amt) FROM resbgremtl    WHERE req_no = a.name )
+		                    WHEN  a.alias = 'R22' THEN (SELECT SUM(pay_amt) FROM resbgallow WHERE req_no = a.name)
+		                    WHEN  a.alias = 'C72' THEN (SELECT SUM(tot_expns)   FROM ctrdomaccnt  WHERE req_no = a.name)
+		                    WHEN  a.alias = 'C74' THEN (SELECT SUM(won_amt)     FROM ctroveraccnt WHERE req_no = a.name)
+		                    WHEN  a.alias = 'C90' THEN (SELECT SUM(ROUND(adjst_tot_amt, 0)) FROM ctroveradexpns WHERE req_no = a.name)
+		                    WHEN  a.alias = 'P32' THEN (SELECT contrct_tot_amt FROM epucontrctmastr WHERE contrct_no  = substr(a.name,0,12) and chng_seq=substr(a.name,14,15))/*kdw*/
+		                    WHEN  a.alias = 'P33' THEN (SELECT contrct_tot_amt FROM epucontrctmastr WHERE contrct_no  = substr(a.name,0,12) and chng_seq=substr(a.name,14,15))/*kdw*/
+		                    WHEN  a.alias = 'R71' THEN  (SELECT SUM(ADVNC_FEE) FROM RESPSTCRTPAGR WHERE tech_fee_no = a.name)
+		              ELSE 0 END AS req_amt
+		             ,a.initrsnm AS req_psn
+		             ,h.syspayno AS req_syspayno
+		             ,i.dept_cd AS mngmt_dept
+		             ,i.dept_new_ymd
+		             , ''        AS revw_opnon
+		             , 'Y'       AS apply_yn
+		             , bb.empsn   AS audit_psn
+		             , ''        AS rmk
+		             , 'Y'       AS elec_yn   
+		             , CASE WHEN b.status='COMPLETED' THEN NULL ELSE c.contents END AS contents
+		             , CASE WHEN b.status='COMPLETED' THEN 'APPROVE' ELSE c.opt_type END AS opt_type
+		             , CASE WHEN b.status='COMPLETED' THEN b.enddate ELSE c.updated_date END AS  enddate     
+		        FROM BPM:BPM_PROCINST a 
+		             JOIN BPM:BPM_WORKLIST b ON a.instid = b.instid
+		             LEFT JOIN IMIS:DOC_COMMENTS c ON a.name = c.req_no AND b.endpoint = c.empno 
+		             LEFT OUTER JOIN ( BPM:EMPTABLE g 
+		                         INNER JOIN humbasicinfo h ON g.empsn = h.syspayno
+		                         INNER JOIN xodhdeptinfo i ON h.dept_cd = i.dept_cd AND h.dept_new_ymd = i.dept_new_ymd
+		                         INNER JOIN xodxcommst j ON i.fomat_unit = j.cd
+		            ) ON a.initep=g.empcode
+		             LEFT OUTER JOIN BPM:EMPTABLE bb ON b.endpoint=bb.empcode
+		        WHERE a.alias NOT LIKE '%M'
+		          AND a.isdeleted = 0
+		          AND a.asistype IS null
+		          AND b.title = '감사'        
+		          AND b.startdate BETWEEN TO_DATE(#{rcpt_ymd_start}||'000000', '%Y%m%d%H%M%S') AND TO_DATE(#{rcpt_ymd_cls}||'235959', '%Y%m%d%H%M%S')     
+		         )
+	</select>
+	
+	<!-- 감사전자결재관리(집계- 내부결재, 내부시행문, 외부시행문) 조회 -->
+	<select id="selectBudAuditElecAgg02" parameterType="kr.re.kitech.biz.bud.frc.vo.BudAuditElecVo" resultType="kr.re.kitech.biz.bud.frc.vo.BudAuditElecVo">
+		SELECT /* QueryID : kr.re.kitech.biz.bud.frc.selectBudAuditElecAgg02 */ 
+				 rcpt_no,
+		       region_clsf,
+		       doc_type,
+		       rcpt_ymd,
+		       rcpt_contnt,
+		       curncy_unit,
+		       nvl(req_amt, 0) AS req_amt,
+		       req_syspayno,
+		       req_psn,
+		       mngmt_dept,
+		       dept_new_ymd AS mngmt_dept_new_ymd,
+		       revw_opnon,
+		       apply_yn, 
+		       audit_psn,
+		       rmk,
+		       elec_yn,
+		       contents AS rej_opnon, --반려의견
+		       CASE WHEN opt_type='rejecttop' THEN '반려' ELSE '결재' END AS apr_typ, -- 결재유형
+		       TO_CHAR(enddate, '%Y%m%d') AS enddate  --결재(반려)일시
+		FROM (            
+		        SELECT TO_CHAR(a.enddate, '%y%m%d%H%M%S')||b.empsn[1, 6] AS rcpt_no                       
+		             , i.fomat_unit AS region_clsf
+		             , TO_CHAR(a.enddate, '%Y%m%d')  AS rcpt_ymd   
+		             , TRIM(c.name)||'/' || TRIM(c.info) AS rcpt_contnt              
+		             , 'FAM022' AS curncy_unit 
+		             , 0 AS req_amt
+		              ,h.syspayno as req_syspayno
+		             , h.nm AS req_psn
+		             , h.dept_cd AS mngmt_dept
+		             , h.dept_new_ymd
+		             , '' AS revw_opnon
+		             , 'Y' AS apply_yn
+		             , b.empsn  AS audit_psn
+		             , '' AS rmk
+		             , 'Y' AS elec_yn  
+		             , CASE WHEN a.status='COMPLETED' THEN NULL ELSE comments.contents END AS contents
+		             , CASE WHEN a.status='COMPLETED' THEN 'APPROVE' ELSE comments.opt_type END AS opt_type
+		             , CASE WHEN a.status='COMPLETED' THEN a.enddate ELSE comments.updated_date END AS  enddate
+		              ,CASE WHEN e.procdefalias='SendApprProcess' then 'Z01' --내부 시행문
+		                    when  e.procdefalias='SendExApprProcess' then 'Z02'--외부시행문 
+		                    when  e.procdefalias='intAprProc' then 'Z03'--외부시행문 
+		                   ELSE  'Z04' end doc_type      
+		        FROM bpm:bpm_worklist a
+		        INNER JOIN bpm:bpm_procinst c ON c.instid=a.instid 
+		        INNER JOIN bpm:bpm_procdef d ON c.defid=d.defid 
+		        INNER JOIN appv_applicationmap e ON e.procdefalias=d.ALIAS 
+		        INNER JOIN bpm:bpm_worklist f ON c.inittaskid=f.taskid 
+		        LEFT OUTER JOIN bpm:emptable b ON a.endpoint=b.empcode
+		        LEFT OUTER JOIN ( bpm:emptable g
+		       INNER JOIN humbasicinfo h ON g.empsn = h.syspayno
+		                          INNER JOIN xodhdeptinfo i ON h.dept_cd = i.dept_cd AND h.dept_new_ymd = i.dept_new_ymd
+		                          INNER JOIN xodxcommst j ON i.fomat_unit = j.cd
+		                         ) ON f.endpoint=g.empcode 
+		        LEFT OUTER JOIN doc_comments comments ON a.instid=comments.instance_id AND a.trctag=comments.tracingtag AND comments.opt_type='rejecttop'        
+		        WHERE a.ext3='AUDIT'
+		        AND  a.status IN ('COMPLETED', 'CANCELLED')
+		        AND  e.isvisible=1 
+		        AND  c.inittaskid=f.taskid 
+		        AND  c.isdeleted=0
+		        AND  c.status IN ('Completed', 'Running')
+		        AND  a.startdate BETWEEN TO_DATE(#{rcpt_ymd_start}||'000001', '%Y%m%d%H%M%S') AND TO_DATE(#{rcpt_ymd_cls}||'235959', '%Y%m%d%H%M%S')
+		        AND  LENGTH(e.procdefalias) <![CDATA[<>]]> 3
+		      )  
+		ORDER BY rcpt_no
+	</select>
+	
+	<insert id="insertBudAuditElec" parameterType="kr.re.kitech.biz.bud.frc.vo.BudAuditElecVo">
+		INSERT /* QueryID : kr.re.kitech.biz.bud.frc.insertBudAuditElec */ 
+				 INTO bblauditdetls   
+		        ( rcpt_no,
+		          seq,
+		          region_clsf,
+		          rcpt_ymd,
+		          rcpt_contnt,
+		          curncy_unit,
+		          req_amt,
+		          req_psn,
+		          mngmt_dept,
+		          mngmt_dept_new_ymd,
+		          revw_opnon,
+		          apply_yn,
+		          audit_psn,
+		          rmk,
+		          elec_yn,
+		          pur_req_no,
+		          elecapp_docu_no,
+		          rej_opnon,
+		          apr_typ,
+		          enddate,
+		          regst_syspayno,
+		          regst_daytm,
+		           doc_type,
+		          rcpt_contnt2, 
+		          attach_file_no,    
+		          accnt_no,
+		          req_syspayno
+		)
+		VALUES (  #{rcpt_no},
+		          (SELECT NVL(MAX(seq), 0)+1 FROM bblauditdetls WHERE rcpt_no = #{rcpt_no}),
+		          #{region_clsf},
+		          #{rcpt_ymd},
+		          #{rcpt_contnt},
+		          #{curncy_unit},
+		          #{req_amt},
+		          #{req_psn},
+		          #{mngmt_dept},
+		          #{mngmt_dept_new_ymd},
+		          #{revw_opnon},
+		          #{apply_yn},
+		          #{audit_psn},
+		          #{rmk},
+		          #{elec_yn},
+		          #{pur_req_no},
+		          #{elecapp_docu_no},  
+		          #{rej_opnon},
+		          #{apr_typ},
+		          #{enddate},
+		          #{regst_syspayno},
+		          CURRENT,
+		          #{doc_type},
+		          #{rcpt_contnt2},
+		          #{attach_file_no},
+		          #{accnt_no},
+		          #{req_syspayno}
+		)
+	</insert>
+	
+</mapper>

@@ -1,0 +1,1531 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.rcms">
+  <select id="selectListItemFinRcmsPaySend01" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListItemFinRcmsPaySend01 */ 
+		 t2.unslip_no||TRUNC(t2.unslip_odr) AS lnk_reg_seq, 
+    t2.accnt_no,
+    t2.accnt_cd,
+    t2.expns_cd,
+    t4.accnt_cd_abbr,
+    t2.unslip_amt,
+    NVL(t6.trans_amt, 0) AS trans_amt, 
+    t2.pay_accnt_cd, 
+    t2.rcms_pay_clsf, 
+    t2.rcms_pay_unslip_no,
+    TRIM(t2.bill_no) AS bill_no, 
+    t2.evid_cd, 
+    t2.req_no, 
+    t2.rmk_2, 
+    CASE WHEN LENGTH(TRIM(t2.rmk_1)) <![CDATA[ < ]]> 10 THEN TRIM(t2.rmk_1) ||'(' || t1.accnt_ymd || ')' ELSE SUBSTR(TRIM(t2.rmk_1), 1, 50) END AS paym_usag,
+    t1.accnt_ymd, 
+    fun_emp_nm(t1.wrte_psn) AS wrte_psn_nm,
+    t6.slip_no || '-' || TRUNC(t6.slip_odr) AS slip_no_odr,
+    t6.trans_unslip_no,
+    fun_emp_nm(t2.accnt_rspns) AS accnt_rspns_nm,
+    fun_emp_nm(t3.bugt_ctrl_psn) AS bugt_ctrl_psn_nm,
+    t7.lnk_reg_dt, 
+    t7.exctn_exec_dt, 
+    t7.bz_exp_exctn_err_ctt, 
+    t7.splr_bz_reg_no, 
+    t10.rch_exp_acct_no, 
+    t10.inst_sbjt_prgr_st, 
+    t10.exctn_limt_st, 
+    t10.inst_totl_inst_amt, 
+    t10.pms_id,
+    t9.reschamt_card_prj_no AS inst_sbjt_no, 
+    DECODE(NVL(t7.del_st, ''), '', NVL(t7.bz_exp_exctn_proc_st, '9'), '9') AS proc_state, 
+    CASE WHEN t7.del_st IS NULL THEN t7.trns_amt ELSE 0 END AS trns_amt, 
+    DECODE(NVL(t7.del_st, ''), '', erp_send_no, '') AS erp_send_no,
+    CASE WHEN t3.start_ymd <![CDATA[ < ]]> '20140501' THEN 'Y' ELSE 'N' END AS prj_ymd_yn,
+    t3.cls_ymd, 
+    a.itxp_cd,
+    NVL(t7.frc_trsc_yn, a.frc_trsc_yn) AS frc_trsc_yn,
+    t7.etc_evdc_rsn_cd,
+    NVL(t12.email, '') AS accnt_rspns_email,
+    NVL(t13.email, '') AS bugt_ctrl_psn_email,
+    NVL(t14.email, '') AS wrte_psn_emaill,
+    t2.unslip_no,
+    t2.unslip_odr 
+FROM fspsliph AS t1
+JOIN fspslipd AS t2 ON t2.unslip_no = t1.unslip_no
+JOIN resbgacctm AS t3 ON t3.accnt_no = t2.accnt_no
+JOIN xodfaccnt AS t4 ON t4.accnt_cd = t2.accnt_cd
+JOIN fspslipdecsnd AS t6 ON t6.unslip_no = t2.unslip_no AND t6.unslip_odr = t2.unslip_odr
+JOIN resinpyear AS t9 ON t9.accnt_no = t3.main_accnt_no
+JOIN if_rnd_agin_l_a AS t10 ON t10.agrmt_seq_no = t9.reschamt_card_prj_no
+LEFT JOIN if_rnd_beex_l_a t7 ON t2.unslip_no = t7.erp_cd_1 AND t2.unslip_odr = t7.erp_cd_2
+    AND NOT EXISTS (SELECT '' FROM if_rnd_beex_l_a WHERE lnk_reg_seq = t7.lnk_reg_seq AND lnk_reg_dt <![CDATA[ > ]]> t7.lnk_reg_dt)
+LEFT JOIN frcmsitm a ON t10.pms_id = a.pms_id AND t3.itm_solve_base = a.itm_solve_base AND a.accnt_expns_cd = (CASE WHEN EXISTS (SELECT 1 FROM frcmsitm WHERE pms_id = a.pms_id AND accnt_expns_cd= t2.accnt_cd||'/'||t2.expns_cd ) THEN t2.accnt_cd||'/'||t2.expns_cd ELSE t2.accnt_cd END)
+LEFT JOIN xomxintfatab t11 ON t6.slip_no = t11.req_no
+LEFT JOIN humbasicinfo t12 ON t12.syspayno = t2.accnt_rspns
+LEFT JOIN humbasicinfo t13 ON t13.syspayno = t3.bugt_ctrl_psn
+LEFT JOIN humbasicinfo t14 ON t14.syspayno = t1.wrte_psn
+WHERE t1.accnt_ymd BETWEEN #{accnt_ymd_st} AND #{accnt_ymd_ed}
+AND t3.card_use_ex = #{card_use_ex}
+AND t2.accnt_cd LIKE '5%'
+AND t2.base_debit_cr ='1'
+<if test="proc_state != null and proc_state != ''">
+AND (t2.rcms_pay_clsf = 'FDC020' OR NVL(t2.rcms_pay_clsf,'') = '')
+</if>
+AND t6.unslip_amt <![CDATA[ <> ]]> t6.trans_amt
+AND NVL(t6.unslip_amt, 0) <![CDATA[ > ]]> 0
+
+<if test="slip_no != null and slip_no != ''">
+	 AND t1.slip_no = #{slip_no}
+</if> 
+<if test="accnt_no != null and accnt_no != ''">
+	 AND t2.accnt_no = #{accnt_no}
+</if>
+<if test="accnt_cd != null and accnt_cd != ''">
+	 AND t2.accnt_cd = #{accnt_cd}
+</if>
+<if test="expns_cd != null and expns_cd != ''">
+	 AND t2.expns_cd = #{expns_cd}
+</if>
+<if test="resch_accnt_clsf != null and resch_accnt_clsf != ''">
+	 AND t4.resch_accnt_clsf NOT IN <foreach item="item" index="index" collection="resch_accnt_clsf.split(',')" open="(" separator="," close=")">${item}</foreach>
+</if>
+<if test="erp_send_no != null and erp_send_no != ''">
+	 AND t7.erp_send_no = #{erp_send_no}
+</if> 
+<if test='card_use_ex == "FAJ004"'> AND NVL(t10.agrmt_inst_role_dv, '')!= 'F' </if> 
+<if test='proc_state == "9"'> AND DECODE(NVL(t7.del_st, ''), '', NVL(t7.bz_exp_exctn_proc_st, '9'), '9') ='9' AND NVL(t2.rcms_pay_unslip_no, '') = '' </if>
+<if test='proc_state == "0"'> AND t7.bz_exp_exctn_proc_st = '0' </if>
+<if test='proc_state == "2"'> AND t7.bz_exp_exctn_proc_st = '2' </if>
+<if test='proc_state == "3"'> AND (NVL(t7.bz_exp_exctn_proc_st, '9') = '3' OR NVL(t2.rcms_pay_unslip_no, '')!='') </if>
+<if test='proc_state == "4"'> AND DECODE(NVL(t7.del_st, ''), '', NVL(t7.bz_exp_exctn_proc_st, '9'), '9') = '4' </if>
+<if test='sbjt_state == "Y"'> AND (t10.inst_sbjt_prgr_st = '07' AND t10.exctn_limt_st = '1' AND NVL(t10.inst_totl_inst_amt, 0) > 0 ) </if>
+<if test='sbjt_state == "N"'> AND (t10.inst_sbjt_prgr_st != '07' OR t10.exctn_limt_st != '1' OR NVL(t10.inst_totl_inst_amt, 0) = 0) </if>
+<if test='resch_slip_type_cd == "610"'> AND t1.slip_typ_cd != '610' </if>
+<if test="sel_apr_state != null and sel_apr_state != ''">
+	 AND t11.apr_state = #{sel_apr_state}
+</if> 
+AND NOT EXISTS (
+    SELECT ''
+    FROM fsprcmsmng t11
+    WHERE t11.rcms_gbn='RCMS1'
+    AND t11.unslip_no=t1.unslip_no
+    AND t11.use_yn = 'Y')
+ORDER BY t2.accnt_no, t2.unslip_no, t2.unslip_odr
+  </select>
+  <select id="selectListItemFinRcmsPaySend02" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListItemFinRcmsPaySend02 */
+     k.cd_nm AS rcms_pay_clsf,       
+       '오류' AS proc_state,
+       erp_cd_4 AS slip_no_odr,
+       erp_cd_3 AS accnt_no, 
+       b.itxp_cd AS accnt_cd,
+       m.accnt_cd_abbr,
+       a.trns_amt,
+       c.rmk_2,
+       c.rmk_1,
+       d.accnt_ymd,
+       a.bz_exp_exctn_err_ctt AS err_msg,
+       a.erp_cd_1 AS unslip_no,        
+       SUBSTR(f.accnt_rspns, 3, 8) AS accnt_rspns,  
+       fun_dept_nm(g.dept_cd) AS dept_cd_nm, 
+       g.nm AS accnt_rspns_nm, 
+       a.lnk_reg_dt,
+       j.cd_nm AS fomat_unit,             
+       i.nm AS bugt_ctrl_psn,
+       i.ext_no 
+FROM  if_rnd_beex_l_a a, 
+      if_rnd_beit_p_a b,
+      xodfaccnt m,
+      fspslipd c,
+      fspsliph d,
+      resbgacctm f,
+      humbasicinfo g,
+      xodhdeptinfo h,
+      humbasicinfo i, 
+      xodxcommst j, 
+      xodxcommst k
+WHERE a.lnk_reg_dt = b.lnk_reg_dt
+AND   a.lnk_reg_seq = b.lnk_reg_seq
+AND   b.itxp_cd = m.accnt_cd
+AND   a.erp_cd_1 = c.unslip_no
+AND   a.erp_cd_2 = c.unslip_odr
+AND   c.unslip_no = d.unslip_no
+AND   c.rcms_pay_clsf = k.cd 
+AND   a.erp_cd_3 = f.accnt_no
+AND   f.accnt_rspns = g.syspayno
+AND   h.fomat_unit = j.cd
+AND   f.bugt_ctrl_psn = i.syspayno
+AND   i.dept_cd = h.dept_cd
+AND   NVL(h.abol_ymd, '') = ''
+AND   a.del_st IS NOT NULL
+AND   a.lnk_reg_dt BETWEEN #{lnk_reg_dt_st} AND #{lnk_reg_dt_ed}
+ORDER BY 1, 3
+  </select>
+  <select id="selectListBeitpaMs" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListBeitpaMs */
+  		 a.lnk_reg_dt
+    , a.lnk_reg_seq
+    , a.itxp_reg_seq
+    , a.itxp_cd
+    , TRIM(SUBSTR(c.pms_id, 0, 1)) AS pms_flag
+    , TRIM(SUBSTR(a.lnk_reg_seq, 0, 3)) AS unslip_type
+    , a.acco_cd_1 AS accnt_cd
+FROM if_rnd_beit_p_a a
+LEFT JOIN if_rnd_beex_l_a b ON a.lnk_reg_dt = b.lnk_reg_dt AND a.lnk_reg_seq = b.lnk_reg_seq
+LEFT JOIN if_rnd_agin_l_a c ON b.inst_sbjt_no = c.agrmt_seq_no
+WHERE a.lnk_reg_dt = #{lnk_reg_dt}
+AND a.lnk_reg_seq = #{lnk_reg_seq}
+  </select>
+  <select id="selectListBeaipaMs" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListBeaipaMs */
+  accnt_no
+,unslip_no
+,paym_amt
+,ptcn_rt
+,usr_nm
+,res_reg_no
+,ptcn_str_dt
+,ptcn_end_dt
+,dtbth
+,gndr_se
+,scnc_tecr_reg_no
+FROM (
+SELECT  t1.accnt_no,
+     t1.unslip_no,
+     t1.unslip_odr,
+     t2.pay_amt          AS paym_amt,       
+     t2.attnce_rt        AS ptcn_rt,
+     DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = t4.reschamt_card_ofic_cd
+                  AND sbjt_id = t4.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = t3.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', t2.depstr, NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = t4.reschamt_card_ofic_cd
+                  AND sbjt_id = t4.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = t3.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm,
+     t3.resid_no         AS res_reg_no,
+     t2.attnce_prd_orign_ymd AS ptcn_str_dt,
+     t2.attnce_prd_cls_ymd AS ptcn_end_dt,   
+     t3.sci_tech_regst_no,   
+     CASE WHEN t3.resid_no IS NULL THEN NULL WHEN SUBSTR(t3.resid_no, 8,1) = '1' OR SUBSTR(t3.resid_no, 8,1) = '2' OR SUBSTR(t3.resid_no, 8,1) = '5' OR SUBSTR(t3.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(t3.resid_no, 0,6) ELSE '20'||SUBSTR(t3.resid_no, 0,6)  END AS dtbth,
+     CASE WHEN t3.resid_no IS NULL THEN NULL WHEN SUBSTR(t3.resid_no, 8,1) = '1' OR SUBSTR(t3.resid_no, 8,1) = '3' OR SUBSTR(t3.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se,
+     '' AS scnc_tecr_reg_no
+   FROM fspslipd t1      
+   LEFT OUTER JOIN resbgallow t2 ON t1.accnt_no = t2.accnt_no AND t1.unslip_no = t2.unslip_no AND t2.pay_amt <![CDATA[ > ]]> 0
+   LEFT OUTER JOIN humbasicinfo t3 ON t2.attnce_reschr = t3.syspayno
+   LEFT JOIN resinpyear t4 ON t4.accnt_no = t1.accnt_no 
+   WHERE t1.unslip_no like #{unslip_no}
+   AND   t1.unslip_odr = #{unslip_odr}
+)
+  </select>
+  <select id="selectListBeaipaMs02" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListBeaipaMs02 */
+       DECODE(NVL(trans_unslip_no, ''), '', distr_amt, distr_amt - trans_distr_amt) AS paym_amt,
+       ptcn_rt,
+       usr_nm,
+       syspayno,
+       res_reg_no,
+       ptcn_str_dt,
+       ptcn_end_dt, 
+       dtbth,
+       gndr_se,
+       scnc_tecr_reg_no
+FROM ( SELECT SUM(c.distr_amt) AS distr_amt,
+              SUM(NVL(c.trans_distr_amt,0)) AS trans_distr_amt,
+              c.trans_unslip_no,
+              c.distr_rt AS ptcn_rt,
+              DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = g.reschamt_card_ofic_cd
+                  AND sbjt_id = g.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = d.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', d.nm, 
+                NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = g.reschamt_card_ofic_cd
+                  AND sbjt_id = g.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = d.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm,
+              c.syspayno,
+              REPLACE(d.resid_no, '-', '') AS res_reg_no,
+              f.attnce_prd_orign_ymd AS ptcn_str_dt,
+              f.attnce_prd_cls_ymd AS ptcn_end_dt,
+              a.accnt_cd,               
+              CASE WHEN d.resid_no IS NULL THEN NULL WHEN SUBSTR(d.resid_no, 8,1) = '1' OR SUBSTR(d.resid_no, 8,1) = '2' OR SUBSTR(d.resid_no, 8,1) = '5' OR SUBSTR(d.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(d.resid_no, 0,6) ELSE '20'||SUBSTR(d.resid_no, 0,6)  END AS dtbth,
+              CASE WHEN d.resid_no IS NULL THEN NULL WHEN SUBSTR(d.resid_no, 8,1) = '1' OR SUBSTR(d.resid_no, 8,1) = '3' OR SUBSTR(d.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se,
+              '' AS scnc_tecr_reg_no
+       FROM fspslipd a
+       JOIN fsapsnexpnsdistrsub c ON a.unslip_no = c.unslip_no AND a.accnt_no  = c.accnt_no AND a.accnt_cd  = c.accnt_cd AND a.expns_cd = c.expns_cd
+       JOIN humbasicinfo d ON c.syspayno = d.syspayno
+       JOIN resbgacctm e ON e.accnt_no = a.accnt_no
+       JOIN resinppare f ON f.prj_no = e.prj_no AND f.syspayno = c.syspayno
+       LEFT JOIN resinpyear g ON g.accnt_no = a.accnt_no 
+       WHERE a.unslip_no = #{unslip_no}
+       AND   a.unslip_odr  = #{unslip_odr}
+       AND   a.expns_cd   = #{expns_cd}
+       AND c.syspayno != '20130549'    
+       GROUP BY 3,4,5,6,7,8,9,10,11,12,13 
+UNION ALL
+        SELECT SUM(c.distr_amt) AS distr_amt,
+              SUM(NVL(c.trans_distr_amt,0)) AS trans_distr_amt,
+              c.trans_unslip_no,
+              c.distr_rt AS ptcn_rt,
+              d.nm AS usr_nm,
+              c.syspayno,
+              REPLACE(d.resid_no, '-', '') AS res_reg_no,
+              MIN(f.attnce_prd_orign_ymd) AS ptcn_str_dt,
+              MAX(f.attnce_prd_cls_ymd) AS ptcn_end_dt,
+              a.accnt_cd,               
+              CASE WHEN d.resid_no IS NULL THEN NULL WHEN SUBSTR(d.resid_no, 8,1) = '1' OR SUBSTR(d.resid_no, 8,1) = '2' OR SUBSTR(d.resid_no, 8,1) = '5' OR SUBSTR(d.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(d.resid_no, 0,6) ELSE '20'||SUBSTR(d.resid_no, 0,6)  END AS dtbth,
+              CASE WHEN d.resid_no IS NULL THEN NULL WHEN SUBSTR(d.resid_no, 8,1) = '1' OR SUBSTR(d.resid_no, 8,1) = '3' OR SUBSTR(d.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se,
+              '' AS scnc_tecr_reg_no
+       FROM fspslipd a       
+       JOIN fsapsnexpnsdistrsub c ON a.unslip_no = c.unslip_no AND a.accnt_no  = c.accnt_no AND a.accnt_cd  = c.accnt_cd AND a.expns_cd = c.expns_cd
+       JOIN humbasicinfo d ON c.syspayno = d.syspayno
+       JOIN resbgacctm e ON e.accnt_no = a.accnt_no
+       JOIN (SELECT xf.prj_no , xf.syspayno, MIN(xf.attnce_prd_orign_ymd) AS attnce_prd_orign_ymd, MAX(xf.attnce_prd_cls_ymd) AS attnce_prd_cls_ymd 
+               FROM resinppare xf 
+              WHERE xf.syspayno = '20130549' 
+           GROUP BY 1,2) f ON f.prj_no = e.prj_no AND f.syspayno = c.syspayno 
+       WHERE a.unslip_no   = #{unslip_no}
+       AND   a.unslip_odr  = #{unslip_odr}
+       AND   a.expns_cd   = #{expns_cd}
+       AND c.syspayno = '20130549'   
+       GROUP BY 3,4,5,6,7,10,11,12,13
+)
+  </select>
+  <select id="selectListBeaipaMs03" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListBeaipaMs03 */
+      a.paym_amt
+    , a.ptcn_rt
+    , a.usr_nm
+    , a.syspayno
+    , a.res_reg_no
+    , a.ptcn_str_dt
+    , a.ptcn_end_dt
+    , CASE WHEN b.resid_no IS NULL THEN NULL WHEN SUBSTR(b.resid_no, 8,1) = '1' OR SUBSTR(b.resid_no, 8,1) = '2' OR SUBSTR(b.resid_no, 8,1) = '5' OR SUBSTR(b.resid_no, 8,1) = '6'  
+            THEN '19'||SUBSTR(b.resid_no, 0,6) ELSE '20'||SUBSTR(b.resid_no, 0,6)  END AS dtbth,
+      CASE WHEN b.resid_no IS NULL THEN NULL WHEN SUBSTR(b.resid_no, 8,1) = '1' OR SUBSTR(b.resid_no, 8,1) = '3' OR SUBSTR(b.resid_no, 8,1) = '5' 
+            THEN 'L03001' ELSE 'L03002' END AS gndr_se,
+      '' AS scnc_tecr_reg_no
+FROM (SELECT SUM(t2.distr_amt) AS paym_amt,       
+            t2.distr_rt AS ptcn_rt,
+            DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = t6.reschamt_card_ofic_cd
+                  AND sbjt_id = t6.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = t3.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', t3.nm, 
+                NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = t6.reschamt_card_ofic_cd
+                  AND sbjt_id = t6.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = t3.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm,
+            t2.syspayno,
+            t3.resid_no  AS res_reg_no,
+            t5.attnce_prd_orign_ymd AS ptcn_str_dt,
+            t5.attnce_prd_cls_ymd AS ptcn_end_dt
+        FROM fspslipd t1      
+        JOIN fsapsnexpnsdistrsub t2 ON t1.unslip_no = t2.unslip_no AND t1.accnt_no = t2.accnt_no AND t1.accnt_cd = t2.accnt_cd
+        JOIN humbasicinfo t3 ON t2.syspayno = t3.syspayno
+        JOIN resbgacctm t4 ON t4.accnt_no = t1.accnt_no
+        JOIN resinppare t5 ON t5.prj_no = t4.prj_no AND t5.syspayno = t3.syspayno
+        LEFT JOIN resinpyear t6 ON t6.accnt_no = t1.accnt_no
+WHERE t1.unslip_no = #{unslip_no}
+AND   t1.unslip_odr = #{unslip_odr}
+GROUP BY t2.distr_rt, usr_nm, t2.syspayno, t3.resid_no, t5.attnce_prd_orign_ymd, t5.attnce_prd_cls_ymd) a
+JOIN humbasicinfo b ON a.syspayno = b.syspayno
+  </select>
+  <select id="selectListBeaipaMs04" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListBeaipaMs04 */
+  res_reg_no
+,usr_nm
+,paym_amt
+,ptcn_rt
+,ptcn_str_dt
+,ptcn_end_dt
+,dtbth
+,gndr_se
+,scnc_tecr_reg_no
+FROM (
+SELECT REPLACE(c.resid_no,'-','') AS res_reg_no
+     , DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = j.reschamt_card_ofic_cd
+                  AND sbjt_id = j.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = c.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', NVL(g.depstr_nm, a.depstr), 
+                NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = j.reschamt_card_ofic_cd
+                  AND sbjt_id = j.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = c.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm
+     , a.pay_amt AS paym_amt
+     , a.pay_rt AS ptcn_rt
+     , h.start_ymd AS ptcn_str_dt
+     , h.cls_ymd AS ptcn_end_dt   
+     , CASE WHEN c.resid_no IS NULL THEN NULL WHEN SUBSTR(c.resid_no, 8,1) = '1' OR SUBSTR(c.resid_no, 8,1) = '2' OR SUBSTR(c.resid_no, 8,1) = '5' OR SUBSTR(c.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(c.resid_no, 0,6) ELSE '20'||SUBSTR(c.resid_no, 0,6)  END AS dtbth
+     , CASE WHEN c.resid_no IS NULL THEN NULL WHEN SUBSTR(c.resid_no, 8,1) = '1' OR SUBSTR(c.resid_no, 8,1) = '3' OR SUBSTR(c.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se
+     , '' AS scnc_tecr_reg_no
+FROM resbgallow a
+JOIN resbgacctm h ON a.accnt_no = h.accnt_no
+JOIN xomxintfatab i ON a.req_no = i.req_no and i.apr_state IN ('XAD070', 'XAD100')
+LEFT JOIN humbasicinfo c ON a.attnce_reschr = c.syspayno
+LEFT JOIN fbaapartaccnt g ON a.attnce_reschr = g.syspayno
+LEFT JOIN resinpyear j ON j.accnt_no = a.accnt_no
+WHERE a.req_ymd BETWEEN #{startYmd} AND #{endYmd}
+AND a.accnt_no = #{accnt_no}
+and a.pay_amt <![CDATA[ <> ]]> 0
+)
+  </select>
+  <select id="selectListResInpPareMS01" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListResInpPareMS01 */
+       ptcn_rt, syspayno, usr_nm, ptcn_str_dt, ptcn_end_dt res_reg_no, dtbth, gndr_se, scnc_tecr_reg_no
+FROM (
+SELECT 
+     b.cash_attnce_rt AS ptcn_rt
+     , b.syspayno
+     , DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = d.reschamt_card_ofic_cd
+                  AND sbjt_id = d.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = c.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', b.nm, NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = d.reschamt_card_ofic_cd
+                  AND sbjt_id = d.exclsv_agncy_prj_no
+                  AND ptrcr_scnc_tecr_reg_no = c.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm
+     , b.attnce_prd_orign_ymd AS ptcn_str_dt
+     , b.attnce_prd_cls_ymd AS ptcn_end_dt
+     , c.resid_no AS res_reg_no    
+     , CASE WHEN c.resid_no IS NULL THEN NULL WHEN SUBSTR(c.resid_no, 8,1) = '1' OR SUBSTR(c.resid_no, 8,1) = '2' OR SUBSTR(c.resid_no, 8,1) = '5' OR SUBSTR(c.resid_no, 8,1) = '6' 
+             THEN '19'||SUBSTR(c.resid_no, 0,6) ELSE '20'||SUBSTR(c.resid_no, 0,6)  END AS dtbth
+     , CASE WHEN c.resid_no IS NULL THEN NULL WHEN SUBSTR(c.resid_no, 8,1) = '1' OR SUBSTR(c.resid_no, 8,1) = '3' OR SUBSTR(c.resid_no, 8,1) = '5' 
+             THEN 'L03001' ELSE 'L03002' END AS gndr_se
+     , '' AS scnc_tecr_reg_no
+FROM resbgacctm a
+JOIN resinppare b ON a.prj_no = b.prj_no
+JOIN humbasicinfo c ON b.syspayno = c.syspayno
+LEFT JOIN resinpyear d ON d.accnt_no = a.accnt_no
+WHERE a.accnt_no = #{accnt_no}
+AND b.psnexpns_clsf ='RAM004'
+)
+  </select>
+  <select id="selectListResbglcostMS01" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListResbglcostMS01 */
+  		 paym_amt, ptcn_rt, usr_nm, syspayno, res_reg_no, ptcn_str_dt, ptcn_end_dt, dtbth, gndr_se, scnc_tecr_reg_no,''
+FROM(
+SELECT SUM(t1.distr_amt + NVL(t1.trans_amt,0)) AS paym_amt,
+       CASE WHEN SUM(t1.distr_rt + NVL(t1.trans_rt,0)) <![CDATA[ > ]]> 100 THEN 100 
+            ELSE SUM(t1.distr_rt + NVL(t1.trans_rt,0)) END AS ptcn_rt,
+       DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                    FROM if_rnd_sprc_l_a
+                    WHERE pms_id = g.reschamt_card_ofic_cd
+                        AND sbjt_id = g.exclsv_agncy_prj_no
+                        AND ptrcr_scnc_tecr_reg_no = t2.sci_tech_regst_no
+                    GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', t2.nm, 
+              NVL((SELECT MAX(ptcn_rchr_nm) 
+                    FROM if_rnd_sprc_l_a
+                    WHERE pms_id = g.reschamt_card_ofic_cd
+                        AND sbjt_id = g.exclsv_agncy_prj_no
+                        AND ptrcr_scnc_tecr_reg_no = t2.sci_tech_regst_no
+                    GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm,
+       t2.syspayno,
+       t2.resid_no AS res_reg_no,
+       t4.attnce_prd_orign_ymd AS ptcn_str_dt,
+       t4.attnce_prd_cls_ymd AS ptcn_end_dt,       
+       CASE WHEN t2.resid_no IS NULL THEN NULL WHEN SUBSTR(t2.resid_no, 8,1) = '1' OR SUBSTR(t2.resid_no, 8,1) = '2' OR SUBSTR(t2.resid_no, 8,1) = '5' OR SUBSTR(t2.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(t2.resid_no, 0,6) ELSE '20'||SUBSTR(t2.resid_no, 0,6)  END AS dtbth,
+       CASE WHEN t2.resid_no IS NULL THEN NULL WHEN SUBSTR(t2.resid_no, 8,1) = '1' OR SUBSTR(t2.resid_no, 8,1) = '3' OR SUBSTR(t2.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se,
+       '' AS scnc_tecr_reg_no
+FROM resbglcost t1
+JOIN humbasicinfo t2 ON t1.syspayno = t2.syspayno
+JOIN resbgacctm t3 ON t3.accnt_no = t1.accnt_no
+JOIN resinppare t4 ON t4.prj_no = t3.prj_no AND t4.syspayno = t2.syspayno
+LEFT JOIN resinpyear g ON g.accnt_no = t1.accnt_no
+WHERE t1.accnt_no = #{accnt_no}
+AND   t1.yr||month = substr(#{accnt_ymd}, 1, 6)  
+AND   t1.psnexpns_clsf = 'RAM001' --내부인건비 1
+AND   t1.unslip_no = #{unslip_no}
+AND   t2.occugrp_cd = DECODE (#{expns_cd}, '122', 'HAA010', 'HAA045')
+GROUP BY t1.distr_rt, usr_nm, t2.syspayno, t2.resid_no, t4.attnce_prd_orign_ymd, t4.attnce_prd_cls_ymd, dtbth, gndr_se
+UNION
+SELECT SUM(t1.distr_amt + NVL(t1.trans_amt,0)) AS paym_amt,
+       CASE WHEN SUM(t1.distr_rt + NVL(t1.trans_rt,0)) <![CDATA[ > ]]> 100 THEN 100 
+            ELSE SUM(t1.distr_rt + NVL(t1.trans_rt,0)) END AS ptcn_rt,
+       DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                    FROM if_rnd_sprc_l_a
+                    WHERE pms_id = g.reschamt_card_ofic_cd
+                        AND sbjt_id = g.exclsv_agncy_prj_no
+                        AND ptrcr_scnc_tecr_reg_no = t2.sci_tech_regst_no
+                    GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', t2.nm, 
+              NVL((SELECT MAX(ptcn_rchr_nm) 
+                    FROM if_rnd_sprc_l_a
+                    WHERE pms_id = g.reschamt_card_ofic_cd
+                        AND sbjt_id = g.exclsv_agncy_prj_no
+                        AND ptrcr_scnc_tecr_reg_no = t2.sci_tech_regst_no
+                    GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm,
+       t2.syspayno,
+       t2.resid_no AS res_reg_no,
+       t4.attnce_prd_orign_ymd AS ptcn_str_dt,
+       t4.attnce_prd_cls_ymd AS ptcn_end_dt,       
+       CASE WHEN t2.resid_no IS NULL THEN NULL WHEN SUBSTR(t2.resid_no, 8,1) = '1' OR SUBSTR(t2.resid_no, 8,1) = '2' OR SUBSTR(t2.resid_no, 8,1) = '5' OR SUBSTR(t2.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(t2.resid_no, 0,6) ELSE '20'||SUBSTR(t2.resid_no, 0,6)  END AS dtbth,
+       CASE WHEN t2.resid_no IS NULL THEN NULL WHEN SUBSTR(t2.resid_no, 8,1) = '1' OR SUBSTR(t2.resid_no, 8,1) = '3' OR SUBSTR(t2.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se,
+       '' AS scnc_tecr_reg_no
+FROM resbglcost t1
+JOIN humbasicinfo t2 ON t1.syspayno = t2.syspayno
+JOIN resbgacctm t3 ON t3.accnt_no = t1.accnt_no
+JOIN resinppare t4 ON t4.prj_no = t3.prj_no AND t4.syspayno = t2.syspayno
+JOIN humrctbasinfo h ON h.syspayno = t1.syspayno and h.occugrp_cd not in ('HAA010', 'HAA045') and h.req_no = t2.rct_req_no
+JOIN humbasicinfo l ON l.syspayno = h.timeoff_psn_syspayno
+LEFT JOIN resinpyear g ON g.accnt_no = t1.accnt_no
+WHERE t1.accnt_no = #{accnt_no}
+AND   t1.yr||month = substr(#{accnt_ymd}, 1, 6)  
+AND   t1.psnexpns_clsf = 'RAM001' --내부인건비 1
+AND   t1.unslip_no = #{unslip_no}
+AND   l.occugrp_cd = DECODE (#{expns_cd}, '122', 'HAA010', 'HAA045')
+GROUP BY t1.distr_rt, usr_nm, t2.syspayno, t2.resid_no, t4.attnce_prd_orign_ymd, t4.attnce_prd_cls_ymd, dtbth, gndr_se
+)
+  </select>
+  <select id="selectListHumApyArCostMS07" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  	SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListHumApyArCostMS07 */
+  	     paym_amt, usr_nm, ptcn_rt, res_reg_no, dtbth, gndr_se, scnc_tecr_reg_no
+FROM (
+SELECT SUM(a.expns_amt) + SUM(a.emp_amt) + SUM(a.acdt_amt) + SUM(a.bond_amt) + SUM(a.asbe_amt) AS paym_amt,
+     DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = g.reschamt_card_ofic_cd
+                    AND sbjt_id = g.exclsv_agncy_prj_no
+                    AND ptrcr_scnc_tecr_reg_no = d.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', b.nm, 
+            NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = g.reschamt_card_ofic_cd
+                    AND sbjt_id = g.exclsv_agncy_prj_no
+                    AND ptrcr_scnc_tecr_reg_no = d.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm,
+           0 AS ptcn_rt,
+           b.resid_no AS res_reg_no  
+     , CASE WHEN b.resid_no IS NULL THEN NULL WHEN SUBSTR(b.resid_no, 8,1) = '1' OR SUBSTR(b.resid_no, 8,1) = '2' OR SUBSTR(b.resid_no, 8,1) = '5' OR SUBSTR(b.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(b.resid_no, 0,6) ELSE '20'||SUBSTR(b.resid_no, 0,6)  END AS dtbth
+     , CASE WHEN b.resid_no IS NULL THEN NULL WHEN SUBSTR(b.resid_no, 8,1) = '1' OR SUBSTR(b.resid_no, 8,1) = '3' OR SUBSTR(b.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se
+     , '' AS scnc_tecr_reg_no
+FROM  humapybasic c  
+JOIN humapyarcost a ON c.req_no = a.expns_req_no
+JOIN humapyptinfo b ON a.req_no = b.req_no AND a.seq = b.seq
+JOIN humbasicinfo d ON d.syspayno = c.syspayno
+LEFT JOIN resinpyear g ON g.accnt_no = a.accnt_no         
+WHERE c.unslip_no = #{unslip_no}
+AND   a.accnt_no = #{accnt_no}
+GROUP BY usr_nm, b.resid_no ,dtbth, gndr_se
+)
+  </select>
+  <select id="selectListResBglStuCostMS01" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListResBglStuCostMS01 */
+           paym_amt, usr_nm, ptcn_rt, res_reg_no, ptcn_str_dt, ptcn_end_dt, dtbth, gndr_se, scnc_tecr_reg_no
+FROM (
+SELECT a.partici_pay_amt AS paym_amt,
+        DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = g.reschamt_card_ofic_cd
+                    AND sbjt_id = g.exclsv_agncy_prj_no
+                    AND ptrcr_scnc_tecr_reg_no = b.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', b.nm, 
+            NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = g.reschamt_card_ofic_cd
+                    AND sbjt_id = g.exclsv_agncy_prj_no
+                    AND ptrcr_scnc_tecr_reg_no = b.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm,
+        partici_rt AS ptcn_rt,
+        b.resid_no AS res_reg_no,
+        d.attnce_prd_orign_ymd AS ptcn_str_dt,
+        d.attnce_prd_cls_ymd AS ptcn_end_dt,       
+       CASE WHEN b.resid_no IS NULL THEN NULL WHEN SUBSTR(b.resid_no, 8,1) = '1' OR SUBSTR(b.resid_no, 8,1) = '2' OR SUBSTR(b.resid_no, 8,1) = '5' OR SUBSTR(b.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(b.resid_no, 0,6) ELSE '20'||SUBSTR(b.resid_no, 0,6)  END AS dtbth,
+       CASE WHEN b.resid_no IS NULL THEN NULL WHEN SUBSTR(b.resid_no, 8,1) = '1' OR SUBSTR(b.resid_no, 8,1) = '3' OR SUBSTR(b.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se,
+       '' AS scnc_tecr_reg_no, a.unslip_no, a.accnt_no
+FROM resbglstucost a
+JOIN humbasicinfo b on a.syspayno = b.syspayno
+JOIN resbgacctm c ON c.accnt_no = a.accnt_no
+JOIN resinppare d ON d.prj_no = c.prj_no AND  d.syspayno = b.syspayno
+LEFT JOIN resinpyear g ON g.accnt_no = a.accnt_no
+WHERE a.unslip_no = #{unslip_no}
+AND    a.accnt_no = #{accnt_no}
+)
+  </select>
+  <select id="selectListRcmsResbglcostMS01" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListRcmsResbglcostMS01 */
+       paym_amt, ptcn_rt, usr_nm, syspayno, res_reg_no, ptcn_str_dt, ptcn_end_dt, dtbth, gndr_se, scnc_tecr_reg_no
+FROM (
+SELECT a.trans_amt AS paym_amt,
+       CASE WHEN t1.distr_rt + NVL(t1.trans_rt,0) <![CDATA[ > ]]> 100 THEN 100 
+            ELSE t1.distr_rt + NVL(t1.trans_rt,0) END AS ptcn_rt,
+       t2.nm AS usr_nm,
+       t2.syspayno,
+       t2.resid_no AS res_reg_no,
+       t4.attnce_prd_orign_ymd AS ptcn_str_dt,
+       t4.attnce_prd_cls_ymd AS ptcn_end_dt     
+     , CASE WHEN t2.resid_no IS NULL THEN NULL WHEN SUBSTR(t2.resid_no, 8,1) = '1' OR SUBSTR(t2.resid_no, 8,1) = '2' OR SUBSTR(t2.resid_no, 8,1) = '5' OR SUBSTR(t2.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(t2.resid_no, 0,6) ELSE '20'||SUBSTR(t2.resid_no, 0,6)  END AS dtbth
+     , CASE WHEN t2.resid_no IS NULL THEN NULL WHEN SUBSTR(t2.resid_no, 8,1) = '1' OR SUBSTR(t2.resid_no, 8,1) = '3' OR SUBSTR(t2.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se
+     , '' AS scnc_tecr_reg_no
+FROM resbglcosthis a
+JOIN resbglcost t1 ON a.yr=t1.yr AND a.month = t1.month AND a.syspayno = t1.syspayno AND a.accnt_no = t1.accnt_no
+JOIN humbasicinfo t2 ON t1.syspayno = t2.syspayno
+JOIN resbgacctm t3 ON t3.accnt_no = t1.accnt_no
+JOIN resinppare t4 ON t4.prj_no = t3.prj_no AND t4.syspayno = t2.syspayno
+WHERE a.trans_unslip_no = #{unslip_no}
+AND   a.trans_unslip_odr = #{unslip_odr}
+)
+  </select>
+  <select id="selectListResbglcostMS02" parameterType="map" resultType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListResbglcostMS02 */
+       paym_amt, ptcn_rt, usr_nm, syspayno, res_reg_no, ptcn_str_dt, ptcn_end_dt, dtbth, gndr_se, scnc_tecr_reg_no
+FROM (
+SELECT a.trans_amt AS paym_amt,
+       CASE WHEN t1.distr_rt + NVL(t1.trans_rt,0) <![CDATA[ > ]]> 100 THEN 100 
+            ELSE t1.distr_rt + NVL(t1.trans_rt,0) END AS ptcn_rt,
+       DECODE(NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = g.reschamt_card_ofic_cd
+                    AND sbjt_id = g.exclsv_agncy_prj_no
+                    AND ptrcr_scnc_tecr_reg_no = t2.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), ''), '', t2.nm, 
+            NVL((SELECT MAX(ptcn_rchr_nm) 
+                FROM if_rnd_sprc_l_a
+                WHERE pms_id = g.reschamt_card_ofic_cd
+                    AND sbjt_id = g.exclsv_agncy_prj_no
+                    AND ptrcr_scnc_tecr_reg_no = t2.sci_tech_regst_no
+                GROUP BY ptrcr_scnc_tecr_reg_no), '')) AS usr_nm,
+       t2.syspayno,
+       t2.resid_no AS res_reg_no,
+       t4.attnce_prd_orign_ymd AS ptcn_str_dt,
+       t4.attnce_prd_cls_ymd AS ptcn_end_dt     
+     , CASE WHEN t2.resid_no IS NULL THEN NULL WHEN SUBSTR(t2.resid_no, 8,1) = '1' OR SUBSTR(t2.resid_no, 8,1) = '2' OR SUBSTR(t2.resid_no, 8,1) = '5' OR SUBSTR(t2.resid_no, 8,1) = '6'  THEN '19'||SUBSTR(t2.resid_no, 0,6) ELSE '20'||SUBSTR(t2.resid_no, 0,6)  END AS dtbth
+     , CASE WHEN t2.resid_no IS NULL THEN NULL WHEN SUBSTR(t2.resid_no, 8,1) = '1' OR SUBSTR(t2.resid_no, 8,1) = '3' OR SUBSTR(t2.resid_no, 8,1) = '5' THEN 'L03001' ELSE 'L03002' END AS gndr_se
+     , '' AS scnc_tecr_reg_no
+FROM resbglcosthis a
+JOIN resbglcost t1 ON a.yr=t1.yr AND a.month = t1.month AND a.syspayno = t1.syspayno AND a.accnt_no = t1.accnt_no
+JOIN humbasicinfo t2 ON t1.syspayno = t2.syspayno
+JOIN resbgacctm t3 ON t3.accnt_no = t1.accnt_no
+JOIN resinppare t4 ON t4.prj_no = t3.prj_no AND t4.syspayno = t2.syspayno
+LEFT JOIN resinpyear g ON g.accnt_no = a.accnt_no
+WHERE a.trans_unslip_no = #{unslip_no}
+AND   a.trans_unslip_odr = #{unslip_odr}
+)
+  </select>
+  <select id="selectListItemFinRcmsPaySend04" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySend04Vo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySend04Vo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListItemFinRcmsPaySend04 */ 
+         t2.unslip_no||TRUNC(t2.unslip_odr) AS lnk_reg_seq, 
+    t2.ramt_mngmt_1 AS accnt_no, 
+    t4.accnt_cd, 
+    '218' AS expns_cd, 
+    t4.accnt_cd_abbr, 
+    t2.unslip_amt, 
+    NVL(t6.trans_amt, 0) AS trans_amt, 
+    t2.pay_accnt_cd, 
+    t2.rcms_pay_clsf, 
+    t2.rcms_pay_unslip_no,
+    TRIM(t2.bill_no) AS bill_no, 
+    t2.evid_cd, 
+    t2.req_no, 
+    t2.rmk_2, 
+    CASE WHEN LENGTH(TRIM(t2.rmk_1)) <![CDATA[ < ]]> 10 THEN TRIM(t2.rmk_1) ||'(' || t1.accnt_ymd || ')' ELSE SUBSTR(TRIM(t2.rmk_1), 1, 50) END AS paym_usag,
+    t1.accnt_ymd, 
+    fun_emp_nm(t1.wrte_psn) AS wrte_psn_nm,
+    t6.slip_no || '-' || TRUNC(t6.slip_odr) AS slip_no_odr, 
+    t6.trans_unslip_no,
+    fun_emp_nm(t2.accnt_rspns) AS accnt_rspns_nm,
+    fun_emp_nm(t3.bugt_ctrl_psn) AS bugt_ctrl_psn_nm,
+    t7.lnk_reg_dt, 
+    t7.exctn_exec_dt, 
+    t7.bz_exp_exctn_err_ctt, 
+    t7.splr_bz_reg_no, 
+    t10.rch_exp_acct_no, 
+    t10.inst_sbjt_prgr_st, 
+    t10.exctn_limt_st, 
+    t10.inst_totl_inst_amt, 
+    t10.pms_id,
+    t9.reschamt_card_prj_no AS inst_sbjt_no, 
+    DECODE(NVL(t7.del_st, ''), '', NVL(t7.bz_exp_exctn_proc_st, '9'), '9') AS proc_state, 
+    CASE WHEN t7.del_st IS NULL THEN t7.trns_amt ELSE 0 END AS trns_amt, 
+    DECODE(NVL(t7.del_st, ''), '', erp_send_no, '') AS erp_send_no,
+    CASE WHEN t3.start_ymd <![CDATA[ < ]]> '20140501' THEN 'Y' ELSE 'N' END AS prj_ymd_yn,
+    t3.cls_ymd, 
+    a.itxp_cd,
+    NVL(t7.frc_trsc_yn, a.frc_trsc_yn) AS frc_trsc_yn,
+    t7.etc_evdc_rsn_cd,
+    NVL(t12.email, '') AS accnt_rspns_email,
+    NVL(t13.email, '') AS bugt_ctrl_psn_email,
+    NVL(t14.email, '') AS wrte_psn_email
+FROM fspsliph AS t1
+JOIN fspslipd AS t2 ON t2.unslip_no = t1.unslip_no
+JOIN resbgacctm AS t3 ON t3.accnt_no = TRIM(t2.ramt_mngmt_1)
+JOIN xodfaccnt AS t4 ON t4.accnt_cd = '51120180'
+JOIN fspslipdecsnd AS t6 ON t6.unslip_no = t2.unslip_no AND t6.unslip_odr = t2.unslip_odr
+JOIN resinpyear AS t9 ON t9.accnt_no = t3.main_accnt_no
+JOIN if_rnd_agin_l_a AS t10 ON t10.agrmt_seq_no = t9.reschamt_card_prj_no
+LEFT JOIN if_rnd_beex_l_a t7 ON t2.unslip_no = t7.erp_cd_1 AND t2.unslip_odr = t7.erp_cd_2
+    AND NOT EXISTS (SELECT '' FROM if_rnd_beex_l_a WHERE lnk_reg_seq = t7.lnk_reg_seq AND lnk_reg_dt <![CDATA[ > ]]> t7.lnk_reg_dt)
+LEFT JOIN frcmsitm a ON t10.pms_id = a.pms_id AND a.accnt_expns_cd = (CASE WHEN EXISTS (SELECT 1 FROM frcmsitm WHERE pms_id = a.pms_id AND accnt_expns_cd= '51120180/218' ) THEN '51120180/218' ELSE '51120180' END)
+LEFT JOIN humbasicinfo t12 ON t12.syspayno = t2.accnt_rspns
+LEFT JOIN humbasicinfo t13 ON t13.syspayno = t3.bugt_ctrl_psn
+LEFT JOIN humbasicinfo t14 ON t14.syspayno = t1.wrte_psn
+LEFT JOIN xomxintfatab t15 ON t6.slip_no = t15.req_no
+WHERE t1.accnt_ymd BETWEEN #{accnt_ymd_st} AND #{accnt_ymd_ed}
+AND t1.slip_typ_cd = '182'
+AND t3.card_use_ex = #{card_use_ex}
+AND t2.accnt_cd LIKE '2%'
+AND t2.base_debit_cr ='2'
+AND (t2.rcms_pay_clsf = 'FDC020' OR t2.rcms_pay_clsf = '')
+AND t6.unslip_amt <![CDATA[ <> ]]> t6.trans_amt
+AND NVL(t6.unslip_amt, 0) <![CDATA[ > ]]> 0
+<if test="slip_no != null and slip_no != ''">
+     AND t1.slip_no = #{slip_no}
+</if> 
+<if test="accnt_no != null and accnt_no != ''">
+     AND t2.ramt_mngmt_1 = #{accnt_no}
+</if>
+<if test="resch_accnt_clsf != null and resch_accnt_clsf != ''">
+     AND t4.resch_accnt_clsf NOT IN <foreach item="item" index="index" collection="resch_accnt_clsf.split(',')" open="(" separator="," close=")">${item}</foreach>
+</if>
+<if test="erp_send_no != null and erp_send_no != ''">
+     AND t7.erp_send_no = #{erp_send_no}
+</if> 
+<if test='card_use_ex == "FAJ004"'> AND NVL(t10.agrmt_inst_role_dv, '')!= 'F' </if> 
+<if test='proc_state == "9"'> AND DECODE(NVL(t7.del_st, ''), '', NVL(t7.bz_exp_exctn_proc_st, '9'), '9') ='9' AND NVL(t2.rcms_pay_unslip_no, '') = '' </if>
+<if test='proc_state == "0"'> AND t7.bz_exp_exctn_proc_st = '0' </if>
+<if test='proc_state == "2"'> AND t7.bz_exp_exctn_proc_st = '2' </if>
+<if test='proc_state == "3"'> AND (NVL(t7.bz_exp_exctn_proc_st, '9') = '3' OR NVL(t2.rcms_pay_unslip_no, '')!='') </if>
+<if test='proc_state == "4"'> AND DECODE(NVL(t7.del_st, ''), '', NVL(t7.bz_exp_exctn_proc_st, '9'), '9') = '4' </if>
+<if test='sbjt_state == "Y"'> AND (t10.inst_sbjt_prgr_st = '07' AND t10.exctn_limt_st = '1' AND NVL(t10.inst_totl_inst_amt, 0) > 0 ) </if>
+<if test='sbjt_state == "N"'> AND (t10.inst_sbjt_prgr_st != '07' OR t10.exctn_limt_st != '1' OR NVL(t10.inst_totl_inst_amt, 0) = 0) </if>
+<if test="sel_apr_state != null and sel_apr_state != ''">
+     AND t15.apr_state = #{sel_apr_state}
+</if> 
+AND NOT EXISTS (
+    SELECT ''
+    FROM fsprcmsmng t11
+    WHERE t11.rcms_gbn='RCMS1'
+    AND t11.unslip_no=t1.unslip_no
+    AND t11.use_yn = 'Y')
+ORDER BY t2.ramt_mngmt_1, t2.unslip_no, t2.unslip_odr
+  </select>
+  <select id="selectListItemResBgacCtm" parameterType="kr.re.kitech.biz.fin.rcms.vo.ResBgacCtmVo" resultType="kr.re.kitech.biz.fin.rcms.vo.ResBgacCtmVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectListItemResBgacCtm */ 
+         t1.accnt_no, 
+       t1.accnt_no_nm, 
+       (t2.nm||'('||t2.empno||')') nm, 
+       t1.start_ymd, 
+       t1.cls_ymd,
+       t1.mngmt_dept,
+       t1.accnt_rspns,
+       t1.itm_solve_base, 
+       fun_xodxcommst_cd_nm(t1.accnt_state, 0) AS accnt_state,
+       t1.bugt_ctrl_psn
+FROM resbgacctm t1
+JOIN humbasicinfo t2 ON t1.accnt_rspns = t2.syspayno
+WHERE t1.accnt_no LIKE #{accnt_no}||'%'
+AND t1.card_use_ex IN ('FAJ004', 'FAJ005', 'FAJ006')
+AND ( '' = #{cls_ymd} OR ('' <![CDATA[ <> ]]> #{cls_ymd} AND t1.accnt_state IN ('RAK041','RAK061') AND t1.cls_ymd <![CDATA[ >= ]]> #{cls_ymd}))
+AND ( '' = #{card_use_ex} OR t1.card_use_ex = #{card_use_ex})
+AND t2.nm LIKE #{accnt_rspns_nm}||'%'
+AND t1.accnt_no_nm LIKE #{accnt_no_nm} ||'%'
+ORDER BY t1.accnt_no
+  </select>
+  <update id="updateListItemFinRcmsPay" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.rcms.updateListItemFinRcmsPay */ 
+		 fspslipd
+SET rcms_pay_unslip_no = '999999999', updt_syspayno = 'SYSTEM', updt_daytm = CURRENT
+where unslip_no = #{unslip_no}
+and unslip_odr = #{unslip_odr}
+  </update>
+  <select id="selectSingleItemFinRcmsPaySend" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+select /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend */ 
+		 bsns_psn_regst_no, reprs_psn_nm
+from xodfvend 
+where vend_cd = #{vend_cd}
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend02" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend02 */ 
+		 t1.bankaccnt_no,
+       t2.mngmt_item_5  AS bank,
+       t2.cd_nm AS bank_nm
+FROM fcpdepst t1
+JOIN xodxcommst t2 ON t1.bank = t2.cd AND t2.cd_clsf = 'FAA'
+WHERE t1.accnt_no = #{accnt_no}
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend03" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend03 */ 
+		 mngmt_item_5 AS bank,
+       cd_nm AS rcv_bnk_nm
+FROM   xodxcommst
+WHERE  cd_clsf = 'FAA'
+AND    ( cd = #{rcv_bank} OR cd_desc = #{rcv_bank_nm})
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend04" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend04 */ 
+COUNT(*) AS cnt
+FROM fspslipd a
+INNER JOIN fspsliph b ON a.unslip_no = b.unslip_no
+WHERE a.occr_slip_no = #{slip_no}
+AND   a.occr_slip_odr = #{slip_no_odr_int}
+AND   NVL(b.decsn_ex, 'N') = 'N'
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend05" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend05 */ 
+		 DECODE(#{req_type}, 'P74', mngmt_item_5, mngmt_item_4) AS etc_evdc_rsn_cd
+FROM xodxcommst
+WHERE cd_clsf='FAH' 
+AND use_ex='Y'
+AND cd = #{cd}
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend06" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend06 */ 
+		 NVL(splr_bz_reg_no, '0000000000') AS splr_bz_reg_no,
+       NVL(splr_co_nm, '기타') AS splr_co_nm,
+       DECODE(NVL(splr_repr_nm, ''), '', '기타', splr_repr_nm) AS splr_repr_nm,
+       DECODE(NVL(splr_tpbz_nm, ''), '', '기타', splr_tpbz_nm) AS splr_tpbz_nm,
+       DECODE(NVL(splr_adr, ''), '', '기타', splr_adr) AS splr_adr,
+       apprno,
+       rectime
+FROM ( SELECT DECODE(shopno, '', '0000000000', nvl(shopno, '0000000000')) AS splr_bz_reg_no,
+              shopname AS splr_co_nm,
+              '' AS splr_repr_nm,
+              indcodename AS splr_tpbz_nm,
+              merchantaddr1 AS splr_adr,
+              apprno,
+              SUBSTR(rectime, 1, 8) AS rectime
+       FROM fbc_recogn
+       WHERE unslip_no = #{unslip_no}
+       AND   unslip_seq = #{unslip_seq}
+       UNION ALL
+       SELECT NVL(shopno, '9999999999') AS splr_bz_reg_no,
+              shopname AS splr_co_nm,
+              NVL(shopbossname, '')  AS splr_repr_nm,
+              indcode_nm AS splr_tpbz_nm,
+              shopaddr2 AS splr_adr,
+              apprno,
+              SUBSTR(rectime, 1, 8) AS rectime
+       FROM  flgrnd_recogn
+       WHERE unslip_no = #{unslip_no}
+       AND   unslip_seq = #{unslip_seq}
+       UNION ALL
+       SELECT NVL(mer_buz_no, '9999999999') AS splr_bz_reg_no,
+              mer_nm AS splr_co_nm,
+              '' AS splr_repr_nm,
+              tp_buz_nm AS splr_tpbz_nm,
+              DECODE(NVL(shop_addr1, ''), '', '기타', shop_addr1) AS splr_adr,
+              use_no AS apprno,
+              auth_date AS rectime
+       FROM fbcrndauth
+       WHERE unslip_no = #{unslip_no}
+       AND   unslip_seq = #{unslip_seq} )
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend07" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.KtxIssuMstrVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend07 */ first 1
+	   t1.regs_date,    -- 작성일자
+       DECODE(NVL(t1.issu_date, ''), '', t1.regs_date, t1.issu_date) AS issu_date,    -- 발행일자
+       t1.buyr_corp_no,
+       t1.buyr_corp_nm,
+       t1.buyr_buss_cons,
+       REPLACE(t1.buyr_buss_type, '`', '') AS buyr_buss_type,
+       t1.buyr_ceo,
+       t1.buyr_addr,
+       t1.buyr_chrg_email1,
+       t1.buyr_chrg_email2,
+       REPLACE(DECODE(NVL(t1.selr_corp_no, ''), '', '0000000000', t1.selr_corp_no), '-', '') AS selr_corp_no,
+       t1.selr_corp_nm,
+       DECODE(NVL(t1.selr_buss_cons, ''), '', '기타', t1.selr_buss_cons) AS selr_buss_cons, -- 업종
+       REPLACE(DECODE(NVL(t1.selr_buss_type, ''),'', '기타', t1.selr_buss_type), '`', '') AS selr_buss_type,
+       DECODE(NVL(t1.selr_ceo, ''), '', '기타', t1.selr_ceo) AS selr_ceo,
+       DECODE(NVL(t1.selr_addr, ''), '','기타', t1.selr_addr) AS selr_addr,  
+       t1.selr_chrg_email,
+       t1.chrg_amt,
+       t1.tax_amt,
+       t1.totl_amt,
+       t2.cnt AS bill_cnt,
+       f.vend_clsf
+FROM ktx_issu_mstr t1
+JOIN (SELECT COUNT(issu_seqno) cnt FROM ktx_issu_detail WHERE issu_seqno = #{issu_seqno}) t2 ON 1=1
+LEFT JOIN xodfvend f ON t1.selr_corp_no = REPLACE(f.bsns_psn_regst_no,'-','') AND f.bsns_psn_regst_no <![CDATA[ <> ]]> ''
+WHERE  t1.issu_seqno = #{issu_seqno}
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend08" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+-- 2018.08.09. 카드선진행을 위해 use_amt 추가
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend08 */ 
+MAX(pay_clsf) AS pay_clsf, SUM(send_req_amt) AS use_amt
+FROM fspsendreq
+WHERE unslip_no = #{unslip_no}
+AND   unslip_odr = #{unslip_odr_int}
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend09" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend09 */ 
+ a.unslip_no, a.unslip_odr, a.accnt_no, DECODE(UPPER(SUBSTR(a.accnt_no,8,1)),'Z','02','01') AS use_amt_se_cd
+FROM fspslipd a 
+JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+WHERE a.unslip_no = #{unslip_no}
+AND   a.unslip_odr = #{unslip_odr}
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend10" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend10 */ 
+		 MAX(pay_clsf) AS pay_clsf, SUM(send_req_amt) AS use_amt
+FROM fspsendreq
+WHERE unslip_no = #{unslip_no}
+AND   unslip_odr = #{unslip_odr}
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend11" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend11 */ 
+		 a.itxp_cd
+FROM fspslipd b
+LEFT JOIN frcmsitm a ON a.pms_id = (SELECT pms_id FROM if_rnd_agin_l_a WHERE agrmt_seq_no = #{agrmt_seq_no})
+    AND a.accnt_expns_cd = (CASE WHEN EXISTS (SELECT 1 FROM frcmsitm WHERE pms_id = a.pms_id AND accnt_expns_cd= b.accnt_cd||'/'||b.expns_cd) THEN b.accnt_cd||'/'||b.expns_cd ELSE b.accnt_cd END)
+JOIN resbgacctm c ON b.accnt_no = c.accnt_no AND a.itm_solve_base = c.itm_solve_base -- 2023/01/31 연계비목코드 단건 추출을 위한 추가
+WHERE b.unslip_no = #{unslip_no}
+AND   b.unslip_odr = #{unslip_odr}
+  </select>
+  <select id="selectSingleItemFinRcmsPaySend12" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+  SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItemFinRcmsPaySend12 */
+       DISTINCT absrp_clsf
+FROM   fsaabsrp
+WHERE  unslip_no = #{unslip_no}
+AND    accnt_no = #{accnt_no}
+  </select>
+  <select id="selectSingleItem13" resultType="kr.re.kitech.biz.fin.rcms.vo.RndBietpaVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.selectSingleItem13 */
+	 a.req_no
+     , a.expns_clsf
+     , NVL(b.pur_req_no, c.ctrl_req_no) AS pur_req_no
+     , NVL(b.contrct_tot_amt, a.pay_amt) AS contrct_tot_amt
+     , b.mny_pay_way
+     , DECODE(NVL(c.etub_id, ''), '', 'XXX9999998', c.etub_id) AS etub_id
+     , f.amt
+     , g.pur_grp_cd
+FROM purpayreqmastr a
+LEFT JOIN epucontrctmastr b ON a.contrct_no = b.contrct_no AND a.chng_seq = b.chng_seq
+JOIN purpayreqaccnt c ON c.req_no = a.req_no
+LEFT JOIN epucontrctaccnt e ON b.contrct_no = e.contrct_no AND b.chng_seq = e.chng_seq AND c.accnt_no = e.accnt_no AND c.accnt_odr = e.accnt_odr
+LEFT JOIN resbgacctm d ON d.accnt_no = c.accnt_no
+LEFT JOIN resinpmate f ON f.prj_no = d.prj_no AND f.equip_odr = e.equip_odr
+LEFT JOIN purreqmastr g ON b.pur_req_no = g.pur_req_no
+WHERE c.unslip_no = #{unslip_no}
+AND   c.unslip_odr = #{unslip_odr}
+</select>
+  <update id="updateSingleItem01" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.rcms.updateSingleItem01 */ 
+fspslipdecsnd
+SET     trans_amt       = #{trans_amt_long},
+        trans_unslip_no = #{trans_unslip_no},
+        updt_syspayno   = #{updt_syspayno},
+        updt_daytm      = current
+WHERE   slip_no         = #{slip_no}
+AND     slip_odr        = #{slip_no_odr_int}
+  </update>
+    <update id="updateSingleItem02" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.rcms.updateSingleItem02 */ 
+   if_rnd_beex_l_a
+ SET  
+   <if test="inst_sbjt_no != null and inst_sbjt_no != ''">
+inst_sbjt_no  = #{inst_sbjt_no},
+</if>  -- 기관과제번호 
+   exctn_reg_tm  = TO_CHAR(CURRENT, '%H%M%S'),  -- 집행등록시간                       
+   <if test="bz_exp_exctn_proc_st != null and bz_exp_exctn_proc_st != ''">
+bz_exp_exctn_proc_st  = #{bz_exp_exctn_proc_st},
+</if>  -- 사업비집행처리상태               
+   <if test="rprcs_ncnt != null and rprcs_ncnt != ''">
+rprcs_ncnt  = rprcs_ncnt + #{rprcs_ncnt},
+</if>   -- 재처리횟수                       
+   <if test="bz_exp_exctn_err_ctt != null and bz_exp_exctn_err_ctt != ''">
+bz_exp_exctn_err_ctt  = #{bz_exp_exctn_err_ctt},
+</if>  -- 사업비집행오류내용               
+   <if test="rch_exp_acct_bnk_cd != null and rch_exp_acct_bnk_cd != ''">
+rch_exp_acct_bnk_cd   = #{rch_exp_acct_bnk_cd},
+</if>  -- 연구비계좌은행코드               
+   <if test="rch_exp_acct_no != null and rch_exp_acct_no != ''">
+rch_exp_acct_no = #{rch_exp_acct_no},
+</if>  -- 연구비계좌번호                   
+   <if test="rcv_bnk_cd != null and rcv_bnk_cd != ''">
+rcv_bnk_cd      = #{rcv_bnk_cd},
+</if>  -- 입금은행코드                    
+   <if test="rcv_bnk_nm != null and rcv_bnk_nm != ''">
+rcv_bnk_nm      = #{rcv_bnk_nm},
+</if>  -- 입금은행명                       
+   <if test="rcv_acct_no != null and rcv_acct_no != ''">
+rcv_acct_no     = #{rcv_acct_no},
+</if>  -- 입금계좌번호                       
+   <if test="rch_exp_acct_rcv_psbk_prt_ctt != null and rch_exp_acct_rcv_psbk_prt_ctt != ''">
+rch_exp_acct_rcv_psbk_prt_ctt   = #{rch_exp_acct_rcv_psbk_prt_ctt},
+</if>  -- 연구비계좌입금통장인쇄내용       
+   <if test="rch_exp_acct_wdrw_psbk_prt_ctt != null and rch_exp_acct_wdrw_psbk_prt_ctt != ''">
+rch_exp_acct_wdrw_psbk_prt_ctt  = #{rch_exp_acct_wdrw_psbk_prt_ctt},
+</if>  -- 연구비계좌출금통장인쇄내용       
+   <if test="bzaq_acct_rcv_psbk_prt_ctt != null and bzaq_acct_rcv_psbk_prt_ctt != ''">
+bzaq_acct_rcv_psbk_prt_ctt      = #{bzaq_acct_rcv_psbk_prt_ctt},
+</if>  -- 거래처계좌입금통장인쇄내용       
+   <if test="trns_amt_long != null and trns_amt_long != ''">
+trns_amt         = #{trns_amt_long},
+</if>  -- 이체금액(사용금액)               
+   <if test="sply_amt != null and sply_amt != ''">
+sply_amt         = #{sply_amt},
+</if>  -- 공급금액                           
+   <if test="vat_amt != null and vat_amt != ''">
+vat_amt          = #{vat_amt},
+</if>  -- 부가가치세액                       
+   <if test="srv_amt != null and srv_amt != ''">
+srv_amt          = #{srv_amt},
+</if>  -- 봉사료                        
+   <if test="comm != null and comm != ''">
+comm             = #{comm},
+</if>  -- 수수료                        
+   <if test="inst_use_cd != null and inst_use_cd != ''">
+inst_use_cd      = #{inst_use_cd},
+</if>  -- 기관별개별코드                
+   <if test="inst_use_cd_1 != null and inst_use_cd_1 != ''">
+inst_use_cd_1    = #{inst_use_cd_1},
+</if>  -- 기관별개별코드_1   
+   <if test="paym_usag != null and paym_usag != ''">
+paym_usag        = #{paym_usag},
+</if>  -- 사용용도                 
+   <if test="owac_nm != null and owac_nm != ''">
+owac_nm          = #{owac_nm},
+</if>  -- 예금주명                           
+   <if test="tel_no != null and tel_no != ''">
+tel_no           = #{tel_no},
+</if>  -- 전화번호                           
+   <if test="frc_trsc_yn != null and frc_trsc_yn != ''">
+frc_trsc_yn      = #{frc_trsc_yn},
+</if>  -- 외화거래여부                       
+   <if test="rcms_dctc_reg_yn != null and rcms_dctc_reg_yn != ''">
+rcms_dctc_reg_yn = #{rcms_dctc_reg_yn},
+</if>  -- RCMS직접등록여부                   
+   <if test="evdc_seq_no != null and evdc_seq_no != ''">
+evdc_seq_no      = #{evdc_seq_no},
+</if>  -- 증빙일련번호                       
+   <if test="evdc_dv != null and evdc_dv != ''">
+evdc_dv          = #{evdc_dv},
+</if>  -- 증빙구분
+   <if test="etc_evdc_rsn_cd != null and etc_evdc_rsn_cd != ''">
+etc_evdc_rsn_cd  = #{etc_evdc_rsn_cd},
+</if>  -- 기타증빙사유코드 
+   <if test="elec_evdc_dv != null and elec_evdc_dv != ''">
+elec_evdc_dv  = #{elec_evdc_dv},
+</if> -- 전자증빙구분
+   <if test="elec_evdc_no != null and elec_evdc_no != ''">
+elec_evdc_no  = #{elec_evdc_no},
+</if>  -- 전자증빙번호
+   <if test="splr_bz_reg_no != null and splr_bz_reg_no != ''">
+splr_bz_reg_no  = #{splr_bz_reg_no},
+</if>  -- 공급자사업자번호
+   <if test="splr_co_nm != null and splr_co_nm != ''">
+splr_co_nm  = #{splr_co_nm},
+</if>  -- 공급자 회사명
+   <if test="splr_tpbz_nm != null and splr_tpbz_nm != ''">
+splr_tpbz_nm  = #{splr_tpbz_nm},
+</if>  -- 공급자 업종명
+   <if test="splr_tpop_nm != null and splr_tpop_nm != ''">
+splr_tpop_nm  = #{splr_tpop_nm},
+</if>  --  공급자 업태명
+   <if test="splr_repr_nm != null and splr_repr_nm != ''">
+splr_repr_nm  = #{splr_repr_nm},
+</if>  --  공급자 대표명
+   <if test="splr_adr != null and splr_adr != ''">
+splr_adr  = #{splr_adr},
+</if>  --  공급자 주소
+   <if test="wrtg_dt != null and wrtg_dt != ''">
+wrtg_dt  = #{wrtg_dt},
+</if>  -- 작성일자
+   <if test="lnk_dv != null and lnk_dv != ''">
+lnk_dv  = #{lnk_dv},
+</if>  -- 연계구분                           
+   <if test="agrmt_inst_bz_reg_no != null and agrmt_inst_bz_reg_no != ''">
+agrmt_inst_bz_reg_no    = #{agrmt_inst_bz_reg_no},
+</if>  -- 협약기관사업자등록번호
+   <if test="splr_prsn_yn != null and splr_prsn_yn != ''">
+splr_prsn_yn  = #{splr_prsn_yn},
+</if>  -- 개인거래여부    
+   <if test="lnk_st != null and lnk_st != ''">
+lnk_st    = #{lnk_st},
+</if>  -- 연계상태     
+   lnk_reg_dtm = TO_CHAR(CURRENT, '%Y-%m-%d %H:%M:%S')     -- 연계등록일시                                                        
+ WHERE lnk_reg_dt  = #{lnk_reg_dt}
+ AND   lnk_reg_seq = #{lnk_reg_seq}
+  </update>
+  <update id="mergeItem01" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+MERGE /* QueryID : kr.re.kitech.biz.fin.rcms.mergeItem01 */ 
+       INTO if_rnd_beex_l_a AS a
+USING DUAL AS b
+ON a.lnk_reg_dt = #{lnk_reg_dt} AND a.lnk_reg_seq = #{lnk_reg_seq}
+WHEN MATCHED THEN 
+    UPDATE SET
+        <if test="inst_sbjt_no != null and inst_sbjt_no != ''">
+    inst_sbjt_no  = #{inst_sbjt_no},
+</if>  -- 기관과제번호 
+        exctn_reg_tm  = TO_CHAR(CURRENT, '%H%M%S'),  -- 집행등록시간                       
+        <if test="bz_exp_exctn_proc_st != null and bz_exp_exctn_proc_st != ''">
+bz_exp_exctn_proc_st  = #{bz_exp_exctn_proc_st},
+</if>  -- 사업비집행처리상태               
+        <if test="rprcs_ncnt != null and rprcs_ncnt != ''">
+rprcs_ncnt  = rprcs_ncnt + #{rprcs_ncnt},
+</if>   -- 재처리횟수                       
+        <if test="bz_exp_exctn_err_ctt != null and bz_exp_exctn_err_ctt != ''">
+bz_exp_exctn_err_ctt  = #{bz_exp_exctn_err_ctt},
+</if>  -- 사업비집행오류내용               
+        <if test="rch_exp_acct_bnk_cd != null and rch_exp_acct_bnk_cd != ''">
+rch_exp_acct_bnk_cd   = #{rch_exp_acct_bnk_cd},
+</if>  -- 연구비계좌은행코드               
+        <if test="rch_exp_acct_no != null and rch_exp_acct_no != ''">
+rch_exp_acct_no = #{rch_exp_acct_no},
+</if>  -- 연구비계좌번호                   
+        <if test="rcv_bnk_cd != null and rcv_bnk_cd != ''">
+rcv_bnk_cd      = #{rcv_bnk_cd},
+</if>  -- 입금은행코드                    
+        <if test="rcv_bnk_nm != null and rcv_bnk_nm != ''">
+rcv_bnk_nm      = #{rcv_bnk_nm},
+</if>  -- 입금은행명                       
+        <if test="rcv_acct_no != null and rcv_acct_no != ''">
+rcv_acct_no     = #{rcv_acct_no},
+</if>  -- 입금계좌번호                       
+        <if test="rch_exp_acct_rcv_psbk_prt_ctt != null and rch_exp_acct_rcv_psbk_prt_ctt != ''">
+rch_exp_acct_rcv_psbk_prt_ctt   = #{rch_exp_acct_rcv_psbk_prt_ctt},
+</if>  -- 연구비계좌입금통장인쇄내용       
+        <if test="rch_exp_acct_wdrw_psbk_prt_ctt != null and rch_exp_acct_wdrw_psbk_prt_ctt != ''">
+rch_exp_acct_wdrw_psbk_prt_ctt  = #{rch_exp_acct_wdrw_psbk_prt_ctt},
+</if>  -- 연구비계좌출금통장인쇄내용       
+        <if test="bzaq_acct_rcv_psbk_prt_ctt != null and bzaq_acct_rcv_psbk_prt_ctt != ''">
+bzaq_acct_rcv_psbk_prt_ctt      = #{bzaq_acct_rcv_psbk_prt_ctt},
+</if>  -- 거래처계좌입금통장인쇄내용       
+        <if test="trns_amt_long != null and trns_amt_long != ''">
+trns_amt         = #{trns_amt_long},
+</if>  -- 이체금액(사용금액)               
+        <if test="sply_amt != null and sply_amt != ''">
+sply_amt         = #{sply_amt},
+</if>  -- 공급금액                           
+        <if test="vat_amt != null and vat_amt != ''">
+vat_amt          = #{vat_amt},
+</if>  -- 부가가치세액                       
+        <if test="srv_amt != null and srv_amt != ''">
+srv_amt          = #{srv_amt},
+</if>  -- 봉사료                        
+        <if test="comm != null and comm != ''">
+comm             = #{comm},
+</if>  -- 수수료                        
+        <if test="inst_use_cd != null and inst_use_cd != ''">
+inst_use_cd      = #{inst_use_cd},
+</if>  -- 기관별개별코드                
+        <if test="inst_use_cd_1 != null and inst_use_cd_1 != ''">
+inst_use_cd_1    = #{inst_use_cd_1},
+</if>  -- 기관별개별코드_1   
+        <if test="paym_usag != null and paym_usag != ''">
+paym_usag        = #{paym_usag},
+</if>  -- 사용용도                 
+        <if test="owac_nm != null and owac_nm != ''">
+owac_nm          = #{owac_nm},
+</if>  -- 예금주명                           
+        <if test="tel_no != null and tel_no != ''">
+tel_no           = #{tel_no},
+</if>  -- 전화번호                           
+        <if test="frc_trsc_yn != null and frc_trsc_yn != ''">
+frc_trsc_yn      = #{frc_trsc_yn},
+</if>  -- 외화거래여부                       
+        <if test="rcms_dctc_reg_yn != null and rcms_dctc_reg_yn != ''">
+rcms_dctc_reg_yn = #{rcms_dctc_reg_yn},
+</if>  -- RCMS직접등록여부                   
+        <if test="evdc_seq_no != null and evdc_seq_no != ''">
+evdc_seq_no      = #{evdc_seq_no},
+</if>  -- 증빙일련번호                       
+        <if test="evdc_dv != null and evdc_dv != ''">
+evdc_dv          = #{evdc_dv},
+</if>  -- 증빙구분
+        <if test="etc_evdc_rsn_cd != null and etc_evdc_rsn_cd != ''">
+etc_evdc_rsn_cd  = #{etc_evdc_rsn_cd},
+</if>  -- 기타증빙사유코드 
+        <if test="elec_evdc_dv != null and elec_evdc_dv != ''">
+elec_evdc_dv  = #{elec_evdc_dv},
+</if> -- 전자증빙구분
+        <if test="elec_evdc_no != null and elec_evdc_no != ''">
+elec_evdc_no  = #{elec_evdc_no},
+</if>  -- 전자증빙번호
+        <if test="splr_bz_reg_no != null and splr_bz_reg_no != ''">
+splr_bz_reg_no  = #{splr_bz_reg_no},
+</if>  -- 공급자사업자번호
+        <if test="splr_co_nm != null and splr_co_nm != ''">
+splr_co_nm  = #{splr_co_nm},
+</if>  -- 공급자 회사명
+        <if test="splr_tpbz_nm != null and splr_tpbz_nm != ''">
+splr_tpbz_nm  = #{splr_tpbz_nm},
+</if>  -- 공급자 업종명
+        <if test="splr_tpop_nm != null and splr_tpop_nm != ''">
+splr_tpop_nm  = #{splr_tpop_nm},
+</if>  --  공급자 업태명
+        <if test="splr_repr_nm != null and splr_repr_nm != ''">
+splr_repr_nm  = #{splr_repr_nm},
+</if>  --  공급자 대표명
+        <if test="splr_adr != null and splr_adr != ''">
+splr_adr  = #{splr_adr},
+</if>  --  공급자 주소
+        <if test="wrtg_dt != null and wrtg_dt != ''">
+wrtg_dt  = #{wrtg_dt},
+</if>  -- 작성일자
+        <if test="lnk_dv != null and lnk_dv != ''">
+lnk_dv  = #{lnk_dv},
+</if>  -- 연계구분                           
+        <if test="agrmt_inst_bz_reg_no != null and agrmt_inst_bz_reg_no != ''">
+agrmt_inst_bz_reg_no    = #{agrmt_inst_bz_reg_no},
+</if>  -- 협약기관사업자등록번호
+        <if test="splr_prsn_yn != null and splr_prsn_yn != ''">
+splr_prsn_yn  = #{splr_prsn_yn},
+</if>  -- 개인거래여부    
+        <if test="lnk_st != null and lnk_st != ''">
+lnk_st    = #{lnk_st},
+</if>  -- 연계상태     
+        <if test="erp_send_no != null and erp_send_no != ''">
+erp_send_no   = #{erp_send_no},
+</if>  -- 전송번호
+        lnk_reg_dtm = TO_CHAR(CURRENT, '%Y-%m-%d %H:%M:%S')     -- 연계등록일시   
+WHEN NOT MATCHED THEN 
+        INSERT (lnk_reg_dt                     ,  -- 연계등록일자                   
+                             lnk_reg_seq                    ,  -- 연계등록순번                   
+                             inst_sbjt_no                   ,  -- 기관과제번호                   
+                             exctn_reg_tm                   ,  -- 집행등록시간                   
+                             bz_exp_exctn_proc_st           ,  -- 사업비집행처리상태           
+                             rprcs_ncnt                     ,  -- 재처리횟수        
+                             rch_exp_acct_bnk_cd            ,  -- 연구비계좌은행코드           
+                             rch_exp_acct_no                ,  -- 연구비계좌번호               
+                             rcv_bnk_cd                     ,  -- 입금은행코드                   
+                             rcv_bnk_nm                     ,  -- 입금은행명                   
+                             rcv_acct_no                    ,  -- 입금계좌번호                   
+                             rch_exp_acct_rcv_psbk_prt_ctt  ,  -- 연구비계좌입금통장인쇄내용   
+                             rch_exp_acct_wdrw_psbk_prt_ctt ,  -- 연구비계좌출금통장인쇄내용   
+                             bzaq_acct_rcv_psbk_prt_ctt     ,  -- 거래처계좌입금통장인쇄내용   
+                             trns_amt                       ,  -- 이체금액(사용금액)           
+                             sply_amt                       ,  -- 공급금액                       
+                             vat_amt                        ,  -- 부가가치세액                   
+                             srv_amt                        ,  -- 봉사료                       
+                             comm                           ,  -- 수수료                       
+                             inst_use_cd                    ,  -- 기관별개별코드               
+                             inst_use_cd_1                  ,  -- 기관별개별코드_1               
+                             owac_nm                        ,  -- 예금주명                       
+                             tel_no                         ,  -- 전화번호                       
+                             frc_trsc_yn                    ,  -- 외화거래여부                   
+                             rcms_dctc_reg_yn               ,  -- RCMS직접등록여부 
+                             evdc_dv                        ,  -- 증빙구분
+                             etc_evdc_rsn_cd                ,  -- 기타증빙사유코드 
+                             elec_evdc_dv                   ,  -- 기타전자증빙구분
+                             elec_evdc_no                   ,  -- 기타전자증빙번호
+                             wrtg_dt                        ,  -- 작성일자
+                             crd_no                         ,  -- 카드번호
+                             fnc_inst_cd                    ,  -- 금융기관코드
+                             buy_clct_no                    ,  -- 매입추심번호
+                             apv_no                         ,  -- 승인번호
+                             apv_dt                         ,  -- 승인일자
+                             buy_apv_dv                     ,  -- 매입승인구분
+                             lnk_dv                         ,  -- 연계구분                       
+                             agrmt_inst_bz_reg_no           ,  -- 협약기관사업자등록번호   
+                             dtls_ncnt                      ,  -- 상세건수
+                             splr_bz_reg_no                 ,  -- 공급자사업자등록번호
+                             splr_co_nm                     ,  -- 공급자회사명
+                             splr_tpbz_nm                   ,  -- 공급자업종명
+                             splr_tpop_nm                   ,  -- 공급자업태명
+                             splr_repr_nm                   ,  -- 공급자대표자명
+                             splr_adr                       ,  --공급자주소
+                             splr_prsn_yn                   ,  -- 개인거래여부
+                             erp_cd_1                       ,  -- ERP코드1                       
+                             erp_cd_2                       ,  -- ERP코드2                       
+                             erp_cd_3                       ,  -- ERP코드3                       
+                             erp_cd_4                       ,  -- ERP코드4
+                             erp_send_no                    ,  -- ERP전송번호
+                             erp_send_nm                    ,  -- ERP전송담당자사번
+                             paym_usag                      ,  -- 지급용도
+                             lnk_st                         ,  -- 연계상태           
+                             lnk_reg_dtm                    )  -- 연계등록일시
+        VALUES (#{lnk_reg_dt},  
+                #{lnk_reg_seq},  
+                #{inst_sbjt_no},  
+                TO_CHAR(CURRENT, '%H%M%S'),  
+                #{bz_exp_exctn_proc_st},  
+                #{rprcs_ncnt},  
+                #{rch_exp_acct_bnk_cd},  
+                #{rch_exp_acct_no},  
+                #{rcv_bnk_cd},  
+                #{rcv_bnk_nm},  
+                #{rcv_acct_no},  
+                #{rch_exp_acct_rcv_psbk_prt_ctt},  
+                #{rch_exp_acct_wdrw_psbk_prt_ctt},  
+                #{bzaq_acct_rcv_psbk_prt_ctt},  
+                #{trns_amt_long},  
+                #{sply_amt},  
+                #{vat_amt},  
+                #{srv_amt},  
+                #{comm},  
+                #{inst_use_cd},
+                #{inst_use_cd_1},  
+                #{owac_nm},
+                #{tel_no},  
+                #{frc_trsc_yn},          
+                #{rcms_dctc_reg_yn},  
+                #{evdc_dv},  
+                #{etc_evdc_rsn_cd},  
+                #{elec_evdc_dv},  
+                #{elec_evdc_no}, 
+                #{wrtg_dt},
+                #{crd_no},
+                #{fnc_inst_cd},
+                #{buy_clct_no},
+                #{apv_no},
+                #{apv_dt}, 
+                #{buy_apv_dv},  
+                #{lnk_dv},  
+                #{agrmt_inst_bz_reg_no},
+                #{dtls_ncnt},  
+                #{splr_bz_reg_no},  
+                #{splr_co_nm},
+                #{splr_tpbz_nm},
+                #{splr_tpop_nm},
+                #{splr_repr_nm},
+                #{splr_adr},
+                #{splr_prsn_yn},
+                #{erp_cd_1},
+                #{erp_cd_2},
+                #{erp_cd_3},
+                #{erp_cd_4},
+                #{erp_send_no},
+                #{erp_send_nm},
+                #{paym_usag},
+                #{lnk_st},
+                TO_CHAR(current, '%Y/%m/%d %H:%M:%S'))
+  </update>
+  <update id="updateSingleItem03" parameterType="map">
+  UPDATE /* QueryID : kr.re.kitech.biz.fin.rcms.updateSingleItem03 */
+	fspslipd
+	SET     rcms_rmk        = #{rcms_rmk},
+	        updt_syspayno   = #{updt_syspayno},
+	        updt_daytm      = CURRENT
+	WHERE   unslip_no       = #{unslip_no}
+	AND     unslip_odr      = #{unslip_odr}
+  </update>
+  <update id="updateSingleItem04" parameterType="kr.re.kitech.biz.fin.rcms.vo.SaveBeitpaVo">
+  UPDATE /* QueryID : kr.re.kitech.biz.fin.rcms.updateSingleItem04 */
+  		 if_rnd_beit_p_a
+SET cash_spot_dv = #{cash_spot_dv},   -- 현금현물구분                         
+    itxp_cd      = #{itxp_cd},   -- 비목코드                          
+    use_dt       = #{use_dt},   -- 사용일자                          
+    mitm         = #{mitm},   -- 품목
+    uprc         = #{uprc},   -- 단가
+    qnt          = #{qnt},   -- 수량
+    nrm          = #{nrm},   -- 기타                              
+    rmk          = #{rmk},   -- 비고(지급용도)                        
+    use_amt      = #{use_amt},   -- 사용금액                          
+    sply_amt     = #{sply_amt},   -- 공급금액                          
+    vat_amt      = #{vat_amt},   -- 부가가치세액                         
+    srv_amt      = #{srv_amt},   -- 봉사료                          
+    comm         = #{comm},   -- 수수료                          
+    acco_cd_1    = #{acco_cd_1},   -- 회계코드1                         
+    acco_cd_2    = #{acco_cd_2},   -- 회계코드2                         
+    lnk_st       = #{lnk_st},   -- 연계상태
+    use_amt_se_cd = #{use_amt_se_cd},   -- 사용금액구분코드
+    lnk_reg_dtm  = TO_CHAR(CURRENT, '%Y/%m/%d %H:%M:%S') -- 연계등록일시                                
+WHERE lnk_reg_dt  = #{lnk_reg_dt}
+AND   lnk_reg_seq = #{lnk_reg_seq}
+AND   itxp_reg_seq = #{itxp_reg_seq}
+  </update>
+  <update id="updateSingleItem05" parameterType="map">
+  UPDATE /* QueryID : kr.re.kitech.biz.fin.rcms.updateSingleItem05 */
+       if_rnd_beai_p_a
+SET    lnk_st = #{lnk_st}
+WHERE  lnk_reg_dt = #{lnk_reg_dt}
+AND    lnk_reg_seq = #{lnk_reg_seq}
+  </update>
+  <update id="updateSingleItem06" parameterType="map">
+  UPDATE /* QueryID : kr.re.kitech.biz.fin.rcms.updateSingleItem06 */
+           if_rnd_biet_p_a
+SET   lnk_st = #{lnk_st}
+WHERE lnk_reg_dt = #{lnk_reg_dt} 
+AND lnk_reg_seq = #{lnk_reg_seq}
+  </update>
+  <update id="mergeItem02" parameterType="kr.re.kitech.biz.fin.rcms.vo.SaveBeitpaVo">
+  	MERGE /* QueryID : kr.re.kitech.biz.fin.rcms.mergeItem02 */
+		 INTO if_rnd_beit_p_a AS a
+USING DUAL AS b
+ON a.lnk_reg_dt = #{lnk_reg_dt} AND a.lnk_reg_seq = #{lnk_reg_seq} AND a.itxp_reg_seq = #{itxp_reg_seq}
+WHEN MATCHED THEN 
+        UPDATE SET cash_spot_dv = #{cash_spot_dv},   -- 현금현물구분                         
+            itxp_cd      = #{itxp_cd},   -- 비목코드                          
+            use_dt       = #{use_dt},   -- 사용일자                          
+            mitm         = #{mitm},   -- 품목
+            uprc         = #{uprc},   -- 단가
+            qnt          = #{qnt},   -- 수량
+            nrm          = #{nrm},   -- 기타                              
+            rmk          = #{rmk},   -- 비고(지급용도)                        
+            use_amt      = #{use_amt},   -- 사용금액                          
+            sply_amt     = #{sply_amt},   -- 공급금액                          
+            vat_amt      = #{vat_amt},   -- 부가가치세액                         
+            srv_amt      = #{srv_amt},   -- 봉사료                          
+            comm         = #{comm},   -- 수수료                          
+            acco_cd_1    = #{acco_cd_1},   -- 회계코드1                         
+            acco_cd_2    = #{acco_cd_2},   -- 회계코드2                         
+            lnk_st       = #{lnk_st},   -- 연계상태
+            use_amt_se_cd = #{use_amt_se_cd},   -- 사용금액구분코드
+            lnk_reg_dtm  = TO_CHAR(CURRENT, '%Y/%m/%d %H:%M:%S') -- 연계등록일시
+WHEN NOT MATCHED THEN 
+        INSERT
+            (lnk_reg_dt     ,   -- 연계등록일자        
+            lnk_reg_seq    ,   -- 연계등록순번         
+            itxp_reg_seq   ,   -- 비목등록순번         
+            cash_spot_dv   ,   -- 현금현물구분         
+            itxp_cd        ,   -- 비목코드            
+            use_dt         ,   -- 사용일자           
+            mitm           ,   -- 품목
+            uprc           ,   -- 단가
+            qnt            ,   -- 수량
+            nrm            ,   -- 규격              
+            rmk            ,   -- 비고(지급용도)   
+            use_amt        ,   -- 사용금액            
+            sply_amt       ,   -- 공급금액            
+            vat_amt        ,   -- 부가가치세액        
+            srv_amt        ,   -- 봉사료            
+            comm           ,   -- 수수료           
+            acco_cd_1      ,   -- 회계코드1        
+            acco_cd_2      ,   -- 회계코드2        
+            lnk_st         ,   -- 연계상태   
+            erp_cd_1, -- 결의번호
+            erp_cd_2, -- 결의순번
+            lnk_reg_dtm, -- 연계등록일시                                 
+            use_amt_se_cd    )   -- 사용금액구분코드
+        VALUES (#{lnk_reg_dt},
+                #{lnk_reg_seq},
+                #{itxp_reg_seq},
+                #{cash_spot_dv},
+                #{itxp_cd},
+                #{use_dt},
+                #{mitm},
+                #{uprc},
+                #{qnt},
+                #{nrm},
+                #{rmk},
+                #{use_amt},
+                #{sply_amt},
+                #{vat_amt},
+                #{srv_amt},
+                #{comm},
+                #{acco_cd_1},
+                #{acco_cd_2},
+                #{lnk_st},  
+                #{erp_cd_1},
+                #{erp_cd_2},
+                TO_CHAR(CURRENT, '%Y/%m/%d %H:%M:%S'),
+                #{use_amt_se_cd} )
+  </update>
+  <update id="mergeItem03" parameterType="kr.re.kitech.biz.fin.rcms.vo.BeaipaVo">
+  	MERGE /* QueryID : kr.re.kitech.biz.fin.rcms.mergeItem03 */
+  	     INTO if_rnd_beai_p_a AS a
+USING DUAL AS b
+ON a.lnk_reg_dt = #{lnk_reg_dt} AND a.lnk_reg_seq = #{lnk_reg_seq} AND a.itxp_reg_seq = #{itxp_reg_seq} AND a.adtn_info_reg_seq = #{adtn_info_reg_seq}
+WHEN MATCHED THEN 
+        UPDATE SET    lnk_st = #{lnk_st}
+WHEN NOT MATCHED THEN 
+        INSERT (lnk_reg_dt          ,
+                                    lnk_reg_seq         ,
+                                    itxp_reg_seq        ,
+                                    adtn_info_reg_seq   ,
+                                    cash_spot_dv        ,
+                                    res_reg_no          ,
+                                    usr_nm              ,
+                                    paym_amt            ,
+                                    ptcn_rt             ,
+                                    lnk_st              ,
+                                    lnk_reg_dtm         ,
+                                    ptcn_str_dt         ,
+                                    ptcn_end_dt         ,
+                                    dtbth               ,
+                                    gndr_se             ,
+                                    scnc_tecr_reg_no    )
+        VALUES (#{lnk_reg_dt},
+                #{lnk_reg_seq},
+                #{itxp_reg_seq},
+                #{adtn_info_reg_seq},
+                #{cash_spot_dv},
+                REPLACE(#{res_reg_no}, '-', ''),
+                #{usr_nm},
+                #{paym_amt},
+                #{ptcn_rt},
+                #{lnk_st},
+                TO_CHAR(CURRENT, '%Y/%m/%d %H:%M:%S'),
+                #{ptcn_str_dt},
+                #{ptcn_end_dt},
+                #{dtbth},
+                #{gndr_se},
+                #{scnc_tecr_reg_no})
+  </update>
+  <update id="mergeItem04" parameterType="map">
+  	MERGE /* QueryID : kr.re.kitech.biz.fin.rcms.mergeItem04 */
+  	         INTO if_rnd_biet_p_a AS a
+USING DUAL AS b
+ON a.lnk_reg_dt = #{lnk_reg_dt} AND a.lnk_reg_seq = #{lnk_reg_seq}
+WHEN MATCHED THEN 
+        UPDATE SET   lnk_st = #{lnk_st}
+WHEN NOT MATCHED THEN
+        INSERT
+        (lnk_reg_dt   ,   -- 연계등록일자
+        lnk_reg_seq   ,   -- 연계등록순번
+        itxp_reg_seq   ,   -- 비목등록순번
+        etub_reg_seq   ,   -- 장비등록순번
+        etub_id   ,           -- 장비고유번호
+        etub_paym_amt   ,   -- 장비지급금액
+        lnk_st   ,   -- 연계상태
+        lnk_reg_dtm  )   -- 연계등록일시
+        VALUES
+        ( #{lnk_reg_dt},
+        #{lnk_reg_seq},
+        #{itxp_reg_seq},
+        #{etub_reg_seq},
+        #{etub_id},
+        #{etub_paym_amt},
+        #{lnk_st},
+        TO_CHAR(CURRENT, '%Y-%m-%d %H:%M:%S'))
+  </update>
+  <select id="cancelFinRcmsPaySend01" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo" resultType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+  	SELECT /* QueryID : kr.re.kitech.biz.fin.rcms.cancelFinRcmsPaySend01 */
+  			 a.lnk_st, group_concat(b.erp_cd_2) AS erp_cd_2
+FROM if_rnd_beex_l_a a
+JOIN if_rnd_beit_p_a b ON a.lnk_reg_dt = b.lnk_reg_dt AND a.lnk_reg_seq = b.lnk_reg_seq  
+WHERE a.lnk_reg_dt = #{lnk_reg_dt}
+AND   a.lnk_reg_seq = #{lnk_reg_seq}
+GROUP BY a.lnk_st
+  </select>
+  <delete id="cancelFinRcmsPaySendDelete" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+  	DELETE /* QueryID : kr.re.kitech.biz.fin.rcms.cancelFinRcmsPaySendDelete */
+  			 FROM if_rnd_beex_l_a
+WHERE  lnk_reg_dt  = #{lnk_reg_dt}
+AND    lnk_reg_seq = #{lnk_reg_seq};
+DELETE FROM if_rnd_beit_p_a
+WHERE  lnk_reg_dt  = #{lnk_reg_dt}
+AND    lnk_reg_seq = #{lnk_reg_seq};
+DELETE FROM if_rnd_beai_p_a
+WHERE  lnk_reg_dt  = #{lnk_reg_dt}
+AND    lnk_reg_seq = #{lnk_reg_seq};
+DELETE FROM if_rnd_biet_p_a
+WHERE  lnk_reg_dt  = #{lnk_reg_dt}
+AND    lnk_reg_seq = #{lnk_reg_seq};
+DELETE FROM if_rnd_beif_l_a
+WHERE  lnk_reg_dt  = #{lnk_reg_dt}
+AND    lnk_reg_seq = #{lnk_reg_seq};
+DELETE FROM if_rnd_etrv_l_a
+WHERE  lnk_reg_dt  = #{lnk_reg_dt}
+AND    lnk_reg_seq = #{lnk_reg_seq};
+DELETE FROM if_rnd_etmt_p_a
+WHERE  lnk_reg_dt  = #{lnk_reg_dt}
+AND    lnk_reg_seq = #{lnk_reg_seq};
+  	</delete>
+  	<update id="cancelFinRcmsPaySendUpdate" parameterType="kr.re.kitech.biz.fin.rcms.vo.FinRcmsPaySendVo">
+  	UPDATE /* QueryID : kr.re.kitech.biz.fin.rcms.cancelFinRcmsPaySendUpdate */
+  			 if_rnd_beex_l_a
+SET    del_st = 'A',
+       erp_send_nm = #{erp_send_nm},
+       erp_send_no = '',
+       lnk_reg_dtm = TO_CHAR(CURRENT, '%Y-%m-%d %H:%M:%S')
+WHERE  lnk_reg_dt  = #{lnk_reg_dt}
+AND    lnk_reg_seq = #{lnk_reg_seq}
+  	</update>
+</mapper>

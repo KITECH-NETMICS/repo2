@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.pat.mail">
+<!-- 메일 메인 저장 -->
+<insert id="insertPatMailMain" parameterType="kr.re.kitech.biz.pat.mail.vo.PatMailVo">
+INSERT /* kr.re.kitech.biz.pat.mail.insertPatMailMain */
+   INTO patmailmain (
+     mail_id
+   , send_person_id
+   , send_addr
+   , send_name
+   , send_clsf
+   , send_daytm
+   , mail_subject
+   , mail_contents
+   , req_no
+   , mngmt_no
+   , regst_syspayno
+   , regst_daytm
+) VALUES (
+     #{mail_id}
+   , #{send_person_id}
+   , #{send_addr}
+   , #{send_name}
+   , '0'
+   , CURRENT
+   , #{mail_subject}
+   , #{mail_contents}
+   , #{req_no}
+   , #{mngmt_no}
+   , #{regst_syspayno}
+   , CURRENT
+ )
+</insert>
+
+<!-- 메일 수신자 등록 -->
+<insert id="insertPatMailRecv" parameterType="kr.re.kitech.biz.pat.mail.vo.PatMailRecvVo">
+INSERT /* kr.re.kitech.biz.pat.mail.insertPatMailRecv */
+   INTO patmailrecv (
+     mail_recv_id
+   , mail_id
+   , recv_seq
+   , recv_type
+   , recv_addr
+   , recv_name
+   , recv_person_id
+   , regst_syspayno
+   , regst_daytm
+) VALUES (
+     fn_uid('1')
+   , #{mail_id}
+   , (SELECT NVL(MAX(recv_seq),0) + 1 FROM patmailrecv WHERE mail_id = #{mail_id})
+   , '0'
+   , #{recv_addr}
+   , #{recv_name}
+   , #{recv_person_id}
+   , #{regst_syspayno}
+   , CURRENT
+)
+</insert>
+
+<!-- mail id 조회 -->
+<select id="selectMailId" resultType="java.lang.String" parameterType="kr.re.kitech.biz.pat.com.vo.PatToDoVo">
+SELECT /* kr.re.kitech.biz.pat.mail.selectMailId */
+       fn_uid('1') AS mail_id 
+FROM dual
+</select>
+
+<!-- 메세지 템플릿정보 조회 -->
+<select id="selectMessageTemplate" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.mail.vo.MessageTemplateVo">
+SELECT /* kr.re.kitech.biz.pat.mail.selectMessageTemplate */
+      template_code
+    , send_profile
+    , template_status
+    , template_name
+    , template_cont
+    , role_code
+    , biz_kind
+    , rmk
+FROM messagetemplate 
+WHERE template_code = #{template_code}
+</select>
+
+<!-- sms mail 등록 -->
+<insert id="insertPatSmsMain" parameterType="kr.re.kitech.biz.pat.mail.vo.PatSMSMainVo">
+INSERT /* kr.re.kitech.biz.pat.mail.insertPatSmsMain */
+   INTO patsmsmain (
+   sms_id
+ , send_person_id
+ , send_name
+ , send_number
+ , send_status
+ , send_subject
+ , send_contents
+ , req_no
+ , mngmt_no
+ , regst_syspayno
+ , regst_daytm
+) VALUES (
+   #{sms_id}
+ , #{send_person_id}
+ , #{send_name}
+ , #{send_number}
+ , 'R'
+ , #{send_subject}
+ , #{send_contents}
+ , #{req_no}
+ , #{mngmt_no}
+ , #{regst_syspayno}
+ , CURRENT
+)
+</insert>
+
+<!-- sms 수신자 저장 -->
+<insert id="insertPatSmsRecv" parameterType="kr.re.kitech.biz.pat.mail.vo.PatSMSRecvVo">
+INSERT /* kr.re.kitech.biz.pat.mail.insertPatSmsRecv */
+   INTO patsmsrecv (
+    sms_recv_id
+  , sms_id
+  , recv_seq
+  , recv_number
+  , recv_name
+  , recv_person_id
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    fn_uid('1')
+  , #{sms_id}
+  , '1'
+  , #{recv_number}
+  , #{recv_name}
+  , #{recv_person_id}
+  , #{regst_syspayno}
+  , CURRENT
+)
+</insert>
+</mapper>

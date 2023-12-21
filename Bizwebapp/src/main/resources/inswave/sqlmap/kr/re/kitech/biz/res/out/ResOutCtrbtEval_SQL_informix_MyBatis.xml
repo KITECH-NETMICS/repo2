@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.res.out">
+  <select id="selectResAchindLst" parameterType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtEvalVo" resultType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtEvalListVo">
+/* XDA : kitech.res.out.xda.ResAchindLstMS01 성과지표제출 조회(목록) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.res.out.selectResAchindLst  */ 
+		 r1.rcpt_no
+    , r1.req_ymd
+    , r1.syspayno AS req_syspayno
+    , h1.nm AS req_nm
+    , h1.empno AS req_empno
+    , TRIM(h1.nm) || '(' || TRIM(h1.empno) || ')' AS req_psn
+    , x7.dept_nm AS req_divsn_dept_nm
+    , x3.dept_nm AS req_dept_nm
+    , r1.ind_type
+    , x1.cd_nm AS ind_type_nm
+    , r1.ind_cd
+    , x2.cd_nm AS ind_cd_nm
+    , r1.content
+    , r1.rmk AS actvty_nm
+    , r1.attach_file_no
+    , x4.apr_state
+    , x5.cd_nm AS apr_state_nm
+    , r1.rcpt_syspayno
+    , h2.empno AS rcpt_empno
+    , h2.nm AS rcpt_psn_nm
+    , TRIM(h2.nm) || '(' || TRIM(h2.empno) || ')' AS rcpt_psn
+    , x6.dept_nm AS rcpt_psn_dept_nm
+    , r1.aply_yn
+    , r2.rate
+    , r2.points
+    , h3.empno AS rate_empno
+    , h3.nm AS rate_nm
+    , fun_dept_nm(h3.dept_cd) AS rate_dept_nm
+    , fun_dept_nm(x8.divsn_dept) AS rate_division_nm
+FROM resachindmst r1
+JOIN resachinddtl r2 ON r1.rcpt_no = r2.rcpt_no
+JOIN xodxcommst x1 ON r1.ind_type = x1.cd
+JOIN xodxcommst x2 ON r1.ind_cd = x2.cd
+JOIN humbasicinfo h1 ON r1.syspayno = h1.syspayno
+JOIN humbasicinfo h3 ON r2.syspayno = h3.syspayno
+JOIN xodhdeptinfo x3 ON h1.dept_cd = x3.dept_cd AND h1.dept_new_ymd = x3.dept_new_ymd
+LEFT JOIN xomxintfatab x4 ON r1.rcpt_no = x4.req_no
+LEFT JOIN xodxcommst x5 ON x4.apr_state = x5.cd
+LEFT JOIN humbasicinfo h2 ON r1.rcpt_syspayno = h2.syspayno
+LEFT JOIN xodhdeptinfo x6 ON h2.dept_cd = x6.dept_cd AND h2.dept_new_ymd = x6.dept_new_ymd
+JOIN xodhdeptinfo x7 ON x3.divsn_dept = x7.dept_cd AND x3.divsn_dept_new_ymd = x7.dept_new_ymd
+JOIN xodhdeptinfo x8 ON x8.dept_cd = h3.dept_cd AND x8.dept_new_ymd = h3.dept_new_ymd
+WHERE r1.req_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+<if test="rcpt_no != null and rcpt_no != ''"> AND r1.rcpt_no = #{rcpt_no}</if>
+AND ('' = #{rcpt_no} OR r1.rcpt_no = #{rcpt_no})
+AND ('' = #{req_syspayno} OR r1.syspayno = #{req_syspayno})
+AND ('' = #{rate_syspayno} OR r2.syspayno = #{rate_syspayno})
+AND ('' = #{rcpt_syspayno} OR r1.rcpt_syspayno = #{rcpt_syspayno})
+AND ('' = #{aply_yn} OR r1.aply_yn = #{aply_yn})
+AND ('' = #{dept_typ} OR x7.dept_typ = #{dept_typ})
+AND ('' = #{dept_cd} OR x3.dept_cd = #{dept_cd})
+AND ('' = #{dept_new_ymd} OR x3.dept_new_ymd = #{dept_new_ymd})
+AND x1.mngmt_item_1 = #{ind_clsf}
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29
+ORDER BY rcpt_no desc, rate_nm
+</select>
+<select id="selectCtrbtEvalReq01" parameterType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtReqVo" resultType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtReqVo">
+/* kr.re.kitech.biz.res.out.ResOutCtrbtEval_SQL_informix_MyBatis.xml 조직기여도 화면 조회*/
+SELECT
+		 r1.rcpt_no
+    , r1.req_ymd
+    , r1.syspayno AS req_syspayno
+    , h1.nm AS req_nm
+    , h1.empno AS req_empno
+    , TRIM(h1.nm) || '(' || TRIM(h1.empno) || ')' AS req_psn
+    , x7.dept_nm AS req_divsn_dept_nm
+    , x3.dept_nm AS req_dept_nm
+    , r1.ind_type
+    , x1.cd_nm AS ind_type_nm
+    , r1.ind_cd
+    , x2.cd_nm AS ind_cd_nm
+    , r1.content
+    , r1.attach_file_no
+    , x4.apr_state
+    , x5.cd_nm AS apr_state_nm
+    , r1.rcpt_syspayno
+    , h2.empno AS rcpt_empno
+    , h2.nm AS rcpt_psn_nm
+    , TRIM(h2.nm) || '(' || TRIM(h2.empno) || ')' AS rcpt_psn
+    , x6.dept_nm AS rcpt_psn_dept_nm
+    , fun_posi_nm(h2.posi_cd) AS rcpt_psn_posi_nm
+    , r1.aply_yn
+    , r1.rmk AS actvty_nm
+/*    , r2.points
+    , h3.empno AS rate_empno
+    , h3.nm AS rate_nm
+*/
+FROM resachindmst r1
+JOIN resachinddtl r2 ON r1.rcpt_no = r2.rcpt_no
+JOIN xodxcommst x1 ON r1.ind_type = x1.cd
+JOIN xodxcommst x2 ON r1.ind_cd = x2.cd
+JOIN humbasicinfo h1 ON r1.syspayno = h1.syspayno
+JOIN humbasicinfo h3 ON r2.syspayno = h3.syspayno
+JOIN xodhdeptinfo x3 ON h1.dept_cd = x3.dept_cd AND h1.dept_new_ymd = x3.dept_new_ymd
+LEFT JOIN xomxintfatab x4 ON r1.rcpt_no = x4.req_no
+LEFT JOIN xodxcommst x5 ON x4.apr_state = x5.cd
+LEFT JOIN humbasicinfo h2 ON r1.rcpt_syspayno = h2.syspayno
+LEFT JOIN xodhdeptinfo x6 ON h2.dept_cd = x6.dept_cd AND h2.dept_new_ymd = x6.dept_new_ymd
+JOIN xodhdeptinfo x7 ON x3.divsn_dept = x7.dept_cd AND x3.divsn_dept_new_ymd = x7.dept_new_ymd
+WHERE r1.rcpt_no = #{rcpt_no}
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
+</select>
+<select id="selectCtrbtEvalReq02" parameterType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtReqVo" resultType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtReqListVo">
+/* kr.re.kitech.biz.res.out.ResOutCtrbtEval_SQL_informix_MyBatis.xml 조직기여도 화면 기여자 조회*/
+SELECT
+		r1.rcpt_no
+	  , r1.ind_type
+      , x1.cd_nm AS ind_type_nm
+      , r1.ind_cd
+      , x2.cd_nm AS ind_cd_nm
+      , r1.aply_yn
+      , r2.points
+      , h1.syspayno AS rate_syspayno
+      , h1.empno AS rate_empno
+      , h1.nm AS rate_nm
+      , x3.dept_nm AS rate_dept_nm
+      , x7.dept_nm AS rate_division_nm
+      ,fun_posi_nm(h1.posi_cd) AS rate_posi_nm
+FROM resachindmst r1
+JOIN resachinddtl r2 ON r1.rcpt_no = r2.rcpt_no
+JOIN xodxcommst x1 ON r1.ind_type = x1.cd
+JOIN xodxcommst x2 ON r1.ind_cd = x2.cd
+JOIN humbasicinfo h1 ON r2.syspayno = h1.syspayno
+JOIN xodhdeptinfo x3 ON h1.dept_cd = x3.dept_cd AND h1.dept_new_ymd = x3.dept_new_ymd
+LEFT JOIN xomxintfatab x4 ON r1.rcpt_no = x4.req_no
+LEFT JOIN xodxcommst x5 ON x4.apr_state = x5.cd
+JOIN xodhdeptinfo x7 ON x3.divsn_dept = x7.dept_cd AND x3.divsn_dept_new_ymd = x7.dept_new_ymd
+WHERE r1.rcpt_no = #{rcpt_no}
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,12,13
+</select>
+<insert id="saveCtrbtEvalReq01" parameterType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtReqIntegVo">
+/* kr.re.kitech.biz.res.out.ResOutCtrbtEval_SQL_informix_MyBatis.xml 조직기여도 신청서 저장*/
+
+/* 기본화면정보 */
+INSERT INTO resachindmst (
+rcpt_no
+, req_ymd
+, syspayno
+, rcpt_syspayno
+, aply_yn
+, ind_type
+, ind_cd
+, content
+, rmk
+, attach_file_no
+, regst_syspayno
+, regst_daytm
+)
+VALUES(
+#{rcpt_no}
+, #{req_ymd}
+, #{req_syspayno}
+, #{rcpt_syspayno}
+, #{aply_yn}
+, #{ind_type}
+, #{ind_cd}
+, #{content}
+, #{actvty_nm}
+, #{attach_file_no}
+, #{regst_syspayno}
+, sysdate
+)
+</insert>
+<insert id="saveCtrbtEvalReq02" parameterType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtReqIntegVo">
+/* kr.re.kitech.biz.res.out.ResOutCtrbtEval_SQL_informix_MyBatis.xml 조직기여도 신청서 저장*/
+
+/* 기여자 정보 */
+INSERT INTO resachinddtl (
+rcpt_no
+, syspayno
+, rate
+, points
+, rmk
+, regst_syspayno
+, regst_daytm
+)
+VALUES(
+#{rcpt_no}
+, #{rate_syspayno}
+, 0
+, #{points}
+, ''
+, #{regst_syspayno}
+, sysdate
+)
+</insert>
+<update id="updateCtrbtEvalReq01" parameterType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtReqVo">
+/* kr.re.kitech.biz.res.out.ResOutCtrbtEval_SQL_informix_MyBatis.xml 조직기여도 신청서 업데이트*/
+
+/* 기본화면정보 */
+UPDATE resachindmst
+SET
+req_ymd = #{req_ymd}
+, syspayno = #{req_syspayno}
+, aply_yn = #{aply_yn}
+, ind_type = #{ind_type}
+, ind_cd = #{ind_cd}
+, content = #{content}
+, rmk = #{actvty_nm}
+, attach_file_no = #{attach_file_no}
+, updt_syspayno = #{updt_syspayno}
+, updt_daytm = sysdate
+WHERE
+rcpt_no = #{rcpt_no}
+</update>
+<delete id="deleteCtrbtEvalReq01" parameterType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtReqVo">
+/* kr.re.kitech.biz.res.out.ResOutCtrbtEval_SQL_informix_MyBatis.xml 조직기여도 신청서 삭제*/
+
+/* 기본화면정보 */
+DELETE FROM resachindmst WHERE rcpt_no = #{rcpt_no}
+</delete>
+<delete id="deleteCtrbtEvalReq02" parameterType="kr.re.kitech.biz.res.out.vo.ResOutCtrbtReqVo">
+/* kr.re.kitech.biz.res.out.ResOutCtrbtEval_SQL_informix_MyBatis.xml 조직기여도 신청서 삭제*/
+
+/* 기여자 정보 */
+DELETE FROM resachinddtl WHERE rcpt_no = #{rcpt_no}
+</delete>
+
+
+</mapper>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.bmg">
+	
+	
+	
+		
+	
+		
+	
+	
+	
+
+
+
+
+
+
+<select id="selectKbkOutUrlList" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkClsfVo" resultType="kr.re.kitech.biz.kbk.bmg.vo.KbkOutUrlVo">
+SELECT attach_file_path_img
+     , attach_file_img
+     , subj
+     , clsf AS clsf_cd
+     , fun_xodxcommst_cd_nm(clsf, 0) AS clsf_nm
+     , id
+     , pw
+     , url_rmk
+     , url
+     , regst_no
+FROM kbkouturl
+WHERE clsf IN <foreach collection="clsfVo" item="item" open="(" separator="," close=")"> #{item.cd} </foreach>
+ORDER BY clsf_cd, regst_no DESC
+</select>
+<select id="selectKbkOutUrlReg" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkOutUrlVo" resultType="kr.re.kitech.biz.kbk.bmg.vo.KbkOutUrlVo">
+SELECT regst_no
+     , clsf AS clsf_cd
+     , subj
+     , url_rmk
+     , url
+     , id
+     , pw
+     , attach_file_no_contnt
+     , attach_file_no_use
+     , attach_file_path_img
+     , attach_file_img
+FROM kbkouturl
+WHERE regst_no = #{regst_no}
+</select>
+<insert id="insertKbkOutUrlReg" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkOutUrlVo">
+INSERT
+INTO kbkouturl 
+( 
+	regst_no
+, 	clsf
+, 	subj
+, 	url_rmk
+, 	url
+, 	id
+, 	pw
+, 	attach_file_path_img
+, 	attach_file_img
+, 	attach_file_no_contnt
+, 	attach_file_no_use
+, 	regst_psn_syspayno
+, 	regst_daytm
+)
+VALUES 
+(
+   (SELECT lpad(nvl(to_char(trunc(max(regst_no)) + 1), 0), 6, '0') 
+	FROM kbkouturl)
+,  	#{clsf_cd}
+,  	#{subj}
+,  	#{url_rmk}
+,  	#{url}	 
+,  	#{id}	
+,  	#{pw}	
+,  	#{attach_file_path_img}	
+,  	#{attach_file_img}	
+,  	#{attach_file_no_contnt}	
+,  	#{attach_file_no_use}	
+,  	#{syspayno}	
+,  	current
+)
+</insert>
+<update id="updateKbkOutUrlReg" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkOutUrlVo">
+UPDATE 
+kbkouturl
+SET clsf = #{clsf_cd}
+,   subj = #{subj}
+,   url_rmk = #{url_rmk}
+,   url = #{url}
+,   id = #{id}
+,   pw = #{pw}
+,   attach_file_path_img = #{attach_file_path_img}
+,   attach_file_img = #{attach_file_img}
+,   attach_file_no_contnt = #{attach_file_no_contnt}
+,   attach_file_no_use = #{attach_file_no_use}
+,   updt_psn_syspayno = #{syspayno}
+,   updt_daytm =  SYSDATE
+WHERE regst_no = #{regst_no}
+</update>
+<delete id="deleteKbkOutUrlReg" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkOutUrlVo">
+DELETE
+FROM kbkouturl
+WHERE regst_no = #{regst_no}
+</delete>
+</mapper>

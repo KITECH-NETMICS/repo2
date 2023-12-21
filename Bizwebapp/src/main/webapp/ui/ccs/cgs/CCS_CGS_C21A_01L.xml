@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="휴가원신청 목록">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_cgslapp" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="req_no" name="신청번호" dataType="text"></w2:column>
+            			<w2:column id="req_psn_syspayno" name="시스템개인번호" dataType="text"></w2:column>
+            			<w2:column id="req_psn_empno" name="개인번호" dataType="text"></w2:column>
+            			<w2:column id="req_psn_nm" name="성명" dataType="text"></w2:column>
+            			<w2:column id="req_psn_dept_nm" name="부서" dataType="text"></w2:column>
+            			<w2:column id="posi_nm" name="직급" dataType="text"></w2:column>
+            			<w2:column id="holiday_clsf_nm" name="휴가구분" dataType="text"></w2:column>
+            			<w2:column id="holiday_sub_clsf" name="휴가소구분" dataType="text"></w2:column>
+            			<w2:column id="holiday_start_ymd" name="시작일" dataType="text"></w2:column>
+            			<w2:column id="holiday_cls_ymd" name="종료일" dataType="text"></w2:column>
+            			<w2:column id="holiday_daycnt" name="휴가일수" dataType="text"></w2:column>
+            			<w2:column id="apr_state" name="신청상태" dataType="text"></w2:column>
+            			<w2:column id="to_evid" name="증빙등록" dataType="text"></w2:column>
+            			<w2:column id="holiday_cause" name="휴가사유" dataType="text"></w2:column>
+            			<w2:column id="holiday_clsf" name="휴가구분" dataType="text"></w2:column>
+            			<w2:column id="destin" name="행선지" dataType="text"></w2:column>
+            			<w2:column id="vaccine" name="백신접종구분" dataType="text"></w2:column>
+            			<w2:column id="vac_cause" name="백신접종사유" dataType="text"></w2:column>
+            			<w2:column id="vac_gb" name="백신종류" dataType="text"></w2:column>
+            			<w2:column id="vac_date" name="접종시기" dataType="text"></w2:column>
+            			<w2:column id="attach_file_no" name="첨부파일" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="start_ymd" name="휴가기간시작일" dataType="text"></w2:key>
+            			<w2:key id="cls_ymd" name="휴가기간종료일" dataType="text"></w2:key>
+            			<w2:key id="syspayno" name="시스템사번" dataType="text"></w2:key>
+            			<w2:key id="holiday_clsf" name="휴가구분" dataType="text"></w2:key>
+            			<w2:key id="apr_state" name="신청상태" dataType="text"></w2:key>
+            			<w2:key id="src_gubn" name="조회구분" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+    		<xf:submission id="sbm_selectOutworkList" ref='data:json,dma_search'
+    			target='' action="SvcCCSCGSVACR01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+	 * 화면 설명 : 휴가원신청
+	 * 변경 이력 : 2022-06-07	박명목	최초 작성
+	 *          2022-09-02 이영희 결재신청 추가위해 수정
+	 * serviceId : C20E
+	 ****************************************************/            
+	scwin.onpageload = function() {
+		var codeOptions = [ { code : "HBI", compID :"sbx_work_clsf" }
+						,	{ code : "XAD", compID :"sbx_apr_state, grd_cgslapp:apr_state" }
+			];
+		com.setCmnCd(codeOptions, function() {
+		});
+		
+		// enter key event
+		com.setEnterKeyEvent(grp_emp, scwin.btn_empno_onclick);
+		
+		// 기간역전 체크
+		com.checkPeriod(calHolidayStartYmd, calHolidayEndYmd);
+			
+		// 검색기간 누락시 기본일자 지정
+		var today = com.getServerDateTime();
+		dma_search.set("start_ymd", today.substring(0,4) + "0101");
+		dma_search.set("cls_ymd", today);		
+		
+		// 관리자 권한 여부에 따른 초기제어 추가
+		com.biz.checkRole({serviceId : "C219", roleCodes : com.getLoginInfo("roleCode")}, function(e){
+			if(e.isRoleYn){ // 관리권한 보유시
+				btn_excel_db.show(""); // 엑셀바로내리기 버튼 활성화
+				ibx_empno.setDisabled(false);
+				btn_empno.setDisabled(false);
+			}else{
+				ibx_empno.setDisabled(true);
+				btn_empno.setDisabled(true);
+				btn_excel_db.hide();				
+			}
+		});	
+		
+		ibx_empno.setValue(com.getLoginInfo("empno"));
+		ibx_nm.setValue(com.getLoginInfo("cn"));			
+		dma_search.set("syspayno", com.getLoginInfo("sn"));	
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+
+	/**
+	 * 조회버튼 클릭 이벤트
+	 */
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	/**
+	 * 조회실행
+	 */
+	scwin.search = function() {
+		com.execute(sbm_selectOutworkList, {
+			successCallback : function(e) {
+				dlt_cgslapp.setJSON(e.responseJSON.cgslappVoList)
+				tbx_result.setValue(dlt_cgslapp.getTotalRow());
+				
+				for(var i=0; i<dlt_cgslapp.getRowCount(); i++){
+					var toEvid = dlt_cgslapp.getCellData(i, "to_evid");
+					var attachFileNo = dlt_cgslapp.getCellData(i, "attach_file_no");
+					if (toEvid == "Y"){
+						if(attachFileNo == ""){
+							dlt_cgslapp.setCellData(i, "to_evid", "증빙등록");
+						}else{
+							dlt_cgslapp.setCellData(i, "to_evid", "증빙보기");
+						}
+					}else{
+						if(attachFileNo == ""){
+							dlt_cgslapp.setCellData(i, "to_evid", "");
+						}else{
+							dlt_cgslapp.setCellData(i, "to_evid", "파일보기");
+						}
+					}
+				}
+			}
+		});
+	};
+	
+	/**
+	 * 개인번호 변경시 이벤트
+	 */
+	scwin.ibx_empno_onchange = function(info) {
+		if(info.newValue == "") {
+			ibx_nm.setValue("");
+			dma_search.set("syspayno", "");
+		}
+	};	
+	
+	/**
+	 * 직원검색 버튼 클릭 이벤트
+	 */
+	scwin.btn_empno_onclick = function(e) {
+		var data = { empno : ibx_empno.getValue(), work_clsf : "HAG010" }
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			ibx_nm.setValue(ret.nm);
+			ibx_empno.setValue(ret.empno);
+			dma_search.set("syspayno", ret.syspayno);
+		});
+	};
+	
+	/**
+	 * 엑셀다운로드 클릭 이벤트
+	 */
+	scwin.btn_down_excel_onclick = function(e) {
+		var option = {
+			    fileName : "휴가원신청목록.xls"
+			  , useDataFormat : true
+		};
+		com.downloadGridExcel(grd_cgslapp, option);
+	};
+	
+	/**
+	 * 엑셀 바로내리기 버튼 클릭
+	 */
+	scwin.btn_excel_db_onclick = function(e) {
+		// DB 다운로드
+		var option = {
+			  fileName : "휴가원신청목록.xlsx"
+//			, hiddenVisible : true
+			, providerInfo : {
+				  service : "cgslappServiceImpl"
+				, method : "selectListCgslapp"
+				, vo : "ccs.cgs.vo.CgslappSchVo"
+				, paramMap : dma_search
+			}
+		};
+		com.downloadGridExcel(grd_cgslapp, option);
+	};
+	
+	/**
+	 * 신청버튼 클릭 이벤트
+	 */
+	scwin.btn_req_onclick = function(e) {
+		scwin.openDetail("C", -1);
+	};
+	
+	/**
+	 * 그리드 신청번호 클릭 이벤트
+	 */
+	scwin.grd_cgslapp_oncellclick = function(row,col,colId) {
+		if (colId == "req_no"){
+			scwin.openDetail("U", row);
+		}else if (colId == "to_evid"){
+			if(dlt_cgslapp.getCellData(row, "to_evid") != ""){
+				var data ={
+					req_no : dlt_cgslapp.getCellData(row, "req_no"),
+					syspayno : dlt_cgslapp.getCellData(row, "req_psn_syspayno")
+				};
+				
+				biz.ccs.pop.open(biz.ccs.pop.TYPE.VACA_EVID_CHK, data, function(ret) {
+				});
+			}
+		}
+	};
+	
+	/**
+	 * 화면이동
+	 */
+	scwin.openDetail = function(type, row) {
+		var data={};
+		if(type == "U"){
+			data.req_no = dlt_cgslapp.getCellData(row, "req_no");
+			data.req_psn_syspayno = dlt_cgslapp.getCellData(row, "req_psn_syspayno")
+		}
+		
+		com.openTabMenu("C21A", data, function(retObj) {
+			// 콜백
+			if(retObj){
+				scwin.search();	
+			}
+		});	
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="grp_search" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="조회조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width: 250px"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width: 250px"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style=""></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="휴가기간" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="inpcalWrap" id="" style="">
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false" id="calHolidayStartYmd" renderDiv="true"
+    									rightAlign="false" style="" title="시작일" ref="data:dma_search.start_ymd">
+    								</w2:inputCalendar>
+    								<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false" id="calHolidayEndYmd" renderDiv="true"
+    									rightAlign="false" style="" title="종료일" ref="data:dma_search.cls_ymd">
+    								</w2:inputCalendar>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="개인번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpSch" id="grp_emp" style="width: 100px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="ibx_empno" style="" title="개인번호" ev:onchange="scwin.ibx_empno_onchange" ref="data:dma_search.empno">
+    								</xf:input>
+    								<xf:trigger class="btn" id="btn_empno" style="" title="개인번호 조회" type="button" ev:onclick="scwin.btn_empno_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_nm" style="width: 100px;" title="개인번호 상세" disabled="true" ref="data:dma_search.nm"></xf:input>
+
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>1</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr" style="">
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="휴가구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:autoComplete allOption="" chooseOption="true" class="sel" disabledClass="w2selectbox_disabled"
+    								id="sbx_work_clsf" ref="data:dma_search.holiday_clsf" search="" style="width:160px;" submenuSize="auto" textAlign="center"
+    								title="휴가구분" visibleRowNum="10" chooseOptionLabel="- 전체 -" visibleColumn="" displayMode="">
+    								<w2:choices></w2:choices>
+    							</w2:autoComplete>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="신청상태" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 appearance="minimal" chooseOption="true" class="sel" direction="auto" disabled="false" disabledClass="w2selectbox_disabled"
+    								id="sbx_apr_state" ref="data:dma_search.apr_state" style="width:120px;" submenuSize="auto" title="신청상태" visibleRowNum="10" chooseOptionLabel="- 전체 -"
+    								textAlign="center">
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="조회구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="" ref="data:dma_search.src_gubn" style="width:120px;"
+    								submenuSize="auto" title="조회구분" visibleRowNum="10" textAlign="center" chooseOptionLabel="-전체-">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[휴가자]]></xf:label>
+    										<xf:value>1</xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[신청자]]></xf:label>
+    										<xf:value>2</xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group style="" id="" class="sch_more">
+    					<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    						<w2:attributes>
+    							<w2:summary></w2:summary>
+    						</w2:attributes>
+    						<xf:group tagname="caption"></xf:group>
+    						<xf:group tagname="colgroup">
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col" style="width:300px;"></xf:group>
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col" style="width:290px;"></xf:group>
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col"></xf:group>
+    						</xf:group>
+    						<xf:group tagname="tr" style="">
+    							<xf:group tagname="th" style="" class="w2tb_th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="담당자"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" style="" class="w2tb_td">
+    								<xf:group style="width: 120px;" id="" class="inpSch">
+    									<xf:input adjustMaxLength="false" style="" id="" class="inp"></xf:input>
+    									<xf:trigger style="" id="" type="button" class="btn">
+    										<xf:label><![CDATA[검색]]></xf:label>
+    									</xf:trigger>
+    								</xf:group>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    							<xf:group tagname="th" style="" class="w2tb_th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="담당자"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" style="" class="w2tb_td">
+    								<xf:group style="width: 120px;" id="" class="inpSch">
+    									<xf:input adjustMaxLength="false" style="" id="" class="inp"></xf:input>
+    									<xf:trigger style="" id="" type="button" class="btn">
+    										<xf:label><![CDATA[검색]]></xf:label>
+    									</xf:trigger>
+    								</xf:group>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    							<xf:group tagname="th" class="w2tb_th">
+    								<w2:attributes></w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="신청번호"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" class="w2tb_td">
+    								<w2:attributes></w2:attributes>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<xf:group class="le" id="" style="">
+    				<xf:group class="result" id="">
+
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:group style="" id="" class="btnarea">
+    					<xf:trigger class="btn" id="btn_req" style="" type="button" ev:onclick="scwin.btn_req_onclick">
+    						<xf:label><![CDATA[신청]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger style="" id="btn_down_excel" type="button" class="btn icon down"
+    						ev:onclick="scwin.btn_down_excel_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger class="btn icon down" id="btn_excel_db" style=""
+    						type="button" ev:onclick="scwin.btn_excel_db_onclick">
+    						<xf:label><![CDATA[엑셀바로내리기]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#FCDFA9" rowNumWidth="50"
+    			dataList="data:dlt_cgslapp" evenRowBackgroundColor="#f7faff" style="height: 110px;" autoFit="allColumn" id="grd_cgslapp"
+    			visibleRowNum="20" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_cgslapp_oncellclick"
+    			sortable="true" filterFocusMode="outfocus">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="90" inputType="text" style="height:28px;" id="column7" value="신청번호" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column5" value="개인번호" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column3" value="성명" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px;" id="column20" value="부서" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column29" value="직급" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column27" value="휴가구분" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column25" value="휴가소구분" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px;" id="column21" value="시작일" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px;" id="column23" value="종료일" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column30" value="휴가일수" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column32" value="신청상태" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column34" value="증빙등록" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:28px" id="column36" value="휴가사유" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column41" value="행선지" displayMode="label"
+    						hidden="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column42" value="백신접종구분" displayMode="label"
+    						hidden="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column43" value="백신접종사유" displayMode="label"
+    						hidden="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column44" value="백신종류" displayMode="label"
+    						hidden="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column45" value="접종시기" displayMode="label"
+    						hidden="true">
+    					</w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="90" inputType="link" readOnly="true" style="height:28px;" id="req_no" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="req_psn_empno" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="req_psn_nm" class="" displayMode="label"></w2:column>
+    					<w2:column width="120" inputType="text" readOnly="true" style="height:28px;" id="req_psn_dept_nm" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="posi_nm" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="holiday_clsf_nm" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="holiday_sub_clsf" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="90" inputType="text" readOnly="true" style="height:28px;" id="holiday_start_ymd" class=""
+    						displayMode="label" dataType="date" displayFormat="yyyy-MM-dd">
+    					</w2:column>
+    					<w2:column width="90" inputType="text" readOnly="true" style="height:28px;" id="holiday_cls_ymd" class=""
+    						displayMode="label" dataType="date" displayFormat="yyyy-MM-dd">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="holiday_daycnt" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="select" readOnly="true" style="height:28px;" id="apr_state" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="link" readOnly="true" style="height:28px;" id="to_evid" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="300" inputType="text" readOnly="true" style="height:28px;" id="holiday_cause" class="le"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="destin" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="vaccine" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="vac_cause" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="vac_gb" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="vac_date" class=""
+    						displayMode="label">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    			<w2:footer style="" id="footer1">
+    				<w2:row style="" id="row3">
+    					<w2:column width="230" inputType="text" style="height:20px;" id="column67" value="합계" displayMode="label" colSpan="3"
+    						rowSpan="">
+    					</w2:column>
+    					<w2:column width="120" inputType="text" style="height:20px" id="column64" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column63" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column62" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column61" value="" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:20px" id="column60" value="" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:20px" id="column59" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="expression" style="height:20px" id="column58" value="" displayMode="label" expression="sum('holiday_daycnt')"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column57" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column56" value="" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:20px" id="column55" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column50" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column49" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column48" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column47" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px" id="column46" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:footer>
+    		</w2:gridView>
+    	</xf:group>
+    	
+    </body>
+</html>

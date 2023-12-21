@@ -1,0 +1,1572 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.tax">
+<!-- 매출계산서 목록 조회 -->
+<select id="selectFtxBillHList" parameterType="kr.re.kitech.biz.fin.tax.vo.FinTaxSearchVo" resultType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillHList */
+       a.issu_ymd
+     , TRIM(a.decsn_no) AS decsn_no
+     , TRIM(a.tax_bill_no) AS tax_bill_no
+     , CASE WHEN a.unslip_no[1,3] IN ('215','425','426') THEN DECODE(a.prcs_clsf, 'D', 'D', DECODE(NVL(g.decsn_ex,'N'),'Y','Y','N'))
+            ELSE DECODE(a.prcs_clsf, 'D', 'D', 'U', 'U', DECODE(NVL(a.unslip_no,''),'','N', 'Y'))
+            END AS prcs_clsf
+     , CASE WHEN a.unslip_no[1,3] IN ('215','425','426') THEN DECODE(a.prcs_clsf, 'D', '폐기', DECODE(NVL(g.decsn_ex,'N'),'Y','처리','미처리'))
+            ELSE DECODE(a.prcs_clsf, 'D', '폐기', 'U', '수정', DECODE(NVL(a.unslip_no,''),'','미처리', '처리'))
+            END  AS prcs_clsf_nm
+     , a.wrte_psn
+     , h.empno AS wrte_psn_empno
+     , h.nm AS wrte_psn_nm
+     , h.ext_no AS wrte_ext_no
+     , h.email AS wrte_email
+     , a.wrte_dept
+     , NVL(a.unslip_no,'') AS unslip_no
+     , TRIM(NVL(fun_fin_tax_bill_state(a.tax_bill_no), '')) AS state_nm
+     , a.suply_value 
+     , a.taxamt 
+     , a.suply_value + a.taxamt AS totl_amt
+     , a.accnt_no
+     , a.bill_clsf
+     , a.bill_clsf1
+     , a.demnd_recv_clsf
+     , DECODE(a.demnd_recv_clsf, '1', '청구', '2', '영수') || DECODE(NVL(a.bill_knd,''), 'U', '-수정','') AS demnd_recv_clsf_nm
+     , NVL(a.bill_knd,'') AS bill_knd
+     , a.sude_psn
+     , NVL(b.vend_abbr, d.buyr_corp_nm) AS vend_abbr
+     , b.bsns_psn_regst_no
+     , NVL(c.tax_cd, 'FTX002') AS tax_cd
+     , c.accnt_no_nm
+     , NVL(d.mody_code,'') AS mody_code
+     , CASE WHEN (LENGTH(TRIM(a.decsn_no)) = 24 AND a.demnd_recv_clsf = '1') THEN a.decsn_no
+            ELSE NVL(d.issu_id, '') END AS issu_id
+     , NVL(e.issu_seqno,'') AS bfo_issu_seqno
+     , NVL(g.slip_no, '') AS slip_no
+     , CASE WHEN NVL(a.unslip_no, '') != '' THEN 'Y' ELSE 'N' END AS decsn_ex
+     , DECODE(f.tax_confirm_yn, 'Y', '확인', '') AS tax_confirm_yn
+     , (SELECT MAX(issu_seqno) FROM itis_issu_mstr WHERE bfo_issu_id = d.issu_id) AS updt_issu_seqno
+  <if test='inqr_clsf == null'> 
+     , DECODE(w.dept_level_3, 'L000', '0003', x.mngmt_item_3) AS selr_code
+     , w.dept_nm AS wrte_dept_nm
+     , x.cd_nm AS dept_typ_nm  /*일반결의 팝업일 경우에는 조회하지 않음 */
+  </if>
+  	 , a.email_addr
+  FROM ftxbillh a
+  JOIN xodfvend b ON a.sude_psn = b.vend_cd
+  LEFT JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+  LEFT JOIN fspsliph g ON a.unslip_no = g.unslip_no
+  LEFT JOIN fspslipdecsnh f ON g.slip_no = f.slip_no
+  LEFT JOIN itis_issu_mstr d ON a.tax_bill_no = d.issu_seqno  -- 수정세금계산서
+  LEFT JOIN itis_issu_mstr e ON d.bfo_issu_id = e.issu_id AND NVL(d.bfo_issu_id, '') != '' -- 최초세금계산서
+  JOIN humbasicinfo h ON a.wrte_psn = h.syspayno
+ <if test='inqr_clsf == null'> 
+  LEFT JOIN xodhdeptinfo w ON h.dept_cd = w.dept_cd AND h.dept_new_ymd = w.dept_new_ymd
+  LEFT JOIN xodxcommst x ON w.dept_typ = x.cd AND x.cd_clsf = 'HCF'  
+ </if>
+ WHERE a.issu_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+ <if test = 'tax_bill_no != null and tax_bill_no !=""' > 
+      AND (a.tax_bill_no = #{tax_bill_no} OR (d.bfo_issu_id IN (SELECT issu_id FROM itis_issu_mstr WHERE issu_seqno = #{tax_bill_no}) AND NVL(d.bfo_issu_id, '') != ''))
+ </if>
+ <if test = 'unslip_no != null and unslip_no!= ""' > AND a.unslip_no LIKE #{unslip_no} || '%' </if>
+ <if test = 'demnd_recv_clsf != null and demnd_recv_clsf != "" and demnd_recv_clsf != "9"' > AND a.demnd_recv_clsf = #{demnd_recv_clsf} </if>
+ <if test = 'demnd_recv_clsf != null and demnd_recv_clsf == "9"' > AND a.decsn_no != '' </if>
+ <if test = 'slip_no != null and slip_no != ""' > AND g.slip_no LIKE #{slip_no} ||'%' </if>
+ <if test = 'vend_abbr != null and vend_abbr != ""' > AND b.vend_abbr LIKE '%' || #{vend_abbr} || '%' </if>
+ <if test = 'prcs_clsf != null and prcs_clsf != ""'> 
+      AND (CASE WHEN a.unslip_no[1,3] IN ('215','425','426') THEN DECODE(a.prcs_clsf, 'D', 'D', DECODE(NVL(g.decsn_ex,'N'),'Y','Y','N'))
+                ELSE DECODE(a.prcs_clsf, 'D', 'D', 'U', 'U', DECODE(NVL(a.unslip_no,''),'','N', 'Y'))
+                END) = #{prcs_clsf} 
+ </if>
+ <if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND REPLACE(DECODE(NVL(b.bsns_psn_regst_no,''), '', b.corp_resid_no, b.bsns_psn_regst_no), '-', '') LIKE #{bsns_psn_regst_no} ||'%' </if>
+ <if test='wrte_psn != null and wrte_psn != ""'> AND a.wrte_psn = #{wrte_psn} </if>
+ <if test='accnt_no != null and accnt_no != ""'> AND a.accnt_no = #{accnt_no} </if>
+ <if test='tax_type != null and tax_type == "01"'> AND (a.tax_bill_no LIKE 'F30%' OR SUBSTR(d.tax_type,1,2) IN ('01','02')) /* 세금계산서 */ </if> 
+ <if test='tax_type != null and tax_type == "03"'> AND (a.tax_bill_no LIKE 'F10%' OR SUBSTR(d.tax_type,1,2) IN ('03','04')) /* 계산서 */ </if> 
+ <choose>
+  <when test='src_clsf != null and src_clsf == "S"'> AND a.accnt_no[1, 2] IN ('PA', 'PD', 'PX') /* 기술지원수수료 */ </when> 
+  <when test='src_clsf != null and src_clsf == "R"'> AND a.accnt_no[1] = 'P' AND a.accnt_no[1, 2] NOT IN ('PA', 'PD', 'PX', 'PL', 'PQ')  /* 연구비 */ </when> 
+  <when test='src_clsf != null and src_clsf == "E"'> AND (a.accnt_no[1] != 'P' OR a.accnt_no[1, 2] IN ('PL', 'PQ') ) /* 기타 */ </when> 
+  <when test='src_clsf != null and src_clsf == "V"'> AND a.bill_clsf = 'FBF021' /* (가상계좌)민간부담금  */ </when> 
+ </choose>
+ <if test = 'slip_yn != null and slip_yn== "Y"'> AND NVL(a.unslip_no,'') != '' /* 미처리 결의번호 존재 */ </if> 
+ <if test = 'slip_yn != null and slip_yn== "N"'> AND NVL(a.unslip_no,'') = '' /* 미처리 결의번호 부존재 */ </if> 
+ <if test='inqr_clsf != null and inqr_clsf == "pop"'> AND NVL(a.prcs_clsf,'') NOT IN ('D','U') /*검색팝업에서 호출*/ </if>
+ ORDER BY a.issu_ymd, NVL(b.vend_abbr, d.buyr_corp_nm)
+</select>
+
+<!-- 결의번호 업데이트 -->
+<update id="updateFtxBillHUnslipNo" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFtxBillHUnslipNo */
+      ftxbillh
+   SET unslip_no = #{unslip_no}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE tax_bill_no = #{tax_bill_no}
+</update>
+
+<!-- 매출계산서조회(등록팝업) -->
+<select id="selectFtxBillH" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillH */
+        TRIM(a.tax_bill_no) AS tax_bill_no
+      , CASE WHEN f.issu_seqno IS NULL THEN CASE WHEN SUBSTR(a.tax_bill_no, 1, 3) = 'F10' THEN '03' ELSE '01' END 
+                ELSE CASE WHEN SUBSTR(f.tax_type, 1, 2) IN ('01', '02') THEN '01' ELSE '03' END
+                END AS tax_type
+      , a.accnt_no
+      , c.accnt_no_nm
+      , c.cls_ymd
+      , a.sude_psn
+      , TRIM(DECODE(NVL(f.buyr_corp_nm,'') , '' ,REPLACE(b.vend_abbr, '㈜', '(주)') , f.buyr_corp_nm )) AS vend_abbr
+      , TRIM(DECODE(TRIM(nvl(b.bsns_psn_regst_no, '')), '', b.corp_resid_no, b.bsns_psn_regst_no)) AS bsns_psn_regst_no
+      , b.reprs_psn_nm
+      , TRIM(CASE WHEN NVL(f.buyr_addr,'') !='' THEN f.buyr_addr ELSE b.addr || b.detls_addr END) AS addr
+      , b.bizcatg
+      , b.biztyp
+      , DECODE(b.vend_clsf, 'FBA002', '02', 'FBA003', '03', '01') AS buyr_gb -- FBA004 개인, FBA003 외국인/외국업체
+      , a.suply_value
+      , a.taxamt
+      , a.suply_value + a.taxamt AS totl_amt
+      , a.issu_ymd
+      , a.bill_clsf
+      , TRIM(a.attach_file_no) AS attach_file_no
+      , TRIM(NVL(a.unslip_no, '')) AS unslip_no
+      , a.buyr_chrg_post1
+      , a.buyr_chrg_nm1
+      , a.buyr_chrg_tel1
+      , a.buyr_chrg_email1
+      , a.buyr_chrg_mobl1
+      , a.buyr_chrg_post2
+      , a.buyr_chrg_nm2
+      , a.buyr_chrg_tel2
+      , a.buyr_chrg_email2
+      , a.buyr_chrg_mobl2
+      , a.rmk1
+      , a.demnd_recv_clsf
+      , CASE WHEN TRIM(a.decsn_no) != '' THEN 'Y' ELSE 'N' END AS recp_yn -- 역전자발행여부
+      , TRIM(a.decsn_no) AS decsn_no
+      , a.bill_clsf1
+      , a.wrte_psn
+      , h.empno AS wrte_psn_empno
+      , h.nm AS wrte_psn_nm
+      , a.charg
+      , a.tel_no
+      , a.email_addr
+      , fun_dept_nm(a.wrte_dept) AS wrte_dept_nm
+      , CASE WHEN NVL(a.updt_syspayno,'') ='' THEN '' ELSE fun_emp_nm(a.updt_syspayno) END AS updt_psn_nm
+      , a.bill_knd
+      , a.issu_req_no
+      , NVL(f.issu_id,'') AS issu_id
+      , TRIM(NVL(fun_fin_tax_bill_state(a.tax_bill_no, 1),'')) AS state_nm 
+      , NVL(fun_fin_tax_bill_state(a.tax_bill_no, 2),'') AS state_code
+      , CASE WHEN a.unslip_no[1,3] IN ('215','425','426') THEN DECODE(a.prcs_clsf, 'D', 'D', DECODE(NVL(g.decsn_ex,'N'),'Y','Y','N'))
+            ELSE DECODE(a.prcs_clsf, 'D', 'D', 'U', 'U', DECODE(NVL(a.unslip_no,''),'','N', 'Y'))
+            END AS prcs_clsf
+      , CASE WHEN a.unslip_no[1,3] = '215' THEN DECODE(a.prcs_clsf, 'D', '폐기', DECODE(NVL(g.decsn_ex, ''),'Y','처리','미처리')) 
+            WHEN a.unslip_no[1,3] = '425' THEN DECODE(a.prcs_clsf, 'D', '폐기', DECODE(NVL(g.decsn_ex, ''),'Y','처리','미처리')) 
+            WHEN a.unslip_no[1,3] = '426' THEN DECODE(a.prcs_clsf, 'D', '폐기', DECODE(NVL(g.decsn_ex, ''),'Y','처리','미처리')) 
+            WHEN (LENGTH(a.unslip_no) = 8) THEN '처리'
+            ELSE DECODE(a.prcs_clsf, 'D', '폐기','U', '수정', DECODE(NVL(a.unslip_no,''),'','미처리', '처리'))
+            END AS prcs_clsf_nm
+     , a.buyr_code
+     , a.prt_times
+     , DECODE(NVL(a.bill_knd,'N'), 'U', DECODE(f.mody_code,'01','01','04'), '') AS mody_code
+     , 'U' AS cud_type
+  FROM ftxbillh a
+  JOIN humbasicinfo h ON a.wrte_psn = h.syspayno
+  LEFT JOIN xodfvend b ON a.sude_psn = b.vend_cd
+  LEFT JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+  LEFT JOIN itis_issu_mstr f ON a.tax_bill_no = f.issu_seqno
+  LEFT JOIN fspsliph g ON a.unslip_no = g.unslip_no
+  WHERE a.tax_bill_no = #{tax_bill_no}
+</select>
+
+<!-- 매출 계산서 세부내역 조회 -->
+<select id="selectFtxBillDList" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.tax.vo.FtxBillDVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillDList */
+       TRIM(tax_bill_no) AS tax_bill_no
+     , odr
+     , issu_ymd
+     , item_cd
+     , item_nm
+     , std
+     , qty
+     , unit_price
+     , amt
+     , taxamt
+     , rmk
+FROM ftxbilld
+WHERE tax_bill_no = #{tax_bill_no}
+ORDER BY odr
+</select>
+
+<!-- 수정발행 시 해당 세금계산서에 대한 기존, 수정 세금계산서 카운트 조회  -->
+<select id="selectFtxBillCnt" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.tax.vo.FtxBillCntVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillCnt */
+      a.tax_bill_no                         -- 현재 세금계산서번호
+    , TRIM(NVL(a.bill_knd,'')) AS bill_knd        -- 현재 세금계산서번호 bill_knd
+    , COUNT(c.issu_seqno) AS updt_cnt -- 현재 세금계산서번호에 대한 수정발행개수(현재세금계산서가 최초일때만 1 또는 2)
+    , COUNT(d.issu_seqno) AS org_cnt -- 현재 세금계산서에 대한 최초세금계산서 개수
+    , SUM(CASE WHEN e.totl_amt != 0 THEN 1 ELSE 0 END) AS updt_new_cnt -- 수정 발행개수
+    , COUNT(g.issu_seqno) AS updt_of_updt_cnt    -- 현재 세금계산서가 수정의 수정일경우 1 아니면 0
+FROM ftxbillh a
+JOIN itis_issu_mstr b ON a.tax_bill_no = b.issu_seqno  -- 해당세금계산서 (g -d -b(e) -c)
+LEFT JOIN itis_issu_mstr c ON c.bfo_issu_id = b.issu_id AND c.bfo_issu_id != '' -- b의 수정계산서
+LEFT JOIN itis_issu_mstr d ON d.issu_id = b.bfo_issu_id AND b.bfo_issu_id != '' -- b의 수정전 계산서
+LEFT JOIN itis_issu_mstr e ON e.bfo_issu_id = d.issu_id AND b.issu_seqno != e.issu_seqno AND e.bfo_issu_id != ''  -- d의 수정계산서(기재사항정정일 경우 수정계산서가 2개이므로)
+LEFT JOIN itis_issu_mstr g ON g.issu_id = d.bfo_issu_id AND d.bfo_issu_id != '' -- d의 수정전 계산서
+WHERE a.tax_bill_no = #{tax_bill_no}
+GROUP BY 1,2
+</select>
+
+<!-- 전자계산서 발송현황 조회 -->
+<select id="selectFtxBillSendPrcs" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.tax.vo.FtxBillSendPrcsVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillSendPrcs */
+       t1.issu_id,
+       t1.err_cd,
+       t1.stat_code,
+       t1.req_stat_code,
+       t1.buyr_chrg_email1,
+       t1.buyr_chrg_email2,
+       DECODE(t2.rcv_view_yn, 'Y', '확인', 'N', '미확인', '') AS rcv_view_yn_nm,
+       t1.asp_sdatetime,
+       t1.asp_rdatetime,
+       t2.use_date,
+       t2.use_time,
+       FUN_FIN_TAX_BILL_STATE(t1.issu_seqno, 1) AS state,               -- 전자계산서발송상태
+       DECODE(TRIM(NVL(t1.err_cd, 'X')) || '-' || TRIM(NVL(t1.req_stat_code, 'X')), 'ITIS02-05', '정상적으로 처리되었습니다.', t1.err_msg) AS err_msg
+  FROM itis_issu_mstr t1
+  LEFT JOIN itis_biz_mail t2 ON t1.issu_id = t2.issu_seqno
+ WHERE t1.issu_seqno = #{tax_bill_no}
+</select>
+
+<!-- 전자계산서 재전송 현황 조회 -->
+<select id="selectFtxBillReSend" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.tax.vo.FtxBillReSendVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillReSend */
+      t1.issu_seqno,
+      t1.issu_id,
+      t1.mail_seqno,
+      DECODE(t1.snd_stat, '01',  '정상전송',
+                          '02',  '전송실패',
+                          '03',  '전송대기',
+                                  t1.err_msg) AS snd_stat_nm,
+      t1.res_addr,
+      t1.snd_stat,                            
+      t1.err_msg,
+      DECODE(t1.rcv_view_yn,  'Y', '확인','미확인')  AS rcv_view_yn_nm,
+      t1.use_date,
+      t1.use_time                                         
+FROM itis_issu_mstr t2 
+JOIN itis_biz_mail t1 ON t1.issu_id = t2.issu_id
+WHERE t2.issu_seqno = #{tax_bill_no}
+ORDER BY mail_seqno
+</select>
+
+<!-- 매출계산서 헤더 저장 -->
+<insert id="insertFtxBillH" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertFtxBillH */
+  INTO ftxbillh ( tax_bill_no
+                , sude_psn
+                , issu_ymd
+                , blank_no
+                , suply_value
+                , taxamt
+                , rmk1
+               <if test='rmk2 != null'> , rmk2 </if> 
+                , accnt_no
+                <if test='depst_schdl_seq != null'> , depst_schdl_seq </if>
+                <if test='issu_req_no != null'> , issu_req_no </if>
+                  , bill_clsf
+                <if test='decsn_no != null'> , decsn_no </if>
+                , demnd_recv_clsf
+                , bill_clsf1
+                <if test='prcs_clsf != null'> , prcs_clsf </if>
+                <if test='cash_depst != null'> , cash_depst </if>
+                <if test='check_depst != null'> , check_depst </if>
+                <if test='prmsnt_depst != null'> , prmsnt_depst </if>
+                <if test='credit_pur != null'> , credit_pur </if>
+                <if test='attach_file_no != null'> , attach_file_no </if>
+                <if test='buyr_chrg_post1 != null'> , buyr_chrg_post1 </if>
+                <if test='buyr_chrg_nm1 != null'> , buyr_chrg_nm1 </if>
+                <if test='buyr_chrg_tel1 != null'> , buyr_chrg_tel1 </if>
+                <if test='buyr_chrg_email1 != null'> , buyr_chrg_email1 </if>
+                <if test='buyr_chrg_mobl1 != null'> , buyr_chrg_mobl1 </if>
+                <if test='buyr_chrg_post2 != null'> , buyr_chrg_post2 </if>
+                <if test='buyr_chrg_nm2 != null'> , buyr_chrg_nm2 </if>
+                <if test='buyr_chrg_tel2 != null'> , buyr_chrg_tel2 </if>
+                <if test='buyr_chrg_email2 != null'> , buyr_chrg_email2 </if>
+                <if test='buyr_chrg_mobl2 != null'> , buyr_chrg_mobl2 </if>
+                <if test='wrte_dept != null'> , wrte_dept </if>
+                <if test='bill_knd != null'> , bill_knd </if>
+                 , tax_bill_qty
+                <if test='wrte_psn != null'> , wrte_psn </if>
+                <if test='charg != null'> , charg </if>
+                <if test='tel_no != null'> , tel_no </if>
+                <if test='email_addr != null'> , email_addr </if>
+                <if test='buyr_code != null'> , buyr_code </if>
+                <if test='prt_times != null'> , prt_times </if>
+                , regst_syspayno
+                , regst_daytm )
+     VALUES  (  #{tax_bill_no}
+              , #{sude_psn}
+              , #{issu_ymd}
+              , 0
+              , #{suply_value}
+              , #{taxamt}
+              , #{rmk1}
+              <if test='rmk2 != null'> , #{rmk2} </if> 
+              , #{accnt_no}
+              <if test='depst_schdl_seq != null'> , #{depst_schdl_seq} </if>
+              <if test='issu_req_no != null'> , #{issu_req_no} </if>
+                , #{bill_clsf}
+              <if test='decsn_no != null'> , #{decsn_no} </if>
+              , #{demnd_recv_clsf}
+              , #{bill_clsf1}
+              <if test='prcs_clsf != null'> , #{prcs_clsf} </if>
+              <if test='cash_depst != null'> , #{cash_depst} </if>
+              <if test='check_depst != null'> , #{check_depst} </if>
+              <if test='prmsnt_depst != null'> , #{prmsnt_depst} </if>
+              <if test='credit_pur != null'> , #{credit_pur} </if>
+              <if test='attach_file_no != null'> , #{attach_file_no} </if>
+              <if test='buyr_chrg_post1 != null'> , #{buyr_chrg_post1} </if>
+              <if test='buyr_chrg_nm1 != null'> , #{buyr_chrg_nm1} </if>
+              <if test='buyr_chrg_tel1 != null'> , #{buyr_chrg_tel1} </if>
+              <if test='buyr_chrg_email1 != null'> , #{buyr_chrg_email1} </if>
+              <if test='buyr_chrg_mobl1 != null'> , #{buyr_chrg_mobl1} </if>
+              <if test='buyr_chrg_post2 != null'> , #{buyr_chrg_post2} </if>
+              <if test='buyr_chrg_nm2 != null'> , #{buyr_chrg_nm2} </if>
+              <if test='buyr_chrg_tel2 != null'> , #{buyr_chrg_tel2} </if>
+              <if test='buyr_chrg_email2 != null'> , #{buyr_chrg_email2} </if>
+              <if test='buyr_chrg_mobl2 != null'> , #{buyr_chrg_mobl2} </if>
+              <if test='wrte_dept != null'> , #{wrte_dept} </if>
+              <if test='bill_knd != null'> , #{bill_knd} </if>
+              , 1
+              <if test='wrte_psn != null'> , #{wrte_psn} </if>
+              <if test='charg != null'> , #{charg} </if>
+              <if test='tel_no != null'> , #{tel_no} </if>
+              <if test='email_addr != null'> , #{email_addr} </if>
+              <if test='buyr_code != null'> , #{buyr_code} </if>
+              <if test='prt_times != null'> , #{prt_times} </if>
+              , #{regst_syspayno}
+              , current )
+</insert>
+
+<!-- 계산서 폐기여부 조회 -->
+<select id="selectFtxBillHCnt" parameterType="java.lang.String" resultType="int">
+select /* kr.re.kitech.biz.fin.tax.selectFtxBillHCnt */
+      count(*) AS cnt  
+from ftxbillh
+where prcs_clsf = 'D'
+and tax_bill_no = #{tax_bill_no}
+</select>
+
+<!-- 수정발행시 기존 계산서 업데이트 -->
+<update id="updateFtxBillHPrcsClsf" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFtxBillHPrcsClsf */
+      ftxbillh 
+SET   prcs_clsf = #{prcs_clsf}
+      , unslip_no =''
+      , issu_req_no = ''
+      , updt_syspayno = #{updt_syspayno} --폐기/복구시 수정자 반영:이영욱(재정운영실)요청(2011.09.22)
+      , updt_daytm = SYSDATE
+WHERE  tax_bill_no = #{old_tax_bill_no}
+</update>
+
+<!-- 매출계산서 헤더 수정 -->
+<update id="updateFtxBillH" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFtxBillH */
+       ftxbillh
+   SET sude_psn = #{sude_psn}
+     , issu_ymd = #{issu_ymd}
+     , suply_value = #{suply_value}
+     , taxamt = #{taxamt}
+     , accnt_no = #{accnt_no}
+     , demnd_recv_clsf = #{demnd_recv_clsf}
+     , bill_clsf = #{bill_clsf}
+     , bill_clsf1 = #{bill_clsf1}
+     , rmk1 = #{rmk1}
+     , decsn_no = #{decsn_no}
+     , cash_depst = #{cash_depst}
+     , check_depst = #{check_depst}
+     , prmsnt_depst = #{prmsnt_depst}
+     , credit_pur = #{credit_pur}
+     , attach_file_no = #{attach_file_no}
+     , buyr_chrg_post1 = #{buyr_chrg_post1}
+     , buyr_chrg_nm1 = #{buyr_chrg_nm1}
+     , buyr_chrg_tel1 = #{buyr_chrg_tel1}
+     , buyr_chrg_email1 = #{buyr_chrg_email1}
+     , buyr_chrg_mobl1 = #{buyr_chrg_mobl1}
+     , buyr_chrg_post2 = #{buyr_chrg_post2}
+     , buyr_chrg_nm2 = #{buyr_chrg_nm2}
+     , buyr_chrg_tel2 = #{buyr_chrg_tel2}
+     , buyr_chrg_email2 = #{buyr_chrg_email2}
+     , buyr_chrg_mobl2 = #{buyr_chrg_mobl2}
+     , charg = #{charg}
+     , tel_no = #{tel_no}
+     , email_addr = #{email_addr}
+     , buyr_code = #{buyr_code}
+   <if test='prt_times != null'> , prt_times = #{prt_times} </if>
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE tax_bill_no = #{tax_bill_no}
+</update>
+
+<!-- 매출계산서 내역 삭제 -->
+<delete id="deleteFtxBillD" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.fin.tax.deleteFtxBillD */
+FROM ftxbilld
+WHERE tax_bill_no = #{tax_bill_no}
+</delete>
+
+<!-- 매출계산서 내역 저장 -->
+<insert id="insertFtxBillD" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillDVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertFtxBillD */
+  INTO ftxbilld
+    (
+       tax_bill_no,
+       odr,
+       issu_ymd,
+     <if test='item_cd != null'> item_cd, </if>
+       item_nm,
+     <if test='std != null'> std, </if>
+       qty,
+       unit_price,
+       amt,
+       taxamt,
+     <if test='rmk != null'> rmk, </if>
+       regst_syspayno,
+       regst_daytm
+ ) VALUES (
+       #{tax_bill_no}
+     , #{odr}
+     , #{issu_ymd}
+    <if test='item_cd != null'> , #{item_cd} </if>
+     , #{item_nm} 
+    <if test='std != null'> , #{std} </if>
+     , #{qty}
+     , #{unit_price}
+     , #{amt}
+     , #{taxamt}
+    <if test='rmk != null'> , #{rmk} </if>
+     , #{regst_syspayno}
+     , SYSDATE
+  )
+</insert>
+
+<!-- 매출 전자세금계산서 원장 저장 -->
+<insert id="insertItisIssuMstr" parameterType="kr.re.kitech.biz.fin.tax.vo.ItisIssuMstrVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertItisIssuMstr */
+  INTO itis_issu_mstr (
+                  issu_seqno            -- 계산서번호
+                , regs_date             -- 작성일자
+                , tax_type              -- 세금계산서종류(계산서:03)
+                , pops_code             -- 영수/청구구문(영수:01)
+              <if test='mody_code !=null'> ,mody_code               /* 수정코드 */  </if>
+              <if test='bfo_issu_id !=null'> ,bfo_issu_id           /* 수정전 국세청전송일련번호 */  </if>
+              <if test='note1 !=null'> ,note1                       /* 비고1 */  </if>
+              <if test='note2 !=null'> ,note2                       /* 비고2 */  </if>
+              <if test='note3 !=null'> ,note3                       /* 비고3 */  </if>
+              <if test='selr_corp_no !=null'> ,selr_corp_no         /* 공급자사업자번호 */  </if>
+              <if test='selr_corp_nm !=null'> ,selr_corp_nm         /* 공급자상호 */  </if>
+              <if test='selr_ceo !=null'> ,selr_ceo                 /* 공급자대표자명 */  </if>
+              <if test='selr_addr !=null'> ,selr_addr               /* 공급자주소 */  </if>
+              <if test='selr_buss_cons !=null'> ,selr_buss_cons     /* 공급자업태 */  </if>
+              <if test='selr_buss_type !=null'> ,selr_buss_type     /* 공급자종목 */  </if>
+              <if test='selr_chrg_post !=null'> ,selr_chrg_post     /* 공급자담당부서명 */  </if>
+              <if test='selr_chrg_nm !=null'> ,selr_chrg_nm         /* 공급자담당자명 */  </if>
+              <if test='selr_chrg_tel !=null'> ,selr_chrg_tel       /* 공급자담당자전화번호 */  </if>
+              <if test='selr_chrg_email !=null'> ,selr_chrg_email   /* 공급자담당자이메일 */  </if>
+              <if test='selr_chrg_mobl !=null'> ,selr_chrg_mobl     /* 공급자담당자휴대폰 */  </if>
+              <if test='selr_chrg_fax !=null'> ,selr_chrg_fax       /* 공급자담당자fax */  </if>
+              <if test='buyr_gb !=null'> ,buyr_gb                   /* 공급받는자구분코드(사업자,개인,외국인--java) */  </if>
+              <if test='buyr_corp_no !=null'> ,buyr_corp_no         /* 공급받는자사업자번호 */  </if>
+              <if test='buyr_corp_nm !=null'> ,buyr_corp_nm         /* 공급받는자상호 */  </if>
+              <if test='buyr_ceo !=null'> ,buyr_ceo                 /* 공급받는자대표자명 */  </if>
+              <if test='buyr_addr !=null'> ,buyr_addr               /* 공급받는자주소 */  </if>
+              <if test='buyr_buss_cons !=null'> ,buyr_buss_cons     /* 공급받는자업태 */  </if>
+              <if test='buyr_buss_type !=null'> ,buyr_buss_type     /* 공급받는자종목 */  </if>
+              <if test='buyr_chrg_post1 !=null'> ,buyr_chrg_post1   /* 공급받는자담당자부서명1 */  </if>
+              <if test='buyr_chrg_nm1 !=null'> ,buyr_chrg_nm1       /* 공급받는자담당자명1 */  </if>
+              <if test='buyr_chrg_tel1 !=null'> ,buyr_chrg_tel1     /* 공급받는자담당자전화번호1 */  </if>
+              <if test='buyr_chrg_email1 !=null'> ,buyr_chrg_email1 /* 공급받는자담당자이메일1 */  </if>
+              <if test='buyr_chrg_mobl1 !=null'> ,buyr_chrg_mobl1   /* 공급받는자담당자휴대폰1 */  </if>
+              <if test='buyr_chrg_post2 !=null'> ,buyr_chrg_post2   /* 공급받는자담당자부서2 */  </if>
+              <if test='buyr_chrg_nm2 !=null'> ,buyr_chrg_nm2       /* 공급받는자담당자명2 */  </if>
+              <if test='buyr_chrg_tel2 !=null'> ,buyr_chrg_tel2     /* 공급받는자담당자전화번호2 */  </if>
+              <if test='buyr_chrg_email2 !=null'> ,buyr_chrg_email2 /* 공급받는자담당자이메일2 */  </if>
+              <if test='buyr_chrg_mobl2 !=null'> ,buyr_chrg_mobl2   /* 공급받는자담당자휴대폰2 */  </if>
+              <if test='chrg_amt !=null'> ,chrg_amt                 /* 공급가액합계 */  </if>
+              <if test='tax_amt !=null'> ,tax_amt                   /* 세액 */  </if>
+              <if test='totl_amt !=null'> ,totl_amt                 /* 총금액 */  </if>              
+              <if test='req_stat_code !=null'> ,req_stat_code       /* 요청상태코드 */  </if>
+              <if test='recp_cd !=null'> ,recp_cd                   /* 역발행구분(정발:1) */  </if>
+              <if test='bill_type !=null'> ,bill_type               /* 매출/매입구분(매출:1) */  </if>
+              <if test='snd_mal_yn !=null'> ,snd_mal_yn             /* Email발행요청유무 */  </if>
+              <if test='snd_sms_yn !=null'> ,snd_sms_yn             /* SMS발행요청유무 */  </if>
+              <if test='snd_fax_yn !=null'> ,snd_fax_yn             /* FAX발행요청유무 */  </if>
+              <if test='pymt_type1 !=null'> ,pymt_type1             /* 결재방법코드1 */  </if>
+              <if test='pymt_type2 !=null'> ,pymt_type2             /* 결재방법코드2 */  </if>
+              <if test='pymt_type3 !=null'> ,pymt_type3             /* 결재방법코드3 */  </if>
+              <if test='pymt_type4 !=null'> ,pymt_type4             /* 결재방법코드4 */  </if>
+              <if test='pamt_amt1 !=null'> ,pamt_amt1               /* 결재방법코드 금액1 */  </if>
+              <if test='pamt_amt2 !=null'> ,pamt_amt2               /* 결재방법코드 금액2 */  </if>
+              <if test='pamt_amt3 !=null'> ,pamt_amt3               /* 결재방법코드 금액3 */  </if>
+              <if test='pamt_amt4 !=null'> ,pamt_amt4               /* 결재방법코드 금액4 */  </if>
+              <if test='buyr_code !=null'> ,buyr_code               /* 종사업장번호 */  </if>
+ ) VALUES ( 
+           #{issu_seqno}
+         , #{regs_date}
+         , #{tax_type}
+         , #{pops_code}
+       <if test='mody_code != null'> , #{mody_code} </if>
+       <if test='bfo_issu_id != null'> , #{bfo_issu_id} </if>
+       <if test='note1 != null'> , #{note1} </if>
+       <if test='note2 != null'> , #{note2} </if>
+       <if test='note3 != null'> , #{note3} </if>
+       <if test='selr_corp_no != null'> , #{selr_corp_no} </if>
+       <if test='selr_corp_nm != null'> , #{selr_corp_nm} </if>
+       <if test='selr_ceo != null'> , #{selr_ceo} </if>
+       <if test='selr_addr != null'> , #{selr_addr} </if>
+       <if test='selr_buss_cons != null'> , #{selr_buss_cons} </if>
+       <if test='selr_buss_type != null'> , #{selr_buss_type} </if>
+       <if test='selr_chrg_post != null'> , #{selr_chrg_post} </if>
+       <if test='selr_chrg_nm != null'> , #{selr_chrg_nm} </if>
+       <if test='selr_chrg_tel != null'> , #{selr_chrg_tel} </if>
+       <if test='selr_chrg_email != null'> , #{selr_chrg_email} </if>
+       <if test='selr_chrg_mobl != null'> , #{selr_chrg_mobl} </if>
+       <if test='selr_chrg_fax != null'> , #{selr_chrg_fax} </if>
+       <if test='buyr_gb != null'> , #{buyr_gb} </if>
+       <if test='buyr_corp_no != null'> , #{buyr_corp_no} </if>
+       <if test='buyr_corp_nm != null'> , #{buyr_corp_nm} </if>
+       <if test='buyr_ceo != null'> , #{buyr_ceo} </if>
+       <if test='buyr_addr != null'> , #{buyr_addr} </if>
+       <if test='buyr_buss_cons != null'> , #{buyr_buss_cons} </if>
+       <if test='buyr_buss_type != null'> , #{buyr_buss_type} </if>
+       <if test='buyr_chrg_post1 != null'> , #{buyr_chrg_post1} </if>
+       <if test='buyr_chrg_nm1 != null'> , #{buyr_chrg_nm1} </if>
+       <if test='buyr_chrg_tel1 != null'> , #{buyr_chrg_tel1} </if>
+       <if test='buyr_chrg_email1 != null'> , #{buyr_chrg_email1} </if>
+       <if test='buyr_chrg_mobl1 != null'> , #{buyr_chrg_mobl1} </if>
+       <if test='buyr_chrg_post2 != null'> , #{buyr_chrg_post2} </if>
+       <if test='buyr_chrg_nm2 != null'> , #{buyr_chrg_nm2} </if>
+       <if test='buyr_chrg_tel2 != null'> , #{buyr_chrg_tel2} </if>
+       <if test='buyr_chrg_email2 != null'> , #{buyr_chrg_email2} </if>
+       <if test='buyr_chrg_mobl2 != null'> , #{buyr_chrg_mobl2} </if>
+       <if test='chrg_amt != null'> , #{chrg_amt} </if>
+       <if test='tax_amt != null'> , #{tax_amt} </if>
+       <if test='totl_amt != null'> , #{totl_amt} </if>       
+       <if test='req_stat_code != null'> , #{req_stat_code} </if>
+       <if test='recp_cd != null'> , #{recp_cd} </if>
+       <if test='bill_type != null'> , #{bill_type} </if>
+       <if test='snd_mal_yn != null'> , #{snd_mal_yn} </if>
+       <if test='snd_sms_yn != null'> , #{snd_sms_yn} </if>
+       <if test='snd_fax_yn != null'> , #{snd_fax_yn} </if>
+       <if test='pymt_type1 != null'> , #{pymt_type1} </if>
+       <if test='pymt_type2 != null'> , #{pymt_type2} </if>
+       <if test='pymt_type3 != null'> , #{pymt_type3} </if>
+       <if test='pymt_type4 != null'> , #{pymt_type4} </if>
+       <if test='pamt_amt1 != null'> , #{pamt_amt1} </if>
+       <if test='pamt_amt2 != null'> , #{pamt_amt2} </if>
+       <if test='pamt_amt3 != null'> , #{pamt_amt3} </if>
+       <if test='pamt_amt4 != null'> , #{pamt_amt4} </if>
+       <if test='buyr_code != null'> , #{buyr_code} </if>
+  )
+</insert>
+
+<!-- 전자발행데이터 존재유무 조회 -->
+<select id="selectItisIssuMstrCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.tax.selectItisIssuMstrCnt */
+     COUNT(1) AS cnt
+FROM  itis_issu_mstr
+WHERE issu_seqno = #{issu_seqno}
+   AND err_cd <![CDATA[<>]]> '99'
+</select>
+
+<!-- 매출 전자세금계산서 품목 저장 -->
+<insert id="insertItisIssuDetail" parameterType="kr.re.kitech.biz.fin.tax.vo.ItisIssuDetailVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertItisIssuDetail */
+  INTO itis_issu_detail (
+         issu_seqno
+       , seq_no   
+       , buy_date 
+      <if test ='item_code != null'> , item_code </if>
+      <if test ='item_nm != null'> , item_nm </if>  
+      <if test ='item_infm != null'> , item_infm </if>
+      <if test ='item_desp != null'> , item_desp </if>
+      <if test ='item_qunt != null'> , item_qunt </if>
+      <if test ='unit_prce != null'> , unit_prce </if>
+       , item_amt 
+       , item_tax 
+) VALUES (
+         #{issu_seqno}
+       , #{seq_no}   
+       , #{buy_date} 
+      <if test ='item_code != null'> , #{item_code} </if>
+      <if test ='item_nm != null'> , #{item_nm} </if>  
+      <if test ='item_infm != null'> , #{item_infm} </if>
+      <if test ='item_desp != null'> , #{item_desp} </if>
+      <if test ='item_qunt != null'> , #{item_qunt} </if>
+      <if test ='unit_prce != null'> , #{unit_prce} </if>
+       , #{item_amt} 
+       , #{item_tax} 
+   )
+</insert>
+
+<!-- 마이너스 계산서 발행 헤더 저장 -->
+<insert id="insertMinusFtxBillH" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertMinusFtxBillH */
+  INTO ftxbillh ( tax_bill_no
+                , sude_psn
+                , issu_ymd
+                , blank_no
+                , suply_value
+                , taxamt
+                , rmk1
+                , accnt_no
+                , depst_schdl_seq
+                , issu_req_no
+                , bill_clsf
+                , decsn_no 
+                , demnd_recv_clsf
+                , bill_clsf1
+                , prcs_clsf
+                , cash_depst 
+                , check_depst
+                , prmsnt_depst
+                , credit_pur
+                , attach_file_no
+                , buyr_chrg_post1
+                , buyr_chrg_nm1
+                , buyr_chrg_tel1
+                , buyr_chrg_email1
+                , buyr_chrg_mobl1
+                , buyr_chrg_post2
+                , buyr_chrg_nm2 
+                , buyr_chrg_tel2
+                , buyr_chrg_email2
+                , buyr_chrg_mobl2
+                , wrte_dept
+                , bill_knd
+                , tax_bill_qty
+                , wrte_psn
+                , charg
+                , tel_no
+                , email_addr
+                , buyr_code
+                , regst_syspayno
+                , regst_daytm )
+SELECT CAST(#{tax_bill_no} AS CHAR(40))
+       , sude_psn
+       , CAST(#{issu_ymd} AS CHAR(8))
+       , 0
+       , suply_value * (-1)
+       , taxamt * (-1)
+       , rmk1
+       , accnt_no
+       , depst_schdl_seq
+       , ''
+       , bill_clsf
+       , decsn_no
+       , demnd_recv_clsf
+       , bill_clsf1
+       , 'U'
+       , cash_depst * (-1)
+       , 0
+       , 0
+       , 0
+       , attach_file_no
+       , buyr_chrg_post1
+       , buyr_chrg_nm1
+       , buyr_chrg_tel1
+       , buyr_chrg_email1
+       , buyr_chrg_mobl1
+       , buyr_chrg_post2
+       , buyr_chrg_nm2 
+       , buyr_chrg_tel2
+       , buyr_chrg_email2
+       , buyr_chrg_mobl2
+       , wrte_dept
+       , 'U'
+       , 1
+       , b.syspayno
+       , b.nm
+       , b.ext_no
+       , b.email
+       , a.buyr_code
+       , CAST(#{regst_syspayno} AS CHAR(8))
+       , SYSDATE
+  FROM ftxbillh a
+  JOIN humbasicinfo b ON b.syspayno = #{wrte_psn}
+ WHERE a.tax_bill_no = #{old_tax_bill_no}
+</insert>
+
+<!-- 마이너스 계산서 발행 디테일 저장  -->
+<insert id="insertMinusFtxBillD" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertMinusFtxBillD */
+  INTO ftxbilld(
+       tax_bill_no
+     , odr
+     , issu_ymd
+     , item_cd
+     , item_nm
+     , std
+     , qty
+     , unit_price
+     , amt
+     , taxamt
+     , rmk
+     , regst_syspayno
+     , regst_daytm
+ ) 
+SELECT CAST(#{tax_bill_no} AS CHAR(40))
+     , odr
+     , CAST(#{issu_ymd} AS CHAR(8))
+     , item_cd
+     , item_nm 
+     , std
+     , qty * (-1)
+     , unit_price
+     , amt * (-1) 
+     , taxamt * (-1)
+     , rmk
+     , CAST(#{regst_syspayno} AS CHAR(8))
+     , SYSDATE
+  FROM ftxbilld
+ WHERE tax_bill_no = #{old_tax_bill_no}
+</insert>
+
+<!-- 재전송시 공급받는자 담당자 수정 -->
+<update id="updateFtxBillHBuyrChrg" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFtxBillHBuyrChrg */
+       ftxbillh
+   SET buyr_chrg_post1 = #{buyr_chrg_post1}
+     , buyr_chrg_nm1 = #{buyr_chrg_nm1}
+     , buyr_chrg_tel1 = #{buyr_chrg_tel1}
+     , buyr_chrg_email1 = #{buyr_chrg_email1}
+     , buyr_chrg_mobl1 = #{buyr_chrg_mobl1}
+     , buyr_chrg_post2 = #{buyr_chrg_post2}
+     , buyr_chrg_nm2 = #{buyr_chrg_nm2}
+     , buyr_chrg_tel2 = #{buyr_chrg_tel2}
+     , buyr_chrg_email2 = #{buyr_chrg_email2}
+     , buyr_chrg_mobl2 = #{buyr_chrg_mobl2}    
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE tax_bill_no = #{tax_bill_no}
+</update>
+
+<!-- 재발행을 위한 전자계산서 조회 -->
+<select id="selectItisIssuMstrReSend" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.tax.vo.ItisBizMailVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectItisIssuMstrReSend */
+       issu_seqno        -- 전자 계산서 번호
+     , issu_id           -- 승인 번호
+     , selr_corp_no AS corp_no     -- 공급자 사업자번호
+     , selr_chrg_email AS snd_addr   -- 공급자이메일
+     , buyr_corp_no      -- 공급 받는자 사업자 번호
+     , TRIM(buyr_chrg_email1) AS buyr_chrg_email1  -- 공급받는자 이메일
+     , TRIM(buyr_chrg_email2) AS buyr_chrg_email2  -- 공급받는자 이메일
+     , err_cd
+     , stat_code
+  FROM itis_issu_mstr
+ WHERE issu_seqno  = #{issu_seqno}
+</select>
+
+<!-- 전자 계산서 이메일 전송-->
+<insert id="insertItisBizMail" parameterType="kr.re.kitech.biz.fin.tax.vo.ItisBizMailVo">
+<selectKey keyProperty="mail_seqno" resultType="string" order="BEFORE">
+    SELECT LPAD(TO_CHAR(TRUNC(NVL(TO_NUMBER(MAX(mail_seqno)), 0) +1)), 3, '0') FROM itis_biz_mail WHERE issu_id = #{issu_id}
+</selectKey>
+INSERT /* kr.re.kitech.biz.fin.tax.insertItisBizMail */
+  INTO itis_biz_mail ( 
+        issu_seqno  
+      , mail_seqno  
+      , issu_id     
+      , corp_no     
+      , snd_gb      
+      , snd_type    
+      , snd_addr    
+      , res_addr
+      , rcv_gb      
+      , asp_snd_yn
+ ) VALUES (
+        #{issu_seqno}  
+      , #{mail_seqno}
+      , #{issu_id}     
+      , #{corp_no}     
+      , '1'     -- 1 계산서, 2 거래 명세서, 3 입금표, 4 발주서
+      , 'EML'   -- eml, sms, fax
+      , #{snd_addr}    
+      , #{res_addr} 
+      , '2'    -- 수신자 구분(1:수신자가 공급자, 2:수신자가 공급받는자)
+      , 'N'
+)
+</insert>
+
+<!-- 매출계산서 삭제시 처리구분 업데이트 -->
+<update id="updateFtxBillHDel" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFtxBillHDel */
+       ftxbillh 
+   SET prcs_clsf = #{prcs_clsf}
+      , unslip_no =''
+      , issu_req_no = ''
+      , updt_syspayno = #{updt_syspayno}  --폐기/복구시 수정자 반영:이영욱(재정운영실)요청(2011.09.22)
+      , updt_daytm = SYSDATE
+ WHERE tax_bill_no = #{tax_bill_no}
+</update>
+
+<!-- 계산서 삭제 또는 발행시 연구비 청구 계산서번호 초기화 또는 업데이트 -->
+<update id="updateResDemndReqBill" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateResDemndReqBill */
+      resdemndreq
+   SET bill_no = #{bill_no},      
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+
+<!-- 매출계산서 폐기 후 입금상세에서 계산서번호 초기화 -->
+<update id="updateResBgRectlBill" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+-- 계산서번호 수정
+UPDATE /* kr.re.kitech.biz.fin.tax.updateResBgRectlBill */
+      resbgrectl
+SET  <if test='demnd_recv_clsf != null and demnd_recv_clsf == "1"'> demnd_bill_no = #{bill_no},  </if>
+       <if test='demnd_recv_clsf != null and demnd_recv_clsf == "2"'> recv_bill_no = #{bill_no},  </if>
+   <if test='depst_state != null and depst_state != ""'> depst_state = #{depst_state}, </if>
+     updt_syspayno = #{updt_syspayno}, 
+     updt_daytm = SYSDATE
+ WHERE 1=1
+<choose>
+ <when test='req_no != null and req_no != ""'> AND DECODE(#{demnd_recv_clsf}, '1', demnd_req_no, depst_req_no) = #{req_no} </when>
+ <otherwise>
+   AND accnt_no = #{accnt_no}
+   AND DECODE(#{demnd_recv_clsf}, '1', demnd_bill_no, recv_bill_no) = #{tax_bill_no}
+ </otherwise>
+</choose>
+</update>
+
+<!-- 매출계산서 폐기로 인한 전자세금계산서 원장 요청상태코드 업데이트 -->
+<update id="updateItisIssuMstrDel" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateItisIssuMstrDel */
+         itis_issu_mstr
+   SET req_stat_code = (CASE WHEN #{recp_yn} = 'Y' THEN '05' ELSE NULL END),   -- 요청상태코드
+       stat_code = '',        -- 응답코드
+       err_cd = '',     -- 에러코드 
+       err_msg = ''      -- 에러메세지                                                                             
+ WHERE issu_seqno = #{tax_bill_no}
+</update>
+
+<!-- 계산서 삭제시 기업부담금 입금의뢰 계산서번호 초기화 -->
+<update id="updateSptTltDeptstDetlsBillDel" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateSptTltDeptstDetlsBillDel */
+       spttltdepstdetls /* 기업부담금입금의뢰 */
+   SET bill_no = ''
+     , unslip_no = ''
+     , depst_state = 'RDF003'
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE req_no = #{req_no}
+</update>
+
+<!-- 계산서 삭제 또는 발행시 입금의뢰테이블 계산서번호 초기화 또는 업데이트 -->
+<update id="updateFcpDepstReqBill" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFcpDepstReqBill */
+      fcpdepstreq
+   SET recv_bill_no = #{bill_no}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+
+<!-- 수정계산서 발행시 기술료 입금 계산서번호 업데이트 -->
+<update id="updateResCrtPsRectlBill" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateResCrtPsRectlBill */
+       rescrtpsrectl
+   SET bill_no = #{bill_no}
+     , updt_syspayno = #{updt_syspayno} 
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+<!-- 계산서 삭제 가능 여부  -->
+<select id="selectFtxBillDelYn" resultType="java.lang.String" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillDelYn */
+       CASE WHEN TRIM(NVL(a.unslip_no, '')) != '' THEN 'N'
+            WHEN b.issu_seqno IS NOT NULL AND NVL(b.stat_code,'') NOT IN ('','03','04','88','99') THEN 'N'
+            WHEN b.issu_seqno IS NOT NULL AND NVL(b.stat_code,'') = '' AND b.err_cd != '000000' THEN 'Y'
+            ELSE 'Y' END AS del_yn
+  FROM ftxbillh a
+  LEFT JOIN itis_issu_mstr b ON a.tax_bill_no = b.issu_seqno
+ WHERE a.tax_bill_no = #{tax_bill_no}
+</select>
+
+<!-- 매출계산서 이관대상 조회 -->
+<select id="selectItisIssuMstNotFtx" resultType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo" parameterType="kr.re.kitech.biz.fin.tax.vo.FinTaxSearchVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectItisIssuMstNotFtx */
+       a.regs_date AS issu_ymd
+     , a.issu_id
+     , TRIM(b.tax_bill_no) AS tax_bill_no
+     , TRIM(SUBSTR(a.tax_type, 1, 2)) AS tax_type
+     , a.mody_code
+     , DECODE(a.pops_code, '01', '2', '1') AS demnd_recv_clsf
+     , a.chrg_amt AS suply_value 
+     , a.tax_amt AS taxamt 
+     , a.totl_amt
+     , CASE WHEN a.pamt_amt1 > 0 THEN 'FBE011'
+            WHEN a.pamt_amt2 > 0 THEN 'FBE021'
+            WHEN a.pamt_amt3 > 0 THEN 'FBE031'
+            WHEN a.pamt_amt4 > 0 THEN 'FBE091' 
+            ELSE '' END AS bill_clsf1
+     , a.buyr_corp_nm AS vend_abbr
+     , a.buyr_corp_no AS bsns_psn_regst_no
+     , a.note1 AS rmk1
+     , a.buyr_chrg_post1
+     , a.buyr_chrg_nm1
+     , a.buyr_chrg_tel1
+     , a.buyr_chrg_email1
+     , a.buyr_chrg_mobl1
+     , a.buyr_chrg_post2
+     , a.buyr_chrg_nm2
+     , a.buyr_chrg_tel2
+     , a.buyr_chrg_email2
+     , a.buyr_chrg_mobl2
+     , b.charg
+     , b.wrte_psn
+     , b.wrte_dept
+     , b.rmk2
+  FROM det_issu_mstr a
+  LEFT JOIN ftxbillh b ON a.issu_seqno = b.decsn_no AND NVL(b.prcs_clsf,'') != 'D'
+ WHERE a.regs_date BETWEEN #{from_ymd} AND #{to_ymd}
+   AND a.bill_type  IN ('1' ,'3') -- 1 매출세금계산서, 3 : 매출계산서
+ <if test = 'tax_bill_no != null and tax_bill_no !=""' > AND a.issu_seqno = #{tax_bill_no} </if> 
+ <if test = 'vend_abbr != null and vend_abbr != ""' > AND a.buyr_corp_nm LIKE '%' || #{vend_abbr} || '%' </if> 
+ <if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND a.buyr_corp_no LIKE #{bsns_psn_regst_no} ||'%' </if>
+ <if test = 'move_yn != null and move_yn =="Y"' > AND NVL(b.decsn_no,'') != '' </if> 
+ <if test = 'move_yn != null and move_yn =="N"' > AND NVL(b.decsn_no, '') = '' </if> 
+ ORDER BY a.regs_date, a.buyr_corp_nm
+</select>
+
+<!-- 매출계산서 이관 품목 저장 -->
+<insert id="insertFtxBillDByItis" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertFtxBillDByItis */
+  INTO ftxbilld(
+       tax_bill_no
+     , odr
+     , issu_ymd
+     , item_cd
+     , item_nm
+     , std
+     , qty
+     , unit_price
+     , amt
+     , taxamt
+     , rmk
+     , regst_syspayno
+     , regst_daytm
+ ) 
+SELECT CAST(#{tax_bill_no} AS CHAR(40))
+     , TO_NUMBER(seq_no)
+     , buy_date
+     , item_code
+     , item_nm 
+     , item_infm
+     , CASE WHEN NVL(item_qunt,'') ='' THEN '1' ELSE item_qunt END
+     , CASE WHEN NVL(unit_prce,'') ='' THEN TO_CHAR(item_amt) ELSE unit_prce END
+     , item_amt
+     , item_tax
+     , '국세청에서 이관'
+     , CAST(#{regst_syspayno} AS CHAR(8))
+     , SYSDATE
+  FROM det_issu_detail
+ WHERE issu_seqno = #{issu_seqno}
+</insert>
+
+<!-- 국세청발행계산서 수정 -->
+<update id="updateFtxBillHMove" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFtxBillHMove */
+       ftxbillh
+   SET sude_psn = #{sude_psn}     
+     , accnt_no = #{accnt_no}     
+     , bill_clsf = #{bill_clsf}
+     , bill_clsf1 = #{bill_clsf1}     
+     , cash_depst = #{cash_depst}
+     , check_depst = #{check_depst}
+     , prmsnt_depst = #{prmsnt_depst}
+     , credit_pur = #{credit_pur}
+     , charg = #{charg}
+     , tel_no = #{tel_no}
+     , email_addr = #{email_addr}     
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE tax_bill_no = #{tax_bill_no}
+</update>
+
+<!-- 계산서 폐기시 시험성적서 발행여부 체크 -->
+<select id="selectSptRstBookIssuChk" resultType="java.lang.String" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectSptRstBookIssuChk */
+      DECODE(NVL(MAX(x1.apr_state),''), '' ,'N' , 'Y') AS rst_state  -- N 미발행, Y 발행
+FROM spttecrcptinfo a
+JOIN spttecactrslt e ON a.tech_supt_req_no = e.tech_supt_req_no AND a.cunsl_rcpt_no = e.cunsl_rcpt_no AND a.cust_no = e.cust_no AND e.rst_book_issu = '1'
+LEFT JOIN sptrstbook h /* 시험성적서 */ON a.tech_supt_req_no = h.tech_supt_req_no AND e.seq = h.seq 
+LEFT JOIN xomxintfatab x1 ON h.req_no = x1.req_no
+WHERE a.cust_no = #{vend_cd}
+AND a.tech_supt_req_no = #{tech_supt_req_no}
+</select>
+
+<!-- 계산서 발행 후  기술지원접수정보 계산서 번호 업데이트 -->
+<update id="updateSptTecRcptInfoBillNo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateSptTecRcptInfoBillNo */
+      spttecrcptinfo
+   SET bill_no = #{bill_no}   /* 계산서번호   */            
+     , bill_issu_ymd  = #{bill_issu_ymd}   /* 계산서발행일자 */        
+     <if test='bill_issu_info != null'> , bill_issu_info = #{bill_issu_info} /* 계산서발행 정보(기술지원요청업체와 계산서발행업체가 다른경우 Y, 그외에는 N) */ </if>
+     , prcs_state = #{prcs_state}   /* 처리상태  */
+   <if test='accnt_no != null'> , accnt_no = #{accnt_no} /* 계정번호 */ </if>
+   <if test='accnt_respn_psn != null and accnt_respn_psn != ""'> , accnt_respn_psn= #{accnt_respn_psn} /*계정 책임자*/ </if>
+     , updt_syspayno = #{updt_syspayno}      
+     , updt_daytm = SYSDATE                                                              
+ WHERE cust_no = #{cust_no}             
+ <if test='tech_supt_req_no != null and tech_supt_req_no != ""'> AND tech_supt_req_no IN 
+  <foreach item="item" index="index" collection="tech_supt_req_no.split(',')" open="(" separator="," close=")">
+    '${item}'
+  </foreach>
+ </if>
+</update>
+
+<!-- 거래처 담당자정보 유무 조회 -->
+<select id="selectXodfVendJobCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.tax.selectXodfVendJobCnt */
+       COUNT(*) AS cnt
+FROM xodfvendjob
+WHERE vend_cd = #{vend_cd}
+AND   charg_clsf = 'XAF040'
+</select>
+
+<!-- 거래처 담당자정보 삭제 -->
+<delete id="deleteXodfVendJob" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.fin.tax.deleteXodfVendJob */
+  FROM xodfvendjob
+ WHERE vend_cd = #{vend_cd}
+   AND charg_clsf = 'XAF040'
+</delete>
+
+<!-- 계산서 삭제시 기술지원 접수 업데이트 -->
+<update id="updateSptTecRcptInfoBillDel" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateSptTecRcptInfoBillDel */
+       spttecrcptinfo 
+   SET bill_no = ''
+     , bill_issu_ymd = ''
+     , bill_issu_info = ''
+     , prcs_state = 'STE030'
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE bill_no = #{bill_no}
+</update>
+
+<!-- 계산서 삭제시 입금의뢰, 연구비입금상세 계산서 번호 초기화 -->
+<update id="updateFcpDepstReqBillDel" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFcpDepstReqBillDel */
+       fcpdepstreq
+   SET recv_bill_no = ''
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE recv_bill_no = #{tax_bill_no}
+ ; 
+ UPDATE resbgrectl
+   SET recv_bill_no = ''
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE recv_bill_no = #{tax_bill_no}
+ ;
+</update>
+
+<!-- 매출계산서 원장 이관 -->
+<insert id="insertItisIssuMstrMove" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertItisIssuMstrMove */
+  INTO itis_issu_mstr (
+                  issu_seqno            -- 계산서번호
+                , issu_id
+                , regs_date             -- 작성일자
+                , tax_type              -- 세금계산서종류(계산서:03)
+                , pops_code             -- 영수/청구구문(영수:01)
+                , mody_code               /* 수정코드 */  
+                , bfo_issu_id           /* 수정전 국세청전송일련번호 */  
+                , note1                 /* 비고1 */  
+                , note2                 /* 비고2 */  
+                , note3                 /* 비고3 */  
+                , selr_corp_no         /* 공급자사업자번호 */  
+                , selr_corp_nm         /* 공급자상호 */  
+                , selr_ceo                 /* 공급자대표자명 */  
+                , selr_addr               /* 공급자주소 */  
+                , selr_buss_cons     /* 공급자업태 */  
+                , selr_buss_type     /* 공급자종목 */  
+                , selr_chrg_post     /* 공급자담당부서명 */  
+                , selr_chrg_nm         /* 공급자담당자명 */  
+                , selr_chrg_tel       /* 공급자담당자전화번호 */  
+                , selr_chrg_email   /* 공급자담당자이메일 */  
+                , selr_chrg_mobl     /* 공급자담당자휴대폰 */  
+                , selr_chrg_fax       /* 공급자담당자fax */  
+                , buyr_gb                   /* 공급받는자구분코드(사업자,개인,외국인--java) */  
+                , buyr_corp_no         /* 공급받는자사업자번호 */  
+                , buyr_corp_nm         /* 공급받는자상호 */  
+                , buyr_ceo                 /* 공급받는자대표자명 */  
+                , buyr_addr               /* 공급받는자주소 */  
+                , buyr_buss_cons     /* 공급받는자업태 */  
+                , buyr_buss_type     /* 공급받는자종목 */  
+                , buyr_chrg_post1   /* 공급받는자담당자부서명1 */  
+                , buyr_chrg_nm1       /* 공급받는자담당자명1 */  
+                , buyr_chrg_tel1     /* 공급받는자담당자전화번호1 */  
+                , buyr_chrg_email1 /* 공급받는자담당자이메일1 */  
+                , buyr_chrg_mobl1   /* 공급받는자담당자휴대폰1 */  
+                , buyr_chrg_post2   /* 공급받는자담당자부서2 */  
+                , buyr_chrg_nm2       /* 공급받는자담당자명2 */  
+                , buyr_chrg_tel2     /* 공급받는자담당자전화번호2 */  
+                , buyr_chrg_email2 /* 공급받는자담당자이메일2 */  
+                , buyr_chrg_mobl2   /* 공급받는자담당자휴대폰2 */  
+                , chrg_amt                 /* 공급가액합계 */  
+                , tax_amt                   /* 세액 */  
+                , totl_amt                 /* 총금액 */                
+                , stat_code
+                , recp_cd                   /* 역발행구분(정발:1) */  
+                , bill_type               /* 매출/매입구분(매출:1) */  
+                , pymt_type1             /* 결재방법코드1 */  
+                , pymt_type2             /* 결재방법코드2 */  
+                , pymt_type3             /* 결재방법코드3 */  
+                , pymt_type4             /* 결재방법코드4 */  
+                , pamt_amt1               /* 결재방법코드 금액1 */  
+                , pamt_amt2               /* 결재방법코드 금액2 */  
+                , pamt_amt3               /* 결재방법코드 금액3 */  
+                , pamt_amt4               /* 결재방법코드 금액4 */  
+                , buyr_code               /* 종사업장번호 */  
+ ) 
+SELECT CAST(#{tax_bill_no} AS VARCHAR(12))
+     , issu_id
+     , regs_date             -- 작성일자
+     , tax_type              -- 세금계산서종류(계산서:03)
+     , pops_code             -- 영수/청구구문(영수:01)
+     , mody_code               /* 수정코드 */  
+     , bfo_issu_id           /* 수정전 국세청전송일련번호 */  
+     , note1                 /* 비고1 */  
+     , note2                 /* 비고2 */  
+     , note3                 /* 비고3 */  
+     , selr_corp_no         /* 공급자사업자번호 */  
+     , selr_corp_nm         /* 공급자상호 */  
+     , selr_ceo                 /* 공급자대표자명 */  
+     , selr_addr               /* 공급자주소 */  
+     , selr_buss_cons     /* 공급자업태 */  
+     , selr_buss_type     /* 공급자종목 */  
+     , selr_chrg_post     /* 공급자담당부서명 */  
+     , selr_chrg_nm         /* 공급자담당자명 */  
+     , selr_chrg_tel       /* 공급자담당자전화번호 */  
+     , selr_chrg_email   /* 공급자담당자이메일 */  
+     , selr_chrg_mobl     /* 공급자담당자휴대폰 */  
+     , selr_chrg_fax       /* 공급자담당자fax */  
+     , buyr_gb                   /* 공급받는자구분코드(사업자,개인,외국인--java) */  
+     , buyr_corp_no         /* 공급받는자사업자번호 */  
+     , buyr_corp_nm         /* 공급받는자상호 */  
+     , buyr_ceo                 /* 공급받는자대표자명 */  
+     , buyr_addr               /* 공급받는자주소 */  
+     , buyr_buss_cons     /* 공급받는자업태 */  
+     , buyr_buss_type     /* 공급받는자종목 */  
+     , buyr_chrg_post1   /* 공급받는자담당자부서명1 */  
+     , buyr_chrg_nm1       /* 공급받는자담당자명1 */  
+     , buyr_chrg_tel1     /* 공급받는자담당자전화번호1 */  
+     , buyr_chrg_email1 /* 공급받는자담당자이메일1 */  
+     , buyr_chrg_mobl1   /* 공급받는자담당자휴대폰1 */  
+     , buyr_chrg_post2   /* 공급받는자담당자부서2 */  
+     , buyr_chrg_nm2       /* 공급받는자담당자명2 */  
+     , buyr_chrg_tel2     /* 공급받는자담당자전화번호2 */  
+     , buyr_chrg_email2 /* 공급받는자담당자이메일2 */  
+     , buyr_chrg_mobl2   /* 공급받는자담당자휴대폰2 */  
+     , chrg_amt          /* 공급가액합계 */  
+     , tax_amt            /* 세액 */  
+     , totl_amt          /* 총금액 */                
+     , '00'      
+     , '2'                 /* 역발행구분(정발:1) */  
+     , bill_type          /* 매출/매입구분(매출:1) */  
+     , pymt_type1             /* 결재방법코드1 */  
+     , pymt_type2             /* 결재방법코드2 */  
+     , pymt_type3             /* 결재방법코드3 */  
+     , pymt_type4             /* 결재방법코드4 */  
+     , pamt_amt1               /* 결재방법코드 금액1 */  
+     , pamt_amt2               /* 결재방법코드 금액2 */  
+     , pamt_amt3               /* 결재방법코드 금액3 */  
+     , pamt_amt4               /* 결재방법코드 금액4 */  
+     , buyr_code               /* 종사업장번호 */  
+ FROM det_issu_mstr
+WHERE issu_seqno = #{issu_seqno}
+</insert>
+
+<!-- 매출계산서 품목내역 이관 -->
+<insert id="insertItisIssuDetailMove" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertItisIssuDetailMove */
+  INTO itis_issu_detail (
+         issu_seqno
+       , seq_no   
+       , buy_date 
+       , item_code 
+       , item_nm   
+       , item_infm 
+       , item_desp 
+       , item_qunt 
+       , unit_prce 
+       , item_amt 
+       , item_tax 
+)
+SELECT CAST(#{tax_bill_no} AS VARCHAR(12))
+     , seq_no   
+     , CAST(#{regs_date} AS CHAR(8))
+     , item_code 
+     , item_nm   
+     , item_infm 
+     , item_desp 
+     , item_qunt 
+     , unit_prce 
+     , item_amt 
+     , item_tax 
+  FROM det_issu_detail
+ WHERE issu_seqno = #{issu_seqno}
+</insert>
+
+<!-- 이관여부 조회 -->
+<select id="selectFtxBillHMoveCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillHMoveCnt */
+       COUNT(*) AS cnt
+FROM ftxbillh
+WHERE decsn_no = #{decsn_no}
+AND   NVL(prcs_clsf, '') != 'D'
+</select>
+<select id="selectTechSuptReqNoByBill" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.tax.selectTechSuptReqNoByBill */
+       tech_supt_req_no
+  FROM spttecrcptinfo
+ WHERE bill_no = #{bill_no}
+</select>
+
+<!-- 매출계산서(관) 엑셀내리기 -->
+<select id="selectFtxBillHExcel" parameterType="kr.re.kitech.biz.fin.tax.vo.FinTaxSearchVo" resultType="kr.re.kitech.biz.fin.tax.vo.FtxBillExcelVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillHExcel */
+       a.issu_ymd
+     , a.decsn_no
+     , a.tax_bill_no
+     , x1.cd_nm AS bill_clsf
+     , '1'       AS bill_type 
+     , '매출'     AS bill_type_nm
+     , '01'     AS tax_type
+     , '일반'     AS tax_type_nm
+     , CASE WHEN a.unslip_no[1,3] IN ('215','425','426') THEN DECODE(a.prcs_clsf, 'D', 'D', DECODE(NVL(g.decsn_ex,'N'),'Y','Y','N'))
+            ELSE DECODE(a.prcs_clsf, 'D', 'D', 'U', 'U', DECODE(NVL(a.unslip_no,''),'','N', 'Y'))
+            END AS prcs_clsf
+     , CASE WHEN a.unslip_no[1,3] IN ('215','425','426') THEN DECODE(a.prcs_clsf, 'D', '폐기', DECODE(NVL(g.decsn_ex,'N'),'Y','처리','미처리'))
+            ELSE DECODE(a.prcs_clsf, 'D', '폐기', 'U', '수정', DECODE(NVL(a.unslip_no,''),'','미처리', '처리'))
+            END  AS prcs_clsf_nm
+     , CASE WHEN a.unslip_no = '' OR a.unslip_no IS NULL THEN '미확정' 
+           WHEN (LENGTH(a.unslip_no) = 8 OR LENGTH(a.unslip_no) = 9) THEN '확정'  
+           ELSE DECODE(g.decsn_ex, 'Y', '확정', '미확정') END AS decsn_ex
+     , CASE WHEN a.unslip_no = '' OR a.unslip_no IS NULL THEN ''  
+            WHEN LENGTH(a.unslip_no)=8 THEN a.unslip_no
+            ELSE g.slip_no END AS slip_no 
+     , fun_humbasicinfo_cd_nm(c.bugt_ctrl_psn, 8) AS bugt_ctrl_psn_dept
+     , DECODE(NVL(b.bsns_psn_regst_no,''),'', b.corp_resid_no, b.bsns_psn_regst_no) AS buyr_corp_no
+     , NVL(b.vend_abbr, d.buyr_corp_nm) AS buyr_corp_nm
+     , DECODE(d.mody_code, '01', '기재사항 착오·정정', '04', '계약의 해제', '') AS mody_code
+     , b.reprs_psn_nm AS  buyr_ceo
+     , b.addr || nvl(b.detls_addr,'') AS buyr_addr
+     , a.buyr_code
+     , b.bizcatg AS buyr_buss_cons   -- 업태
+     , b.biztyp  AS buyr_buss_type   -- 업종
+     , a.suply_value AS chrg_amt
+     , a.taxamt  AS tax_amt
+     , a.suply_value + a.taxamt AS totl_amt
+     , a.rmk1   
+     , NVL(a.cash_depst,0)  AS cash_depst  -- 현금
+     , NVL(a.check_depst,0) AS check_depst  -- 수표
+     , NVL(a.prmsnt_depst,0) AS prmsnt_depst  -- 어음
+     , NVL(a.credit_pur,0) AS credit_pur  -- 외상
+     , DECODE(a.demnd_recv_clsf, '1', '청구', '2', '영수') || DECODE(NVL(a.bill_knd,''), 'U', '-수정','') AS pops_code
+     , a.unslip_no
+     , w.dept_nm AS wrte_dept_nm
+     , a.wrte_psn
+     , h.nm AS wrte_psn_nm
+     , h.ext_no AS wrte_ext_no
+     , h.email AS wrte_email
+     , x.cd_nm AS fomat_unit_nm  
+     , a.buyr_chrg_post
+     , a.buyr_chrg_nm
+     , a.buyr_chrg_mobl
+     , a.buyr_chrg_email
+     , DECODE(c.tax_cd, 'FTX001', '과세', '비과세') AS tax_cd
+     , a.buy_date
+     , CASE WHEN a.cnt > 1 THEN a.item_nm || ' 외' || (a.cnt-1) || '건' ELSE a.item_nm END AS item_nm
+     , CASE WHEN a.cnt > 1 THEN a.rmk || ' 외' || (a.cnt-1) || '건' ELSE a.rmk END AS item_desp
+     , a.item_infm
+     , a.item_qunt
+     , a.unit_prce
+     , a.item_amt
+     , a.item_tax
+  FROM ( 
+        SELECT a.issu_ymd 
+             , TRIM(a.decsn_no) AS decsn_no
+             , TRIM(a.tax_bill_no) AS tax_bill_no
+             , a.bill_clsf
+             , a.unslip_no
+             , a.buyr_code
+             , a.prcs_clsf
+             , a.suply_value
+             , a.taxamt  
+             , a.suply_value + a.taxamt AS totl_amt
+             , a.rmk1   
+             , NVL(a.cash_depst,0)  AS cash_depst  -- 현금
+             , NVL(a.check_depst,0) AS check_depst  -- 수표
+             , NVL(a.prmsnt_depst,0) AS prmsnt_depst  -- 어음
+             , NVL(a.credit_pur,0) AS credit_pur  -- 외상
+             , DECODE(a.demnd_recv_clsf, '1', '청구', '2', '영수') || DECODE(NVL(a.bill_knd,''), 'U', '-수정','') AS demnd_recv_clsf_nm
+             , a.accnt_no
+             , a.buyr_chrg_post1 AS buyr_chrg_post
+             , a.buyr_chrg_nm1 AS buyr_chrg_nm
+             , a.buyr_chrg_mobl1 AS buyr_chrg_mobl
+             , a.buyr_chrg_email1 AS buyr_chrg_email
+             , MAX(f.issu_ymd) AS buy_date
+             , COUNT(f.tax_bill_no) AS cnt
+             , MAX(f.item_nm) AS item_nm
+             , MAX(f.std) AS item_infm
+             , SUM(NVL(f.qty,0)) AS item_qunt
+             , SUM(NVL(f.unit_price,0)) AS unit_price
+             , SUM(NVL(f.amt,0)) AS amt
+             , SUM(NVL(f.taxamt,0)) AS taxamt
+             , MAX(f.rmk) AS rmk
+          FROM ftxbillh a
+          JOIN ftxbilld f ON a.tax_bill_no = f.tax_bill_no
+         WHERE a.issu_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+         <if test = 'tax_bill_no != null and tax_bill_no !=""' > AND a.tax_bill_no = #{tax_bill_no} </if>
+         <if test = 'unslip_no != null and unslip_no!= ""' > AND a.unslip_no LIKE #{unslip_no} || '%' </if>
+         <if test='wrte_psn != null and wrte_psn != ""'> AND a.wrte_psn = #{wrte_psn} </if>
+         <if test='accnt_no != null and accnt_no != ""'> AND a.accnt_no = #{accnt_no} </if>
+         GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
+  ) a
+  JOIN xodfvend b ON a.sude_psn = b.vend_cd
+  JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+  LEFT JOIN fspsliph g ON a.unslip_no = g.unslip_no
+  LEFT JOIN itis_issu_mstr d ON a.tax_bill_no = d.issu_seqno  
+  JOIN humbasicinfo h ON a.wrte_psn = h.syspayno
+  LEFT JOIN xodhdeptinfo w ON h.dept_cd = w.dept_cd AND h.dept_new_ymd = w.dept_new_ymd
+  LEFT JOIN xodxcommst x ON w.fomat_unit = x.cd AND x.cd_clsf = 'FCC' 
+  LEFT JOIN xodxcommst x1 ON a.bill_clsf = x1.cd AND x1.cd_clsf = 'FBF'
+ WHERE 1=1
+ <if test = 'slip_no != null and slip_no != ""' > AND g.slip_no LIKE #{slip_no} ||'%' </if>
+ <if test = 'vend_abbr != null and vend_abbr != ""' > AND b.vend_abbr LIKE '%' || #{vend_abbr} || '%' </if>
+ <if test = 'prcs_clsf != null and prcs_clsf != ""'> 
+     AND (CASE WHEN a.unslip_no[1,3] IN ('215','425','426') THEN DECODE(a.prcs_clsf, 'D', 'D', DECODE(NVL(g.decsn_ex,'N'),'Y','Y','N'))
+                ELSE DECODE(a.prcs_clsf, 'D', 'D', 'U', 'U', DECODE(NVL(a.unslip_no,''),'','N', 'Y'))
+                END) = #{prcs_clsf} 
+ </if>
+ <if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> 
+     AND REPLACE(DECODE(NVL(b.bsns_psn_regst_no,''), '', b.corp_resid_no, b.bsns_psn_regst_no), '-', '') LIKE #{bsns_psn_regst_no} ||'%' 
+ </if>
+ ORDER BY a.buy_date
+</select>
+
+<update id="updateFtxBillHMnt" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateFtxBillHMnt */
+       ftxbillh
+   SET  accnt_no = #{accnt_no}
+     , bill_clsf = #{bill_clsf}  
+     , rmk1 = #{rmk1}
+     , unslip_no = #{unslip_no}
+     , prcs_clsf = #{prcs_clsf}
+     , wrte_psn = #{wrte_psn}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE tax_bill_no = #{tax_bill_no}
+</update>
+
+<!-- 매출계산서(관) 미확인 조회 -->
+<select id="selectFtxBillUnConfirm" parameterType="kr.re.kitech.biz.fin.tax.vo.FinTaxSearchVo" resultType="kr.re.kitech.biz.fin.tax.vo.FinBillUnConfirmVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillUnConfirm */
+       b.slip_no
+     , b.accnt_ymd
+     , c.nm AS decsn_psn_nm
+     , f.slip_no AS pay_slip_no
+  FROM ftxbillh a
+  JOIN fspsliph b ON a.unslip_no = b.unslip_no
+  JOIN fspslipdecsnh d ON b.slip_no = d.slip_no
+  JOIN humbasicinfo c ON d.decsn_psn = c.syspayno
+  LEFT JOIN fspsendreq e ON d.unslip_no = e.unslip_no
+  LEFT JOIN fspslipdecsnh f ON e.pay_unslip_no = f.unslip_no
+ WHERE a.issu_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+   AND NVL(d.tax_confirm_yn,'') != 'Y'
+ GROUP BY 1,2,3,4
+ ORDER BY b.slip_no
+</select>
+
+<!-- 거래명세서 포함일 경우 거래명서세 원장 저장 -->
+<insert id="insertItisStsMstr" parameterType="kr.re.kitech.biz.fin.tax.vo.ItisIssuMstrVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertItisStsMstr */
+  INTO itis_sts_mstr (
+                  erp_seq            -- 계산서번호
+                , regs_date             -- 작성일자             
+              <if test='selr_corp_no !=null'> ,selr_corp_no         /* 공급자사업자번호 */  </if>
+              <if test='selr_corp_nm !=null'> ,selr_corp_nm         /* 공급자상호 */  </if>
+              <if test='selr_ceo !=null'> ,selr_ceo                 /* 공급자대표자명 */  </if>
+              <if test='selr_addr !=null'> ,selr_corp_adds          /* 공급자주소 */  </if>
+              <if test='selr_buss_cons !=null'> ,selr_buss_cons     /* 공급자업태 */  </if>
+              <if test='selr_buss_type !=null'> ,selr_buss_type     /* 공급자종목 */  </if>
+              <if test='selr_chrg_tel !=null'> ,selr_tel         /* 공급자전화번호 */  </if> 
+              <if test='selr_chrg_fax !=null'> ,selr_fax   /* 공급자 fax */  </if>
+              <if test='buyr_corp_no !=null'> ,buyr_corp_no         /* 공급받는자사업자번호 */  </if>
+              <if test='buyr_corp_nm !=null'> ,buyr_corp_nm         /* 공급받는자상호 */  </if>
+              <if test='buyr_ceo !=null'> ,buyr_ceo                 /* 공급받는자대표자명 */  </if>
+              <if test='buyr_addr !=null'> ,buyr_corp_adds          /* 공급받는자주소 */  </if> 
+              <if test='buyr_buss_cons !=null'> ,buyr_buss_cons     /* 공급받는자업태 */  </if>
+              <if test='buyr_buss_type !=null'> ,buyr_buss_type     /* 공급받는자종목 */  </if>
+              <if test='buyr_chrg_nm1 !=null'> ,buyr_chrg_nm1       /* 공급받는자담당자명1 */  </if>
+              <if test='buyr_chrg_email1 !=null'> ,buyr_chrg_email1 /* 공급받는자담당자이메일1 */  </if>
+              <if test='buyr_chrg_mobl1 !=null'> ,buyr_chrg_mobl1   /* 공급받는자담당자휴대폰1 */  </if>
+              <if test='buyr_chrg_nm2 !=null'> ,buyr_chrg_nm2       /* 공급받는자담당자명2 */  </if>
+              <if test='buyr_chrg_email2 !=null'> ,buyr_chrg_email2 /* 공급받는자담당자이메일2 */  </if>
+              <if test='buyr_chrg_mobl2 !=null'> ,buyr_chrg_mobl2   /* 공급받는자담당자휴대폰2 */  </if>
+              <if test='chrg_amt !=null'> ,chrg_amt                 /* 공급가액합계 */  </if>
+              <if test='tax_amt !=null'> ,tax_amt                   /* 세액 */  </if>
+              <if test='totl_amt !=null'> ,totl_amt                 /* 총금액 */  </if>     
+              <if test='totl_amt !=null'> ,sum_amt               /* 총합계액 */  </if>     
+                ,snd_mal_yn  
+                ,snd_sms_yn 
+                ,snd_fax_yn  
+                ,stat_code             /* 1:발송대기, 2:발송완료 */
+                ,bill_set
+ ) VALUES ( 
+           #{issu_seqno}
+         , #{regs_date}
+       <if test='selr_corp_no != null'> , #{selr_corp_no} </if>
+       <if test='selr_corp_nm != null'> , #{selr_corp_nm} </if>
+       <if test='selr_ceo != null'> , #{selr_ceo} </if>
+       <if test='selr_addr != null'> , #{selr_addr} </if>
+       <if test='selr_buss_cons != null'> , #{selr_buss_cons} </if>
+       <if test='selr_buss_type != null'> , #{selr_buss_type} </if>
+       <if test='selr_chrg_tel != null'> , #{selr_chrg_tel} </if>       
+       <if test='selr_chrg_fax != null'> , #{selr_chrg_fax} </if>
+       <if test='buyr_corp_no !=null'> , #{buyr_corp_no}  /* 공급받는자사업자번호 */  </if>
+       <if test='buyr_corp_nm != null'> , #{buyr_corp_nm} </if>
+       <if test='buyr_ceo != null'> , #{buyr_ceo} </if>
+       <if test='buyr_addr != null'> , #{buyr_addr} </if>
+       <if test='buyr_buss_cons !=null'> , #{buyr_buss_cons}   /* 공급받는자업태 */  </if>
+       <if test='buyr_buss_type !=null'> , #{buyr_buss_type}     /* 공급받는자종목 */  </if>
+       <if test='buyr_chrg_nm1 != null'> , #{buyr_chrg_nm1} </if>
+       <if test='buyr_chrg_email1 != null'> , #{buyr_chrg_email1} </if>
+       <if test='buyr_chrg_mobl1 != null'> , #{buyr_chrg_mobl1} </if>
+       <if test='buyr_chrg_nm2 != null'> , #{buyr_chrg_nm2} </if>
+       <if test='buyr_chrg_email2 != null'> , #{buyr_chrg_email2} </if>
+       <if test='buyr_chrg_mobl2 != null'> , #{buyr_chrg_mobl2} </if>
+       <if test='chrg_amt != null'> , #{chrg_amt} </if>
+       <if test='tax_amt != null'> , #{tax_amt} </if>
+       <if test='totl_amt != null'> , #{totl_amt} </if>       
+       <if test='totl_amt !=null'> , #{totl_amt} </if>  
+         , 'N'
+         , 'N'
+         , 'N'
+         , '1'
+         , '1'
+  )
+</insert>
+
+<!-- 거래명세서 포함일 경우 거래명서세 상세품목 저장 -->
+<insert id="insertItisStsDetail" parameterType="kr.re.kitech.biz.fin.tax.vo.ItisIssuDetailVo">
+INSERT /* kr.re.kitech.biz.fin.tax.insertItisStsDetail */
+  INTO itis_sts_detail (
+         erp_seq
+       , seq_no   
+       , trans_date 
+      <if test ='item_nm != null'> , item_nm_infm </if>
+      <if test ='item_qunt != null'> , item_qunt </if>
+      <if test ='unit_prce != null'> , unit_prce </if>
+       , item_amt 
+       , item_tax 
+) VALUES (
+         #{issu_seqno}
+       , #{seq_no}   
+       , SUBSTR(#{buy_date}, 5, 4)
+      <if test ='item_nm != null'> , #{item_nm}||#{item_infm} </if>  
+      <if test ='item_qunt != null'> , #{item_qunt} </if>
+      <if test ='unit_prce != null'> , #{unit_prce} </if>
+       , #{item_amt} 
+       , #{item_tax} 
+   )
+</insert>
+
+<!-- 수정계산서 발행시 입금의뢰 계산서 번호 업데이트 -->
+<update id="updateSptTecRcptDepst" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxBillUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateSptTecRcptDepst */
+      fcpdepstreq
+   SET recv_bill_no = #{bill_no}
+ WHERE req_no IN (SELECT req_no FROM spttecrcptdepst WHERE req_no = #{req_no} OR depst_mngmt_no = #{req_no})
+;
+UPDATE spttecrcptdepst
+   SET bill_no = #{bill_no}
+ WHERE req_no = #{req_no} OR depst_mngmt_no = #{req_no}
+ ;
+</update>
+
+<!-- 매출계산서(관) 엑셀다운로드 -->
+<select id="selectFtxBillHExcelDown" parameterType="kr.re.kitech.biz.fin.tax.vo.FinTaxSearchVo" resultType="kr.re.kitech.biz.fin.tax.vo.FtxBillHVo">
+SELECT /* kr.re.kitech.biz.fin.tax.selectFtxBillHExcelDown */
+       a.issu_ymd
+     , TRIM(a.tax_bill_no) AS tax_bill_no
+     , NVL(b.vend_abbr, d.buyr_corp_nm) AS vend_abbr
+     , b.bsns_psn_regst_no
+     , a.suply_value 
+     , a.taxamt 
+     , a.suply_value + a.taxamt AS totl_amt
+     , CASE WHEN a.unslip_no[1,3] IN ('215','425','426') THEN DECODE(a.prcs_clsf, 'D', '폐기', DECODE(NVL(g.decsn_ex,'N'),'Y','처리','미처리'))
+            ELSE DECODE(a.prcs_clsf, 'D', '폐기', 'U', '수정', DECODE(NVL(a.unslip_no,''),'','미처리', '처리'))
+            END AS prcs_clsf
+     , a.accnt_no
+     , DECODE(c.tax_cd, 'FTX001', '과세', '비과세') AS tax_cd
+     , c.accnt_no_nm
+     , TRIM(NVL(fun_fin_tax_bill_state(a.tax_bill_no), '')) AS state_nm
+     , NVL(a.unslip_no,'') AS unslip_no
+     , x1.cd_nm AS bill_clsf
+     , DECODE(a.demnd_recv_clsf, '1', '청구', '2', '영수') || DECODE(NVL(a.bill_knd,''), 'U', '-수정','') AS demnd_recv_clsf_nm
+     , h.empno AS wrte_psn_empno
+     , h.nm AS wrte_psn_nm
+     , w.dept_nm AS wrte_dept_nm
+     , h.email AS wrte_email
+     , CASE WHEN NVL(a.unslip_no, '') != '' THEN 'Y' ELSE 'N' END AS decsn_ex
+     , NVL(g.slip_no, '') AS slip_no
+     , DECODE(f.tax_confirm_yn, 'Y', '확인', '미확인') AS tax_confirm_yn
+     , CASE WHEN (LENGTH(TRIM(a.decsn_no)) = 24 AND a.demnd_recv_clsf = '1') THEN a.decsn_no
+            ELSE NVL(d.issu_id, '') END AS issu_id
+     , DECODE(w.dept_level_3, 'L000', '0003', x.mngmt_item_3) AS selr_code
+  FROM ftxbillh a
+  JOIN xodfvend b ON a.sude_psn = b.vend_cd
+  LEFT JOIN resbgacctm c ON a.accnt_no = c.accnt_no
+  LEFT JOIN fspsliph g ON a.unslip_no = g.unslip_no
+  LEFT JOIN fspslipdecsnh f ON g.slip_no = f.slip_no
+  LEFT JOIN itis_issu_mstr d ON a.tax_bill_no = d.issu_seqno  -- 수정세금계산서
+  LEFT JOIN itis_issu_mstr e ON d.bfo_issu_id = e.issu_id AND NVL(d.bfo_issu_id, '') != '' -- 최초세금계산서
+  JOIN humbasicinfo h ON a.wrte_psn = h.syspayno
+  LEFT JOIN xodxcommst x1 ON a.bill_clsf = x1.cd AND x1.cd_clsf ='FBF'
+  LEFT JOIN xodhdeptinfo w ON h.dept_cd = w.dept_cd AND h.dept_new_ymd = w.dept_new_ymd
+  LEFT JOIN xodxcommst x ON w.dept_typ = x.cd AND x.cd_clsf = 'HCF'  
+ WHERE a.issu_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+ <if test = 'tax_bill_no != null and tax_bill_no !=""' > 
+      AND (a.tax_bill_no = #{tax_bill_no} OR (d.bfo_issu_id IN (SELECT issu_id FROM itis_issu_mstr WHERE issu_seqno = #{tax_bill_no}) AND NVL(d.bfo_issu_id, '') != ''))
+ </if>
+ <if test = 'unslip_no != null and unslip_no!= ""' > AND a.unslip_no LIKE #{unslip_no} || '%' </if>
+ <if test = 'demnd_recv_clsf != null and demnd_recv_clsf != "" and demnd_recv_clsf != "9"' > AND a.demnd_recv_clsf = #{demnd_recv_clsf} </if>
+ <if test = 'demnd_recv_clsf != null and demnd_recv_clsf == "9"' > AND a.decsn_no != '' </if>
+ <if test = 'slip_no != null and slip_no != ""' > AND g.slip_no LIKE #{slip_no} ||'%' </if>
+ <if test = 'vend_abbr != null and vend_abbr != ""' > AND b.vend_abbr LIKE '%' || #{vend_abbr} || '%' </if>
+ <if test = 'prcs_clsf != null and prcs_clsf != ""'> 
+      AND (CASE WHEN a.unslip_no[1,3] IN ('215','425','426') THEN DECODE(a.prcs_clsf, 'D', 'D', DECODE(NVL(g.decsn_ex,'N'),'Y','Y','N'))
+                ELSE DECODE(a.prcs_clsf, 'D', 'D', 'U', 'U', DECODE(NVL(a.unslip_no,''),'','N', 'Y'))
+                END) = #{prcs_clsf} 
+ </if>
+ <if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND REPLACE(DECODE(NVL(b.bsns_psn_regst_no,''), '', b.corp_resid_no, b.bsns_psn_regst_no), '-', '') LIKE #{bsns_psn_regst_no} ||'%' </if>
+ <if test='wrte_psn != null and wrte_psn != ""'> AND a.wrte_psn = #{wrte_psn} </if>
+ <if test='accnt_no != null and accnt_no != ""'> AND a.accnt_no = #{accnt_no} </if>
+ <if test='tax_type != null and tax_type == "01"'> AND (a.tax_bill_no LIKE 'F30%' OR SUBSTR(d.tax_type,1,2) IN ('01','02')) /* 세금계산서 */ </if> 
+ <if test='tax_type != null and tax_type == "03"'> AND (a.tax_bill_no LIKE 'F10%' OR SUBSTR(d.tax_type,1,2) IN ('03','04')) /* 계산서 */ </if> 
+ <choose>
+  <when test='src_clsf != null and src_clsf == "S"'> AND a.accnt_no[1, 2] IN ('PA', 'PD', 'PX') /* 기술지원수수료 */ </when> 
+  <when test='src_clsf != null and src_clsf == "R"'> AND a.accnt_no[1] = 'P' AND a.accnt_no[1, 2] NOT IN ('PA', 'PD', 'PX', 'PL', 'PQ')  /* 연구비 */ </when> 
+  <when test='src_clsf != null and src_clsf == "E"'> AND (a.accnt_no[1] != 'P' OR a.accnt_no[1, 2] IN ('PL', 'PQ') ) /* 기타 */ </when> 
+  <when test='src_clsf != null and src_clsf == "V"'> AND a.bill_clsf = 'FBF021' /* (가상계좌)민간부담금  */ </when> 
+ </choose>
+ <if test = 'slip_yn != null and slip_yn== "Y"'> AND NVL(a.unslip_no,'') != '' /* 미처리 결의번호 존재 */ </if> 
+ <if test = 'slip_yn != null and slip_yn== "N"'> AND NVL(a.unslip_no,'') = '' /* 미처리 결의번호 부존재 */ </if> 
+ ORDER BY a.issu_ymd, NVL(b.vend_abbr, d.buyr_corp_nm)
+</select>
+</mapper>

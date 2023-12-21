@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.uss.bas">
+  <!-- kitech.com.bas.xda.XomBasAplyDocListMS -->
+<select id="selectComBasAplyDocList" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo" resultType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.uss.bas.selectComBasAplyDocList */ 
+	   a.aply_no,
+       a.aply_docu_clsf,
+       a.aply_clsf,
+       a.comp_charg_nm,
+       a.comp_charg_sys_pay_no,
+       fun_emp_nm(a.comp_charg_sys_pay_no) AS comp_charg_sys_pay_nm,
+       a.bizwrk_prcs_state,
+       a.bizwrk_prcs_state_nm,
+       apr_state AS apprvl_state,
+       a.apprvl_state_nm,
+       a.rcpt_ymd,
+       to_char(a.bizwrk_ymd, '%Y-%m-%d') AS bizwrk_ymd,
+       to_char(a.apprvl_ymd, '%Y-%m-%d') AS apprvl_ymd,
+       DECODE(a.etc,null,'N','Y') AS etc,
+       a.aply_dept_cd,
+       a.aply_syspayno,
+       fun_dept_nm(a.aply_dept_cd) AS aply_dept_nm,
+       fun_emp_nm(a.aply_syspayno) AS aply_syspayno_nm,
+       to_char(a.aply_ymd, '%Y-%m-%d') AS aply_ymd,
+       CASE WHEN b.apr_state = 'XAD100' THEN to_char(b.last_execute_tim, '%Y-%m-%d') 
+            ELSE '' END AS last_execute_tim  
+FROM xombasaplydoclist a LEFT OUTER JOIN xomxintfatab b ON a.aply_no = b.req_no
+WHERE 1=1
+    and (#{aply_no} = '' OR a.aply_no = #{aply_no})
+    and (#{aply_syspayno} = '' OR a.aply_syspayno = #{aply_syspayno})
+    and a.aply_docu_clsf = 'X94'
+    and (#{aply_clsf} = '' OR a.aply_clsf = #{aply_clsf})
+    and (#{bizwrk_prcs_state} = '' OR a.bizwrk_prcs_state = #{bizwrk_prcs_state})
+    and (#{apr_state} = '' OR b.apr_state = #{apr_state})
+    and (#{search_date} = 'N' OR a.aply_ymd <![CDATA[ >= ]]> to_date(#{rcpt_ymd_from}, '%Y%m%d'))
+    and (#{search_date} = 'N' OR a.aply_ymd <![CDATA[ < ]]> to_date(#{rcpt_ymd_to}, '%Y%m%d') +1 units day)
+ORDER BY bizwrk_ymd DESC
+  </select>
+
+  <!-- kitech.uss.bas.xda.XomBasFWOpenAplySS -->
+  <select id="selectComBasFWOpen" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo" resultType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+select /* QueryID : kr.re.kitech.biz.uss.bas.selectComBasFWOpen */ 
+	   a.aply_no,
+	   d.empno,
+       a.aply_sys_psn_no,
+       a.comp_charg_sys_psn_no,
+       a.aply_psn_krchar_nm,
+       a.aply_pns_posi,
+       a.user_id,
+       a.blong_divsn,
+       a.blong_dept,
+       a.blong_ofic,
+       a.aply_psn_mobile_no,
+       a.agncy_cd,
+       a.agncy_nm,
+       a.agncy_charg_psn,
+       a.agncy_contec_tel,
+       a.link_goal,
+       a.link_ymd_from,
+       a.link_ymd_to,
+       a.link_time_from,
+       a.link_time_to,
+       a.link_addr,
+       a.ymd_link_yn,
+       a.in_out_clsf,
+       a.start_loc_ip,
+       a.destin_loc_ip,
+       a.linkn_port,
+       a.unusual_item,
+       a.bizwrk_prcs_state,
+       a.apprvl_prcs_state,
+       b.apr_state,
+       c.cd_nm AS apr_state_nm  --결제상태명       
+  from xombasfwopenaply a
+  JOIN xomxintfatab b ON a.aply_no = b.req_no
+  JOIN humbasicinfo d ON d.syspayno = a.aply_sys_psn_no
+  JOIN xodxcommst c ON c.cd = b.apr_state
+ where a.aply_no = #{aply_no}
+  </select>
+  
+  <!-- kitech.com.bas.xda.XomBasFWOpenAplySI -->
+  <insert id="insertComBasFWOpen" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+insert /* QueryID : kr.re.kitech.biz.uss.bas.insertComBasFWOpen */ 
+		 into xombasfwopenaply
+  (aply_no,
+   aply_sys_psn_no,
+   aply_psn_krchar_nm,
+   aply_pns_posi,
+   user_id,
+   blong_divsn,
+   blong_dept,
+   blong_ofic,
+   aply_psn_mobile_no,
+   agncy_cd,
+   agncy_nm,
+   agncy_charg_psn,
+   agncy_contec_tel,
+   link_goal,
+   link_ymd_from,
+   link_ymd_to,
+   link_time_from,
+   link_time_to,
+   link_addr,
+   ymd_link_yn,
+   in_out_clsf,
+   start_loc_ip,
+   destin_loc_ip,
+   linkn_port,
+   unusual_item,
+   bizwrk_prcs_state,
+   apprvl_prcs_state,
+   aply_daytm)
+values
+    (#{aply_no}, 
+    #{aply_sys_psn_no}, 
+    #{aply_psn_krchar_nm}, 
+    #{aply_pns_posi}, 
+    #{user_id}, 
+    #{blong_divsn}, 
+    #{blong_dept}, 
+    #{blong_ofic}, 
+    #{aply_psn_mobile_no}, 
+    #{agncy_cd}, 
+    #{agncy_nm}, 
+    #{agncy_charg_psn}, 
+    #{agncy_contec_tel}, 
+    #{link_goal}, 
+    #{link_ymd_from}, 
+    #{link_ymd_to}, 
+    #{link_time_from}, 
+    #{link_time_to}, 
+    #{link_addr}, 
+    #{ymd_link_yn}, 
+    #{in_out_clsf}, 
+    #{start_loc_ip}, 
+    #{destin_loc_ip}, 
+    #{linkn_port}, 
+    #{unusual_item}, 
+    #{bizwrk_prcs_state}, 
+    #{apprvl_prcs_state}, 
+    current)
+  </insert>
+  
+  <!-- kitech.com.bas.xda.XomBasFWOpenAplySU -->
+  <update id="updateComBasFWOpen" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+update /* QueryID : kr.re.kitech.biz.uss.bas.updateComBasFWOpen */ 
+		 xombasfwopenaply
+   set aply_sys_psn_no       = #{aply_sys_psn_no},
+       comp_charg_sys_psn_no = #{comp_charg_sys_psn_no},
+       aply_psn_krchar_nm    = #{aply_psn_krchar_nm},
+       aply_pns_posi         = #{aply_pns_posi},
+       blong_divsn           = #{blong_divsn},
+       blong_dept            = #{blong_dept},
+       blong_ofic            = #{blong_ofic},
+       aply_psn_mobile_no    = #{aply_psn_mobile_no},
+       agncy_cd              = #{agncy_cd},
+       agncy_nm              = #{agncy_nm},
+       agncy_charg_psn       = #{agncy_charg_psn},
+       agncy_contec_tel      = #{agncy_contec_tel},
+       link_goal             = #{link_goal},
+       link_ymd_from         = #{link_ymd_from},
+       link_ymd_to           = #{link_ymd_to},
+       link_time_from        = #{link_time_from},
+       link_time_to          = #{link_time_to},
+       ymd_link_yn           = #{ymd_link_yn},
+       in_out_clsf           = #{in_out_clsf},
+       start_loc_ip          = #{start_loc_ip},
+       destin_loc_ip         = #{destin_loc_ip},
+       linkn_port            = #{linkn_port},
+       unusual_item          = #{unusual_item},
+       bizwrk_prcs_state     = #{bizwrk_prcs_state},
+       apprvl_prcs_state     = #{apprvl_prcs_state}
+ where aply_no = #{aply_no}
+  </update>
+    
+  <!-- kitech.com.bas.xda.XomBasFWOpenAplySD -->
+  <delete id="deleteComBasFWOpen" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.uss.bas.deleteComBasFWOpen */ 
+		 FROM xombasfwopenaply
+WHERE aply_no = #{aply_no}
+AND aply_sys_psn_no = #{aply_sys_psn_no}
+  </delete>
+         
+  
+
+  <!-- kitech.com.bas.xda.XomBasAplyDocListSI -->
+  <insert id="insertComBasAplyDoc" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+insert /* QueryID : kr.re.kitech.biz.uss.bas.insertComBasAplyDoc */ 
+		 into xombasaplydoclist
+  (aply_no,
+   aply_docu_clsf,
+   aply_clsf,
+   comp_charg_nm,
+   comp_charg_sys_pay_no,
+   aply_dept_cd,
+   aply_syspayno,
+   bizwrk_prcs_state,
+   bizwrk_prcs_state_nm,
+   bizwrk_ymd,
+   aply_ymd)
+values
+  (#{aply_no}, 
+  #{aply_docu_clsf}, 
+  #{aply_clsf}, 
+  #{comp_charg_nm}, 
+  #{comp_charg_sys_pay_no}, 
+  #{aply_dept_cd}, 
+  #{aply_syspayno}, 
+  #{bizwrk_prcs_state}, 
+  #{bizwrk_prcs_state_nm}, 
+  current, 
+  current)
+  </insert>
+
+  <!-- kitech.com.bas.xda.XomBasAplyDocListSU -->
+  <update id="updateComBasAplyDoc" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+update /* QueryID : kr.re.kitech.biz.uss.bas.updateComBasAplyDoc */ 
+		 xombasaplydoclist
+   set aply_clsf            = #{aply_clsf},
+       bizwrk_prcs_state    = #{bizwrk_prcs_state},
+       bizwrk_prcs_state_nm = #{bizwrk_prcs_state_nm},
+       bizwrk_ymd           = current
+ where aply_no = #{aply_no}
+  </update> 
+
+  <!-- kitech.com.bas.xda.XomBasAplyDocListSU02 --> 
+   <update id="updateComBasAplyDocCharg" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+update /* QueryID : kr.re.kitech.biz.uss.bas.updateComBasAplyDocCharg */ 
+		 xombasaplydoclist
+   set comp_charg_sys_pay_no = #{comp_charg_sys_pay_no}
+       ,apprvl_ymd = current
+where aply_no = #{aply_no}
+  </update> 
+    
+  <!-- kitech.com.bas.xda.XomBasAplyDocListD -->
+  <delete id="deleteComBasAplyDoc" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+delete /* QueryID : kr.re.kitech.biz.uss.bas.deleteXomBasAplyDocL */ 
+		 from xombasaplydoclist
+where aply_no = #{aply_no}
+  </delete>
+    
+  <!-- kitech.com.bas.xda.XomBasAplyDocListSS01 -->
+  <select id="selectComBasAplyDoc" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo" resultType="kr.re.kitech.biz.uss.bas.vo.ComBasFWOpenInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.uss.bas.selectComBasAplyDoc */ 
+		 aply_no 
+FROM xombasaplydoclist
+WHERE  aply_no = #{aply_no}
+  </select>     
+</mapper>

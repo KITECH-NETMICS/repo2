@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.lpl.lcp">
+  <select id="selectLplCustBaseInfo" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LplCustBaseInfoVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LplCustBaseInfoVo">
+/* XDA : kitech.lpl.lcp.xda.SptCustBaseInfoMS02 기관조회(찾기 팝업) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLplCustBaseInfo */ 
+    cust_no, cmpy_typ, supt_clsf , dom_excpt_clsf_nm, agncy_clsf_nm, natn_nm, 
+    natn_cd, cmpy_nm_krchar , cmpy_nm_eng , reprs_psn , reprs_psn_mobile_no ,
+    reprs_psn_email , estb_ymd , cmpy_post_no , cmpy_addr , cmpy_fax_no ,
+    cmpy_reprs_tel, homepg , closebiz_ex , intrc_yn_nm, closebiz_ymd ,
+    closebiz_cause , addr,  regst_daytm, relat_vend_cd, cmpy_nm_eng_short
+from
+    (
+    select
+        cust_no ,
+        cmpy_typ ,
+        supt_clsf ,
+        fun_xodxcommst_cd_nm(dom_excpt_clsf, 0) as dom_excpt_clsf_nm, 
+        fun_xodxcommst_cd_nm(agncy_clsf, 0) as agncy_clsf_nm, 
+        fun_xodxcommst_cd_nm(natn_cd, 0) as natn_nm, 
+        natn_cd,
+        cmpy_nm_krchar ,
+        cmpy_nm_eng ,
+        cmpy_nm_eng_short,
+        reprs_psn ,
+        reprs_psn_mobile_no ,
+        reprs_psn_email ,
+        estb_ymd ,
+        cmpy_post_no ,
+        cmpy_addr ,
+        cmpy_fax_no ,
+        cmpy_reprs_tel,
+        homepg ,
+        closebiz_ex ,
+        case when enp_scd = '04' then '교류안함' ELSE '교류중' end as intrc_yn_nm,
+        closebiz_ymd ,
+        closebiz_cause ,
+        case when cmpy_post_no <![CDATA[<>]]> "" and  cmpy_post_no is not null then concat("(", concat(cmpy_post_no, ")")) ||cmpy_addr else cmpy_addr end as addr, 
+        to_char(regst_daytm, '%Y%m%d') as regst_daytm,
+        relat_vend_cd
+    from sptcustbaseinfo
+    where 1=1
+    AND cmpy_typ LIKE DECODE(#{cmpy_typ},'','%',#{cmpy_typ})
+    AND dom_excpt_clsf LIKE DECODE(#{dom_excpt_clsf},'','%',#{dom_excpt_clsf})
+    AND natn_cd LIKE DECODE(#{natn_cd},'','%',#{natn_cd})
+    AND (upper(cmpy_nm_krchar) LIKE DECODE(#{cmpy_nm_krchar},'','%',#{cmpy_nm_krchar}) or upper(cmpy_nm_eng) LIKE DECODE(#{cmpy_nm_eng},'','%',#{cmpy_nm_eng}) or upper(cmpy_nm_eng_short) LIKE DECODE(#{cmpy_nm_eng},'','%',#{cmpy_nm_eng}))
+    and cust_no LIKE DECODE(#{cust_no},'','%',#{cust_no})
+    )
+ORDER BY natn_nm, cmpy_nm_krchar, cmpy_nm_eng
+  </select>
+  <select id="selectLplCustBaseInfoDetal" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LplCustBaseInfoVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LplCustBaseInfoVo">
+/* XDA : kitech.lpl.lcp.xda.SptCustBaseInfoMS01 기관마스터 상세조회(팝업)*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLplCustBaseInfoDetal */ 
+     cust_no ,
+     cmpy_typ ,
+     supt_clsf  ,
+     dom_excpt_clsf ,
+     agncy_clsf ,
+     natn_cd ,
+     natn_nm ,
+     cmpy_nm_krchar ,
+     cmpy_nm_eng ,
+     cmpy_nm_eng_short,
+     bsns_psn_regst_no ,
+     corp_regst_no ,
+     reprs_psn ,
+     reprs_psn_mobile_no ,
+     reprs_psn_email ,
+     estb_ymd ,
+     cmpy_post_no ,
+     cmpy_addr ,
+     cmpy_addr_detls ,
+     cmpy_reprs_tel ,
+     cmpy_fax_no ,
+     factry_use_ex ,
+     factry_post_no  ,
+     factry_addr ,
+     factry_addr_detls ,
+     factry_reprs_tel ,
+     factry_fax_no ,
+     bizcatg ,
+     item ,
+     biztyp ,
+     main_prodct_item ,
+     homepg ,
+     closebiz_ex ,
+     closebiz_ymd ,
+     closebiz_cause  ,
+     reprs_clsf ,
+     attach_file_no,
+     rmk,
+     nvl(relat_vend_cd, '') as relat_vend_cd
+from sptcustbaseinfo
+where cust_no = #{cust_no}
+  </select>
+  <select id="selectLplCustBaseInfoChk" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LplCustBaseInfoVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LplCustBaseInfoVo">
+/* XDA : kitech.lpl.lcp.xda.SptCustBaseInfoMS06 기관중복검사 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLplCustBaseInfoChk */ 
+    cust_no, natn_nm, 
+    cmpy_nm_krchar, 
+    cmpy_nm_eng||decode(trim(cmpy_nm_eng_short), null, '', '', '', ' ('||trim(cmpy_nm_eng_short)||')') as cmpy_nm_eng
+from sptcustbaseinfo
+where cmpy_typ = 'RZB100'
+and (cmpy_nm_krchar like #{chk_text} or cmpy_nm_krchar_odr like #{chk_text} or cmpy_nm_eng like #{chk_text} or cmpy_nm_eng_short like #{chk_text})
+order by natn_nm, cmpy_nm_krchar
+  </select>
+  <insert id="insertLplCustBaseInfoMer" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LplCustBaseInfoMerVo">
+/* XDA : kitech.lpl.lcp.xda.SptCustBaseInfoSI01 기관마스터 등록 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lcp.insertLplCustBaseInfoMer */ 
+		 INTO sptcustbaseinfo(
+     cust_no ,
+     cmpy_typ ,
+     supt_clsf ,
+     dom_excpt_clsf ,
+     agncy_clsf ,
+     natn_cd ,
+     natn_nm ,
+     cmpy_nm_krchar ,
+     cmpy_nm_eng ,
+     cmpy_nm_eng_short,
+     bsns_psn_regst_no ,
+     corp_regst_no ,
+     reprs_psn ,
+     reprs_psn_mobile_no ,
+     reprs_psn_email ,
+     estb_ymd ,
+     cmpy_post_no ,
+     cmpy_addr ,
+     cmpy_addr_detls ,
+     cmpy_reprs_tel ,
+     cmpy_fax_no ,
+     factry_use_ex ,
+     factry_post_no ,
+     factry_addr ,
+     factry_addr_detls ,
+     factry_reprs_tel ,
+     factry_fax_no ,
+     bizcatg ,
+     item ,
+     biztyp ,
+     cmpy_typ_clsf,
+     main_prodct_item ,
+     homepg ,
+     closebiz_ex ,
+     closebiz_ymd ,
+     closebiz_cause ,
+     reprs_clsf ,
+     attach_file_no ,
+     wrte_complt,
+     rmk,
+     relat_vend_cd,
+     regst_syspayno ,
+     regst_daytm
+) VALUES ( #{cust_no},#{cmpy_typ},#{supt_clsf},#{dom_excpt_clsf},#{agncy_clsf},#{natn_cd},#{natn_nm},#{cmpy_nm_krchar},#{cmpy_nm_eng},#{cmpy_nm_eng_short},#{bsns_psn_regst_no},#{corp_regst_no},#{reprs_psn},#{reprs_psn_mobile_no},#{reprs_psn_email},#{estb_ymd},#{cmpy_post_no},#{cmpy_addr},#{cmpy_addr_detls},#{cmpy_reprs_tel},#{cmpy_fax_no},#{factry_use_ex},#{factry_post_no},#{factry_addr},#{factry_addr_detls},#{factry_reprs_tel},#{factry_fax_no},#{bizcatg},#{item},#{biztyp},#{cmpy_typ_clsf},#{main_prodct_item},#{homepg},#{closebiz_ex},#{closebiz_ymd},#{closebiz_cause},#{reprs_clsf},#{attach_file_no},#{wrte_complt},#{rmk},#{relat_vend_cd},#{regst_syspayno},sysdate)
+  </insert>
+  <update id="updateLplCustBaseInfoMer" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LplCustBaseInfoMerVo">
+/* XDA : kitech.lpl.lcp.xda.SptCustBaseInfoSU01 기관마스터 업데이트 단건*/
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lcp.updateLplCustBaseInfoMer */ 
+		 sptcustbaseinfo
+set   
+     agncy_clsf =#{agncy_clsf},
+     cmpy_nm_krchar =#{cmpy_nm_krchar},
+     cmpy_nm_eng =#{cmpy_nm_eng},
+     cmpy_nm_eng_short=#{cmpy_nm_eng_short},
+     reprs_psn =#{reprs_psn},
+     reprs_psn_mobile_no =#{reprs_psn_mobile_no},
+     cmpy_post_no =#{cmpy_post_no},
+     cmpy_addr =#{cmpy_addr},
+     cmpy_reprs_tel =#{cmpy_reprs_tel},
+     cmpy_fax_no =#{cmpy_fax_no},
+     homepg =#{homepg},
+     closebiz_ex =#{closebiz_ex},
+     closebiz_cause =#{closebiz_cause},
+     attach_file_no =#{attach_file_no},
+     rmk = #{rmk},
+     relat_vend_cd = #{relat_vend_cd},
+     updt_syspayno =#{updt_syspayno},
+     updt_daytm = sysdate,
+     natn_cd = #{natn_cd},
+     natn_nm = #{natn_nm}
+WHERE 1=1
+AND    cust_no = #{cust_no}
+  </update>        
+</mapper>

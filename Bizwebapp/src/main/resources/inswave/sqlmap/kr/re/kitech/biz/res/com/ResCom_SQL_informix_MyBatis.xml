@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.res.com">		
+<!-- 사업분류선택 팝업 조회 -->
+<select id="selectXodrBaCodePop" parameterType="kr.re.kitech.biz.res.com.vo.ResBsnsCodeSearchVo" resultType="kr.re.kitech.biz.res.com.vo.ResBsnsCodeVo">
+SELECT /* kr.re.kitech.biz.res.com.selectXodrBaCodePop */
+      a.bsns_cd AS bsns_cd_ofic , 
+       a.bsns_nm AS bsns_cd_ofic_nm , 
+       b.bsns_cd AS bsns_cd_bsns , 
+       b.bsns_nm AS bsns_cd_bsns_nm , 
+       c.bsns_cd AS bsns_cd_detls_bsns, 
+       c.bsns_nm AS bsns_cd_detls_bsns_nm, 
+       d.cd AS bsns_cd_inout, 
+       d.cd_nm AS bsns_cd_inout_nm ,
+       e.cd AS bsns_cd_exclsv_agncy,  
+       e.cd_nm AS bsns_cd_exclsv_agncy_nm,
+       c.oh_absrp_rt  AS oh_absrp_rt,
+       c.accnt_mngmt_cd
+FROM  xodrbacode a
+INNER JOIN xodrbacode b ON b.bsns_grp_cd = a.bsns_cd
+INNER JOIN xodrbacode c ON c.bsns_grp_cd = b.bsns_cd
+INNER JOIN xodxcommst d ON c.inout_clsf = d.cd
+INNER JOIN xodxcommst e ON c.exclsv_agncy = e.cd
+WHERE c.depth = 3
+<if test="bsns_cd_inout != null and bsns_cd_inout != ''"> AND d.cd = #{bsns_cd_inout} </if>
+<if test="bsns_cd_ofic_nm != null and bsns_cd_ofic_nm != ''"> AND a.bsns_nm LIKE '%' || #{bsns_cd_ofic_nm} || '%' </if>
+<if test="bsns_cd_exclsv_agncy_nm != null and bsns_cd_exclsv_agncy_nm != ''"> AND e.cd_nm LIKE '%' || #{bsns_cd_exclsv_agncy_nm} || '%' </if>
+<if test="bsns_cd_bsns_nm != null and bsns_cd_bsns_nm != ''"> AND b.bsns_nm LIKE '%' || #{bsns_cd_bsns_nm} || '%' </if>
+<if test="bsns_cd_detls_bsns_nm != null and bsns_cd_detls_bsns_nm != ''"> AND c.bsns_nm LIKE '%' || #{bsns_cd_detls_bsns_nm} || '%' </if>
+<if test="bsns_grp_cd != null and bsns_grp_cd != ''"> AND c.bsns_grp_cd = #{bsns_grp_cd} </if>
+<if test="use_ex != null and use_ex != ''"> AND c.use_ex = #{use_ex} </if>
+ORDER BY d.cd_nm, a.bsns_nm , b.bsns_nm, c.bsns_nm
+</select>
+
+<!-- 사업신청 -사업공고방에서 호출시 사업분류 조회 -->	
+<select id="selectRbaCodeListNoDepth" parameterType="kr.re.kitech.biz.res.com.vo.ResBsnsCodeSearchVo" resultType="kr.re.kitech.biz.res.com.vo.ResBsnsCodeVo">
+-- 사업분류(관계부처, 사업분류, 세부사업명, 내/외부, 전담기관) 조회
+SELECT a.bsns_cd      -- 사업분류코드
+     , a.bsns_grp_cd  -- 사업분류상위코드
+     , a.depth        -- 레벨
+     , a.bsns_nm     -- 사업분류명
+     , a.inout_clsf    AS bsns_cd_inout       -- 사업코드내외코드
+     , fun_xodxcommst_cd_nm(a.inout_clsf, 0) AS bsns_cd_inout_nm    -- 사업코드내외명
+     , a.exclsv_agncy  AS bsns_cd_exclsv_agncy     -- 사업코드전담기관코드
+     , fun_xodxcommst_cd_nm(a.exclsv_agncy, 0) AS bsns_cd_exclsv_agncy_nm  -- 사업코드전담기관명
+     , a.oh_absrp_rt   -- OH흡수율
+  FROM xodrbacode a
+ WHERE ( a.bsns_cd = #{bsns_cd_ofic}      -- 사업코드부처
+      OR a.bsns_cd = #{bsns_cd_bsns}      -- 사업코드사업
+      OR a.bsns_cd = #{bsns_cd_detls_bsns} -- 사업코드세부사업
+       )  
+   AND a.use_ex  = 'Y'
+</select>
+
+<!-- 도서관리 연구보고서 -->
+<select id="selectXodrBaCode" parameterType="kr.re.kitech.biz.res.com.vo.ResBsnsCodeSearchVo"  resultType="kr.re.kitech.biz.res.com.vo.ResBsnsCodeDepthVo">
+SELECT /* kr.re.kitech.biz.res.com.selectXodrBaCode */
+       bsns_cd
+      , bsns_nm
+      , prj_mngmt_cd
+      , accnt_mngmt_cd
+      , bsns_grp_cd
+FROM xodrbacode 
+WHERE use_ex = 'Y'
+<if test="depth != null and depth != ''">AND depth = #{depth}</if>
+<if test="bsns_cd != null and bsns_cd != ''">AND bsns_cd = #{bsns_cd} </if>
+<if test="inout_clsf != null and inout_clsf != ''">AND inout_clsf = #{inout_clsf} </if>
+ORDER BY bsns_nm
+</select>
+	
+<!-- 연구관리 담당자 조회 -->
+<select id="selectXodrResMan" parameterType="kr.re.kitech.biz.res.std.vo.XodrResManVo" resultType="kr.re.kitech.biz.res.std.vo.XodrResManVo">
+SELECT /* kr.re.kitech.biz.res.com.selectXodrResMan */
+       FIRST 1 a.syspayno  -- 시스템개인번호
+     , c.nm        -- 성명
+     , c.email     -- 이메일주소
+FROM xodrresman a
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+LEFT JOIN humbasicinfo c ON a.syspayno = c.syspayno
+WHERE b.abol_ymd IS NULL
+AND a.dept_cd = #{dept_cd}
+<if test='dept_new_ymd != null and dept_new_ymd != ""'> AND a.dept_new_ymd = #{dept_new_ymd} </if>
+</select>
+
+<!-- 산업기술분류표 대분류 조회 -->
+<select id="selectResIndTeccBigClsf" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.com.vo.ResIndTeccVo">
+SELECT /* kr.re.kitech.biz.res.com.selectResIndTeccBigClsf */
+      DISTINCT bigcls, TRIM(SUBSTR(CD, 1, 2)) AS cd FROM resindtecc 
+WHERE clsf = #{clsf}
+ORDER BY 2
+</select>
+
+<!-- 산업기술분류표 중분류 조회 -->
+<select id="selectResIndTeccMidClsf" parameterType="kr.re.kitech.biz.res.com.vo.ResIndTeccVo" resultType="kr.re.kitech.biz.res.com.vo.ResIndTeccVo">
+SELECT /* kr.re.kitech.biz.res.com.selectResIndTeccMidClsf */
+      DISTINCT 
+      TRIM(SUBSTR(CD, 1, 2)) AS bigcls
+     , mid_clsf
+     , TRIM(SUBSTR(CD, 1, 4)) AS cd 
+  FROM  resindtecc 
+ WHERE clsf = #{clsf}
+  <if test='bigcls != null and bigcls != ""'> AND cd LIKE CONCAT(#{bigcls}, '%') </if>
+ ORDER BY 2
+</select>
+<select id="selectResIndTeccList" parameterType="kr.re.kitech.biz.res.com.vo.ResIndTeccVo" resultType="kr.re.kitech.biz.res.com.vo.ResIndTeccVo">
+SELECT /* kr.re.kitech.biz.res.com.selectResIndTeccList */
+       cd, 
+       TRIM(SUBSTR(CD, 1, 4)) AS mid_cd,
+       bigcls, 
+       mid_clsf, 
+       smalclsf,
+       rmk 
+FROM resindtecc 
+WHERE 1=1
+<if test = "clsf != null and clsf != ''" > AND clsf = #{clsf} </if>
+<if test = "bigcls != null and bigcls != ''"> AND cd LIKE CONCAT(#{bigcls}, '%') </if>
+<if test = "mid_clsf != null and mid_clsf != ''"> AND cd LIKE CONCAT(#{mid_clsf}, '%') </if>
+<if test = "three_mid_clsf != null and three_mid_clsf != ''"> AND mid_clsf LIKE CONCAT(#{three_mid_clsf}, '%') </if>
+<if test = "smalclsf != null and smalclsf != ''"> AND smalclsf LIKE '%'||#{smalclsf}||'%' </if>
+</select>
+
+<!-- 중분류검색(TRL단계분류,과학기술표준분류,미래유망 신기술(6T) 분류,국가기술지도(NTRM)분류) -->
+<select id="selectXodxCommstMidClsf" resultType="kr.re.kitech.biz.res.com.vo.XodxCommstVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.res.com.selectXodxCommstMidClsf */
+       mngmt_item_3 
+     , min(mngmt_item_1) AS mngmt_item_1 
+FROM xodxcommst
+WHERE cd_clsf  = #{cd_clsf}
+AND   use_ex = 'Y'
+group by mngmt_item_3
+ORDER BY 2
+</select>
+
+<!-- 코드검색(TRL단계분류,과학기술표준분류,미래유망 신기술(6T) 분류,국가기술지도(NTRM)분류) -->
+<select id="selectXodxCommstMngmt" resultType="kr.re.kitech.biz.res.com.vo.XodxCommstVo" parameterType="kr.re.kitech.biz.res.com.vo.XodxCommstVo">
+SELECT /* kr.re.kitech.biz.res.com.selectXodxCommstMngmt */
+       cd
+     , cd_nm
+     , mngmt_item_1
+     , mngmt_item_3
+     , mngmt_item_4
+  FROM xodxcommst
+ WHERE use_ex = 'Y'
+   AND cd_clsf = #{cd_clsf}
+<if test='mngmt_item_3 != null and mngmt_item_3 != ""'> AND mngmt_item_3 = #{mngmt_item_3} </if>
+<if test='cd_nm != null and cd_nm != ""'> AND cd_nm LIKE '%'||#{cd_nm}||'%' </if>
+ORDER BY mngmt_item_1
+</select>
+<select id="selectXodrDeptResMan" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.res.com.selectXodrDeptResMan */ 
+        GROUP_CONCAT(b.syspayno) AS syspayno
+  FROM humbasicinfo a
+  JOIN xodrdeptresman b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+ WHERE a.syspayno = #{syspayno}
+</select>
+
+<!-- 연구관리 공통 과제정보 조회 -->
+<select id="selectResComPrjInfo" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.com.vo.ResPrjInfoVo">
+SELECT /* kr.re.kitech.biz.res.com.selectResComPrjInfo */
+       FIRST 1 a.accnt_no    -- 계정번호    
+     , a.prj_no
+     , a.accnt_no_nm
+     , a.accnt_clsf  -- 계정구분(RAR)    
+     , a.accnt_rspns   -- 계정책임자     
+     , c.nm         AS accnt_rspns_nm      -- 계정책임자명
+     , c.empno      AS accnt_rspns_empno   -- 계정책임자(개인번호)    
+     , a.start_ymd   -- 연구기간시작일자(시작)
+     , a.cls_ymd     -- 연구기간종료일자(종료)    
+     , a.accnt_state      -- 계정상태(RAK)
+     , a.tax_cd
+     , a.itm_solve_base    -- 비목해소기준
+     , a.card_use_ex
+     , a.fomat_unit
+     , a.bugt_ctrl_psn
+     , b.bsns_cd_bsns   -- 사업코드사업구분
+     , fun_res_bsns_nm(b.bsns_cd_bsns ) AS bsns_cd_bsns_nm  -- 사업코드사업구분명    
+     , NVL(e.gov_cntrbamt, 0) + e.gov_subsidy + e.area_share_wide + e.area_share_base + e.self_share + e.cmpy_cash + e.local_gov_cash + e.univ_cash + e.etc_cash AS tot_resch_cash_amt  -- 총연구금액(현금)
+     , e.cmpy_goods + e.contpat_goods AS tot_goods_amt -- 총연구금액(현물)
+     , e.tax_amt   -- 부가세
+     , c.posi_cd      -- 직급코드
+     , fun_posi_nm(c.posi_cd) AS posi_nm      -- 직급명
+     , c.dept_cd      -- 부서코드
+     , fun_dept_nm(c.dept_cd, c.dept_new_ymd) AS dept_nm   -- 부서명   
+     , b.bsns_cd_inout      -- 사업코드내외
+     , b.bsns_cd_exclsv_agncy -- 전문기관
+     , b.bsns_cd_detls_bsns
+     , b.bsns_cd_ofic-- 관계부처
+     , b.prj_kind -- 과제참여유형
+     , b.curr_resch_rspns   --연구책임자
+     , b.bsns_req_no
+     , TRIM(b.bankaccnt_type) AS bankaccnt_type
+     , c1.nm AS curr_resch_rspns_nm
+     , fun_posi_nm(c1.posi_cd) AS curr_posi_nm
+     , fun_dept_nm(c1.dept_cd, c1.dept_new_ymd) AS curr_dept_nm
+     , NVL(x.vacct_no, '-') AS vacct_no  --가상계좌  
+     , d.vend_cd
+     , d.vend_nm
+FROM resbgacctm a 
+JOIN resinpmast b ON a.prj_no = b.prj_no 
+JOIN humbasicinfo c ON a.accnt_rspns = c.syspayno 
+JOIN resinpbugt e ON b.prj_no = e.prj_no
+LEFT JOIN humbasicinfo c1 ON b.curr_resch_rspns = c1.syspayno 
+LEFT JOIN ffnvacct x ON b.bsns_req_no = x.bsns_req_no
+LEFT JOIN resinppaco d ON b.prj_no = d.prj_no AND d.attnce_clsf
+                    = (CASE WHEN b.bsns_cd_inout = 'RHA003' AND (b.bankaccnt_type != 'X' OR b.prj_kind ='RCA020') THEN 'RCA026' -- 민간수탁이면서 (별도계좌 또는 통합계과) 또는 위탁기관일경우 연구의뢰기관
+                            WHEN b.bsns_cd_inout = 'RHA001' AND b.prj_kind ='RCA020' THEN 'RCA017' END) -- 정부수탁이면서 위탁기관일 경우 주관기관
+WHERE a.accnt_no = #{accnt_no}
+</select>
+
+<select id="selectResManager" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.res.com.selectResManager */
+      group_concat(distinct a.syspayno) as syspayno
+FROM xodrdeptpurman a
+JOIN humbasicinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+WHERE a.role_type = 'RES'
+AND b.syspayno = #{syspayno}
+</select>
+</mapper>

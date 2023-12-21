@@ -1,0 +1,1962 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.leg">
+<select id="selectFinBgaCctmInfoList" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmInfoList */ 
+   accnt_no
+ , DECODE(NVL(a.tax_cd, 'FTX002'), 'FTX001', '과세', '비과세') AS tax_cd
+ , a.accnt_clsf
+ , a.accnt_rspns AS syspayno
+ , accnt_no_nm || decode ( c.step, null , '', '' ,'',  '(' || c.step || '/' || c.step_tot_yrs || '단계' || ')' ) as accnt_no_nm
+ , fun_xodxcommst_cd_nm(accnt_state, 0) AS accnt_state
+ , (SUBSTR(start_ymd, 1, 4)||'-'||SUBSTR(start_ymd, 5, 2)||'-'||SUBSTR(start_ymd, 7, 2)||'~'||SUBSTR(cls_ymd, 1, 4)||'-'||SUBSTR(cls_ymd, 5, 2)||'-'||SUBSTR(cls_ymd, 7, 2)) AS date
+ , b.nm
+ , CASE
+   WHEN (prj_state = 'RBA001' OR NVL(prj_state, '') == '' OR prj_state = 'RBA002') AND TO_CHAR(current, '%Y%m%d') <![CDATA[ > ]]> TO_CHAR(cls_ymd) THEN 2
+   WHEN (prj_state = 'RBA001' OR NVL(prj_state, '') == '' ) AND TO_CHAR(current, '%Y%m%d')  <![CDATA[ <= ]]>  TO_CHAR(cls_ymd) THEN 1
+   ELSE 3 END AS progress_tmp
+ , DECODE((CASE WHEN (prj_state = 'RBA001' OR NVL(prj_state, '') == '' OR prj_state = 'RBA002') AND TO_CHAR(CURRENT, '%Y%m%d') <![CDATA[ > ]]> TO_CHAR(cls_ymd) THEN 2
+   WHEN (prj_state = 'RBA001' OR NVL(prj_state, '') == '') AND TO_CHAR(current, '%Y%m%d')  <![CDATA[ <= ]]>  TO_CHAR(cls_ymd) THEN 1
+   ELSE 3 END), 1, '진행', 2, '종료', fun_xodxcommst_cd_nm(prj_state, 0)) AS progress
+ , start_ymd
+ , cls_ymd
+ , NVL(c.attnce_agncy, '') AS attnce_agncy
+ , fun_xodxcommst_cd_nm(c.bsns_cd_exclsv_agncy, 0) AS bsns_cd_exclsv_agncy
+FROM resbgacctm a
+INNER JOIN humbasicinfo b ON a.accnt_rspns = b.syspayno
+LEFT OUTER JOIN resinpmast c ON a.prj_no = c.prj_no
+WHERE 1=1
+AND a.accnt_no LIKE UPPER(#{accnt_no}) || '%'
+<if test="accnt_rspns != null and accnt_rspns != ''">
+	and a.accnt_rspns = #{accnt_rspns}
+</if>
+UNION ALL
+SELECT a.accnt_no
+ , DECODE(NVL(b.tax_cd, 'FTX002'), 'FTX001', '과세', '비과세') AS tax_cd
+ , b.accnt_clsf
+ , a.relat_no AS syspayno
+ , accnt_no_nm
+ , fun_xodxcommst_cd_nm(accnt_state, 0) AS accnt_state
+ , (SUBSTR(start_ymd, 1, 4)||'-'||SUBSTR(start_ymd, 5, 2)||'-'||SUBSTR(start_ymd, 7, 2)||'~'||SUBSTR(cls_ymd, 1, 4)||'-'||SUBSTR(cls_ymd, 5, 2)||'-'||SUBSTR(cls_ymd, 7, 2)) AS date
+ , c.nm
+ , 1 as progress_tmp
+ , '진행' AS progress
+ , bugt_yr || '0101' start_ymd
+ , bugt_yr || '1231' cls_ymd
+ , '' AS attnce_agncy
+ , '' AS bsns_cd_exclsv_agncy
+FROM bblbugtactrsltetc a
+INNER JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+INNER JOIN humbasicinfo c ON a.relat_no = c.empno
+WHERE a.accnt_no = 'FF030004'
+AND a.accnt_no LIKE UPPER(#{accnt_no}) || '%'
+AND bugt_yr= TO_CHAR(CURRENT, '%Y')
+<if test="relat_no != null and relat_no != ''">
+	and a.relat_no = #{relat_no}
+</if>
+ORDER BY progress_tmp, cls_ymd DESC, a.accnt_no
+</select>
+
+<select id="selectFinBgaCctmInfo" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmInfo */ 
+	   accnt_no, 
+       accnt_clsf,
+       start_ymd,
+       cls_ymd,
+       mngmt_clsf,
+       itm_solve_base
+FROM resbgacctm 
+WHERE accnt_no = #{accnt_no}
+</select>
+
+<select id="selectFinRamtMngmtInfo" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinRamtMngmtInfo */ 
+accnt_cd
+,accnt_cd_abbr
+,accnt_ymd
+,ramt_mngmt_1
+,ramt_mngmt_2
+,dr_amt
+,cr_amt
+,jan_amt
+,tag
+FROM (
+  SELECT    
+  accnt_cd
+  ,accnt_cd_abbr
+  ,accnt_ymd
+  ,ramt_mngmt_1
+  ,ramt_mngmt_2
+  ,dr_amt
+  ,cr_amt
+  ,jan_amt
+  ,tag
+FROM  (
+	SELECT    a.accnt_cd
+	,b.accnt_cd_abbr
+	,accnt_ymd AS accnt_ymd
+	,ramt_mngmt_1
+	,ramt_mngmt_2
+	,sum(a.dr_amt)AS dr_amt
+	,sum(a.cr_amt)AS cr_amt
+	,sum(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+	WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+	,'1' AS tag
+	FROM (
+		SELECT    accnt_cd
+		,accnt_yrmon || '01' AS accnt_ymd
+		,mngmt_detls_cd_1 AS ramt_mngmt_1
+		,mngmt_detls_cd_2 AS ramt_mngmt_2
+		,(CASE substr(#{from_ymd}, 5, 2) WHEN '01' THEN debit_cryfwd_amt
+		ELSE  debit_cryfwd_amt + debit_amt END) AS dr_amt
+		,(CASE substr(#{from_ymd}, 5, 2) WHEN '01' THEN cr_cryfwd_amt
+		ELSE cr_cryfwd_amt + cr_amt END ) AS cr_amt
+		FROM     fsaledgrsub
+		WHERE    accnt_yrmon BETWEEN #{from_mm} AND #{to_mm}
+		AND      accnt_cd = #{accnt_cd}
+		AND      mngmt_detls_cd_1 LIKE #{mngmt_detls_cd_1} || '%'
+		AND      mngmt_detls_cd_2 LIKE #{mngmt_detls_cd_2} || '%'
+
+		UNION ALL
+
+		SELECT   accnt_cd
+		,accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+		,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+		FROM    fspslipdecsnd
+		WHERE    accnt_ymd BETWEEN #{pre_from_ymd} AND #{pre_to_ymd}
+		AND     accnt_cd = #{accnt_cd}
+		AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+		AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+		)a, xodfaccnt b
+		WHERE    a.accnt_cd = b.accnt_cd
+		GROUP BY a.accnt_cd, a.accnt_ymd, b.accnt_cd_abbr, ramt_mngmt_1, ramt_mngmt_2
+
+		UNION ALL
+		
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,a.accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,sum(a.dr_amt)AS dr_amt
+		,sum(a.cr_amt) AS cr_amt
+		,sum(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'2' AS tag
+		FROM
+		(
+			SELECT   accnt_cd
+			,accnt_ymd
+			,bASe_debit_cr
+			,ramt_mngmt_1
+			,ramt_mngmt_2
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+			AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+			AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+			)a, xodfaccnt b
+			WHERE     a.accnt_cd = b.accnt_cd
+			GROUP BY  a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd, ramt_mngmt_1, ramt_mngmt_2
+		)
+		
+		UNION ALL
+		
+		SELECT  accnt_cd
+		,accnt_cd_abbr
+		,(TRIM(accnt_ymd)||'99') accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,sum(dr_amt) AS dr_amt
+		,sum(cr_amt) AS cr_amt
+		,sum(jan_amt) AS jan_amt
+		,'2' AS tag
+		FROM  (
+			SELECT    a.accnt_cd
+			,b.accnt_cd_abbr
+			,substr(a.accnt_ymd, 1, 6) accnt_ymd
+			,ramt_mngmt_1
+			,ramt_mngmt_2
+			,sum(a.dr_amt) AS dr_amt
+			,sum(a.cr_amt) AS cr_amt
+			,sum(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+			WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+			,'2' AS tag
+			FROM
+			(
+			SELECT   accnt_cd
+			,accnt_ymd
+			,bASe_debit_cr
+			,ramt_mngmt_1
+			,ramt_mngmt_2
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+			AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+			AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+			)a, xodfaccnt b
+			WHERE     a.accnt_cd = b.accnt_cd
+			GROUP BY  a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd, ramt_mngmt_1, ramt_mngmt_2
+		)
+		GROUP BY accnt_cd, accnt_cd_abbr, accnt_ymd, ramt_mngmt_1, ramt_mngmt_2
+		
+		UNION ALL
+		
+		SELECT    accnt_cd
+		,accnt_cd_abbr
+		,accnt_ymd AS accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,sum(dr_amt) AS dr_amt
+		,sum(cr_amt) AS cr_amt
+		,sum(jan_amt) AS jan_amt
+		,'4' AS tag
+		FROM  (
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,accnt_ymd AS accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,sum(a.dr_amt) AS dr_amt
+		,sum(a.cr_amt) AS cr_amt
+		,sum(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'1' AS tag
+		FROM   ( 
+			SELECT    accnt_cd
+			,accnt_yrmon || '01' AS accnt_ymd
+			,mngmt_detls_cd_1 AS ramt_mngmt_1
+			,mngmt_detls_cd_2 AS ramt_mngmt_2
+			,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN debit_cryfwd_amt
+			ELSE  debit_cryfwd_amt + debit_amt END) AS dr_amt
+			,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN cr_cryfwd_amt
+			ELSE cr_cryfwd_amt + cr_amt END ) AS cr_amt
+			FROM     fsaledgrsub
+			WHERE    accnt_yrmon BETWEEN #{from_mm} AND #{to_mm}
+			AND      accnt_cd = #{accnt_cd}
+			AND      mngmt_detls_cd_1 LIKE #{mngmt_detls_cd_1} || '%'
+			AND      mngmt_detls_cd_2 LIKE #{mngmt_detls_cd_2} || '%'
+
+			UNION  ALL
+
+			SELECT   accnt_cd
+			,accnt_ymd
+			,ramt_mngmt_1
+			,ramt_mngmt_2
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM    fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{pre_from_ymd} AND #{pre_to_ymd}
+			AND     accnt_cd = #{accnt_cd}
+			AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+			AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+			)a, xodfaccnt b
+		WHERE    a.accnt_cd = b.accnt_cd
+		GROUP BY a.accnt_cd, a.accnt_ymd, b.accnt_cd_abbr, ramt_mngmt_1, ramt_mngmt_2
+		
+		UNION ALL
+		
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,a.accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,sum(a.dr_amt) AS dr_amt
+		,sum(a.cr_amt) AS cr_amt
+		,sum(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'2' AS tag
+		FROM
+		(
+			SELECT   accnt_cd
+			,accnt_ymd
+			,bASe_debit_cr
+			,ramt_mngmt_1
+			,ramt_mngmt_2
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+			AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+			AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+			)a, xodfaccnt b
+			WHERE     a.accnt_cd = b.accnt_cd
+			GROUP BY  a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd, ramt_mngmt_1, ramt_mngmt_2
+		)
+	GROUP BY accnt_cd, accnt_ymd, accnt_cd_abbr, ramt_mngmt_1, ramt_mngmt_2
+)
+ORDER BY accnt_cd, ramt_mngmt_1, ramt_mngmt_2, tag, accnt_ymd
+</select>
+
+<select id="selectFinRamtMngmtDetlsInfo" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinRamtMngmtDetlsInfo */ 
+accnt_cd
+,accnt_cd_abbr
+,accnt_ymd
+,ramt_mngmt_1
+,ramt_mngmt_2
+,rmk_1
+,accnt_no
+,slip_no
+,slip_odr
+,dr_amt
+,cr_amt
+,jan_amt
+,tag
+FROM
+(
+	SELECT    accnt_cd
+	,accnt_cd_abbr
+	,accnt_ymd
+	,ramt_mngmt_1
+	,ramt_mngmt_2
+	,rmk_1
+	,accnt_no
+	,slip_no
+	,slip_odr
+	,dr_amt
+	,cr_amt
+	,jan_amt
+	,tag
+	FROM  (
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,accnt_ymd AS accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,' ' AS rmk_1
+		,' ' AS accnt_no
+		,' ' AS slip_no
+		,0 AS slip_odr
+		,sum(a.dr_amt)AS dr_amt
+		,sum(a.cr_amt)AS cr_amt
+		,sum(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'1' AS tag
+		FROM   ( 
+			SELECT    accnt_cd
+			,accnt_yrmon || '01' AS accnt_ymd
+			,mngmt_detls_cd_1 AS ramt_mngmt_1
+			,mngmt_detls_cd_2 AS ramt_mngmt_2
+			,(CASE substr(#{from_ymd}, 5, 2) WHEN '01' THEN debit_cryfwd_amt
+			ELSE  debit_cryfwd_amt + debit_amt END) AS dr_amt
+			,(CASE substr(#{from_ymd}, 5, 2) WHEN '01' THEN cr_cryfwd_amt
+			ELSE cr_cryfwd_amt + cr_amt END ) AS cr_amt
+			FROM     fsaledgrsub
+			WHERE    accnt_yrmon BETWEEN #{from_mm} AND #{to_mm}
+			AND      accnt_cd = #{accnt_cd}
+			AND      mngmt_detls_cd_1 LIKE #{mngmt_detls_cd_1} || '%'
+			AND      mngmt_detls_cd_2 LIKE #{mngmt_detls_cd_2} || '%'
+			UNION ALL
+			SELECT   accnt_cd
+			,accnt_ymd
+			,ramt_mngmt_1
+			,ramt_mngmt_2
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM    fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{pre_from_ymd} AND #{pre_to_ymd}
+			AND     accnt_cd = #{accnt_cd}
+			AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+			AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+		)a, xodfaccnt b
+		WHERE    a.accnt_cd = b.accnt_cd
+		GROUP BY a.accnt_cd, a.accnt_ymd, b.accnt_cd_abbr, ramt_mngmt_1, ramt_mngmt_2
+		
+		UNION ALL
+		
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,a.accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,rmk_1
+		,accnt_no
+		,slip_no
+		,slip_odr
+		,dr_amt
+		,cr_amt
+		,(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'2' AS tag
+		FROM
+		(
+			SELECT   accnt_cd
+			,accnt_ymd
+			,bASe_debit_cr
+			,ramt_mngmt_1
+			,ramt_mngmt_2
+			,rmk_1
+			,accnt_no
+			,slip_no
+			,slip_odr
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+			AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+			AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+		)a, xodfaccnt b
+		WHERE     a.accnt_cd = b.accnt_cd
+	)
+	
+	UNION ALL
+	
+	SELECT  accnt_cd
+	,accnt_cd_abbr
+	,(TRIM(accnt_ymd)||'99') accnt_ymd
+	,ramt_mngmt_1
+	,ramt_mngmt_2
+	,' ' AS rmk_1
+	,' ' AS accnt_no
+	,' ' AS slip_no
+	,0 AS slip_odr
+	,sum(dr_amt) AS dr_amt
+	,sum(cr_amt) AS cr_amt
+	,sum(jan_amt) AS jan_amt
+	,'2' AS tag
+	FROM  (
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,substr(a.accnt_ymd, 1, 6) accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,rmk_1
+		,accnt_no
+		,slip_no
+		,slip_odr
+		,dr_amt
+		,cr_amt
+		,(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'2' AS tag
+		FROM
+		(
+			SELECT   accnt_cd
+			,accnt_ymd
+			,bASe_debit_cr
+			,ramt_mngmt_1
+			,ramt_mngmt_2
+			,rmk_1
+			,accnt_no
+			,slip_no
+			,slip_odr
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+			AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+			AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+		)a, xodfaccnt b
+		WHERE     a.accnt_cd = b.accnt_cd
+	)
+	GROUP BY accnt_cd, accnt_no, accnt_cd_abbr, accnt_ymd, ramt_mngmt_1, ramt_mngmt_2
+	
+	UNION ALL
+	
+	SELECT    accnt_cd
+	,accnt_cd_abbr
+	,accnt_ymd AS accnt_ymd
+	,ramt_mngmt_1
+	,ramt_mngmt_2
+	,' ' AS rmk_1
+	,' ' AS accnt_no
+	,' ' AS slip_no
+	,0 AS slip_odr
+	,sum(dr_amt) AS dr_amt
+	,sum(cr_amt) AS cr_amt
+	,sum(jan_amt) AS jan_amt
+	,'3' AS tag
+	FROM  (
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,a.accnt_ymd AS accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,sum(a.dr_amt)AS dr_amt
+		,sum(a.cr_amt)AS cr_amt
+		,sum(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'1' AS tag
+		FROM   ( SELECT    accnt_cd
+		,accnt_yrmon || '01' AS accnt_ymd
+		,mngmt_detls_cd_1 AS ramt_mngmt_1
+		,mngmt_detls_cd_2 AS ramt_mngmt_2
+		,(CASE substr(#{from_ymd}, 5, 2) WHEN '01' THEN debit_cryfwd_amt
+		ELSE  debit_cryfwd_amt + debit_amt END) AS dr_amt
+		,(CASE substr(#{from_ymd}, 5, 2) WHEN '01' THEN cr_cryfwd_amt
+		ELSE cr_cryfwd_amt + cr_amt END ) AS cr_amt
+		FROM     fsaledgrsub
+		WHERE    accnt_yrmon BETWEEN #{from_mm} AND #{to_mm}
+		AND      accnt_cd = #{accnt_cd}
+		AND      mngmt_detls_cd_1 LIKE #{mngmt_detls_cd_1} || '%'
+		AND      mngmt_detls_cd_2 LIKE #{mngmt_detls_cd_2} || '%'
+		
+		UNION ALL
+		
+		SELECT   accnt_cd
+		,accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+		,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+		FROM    fspslipdecsnd
+		WHERE    accnt_ymd BETWEEN #{pre_from_ymd} AND #{pre_to_ymd}
+		AND     accnt_cd = #{accnt_cd}
+		AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+		AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+		)a, xodfaccnt b
+		WHERE    a.accnt_cd = b.accnt_cd
+		GROUP BY a.accnt_cd, a.accnt_ymd, b.accnt_cd_abbr, ramt_mngmt_1, ramt_mngmt_2
+		
+		UNION ALL
+		
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,a.accnt_ymd
+		,ramt_mngmt_1
+		,ramt_mngmt_2
+		,sum(a.dr_amt)AS dr_amt
+		,sum(a.cr_amt) AS cr_amt
+		,sum(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'2' AS tag
+		FROM
+		(
+			SELECT   accnt_cd
+			,accnt_ymd
+			,bASe_debit_cr
+			,ramt_mngmt_1
+			,ramt_mngmt_2
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+			AND     ramt_mngmt_1 LIKE #{ramt_mngmt_1} || '%'
+			AND     ramt_mngmt_2 LIKE #{ramt_mngmt_2} || '%'
+		)a, xodfaccnt b
+		WHERE     a.accnt_cd = b.accnt_cd
+		GROUP BY  a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd, ramt_mngmt_1, ramt_mngmt_2
+	)
+	GROUP BY accnt_cd, accnt_ymd, accnt_cd_abbr, ramt_mngmt_1, ramt_mngmt_2
+)
+ORDER BY accnt_cd, ramt_mngmt_1, tag, accnt_ymd
+</select>
+
+<select id="selectFinBgaCctmInfoList_2" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmInfoList_2 */ 
+accnt_cd
+,accnt_cd_abbr
+,accnt_ymd
+,dr_amt
+,cr_amt
+,jan_amt
+,tag
+FROM
+(
+    SELECT    accnt_cd
+    ,accnt_cd_abbr
+    ,accnt_ymd
+    ,dr_amt
+    ,cr_amt
+    ,jan_amt
+    ,tag
+    FROM  (
+        SELECT    a.accnt_cd
+        ,b.accnt_cd_abbr
+        ,accnt_ymd AS accnt_ymd
+        ,SUM(a.dr_amt)AS dr_amt
+        ,SUM(a.cr_amt)AS cr_amt
+        ,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+        WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+        ,'1' AS tag
+        FROM   ( 
+            SELECT    accnt_cd
+            ,accnt_yrmon || '01' AS accnt_ymd
+            ,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN debit_cryfwd_amt
+            ELSE  debit_cryfwd_amt + debit_amt END) AS dr_amt
+            ,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN cr_cryfwd_amt
+            ELSE cr_cryfwd_amt + cr_amt END ) AS cr_amt
+            FROM     fsaledgr
+            WHERE    accnt_yrmon BETWEEN #{from_mm} AND #{to_mm}
+            AND      accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+
+            UNION ALL
+
+            SELECT   accnt_cd
+            ,accnt_ymd
+            ,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+            ,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+            FROM    fspslipdecsnd
+            WHERE    accnt_ymd BETWEEN #{pre_from_ymd} AND #{pre_to_ymd}
+            AND     accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+        )a, xodfaccnt b
+        WHERE    a.accnt_cd = b.accnt_cd
+        GROUP BY a.accnt_cd, a.accnt_ymd, b.accnt_cd_abbr
+
+        UNION ALL
+
+        SELECT    a.accnt_cd
+        ,b.accnt_cd_abbr
+        ,a.accnt_ymd
+        ,SUM(a.dr_amt)AS dr_amt
+        ,SUM(a.cr_amt) AS cr_amt
+        ,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+        WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+        ,'2' AS tag
+        FROM
+        (
+            SELECT   accnt_cd
+            ,accnt_ymd
+            ,bASe_debit_cr
+            ,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+            ,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+            FROM     fspslipdecsnd
+            WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+            AND      accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+        )a, xodfaccnt b
+        WHERE     a.accnt_cd = b.accnt_cd
+        GROUP BY  a.accnt_cd, a.accnt_ymd, b.accnt_cd_abbr
+    )
+    --ORDER BY accnt_cd, tag, accnt_ymd
+    UNION ALL
+
+    SELECT    accnt_cd
+    ,accnt_cd_abbr
+    ,(TRIM(accnt_ymd)||'99') accnt_ymd
+    ,SUM(dr_amt) AS dr_amt
+    ,SUM(cr_amt) AS cr_amt
+    ,SUM(jan_amt) AS jan_amt
+    ,'2' AS tag
+    FROM  (
+        SELECT    a.accnt_cd
+        ,b.accnt_cd_abbr
+        ,SUBSTR(a.accnt_ymd, 1, 6) accnt_ymd
+        ,SUM(a.dr_amt)AS dr_amt
+        ,SUM(a.cr_amt) AS cr_amt
+        ,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+        WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+        ,'2' AS tag
+        FROM
+        (
+        SELECT   accnt_cd
+        ,SUBSTR(accnt_ymd, 1, 6) accnt_ymd
+        ,bASe_debit_cr
+        ,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+        ,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+        FROM     fspslipdecsnd
+        WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+        AND      accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+        )a, xodfaccnt b
+        WHERE     a.accnt_cd = b.accnt_cd
+        GROUP BY  a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd
+    )
+    GROUP BY accnt_cd, accnt_cd_abbr, accnt_ymd
+
+    UNION ALL
+
+    SELECT    accnt_cd
+    ,accnt_cd_abbr
+    ,accnt_ymd AS accnt_ymd
+    ,SUM(dr_amt) AS dr_amt
+    ,SUM(cr_amt) AS cr_amt
+    ,SUM(jan_amt) AS jan_amt
+    ,'3' AS tag
+    FROM  (
+        SELECT    a.accnt_cd
+        ,b.accnt_cd_abbr
+        ,a.accnt_ymd AS accnt_ymd
+        ,SUM(a.dr_amt)AS dr_amt
+        ,SUM(a.cr_amt)AS cr_amt
+        ,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+        WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+        ,'1' AS tag
+        FROM   ( 
+            SELECT    accnt_cd
+            ,accnt_yrmon || '01' AS accnt_ymd
+            ,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN debit_cryfwd_amt
+            ELSE  debit_cryfwd_amt + debit_amt END) AS dr_amt
+            ,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN cr_cryfwd_amt
+            ELSE cr_cryfwd_amt + cr_amt END ) AS cr_amt
+            FROM     fsaledgr
+            WHERE    accnt_yrmon BETWEEN #{from_mm} AND #{to_mm} 
+            AND      accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+
+            UNION ALL
+
+            SELECT   accnt_cd
+            ,accnt_ymd
+            ,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+            ,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+            FROM    fspslipdecsnd
+            WHERE    accnt_ymd BETWEEN #{pre_from_ymd} AND #{pre_to_ymd}
+            AND     accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+        )a, xodfaccnt b
+        WHERE    a.accnt_cd = b.accnt_cd
+        GROUP BY a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd
+
+        UNION ALL
+
+        SELECT    a.accnt_cd
+        ,b.accnt_cd_abbr
+        ,a.accnt_ymd
+        ,SUM(a.dr_amt)AS dr_amt
+        ,SUM(a.cr_amt) AS cr_amt
+        ,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+        WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+        ,'2' AS tag
+        FROM
+        (
+            SELECT   accnt_cd
+            ,accnt_ymd
+            ,bASe_debit_cr
+            ,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+            ,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+            FROM     fspslipdecsnd
+            WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+            AND      accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+        )a, xodfaccnt b
+        WHERE     a.accnt_cd = b.accnt_cd
+        GROUP BY  a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd
+    )
+    GROUP BY accnt_cd, accnt_ymd, accnt_cd_abbr
+)
+ORDER BY accnt_cd, tag, accnt_ymd
+</select>
+
+
+
+<select id="selectFinBgaCctmExpnsClsfInfoList" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmExpnsClsfInfoList */ 
+a.accnt_cd
+, a.accnt_no      
+, b.accnt_cd_abbr
+, a.accnt_ymd
+, SUBSTR(accnt_ymd,1,6) AS accnt_mm
+, a.dr_amt
+, a.cr_amt
+, a.jan_amt
+, a.slip_no
+, a.slip_odr
+, a.unslip_no
+, a.unslip_odr
+, (slip_no || '-' || TRUNC(slip_odr)) AS slip_no_odr
+, a.rmk_1
+, a.rmk_2
+, a.expns_cd
+, c.expns_cd_nm
+, a.ramt_mngmt_1
+, a.ramt_mngmt_2                 
+FROM ( 	SELECT a.accnt_cd
+		, a.accnt_no                
+		, a.accnt_ymd
+		, a.base_debit_cr
+		, CASE a.base_debit_cr WHEN '1' THEN a.unslip_amt ELSE 0 END AS dr_amt
+		, CASE a.base_debit_cr WHEN '2' THEN a.unslip_amt ELSE 0 END AS cr_amt
+		, 0 AS jan_amt
+		, a.slip_no
+		, a.slip_odr
+		, a.unslip_no
+		, a.unslip_odr
+		, a.rmk_1
+		, a.rmk_2
+		, a.expns_cd
+		, a.ramt_mngmt_1
+		, a.ramt_mngmt_2                                  
+		FROM fspslipdecsnd a 
+		INNER JOIN resbgacctm d ON a.accnt_no = d.accnt_no
+		INNER JOIN fspslipd b ON a.unslip_no = b.unslip_no AND a.unslip_odr  = b.unslip_odr        
+		WHERE a.accnt_cd[1] = '5'
+		<if test='"Y".equals(sub_yn)'>
+		AND	d.main_accnt_no LIKE #{accnt_no} || '%'
+		</if>
+		<if test='"N".equals(sub_yn)'>
+		AND	a.accnt_no LIKE #{accnt_no} || '%'
+		</if>
+		<if test="!from_ymd.isEmpty()">
+		AND  a.accnt_ymd <![CDATA[>=]]> #{from_ymd} 
+		</if>
+		<if test="!to_ymd.isEmpty()">
+		AND a.accnt_ymd <![CDATA[<=]]> #{to_ymd}
+		</if>
+		<if test="!expns_cd.isEmpty()">
+		AND a.expns_cd LIKE #{expns_cd} || '%'
+		</if>
+		<if test="!expns_clsf.isEmpty()">
+		AND a.accnt_cd IN (SELECT accnt_cd FROM xodfaccnt WHERE resch_accnt_clsf = #{expns_clsf})
+		</if>
+) a
+INNER JOIN xodfaccnt b ON a.accnt_cd = b.accnt_cd
+INNER JOIN xodfexpns c ON a.expns_cd = c.expns_cd
+ORDER BY accnt_ymd, slip_no, slip_odr, accnt_cd, expns_cd
+</select>
+<select id="selectFinBgaCctmInfoExcel" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmInfoExcel */ 
+a.accnt_ymd AS accnt_ymd
+, DECODE(a.slip_no, '', null, (a.slip_no || '-' || round(a.slip_odr))) AS slip_no_odr
+, a.rmk_2 AS vend_nm
+, TRIM(a.rmk_1) || CASE WHEN a.ramt_mngmt_1 = '' THEN '' ELSE '/'||TRIM(a.ramt_mngmt_1) END
+	|| CASE WHEN a.ramt_mngmt_2 = '' THEN '' ELSE '/' || TRIM(a.ramt_mngmt_2) END AS rmk
+, a.accnt_no AS accnt_no
+, a.accnt_cd AS accnt_cd
+, a.dr_amt AS dr_amt
+, a.cr_amt AS cr_amt
+, '' AS jan_amt
+, SUBSTR(a.accnt_ymd, 1, 6) AS accnt_mm
+, '1' AS flag
+FROM ( 	SELECT accnt_cd
+		, accnt_no
+		, accnt_ymd
+		, base_debit_cr
+		, rmk_2
+		, rmk_1
+		, accnt_no
+		, slip_no
+		, slip_odr
+		, CASE base_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+		, CASE base_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+		, NVL(ramt_mngmt_2,'') AS ramt_mngmt_2
+		, NVL(ramt_mngmt_1,'') AS ramt_mngmt_1
+		, SUBSTR(accnt_ymd, 1, 6) AS accnt_ym
+		FROM fspslipdecsnd
+		WHERE accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+		AND accnt_no = #{accnt_no}
+)a
+JOIN xodfaccnt b ON a.accnt_cd = b.accnt_cd
+
+UNION
+
+SELECT '' AS accnt_ymd
+, '' AS slip_no_odr
+, '' AS vend_nm
+, '당월계' AS rmk
+, '' AS accnt_no
+, '' AS accnt_cd
+, a.dr_amt AS dr_amt
+, a.cr_amt AS cr_amt
+, ((a.dr_amt - a.cr_amt)::int8)::varchar(13) AS jan_amt
+, a.accnt_ym AS accnt_mm
+, '2' as flag
+FROM ( 	SELECT '' AS accnt_ymd
+		, '' AS slip_no_odr
+		, '' AS vend_nm
+		, '' AS rmk
+		, '' AS accnt_no
+		, '' AS accnt_cd
+		, SUM(CASE base_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END) AS dr_amt
+		, SUM(CASE base_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END) AS cr_amt
+		, SUBSTR(accnt_ymd, 1, 6) AS accnt_ym
+		FROM fspslipdecsnd
+		WHERE accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+		AND accnt_no = #{accnt_no}
+		GROUP BY accnt_ym
+)a
+
+UNION
+
+SELECT '' AS accnt_ymd
+, '' AS slip_no_odr
+, '' AS vend_nm
+, '누계' AS rmk
+, '' AS accnt_no
+, '' AS accnt_cd
+, a.dr_amt AS dr_amt
+, a.cr_amt AS cr_amt
+, ((a.dr_amt - a.cr_amt)::int8)::varchar(13) AS jan_amt
+, a.accnt_ym AS accnt_mm
+, '3' AS flag
+FROM ( 	SELECT '' AS accnt_ymd
+		, '' AS slip_no_odr
+		, '' AS vend_nm
+		, '' AS rmk
+		, '' AS accnt_no
+		, '' AS accnt_cd
+		, SUM(CASE base_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END) AS dr_amt
+		, SUM(CASE base_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END) AS cr_amt
+		, '999999' AS accnt_ym
+FROM fspslipdecsnd
+WHERE accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+AND accnt_no = #{accnt_no}
+GROUP BY accnt_ym
+)a
+ORDER BY accnt_mm, flag
+</select>
+
+<select id="selectFinBgaCctmExpnsInfoExcel" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmExpnsInfoExcel */ 
+	a.accnt_no
+	,a.accnt_cd
+	,b.accnt_cd_abbr 
+	,a.accnt_ymd
+	,rmk_2
+	,trim(nvl(rmk_1,''))||'/'||trim(nvl(ramt_mngmt_1,''))||'/'||trim(nvl(ramt_mngmt_2,''))  as rmk
+	,ramt_mngmt_2
+	,ramt_mngmt_1
+	,slip_no
+	,slip_odr
+	,dr_amt
+	,cr_amt
+	,(case b.base_debit_cr when '1' then dr_amt - cr_amt
+	when '2' then cr_amt - dr_amt end ) as ram_amt
+	,decode(slip_no, '', null, (slip_no || '-' || round(slip_odr)))  as slip_no_odr 
+	,decode(unslip_no, '', null, (unslip_no || '-' || round(unslip_odr)))  as unslip_no_odr 
+,a.expns_cd 
+FROM ( 	SELECT 
+		accnt_cd
+		,accnt_no
+		,accnt_ymd
+		,base_debit_cr
+		,rmk_2
+		,rmk_1
+		,accnt_no
+		,slip_no
+		,slip_odr
+		,unslip_no
+		,unslip_odr
+		,case base_debit_cr when '1' then unslip_amt else 0 end as dr_amt
+		,case base_debit_cr when '2' then unslip_amt else 0 end as cr_amt
+		,ramt_mngmt_2
+		,ramt_mngmt_1
+		,expns_cd
+		FROM fspslipdecsnd
+		WHERE accnt_ymd between #{from_ymd} and  #{to_ymd}
+		AND accnt_no like #{accnt_no} || '%'
+		AND expns_cd like #{expns_cd} || '%'
+		AND accnt_cd[1,1] = '5'
+		AND accnt_cd IN (SELECT accnt_cd from xodfaccnt WHERE nvl(resch_accnt_clsf,'') LIKE #{expns_clsf} || '%')
+) a, xodfaccnt b
+WHERE a.accnt_cd = b.accnt_cd
+ORDER BY a.expns_cd, a.accnt_cd, a.accnt_ymd
+</select>
+
+<select id="selectFinBgaCctmAccntCdInfoExcel" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.fin.selectFspSlipDecsnD */ 
+accnt_ymd
+,decode(slip_no, '', NULL, (slip_no || '-' || ROUND(slip_odr)))  slip_no_odr 
+,rmk_2
+,slip_odr
+,rmk_1
+,accnt_no
+,expns_cd
+,dr_amt
+,cr_amt
+,jan_amt
+,ramt_mngmt_1      AS ramt_mngmt_1 
+,ramt_mngmt_2      AS ramt_mngmt_2
+,slip_no
+,tag
+FROM
+(
+	SELECT    accnt_cd
+	,accnt_no
+	,rmk_2
+	,accnt_ymd
+	,dr_amt
+	,cr_amt
+	,jan_amt
+	,slip_no
+	,slip_odr
+	,rmk_1
+	,expns_cd
+	,ramt_mngmt_1
+	,ramt_mngmt_2                                   
+	,tag
+	FROM  (
+		SELECT   a.accnt_cd
+		,a.accnt_no
+		,a.rmk_2
+		,a.accnt_ymd
+		,CASE a.bASe_debit_cr WHEN '1' THEN a.unslip_amt ELSE 0 END AS dr_amt
+		,CASE a.bASe_debit_cr WHEN '2' THEN a.unslip_amt ELSE 0 END AS cr_amt
+		,0 AS jan_amt
+		,a.slip_no
+		,a.slip_odr
+		,a.rmk_1
+		,a.expns_cd
+		,a.ramt_mngmt_1
+		,a.ramt_mngmt_2  
+		,'2' AS tag
+		FROM    fspslipdecsnd a 
+		WHERE    a.accnt_cd = #{accnt_cd}
+		AND      a.accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+	)
+	
+	UNION ALL
+	
+	SELECT    accnt_cd
+	,'' AS accnt_no
+	,'' AS rmk_2
+	,(trim(accnt_ymd)||'99') accnt_ymd
+	,SUM(dr_amt) AS dr_amt
+	,SUM(cr_amt) AS cr_amt
+	,SUM(jan_amt) AS jan_amt
+	,'' AS slip_no
+	,0 AS slip_odr
+	,'' AS rmk_1
+	,'' AS expns_cd
+	,''
+	,''
+	,'2' AS tag
+	FROM  (
+		SELECT    a.accnt_cd
+		--  ,a.accnt_no
+		,SUBSTR(a.accnt_ymd, 1, 6) accnt_ymd
+		,SUM(a.dr_amt)AS dr_amt
+		,SUM(a.cr_amt) AS cr_amt
+		,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'2' AS tag
+		FROM
+		(
+		SELECT   accnt_cd
+		,accnt_no
+		,SUBSTR(accnt_ymd, 1, 6) accnt_ymd
+		,bASe_debit_cr
+		,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+		,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+		FROM     fspslipdecsnd
+		WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+		AND      accnt_cd = #{accnt_cd}
+		)a, xodfaccnt b
+		WHERE     a.accnt_cd = b.accnt_cd
+		GROUP BY  a.accnt_cd, a.accnt_ymd
+	)
+	GROUP BY accnt_cd, accnt_ymd
+	
+	UNION ALL
+	
+	SELECT    accnt_cd
+	,accnt_no                        
+	,'' AS rmk_2                        
+	,'19000197' AS accnt_ymd
+	,SUM(dr_amt) AS dr_amt
+	,SUM(cr_amt) AS cr_amt
+	,SUM(jan_amt) AS jan_amt
+	,'' AS slip_no
+	,0 AS slip_odr
+	,'' AS rmk_1
+	,'' AS expns_cd
+	,''
+	,''
+	,'4' AS tag
+	FROM  (
+		SELECT    a.accnt_cd
+		,a.accnt_no
+		,a.accnt_ymd
+		,SUM(a.dr_amt)AS dr_amt
+		,SUM(a.cr_amt) AS cr_amt
+		,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'2' AS tag
+		FROM
+		(
+			SELECT   accnt_cd
+			,'' AS accnt_no
+			,accnt_ymd
+			,bASe_debit_cr
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+		)a, xodfaccnt b
+		WHERE     a.accnt_cd = b.accnt_cd
+		GROUP BY  a.accnt_cd, a.accnt_no, a.accnt_ymd
+	)
+	GROUP BY accnt_cd, accnt_no
+) 
+ORDER BY accnt_cd, tag, accnt_ymd, slip_no, slip_odr
+</select>
+<select id="selectFinBgaCctmAccntCdInfo" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmAccntCdInfo */ 
+accnt_cd
+,accnt_cd_abbr
+,accnt_ymd
+,dr_amt
+,cr_amt
+,jan_amt
+,slip_no
+,slip_odr
+,rmk_1
+,expns_cd
+,expns_cd_nm
+,tag
+FROM
+	(
+	SELECT    accnt_cd
+	,accnt_cd_abbr
+	,accnt_ymd
+	,dr_amt
+	,cr_amt
+	,jan_amt
+	,slip_no
+	,slip_odr
+	,rmk_1
+	,expns_cd
+	,expns_cd_nm
+	,tag
+	FROM  (
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,'19000198' AS accnt_ymd
+		,SUM(a.dr_amt)AS dr_amt
+		,SUM(a.cr_amt)AS cr_amt
+		,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'' AS slip_no
+		,0 AS slip_odr
+		,'' AS rmk_1
+		,'' AS expns_cd
+		,'' AS expns_cd_nm
+		,'1' AS tag
+		FROM   ( 
+			SELECT    accnt_cd
+			,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN debit_cryfwd_amt
+			ELSE  debit_cryfwd_amt + debit_amt END) AS dr_amt
+			,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN cr_cryfwd_amt
+			ELSE cr_cryfwd_amt + cr_amt END ) AS cr_amt
+			FROM     fsaledgr
+			WHERE    accnt_yrmon BETWEEN #{from_mm} AND #{to_mm}
+			AND      accnt_cd = #{accnt_cd}
+
+			UNION ALL
+
+			SELECT   accnt_cd
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM    fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{pre_from_ymd} AND #{pre_to_ymd}
+			AND     accnt_cd = #{accnt_cd}
+		)a, xodfaccnt b
+		WHERE    a.accnt_cd = b.accnt_cd
+		GROUP BY a.accnt_cd, b.accnt_cd_abbr
+		
+		UNION ALL
+		
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,a.accnt_ymd
+		,a.dr_amt
+		,a.cr_amt
+		,(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,a.slip_no
+		,a.slip_odr
+		,a.rmk_1
+		,a.expns_cd
+		,c.expns_cd_nm
+		,'2' AS tag
+		FROM
+		(
+			SELECT   accnt_cd
+			,accnt_ymd
+			,bASe_debit_cr
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			,slip_no
+			,slip_odr
+			,rmk_1
+			,expns_cd
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+		)a, xodfaccnt b, xodfexpns c
+		WHERE     a.accnt_cd = b.accnt_cd
+		AND       a.expns_cd = c.expns_cd
+	)
+	--ORDER BY accnt_cd, tag, accnt_ymd
+	
+	UNION ALL
+	
+	SELECT    accnt_cd
+	,accnt_cd_abbr
+	,(TRIM(accnt_ymd)||'99') accnt_ymd
+	,SUM(dr_amt) AS dr_amt
+	,SUM(cr_amt) AS cr_amt
+	,SUM(jan_amt) AS jan_amt
+	,'' AS slip_no
+	,0 AS slip_odr
+	,'' AS rmk_1
+	,'' AS expns_cd
+	,'' AS expns_cd_nm
+	,'2' AS tag
+	FROM  (
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,SUBSTR(a.accnt_ymd, 1, 6) accnt_ymd
+		,SUM(a.dr_amt)AS dr_amt
+		,SUM(a.cr_amt) AS cr_amt
+		,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'2' AS tag
+		FROM
+		(
+			SELECT   accnt_cd
+			,SUBSTR(accnt_ymd, 1, 6) accnt_ymd
+			,bASe_debit_cr
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+		)a, xodfaccnt b
+		WHERE     a.accnt_cd = b.accnt_cd
+		GROUP BY  a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd
+	)
+	GROUP BY accnt_cd, accnt_cd_abbr, accnt_ymd
+	
+	UNION ALL
+	
+	SELECT    accnt_cd
+	,accnt_cd_abbr
+	,'19000197' AS accnt_ymd
+	,SUM(dr_amt) AS dr_amt
+	,SUM(cr_amt) AS cr_amt
+	,SUM(jan_amt) AS jan_amt
+	,'' AS slip_no
+	,0 AS slip_odr
+	,'' AS rmk_1
+	,'' AS expns_cd
+	,'' AS expns_cd_nm
+	,'3' AS tag
+		FROM  (
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,'이월' AS accnt_ymd
+		,SUM(a.dr_amt)AS dr_amt
+		,SUM(a.cr_amt)AS cr_amt
+		,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'1' AS tag
+		FROM   (
+			SELECT    accnt_cd
+			,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN debit_cryfwd_amt
+			ELSE  debit_cryfwd_amt + debit_amt END) AS dr_amt
+			,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN cr_cryfwd_amt
+			ELSE cr_cryfwd_amt + cr_amt END ) AS cr_amt
+			FROM     fsaledgr
+			WHERE    accnt_yrmon BETWEEN #{from_mm} AND #{to_mm}
+			AND      accnt_cd = #{accnt_cd}
+
+			UNION ALL
+
+			SELECT   accnt_cd
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM    fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{pre_from_ymd} AND #{pre_to_ymd}
+			AND     accnt_cd = #{accnt_cd}
+		)a, xodfaccnt b
+		WHERE    a.accnt_cd = b.accnt_cd
+		GROUP BY a.accnt_cd, b.accnt_cd_abbr
+		
+		UNION ALL
+		
+		SELECT    a.accnt_cd
+		,b.accnt_cd_abbr
+		,a.accnt_ymd
+		,SUM(a.dr_amt)AS dr_amt
+		,SUM(a.cr_amt) AS cr_amt
+		,SUM(CASE b.bASe_debit_cr WHEN '1' THEN dr_amt - cr_amt
+		WHEN '2' THEN cr_amt - dr_amt END ) AS jan_amt
+		,'2' AS tag
+		FROM
+		(
+			SELECT   accnt_cd
+			,accnt_ymd
+			,bASe_debit_cr
+			,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+			,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+			FROM     fspslipdecsnd
+			WHERE    accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+			AND      accnt_cd = #{accnt_cd}
+		)a, xodfaccnt b
+		WHERE     a.accnt_cd = b.accnt_cd
+		GROUP BY  a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd
+	)
+	GROUP BY accnt_cd, accnt_cd_abbr
+)
+ORDER BY accnt_cd, tag, accnt_ymd
+</select>
+<select id="selectFinBgaCctmAccntInfo" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmAccntInfo */ 
+a.accnt_cd
+,a.accnt_no
+,a.accnt_rspns_nm
+,a.accnt_rspns_dept_nm
+,a.vend_abbr
+,b.accnt_cd_abbr
+,a.accnt_ymd
+,substr(accnt_ymd, 0,6) AS yrmon
+,a.dr_amt
+,a.cr_amt
+,DECODE(a.accnt_cd[1], '1', dr_amt - cr_amt, '5', dr_amt - cr_amt, cr_amt - dr_amt) AS jan_amt
+,a.slip_no
+,a.slip_odr
+,a.unslip_no
+,a.unslip_odr
+,a.rmk_1
+,a.expns_cd
+,ramt_mngmt_1 AS ramt_mngmt_1
+,ramt_mngmt_2 AS ramt_mngmt_2
+,ramt_mngmt_3 AS ramt_mngmt_3
+FROM
+(
+	SELECT a.accnt_cd
+	,a.accnt_no
+	,b.nm AS accnt_rspns_nm
+	,c.dept_nm AS accnt_rspns_dept_nm
+	,TRIM(a.rmk_2) AS vend_abbr
+	,a.accnt_ymd
+	,a.base_debit_cr
+	,CASE a.base_debit_cr WHEN '1' THEN a.unslip_amt ELSE 0 END AS dr_amt
+	,CASE a.base_debit_cr WHEN '2' THEN a.unslip_amt ELSE 0 END AS cr_amt
+	,0 AS jan_amt
+	,a.slip_no
+	,a.slip_odr
+	,a.unslip_no
+	,a.unslip_odr
+	,a.rmk_1
+	,a.expns_cd
+	,TRIM(a.ramt_mngmt_1) AS ramt_mngmt_1
+	,TRIM(a.ramt_mngmt_2) AS ramt_mngmt_2
+	,TRIM(t1.mngmt_detls_cd) AS ramt_mngmt_3
+	FROM fspslipdecsnd a
+	LEFT JOIN humbasicinfo b ON a.accnt_rspns = b.syspayno
+	LEFT JOIN xodhdeptinfo c ON b.dept_cd = c.dept_cd AND b.dept_new_ymd = c.dept_new_ymd
+	LEFT JOIN fspslipmngmt t1 ON t1.unslip_no = a.unslip_no AND t1.unslip_odr = a.unslip_odr AND t1.mngmt_item_cd = '4001'
+	WHERE a.accnt_cd = #{accnt_cd}
+	AND a.accnt_no LIKE #{accnt_no} || '%'
+	AND a.accnt_ymd  between #{from_ymd} AND #{to_ymd}
+	<if test="mngmt_item_1 != null and mngmt_item_1 != ''">
+	AND NVL(a.ramt_mngmt_1, '') LIKE '%' || #{mngmt_item_1} || '%'
+	</if>
+	<if test="mngmt_item_2 != null and mngmt_item_2 != ''">
+	AND NVL(a.ramt_mngmt_2, '') LIKE '%' || #{mngmt_item_2} || '%'
+	</if>
+)a, xodfaccnt b, outer xodfexpns c
+WHERE a.accnt_cd = b.accnt_cd
+AND a.expns_cd = c.expns_cd
+ORDER BY accnt_cd, accnt_ymd, slip_no, slip_odr
+</select>
+<select id="selectFinBgaCctmAccntInfoExcel_2" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmAccntInfoExcel_2 */ 
+a.accnt_cd
+,a.accnt_no
+,a.vend_abbr
+,b.accnt_cd_abbr
+,a.accnt_ymd
+,bugt_ctrl_psn
+,selr_code
+,buyr_code
+,SUBSTR(accnt_ymd, 0,6) AS yrmon
+,a.dr_amt
+,a.cr_amt
+,decode(a.accnt_cd[1], '1', dr_amt - cr_amt, '5', dr_amt - cr_amt, cr_amt - dr_amt) as jan_amt
+,a.slip_no
+,a.slip_odr
+,a.rmk_1
+,a.rmk_2
+,a.expns_cd
+,ramt_mngmt_1 AS ramt_mngmt_1
+,ramt_mngmt_2 AS ramt_mngmt_2
+,evid_nm
+,evid_day
+,supply_amt
+,selr_code2
+,unslip_no
+,unslip_odr
+,trans_unslip_no
+FROM
+(
+	SELECT a.accnt_cd,
+	a.accnt_no,
+	TRIM(a.rmk_2) AS vend_abbr,
+	a.accnt_ymd,
+	b.accnt_cd_abbr,
+	fun_humbasicinfo_cd_nm(d.bugt_ctrl_psn, 8) as bugt_ctrl_psn,
+	g.selr_code,
+	g.buyr_code,
+	case a.base_debit_cr when '1' THEN a.unslip_amt else 0 END AS dr_amt,
+	case a.base_debit_cr when '2' THEN a.unslip_amt else 0 END AS cr_amt,
+	a.slip_no,
+	a.slip_odr,
+	a.rmk_1,
+	a.rmk_2,
+	a.expns_cd,
+	a.ramt_mngmt_1,
+	a.ramt_mngmt_2,
+	fun_xodxcommst_cd_nm(a.evid_cd, 0) evid_nm,
+	CASE WHEN NVL(a.evid_cd, '') = 'FAH500' THEN  substr(h.use_ymd, 0, 8)
+	WHEN  NVL(a.evid_cd, '') IN ('FAH011','FAH010', 'FAH400') THEN substr(g.regs_date, 0, 8) END AS evid_day,                  
+	CASE WHEN SUBSTR(a.unslip_no, 0, 3) IN ('216') THEN (SELECT unslip_amt FROM fspslipdecsnd WHERE unslip_no = a.unslip_no AND unslip_odr = a.unslip_odr-1) ELSE
+	(NVL(NVL(nvl( g.chrg_amt, nvl(p.supply_amt, nvl(q.demcost-q.exttax, s.auth_amt2))), r.supply_amt),
+	(SELECT unslip_amt FROM fspslipdecsnd WHERE unslip_no = a.unslip_no AND unslip_odr = (CASE WHEN SUBSTR(unslip_no, 0, 3) IN ('230', '235') THEN a.unslip_odr-2 ELSE a.unslip_odr-1 END)))) END AS supply_amt,
+	(SELECT decode(c.dept_level_3, 'L000','0003',d.mngmt_item_3)
+	FROM fspslipdecsnd a1
+	JOIN humbasicinfo b ON a1.accnt_rspns = b.syspayno
+	LEFT JOIN xodhdeptinfo c ON b.dept_cd = c.dept_cd AND b.dept_new_ymd = c.dept_new_ymd
+	LEFT JOIN xodxcommst d ON d.cd = c.dept_typ
+	WHERE a1.unslip_no = a.unslip_no AND a1.unslip_odr = CASE WHEN SUBSTR(unslip_no, 0, 3) IN ('119', '230', '235') THEN 1 ELSE a.unslip_odr-1 END AND a1.base_debit_cr = 1) AS selr_code2,
+	a.unslip_no,
+	a.unslip_odr,
+	a.trans_unslip_no
+	FROM fspslipdecsnd a
+	JOIN xodfaccnt b ON a.accnt_cd = b.accnt_cd
+	JOIN xodfexpns c ON a.expns_cd = c.expns_cd
+	JOIN resbgacctm d ON a.accnt_no = d.accnt_no
+	JOIN fspslipd f ON f.unslip_no = a.unslip_no AND f.unslip_odr = a.unslip_odr
+	LEFT JOIN ktx_issu_mstr g ON g.issu_seqno = f.bill_no
+	LEFT JOIN fspsendreq h ON h.unslip_no = f.unslip_no AND h.unslip_odr = f.unslip_odr-1
+	LEFT JOIN fbc_recogn p ON p.unslip_no = a.unslip_no AND p.unslip_seq = a.unslip_odr-1
+	LEFT JOIN ezbaro_cardorgn q ON q.unslip_no = a.unslip_no AND q.unslip_seq = a.unslip_odr-1
+	LEFT JOIN flgrnd_recogn r ON r.unslip_no = a.unslip_no AND r.unslip_seq = a.unslip_odr-1
+	LEFT JOIN fbcrndauth s ON s.unslip_no = a.unslip_no AND s.unslip_seq = a.unslip_odr-1
+	WHERE a.accnt_cd = #{accnt_cd}
+	AND a.accnt_ymd  BETWEEN #{from_ymd} AND #{to_ymd}
+)a, xodfaccnt b, OUTER xodfexpns c
+WHERE     a.accnt_cd = b.accnt_cd
+AND       a.expns_cd = c.expns_cd
+ORDER BY accnt_cd, accnt_ymd, slip_no, slip_odr
+</select>
+<select id="selectFinUseDetlsInfoList" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinUseDetlsInfoList */ 
+	b.itm_clsf       
+	, c.accnt_cd_abbr 
+	, a.accnt_ymd
+	, a.rmk_1
+	, CASE WHEN a.base_debit_cr = 1 THEN a.unslip_amt ELSE (-1) * a.unslip_amt END AS unslip_amt
+	, 'tot' AS tot
+	, a.unslip_no
+	, a.rmk_2
+	, a.accnt_no
+	, d.accnt_clsf     
+	, e.expns_cd_nm||'('||a.expns_cd||')' AS expns_cd_nm
+	, g.nm
+	, g.empno AS syspayno
+	, fun_dept_nm(f.wrte_dept, f.wrte_dept_new_ymd) AS dept_nm
+	, fun_dept_nm(g.dept_cd, g.dept_new_ymd) AS accnt_rspns_dept_nm
+FROM fspslipdecsnd a
+JOIN fbaitmaccnt b ON a.accnt_cd = b.accnt_cd 
+JOIN xodfaccnt c ON b.accnt_cd = c.accnt_cd 
+JOIN resbgacctm d ON a.accnt_no = d.accnt_no
+JOIN xodfexpns e ON a.expns_cd = e.expns_cd
+JOIN fspsliph f ON a.slip_no = f.slip_no AND f.unslip_no = a.unslip_no
+JOIN humbasicinfo g ON f.wrte_psn = g.syspayno
+WHERE 1=1
+AND   b.itm_solve_base IN (SELECT itm_solve_base FROM resbgacctm WHERE accnt_no = #{accnt_no}) 
+<if test='subplus == "1"'> AND a.accnt_no LIKE #{accnt_no_itm} </if>
+<if test='subplus == "N"'> AND a.accnt_no =  #{accnt_no_itm} </if>
+AND   ((#{accnt_clsf} = 'Y' and d.accnt_clsf = 'RAR003') OR 
+	  (#{accnt_clsf} = 'Z' and d.accnt_clsf like 'RAR004') OR
+	  (#{accnt_clsf} = 'X' and d.accnt_clsf in('RAR003','RAR004')) OR
+	  (#{accnt_clsf} = 'N' and d.accnt_clsf not in('RAR003','RAR004')) OR 
+	  (#{accnt_clsf} = '%' and d.accnt_clsf like '%')) 
+ORDER BY b.itm_clsf, b.accnt_cd, accnt_ymd ASC
+</select>
+<select id="selectFinBgaCctmEnfrcInfo" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmEnfrcInfo */ 
+	h.accnt_cd,
+	c.dept_cd,
+	e.dept_nm up_dept,
+	d.dept_nm,
+	c.nm,
+	a.curr_resch_rspns,
+	b.bsns_nm,
+	a.prj_nm,
+	a.tot_resch_prd_cls_ymd,
+	f.main_accnt_no,
+	SUM(g.gov_cntrbamt) gov_cntrbamt,
+	SUM(g.cmpy_cash) cmpy_cash,
+	SUM(g.cmpy_goods) cmpy_goods,
+	SUM(g.gov_cntrbamt + g.gov_subsidy + g.area_share_wide + g.area_share_base + g.self_share
+	+ g.cmpy_cash + g.cmpy_goods + g.contpat_goods + g.local_gov_cash + g.univ_cash + g.etc_cash) AS agree_amt,
+	SUM(CASE j.decsn_ex WHEN 'Y' THEN i.unslip_amt END) schdl_amt,
+	SUM(CASE j.decsn_ex WHEN 'Y' THEN 0 ELSE i.unslip_amt END) enfrc_amt
+FROM resinpmast a
+JOIN xodrbacode b ON b.bsns_cd = a.bsns_cd_bsns
+JOIN humbasicinfo c ON a.curr_resch_rspns = c.syspayno
+JOIN xodhdeptinfo d ON d.dept_cd = c.dept_cd AND d.abol_ymd IS NULL
+JOIN xodhdeptinfo e ON e.dept_cd = d.up_dept AND e.abol_ymd IS NULL
+JOIN resbgacctm f ON f.prj_no = a.prj_no
+JOIN resbgagree g ON g.accnt_no = f.main_accnt_no
+JOIN fspslipd i ON i.accnt_no = f.main_accnt_no
+JOIN fspsliph j ON i.unslip_no = j.unslip_no
+JOIN xodfaccnt h ON h.accnt_cd = i.accnt_cd
+WHERE 1=1
+AND   a.tot_resch_prd_cls_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+AND   j.slip_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+AND   h.resch_accnt_clsf = #{expns_clsf}
+GROUP BY 1,2,3,4,5,6,7,8,9,10
+</select>
+<select id="selectFinBgaCctmInfoList_3" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmInfoList_3 */ 
+accnt_cd
+,accnt_cd_abbr
+,accnt_ymd
+,SUM(pre_amt) AS pre_amt
+,SUM(dr_amt) AS dr_amt
+,SUM(cr_amt) AS cr_amt
+,SUM(jan_amt) AS jan_amt
+FROM
+(
+	SELECT    a.accnt_cd
+	,b.accnt_cd_abbr
+	,a.accnt_ymd
+	,SUM(CASE b.base_debit_cr WHEN '1' THEN dr_amt - cr_amt
+	WHEN '2' THEN cr_amt - dr_amt END ) AS pre_amt
+	,0 AS dr_amt
+	,0 AS cr_amt
+	,0 AS jan_amt
+	FROM ( 
+		SELECT    accnt_cd
+		,'' AS accnt_ymd
+		,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN debit_cryfwd_amt
+		ELSE  debit_cryfwd_amt + debit_amt END) AS dr_amt
+		,(CASE SUBSTR(#{from_ymd}, 5, 2) WHEN '01' THEN cr_cryfwd_amt
+		ELSE cr_cryfwd_amt + cr_amt END ) AS cr_amt
+		FROM     fsaledgr
+		WHERE    accnt_yrmon BETWEEN #{from_mm} AND #{to_mm}
+		AND      accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+
+		UNION ALL
+		
+        SELECT   accnt_cd
+		,accnt_ymd
+		,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+		,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+		FROM    fspslipdecsnd
+		WHERE    accnt_ymd BETWEEN #{pre_from_ymd} AND #{pre_to_ymd}
+		AND     accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+	)a, xodfaccnt b
+	WHERE    a.accnt_cd = b.accnt_cd
+	GROUP BY a.accnt_cd, b.accnt_cd_abbr,accnt_ymd
+	
+	UNION ALL
+	
+	SELECT    a.accnt_cd
+	,b.accnt_cd_abbr
+	,a.accnt_ymd
+	,0 AS pre_amt
+	,a.dr_amt
+	,a.cr_amt
+	,(CASE b.bASe_debit_cr WHEN '1' THEN a.dr_amt - a.cr_amt
+	WHEN '2' THEN a.cr_amt - a.dr_amt END ) AS jan_amt
+	FROM
+	(
+		SELECT   accnt_cd
+		,bASe_debit_cr
+		,accnt_ymd
+		,CASE bASe_debit_cr WHEN '1' THEN unslip_amt ELSE 0 END AS dr_amt
+		,CASE bASe_debit_cr WHEN '2' THEN unslip_amt ELSE 0 END AS cr_amt
+		FROM    fspslipdecsnd
+		WHERE   accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+		AND     accnt_cd BETWEEN #{from_accnt_cd} AND #{to_accnt_cd}
+	)a, xodfaccnt b
+	WHERE a.accnt_cd = b.accnt_cd
+)
+GROUP BY accnt_cd, accnt_cd_abbr, accnt_ymd
+ORDER BY accnt_cd, accnt_ymd, accnt_cd_abbr
+</select>
+
+<select id="selectFinBgaCctmAccntInfoExcel_1" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmAccntInfoExcel_1 */ 
+ a.accnt_ymd
+ , a.slip_no
+ , a.vend_abbr
+ , a.rmk_1
+ , a.accnt_no
+ , a.accnt_cd
+ , a.expns_cd
+ , a.dr_amt
+ , a.cr_amt
+ , decode(a.accnt_cd[1], '1', dr_amt - cr_amt, '5', dr_amt - cr_amt, cr_amt - dr_amt) as jan_amt
+ , ramt_mngmt_1 AS ramt_mngmt_1
+ , ramt_mngmt_2 AS ramt_mngmt_2
+ , ramt_mngmt_3 AS ramt_mngmt_3
+FROM
+(
+	SELECT a.accnt_cd
+	,a.accnt_no
+	,b.nm AS accnt_rspns_nm
+	,c.dept_nm AS accnt_rspns_dept_nm
+	,TRIM(a.rmk_2) AS vend_abbr
+	,a.accnt_ymd
+	,a.base_debit_cr
+	,CASE a.base_debit_cr WHEN '1' THEN a.unslip_amt ELSE 0 END AS dr_amt
+	,CASE a.base_debit_cr WHEN '2' THEN a.unslip_amt ELSE 0 END AS cr_amt
+	,0 AS jan_amt
+	,a.slip_no
+	,a.slip_odr
+	,a.unslip_no
+	,a.unslip_odr
+	,a.rmk_1
+	,a.expns_cd
+	,TRIM(a.ramt_mngmt_1) AS ramt_mngmt_1
+	,TRIM(a.ramt_mngmt_2) AS ramt_mngmt_2
+	,TRIM(t1.mngmt_detls_cd) AS ramt_mngmt_3
+	FROM fspslipdecsnd a
+	LEFT JOIN humbasicinfo b ON a.accnt_rspns = b.syspayno
+	LEFT JOIN xodhdeptinfo c ON b.dept_cd = c.dept_cd AND b.dept_new_ymd = c.dept_new_ymd
+	LEFT JOIN fspslipmngmt t1 ON t1.unslip_no = a.unslip_no AND t1.unslip_odr = a.unslip_odr AND t1.mngmt_item_cd = '4001'
+	WHERE a.accnt_cd = #{accnt_cd}
+	AND a.accnt_no LIKE #{accnt_no} || '%'
+	AND a.accnt_ymd  between #{from_ymd} AND #{to_ymd}
+	<if test="ramt_mngmt_1 != null and ramt_mngmt_1 != ''">
+	AND NVL(a.ramt_mngmt_1, '') LIKE '%' || #{ramt_mngmt_1} || '%'
+	</if>
+	<if test="ramt_mngmt_2 != null and ramt_mngmt_2 != ''">
+	AND NVL(a.ramt_mngmt_2, '') LIKE #{ramt_mngmt_2} || '%'
+	</if>
+)a, xodfaccnt b, outer xodfexpns c
+WHERE a.accnt_cd = b.accnt_cd
+AND a.expns_cd = c.expns_cd
+ORDER BY accnt_cd, accnt_ymd, slip_no, slip_odr
+</select>
+<select id="selectFinBgaCctmRamtInfo" resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinBgaCctmRamtInfo */ 
+      mngmt_item_1,                                                                      
+      mngmt_item_nm_1 ,                                                                   
+      mngmt_item_2,                                                                       
+      mngmt_item_nm_2,  
+      slip_no,
+      NVL(accnt_ymd,'') AS ymd,  						-- 발생일자
+      NVL(accnt_ymd_1,'') AS accnt_ymd,  			-- 확정일자   
+      rmk_1 ,
+      NVL(won_occr_amt,0) AS won_occr_amt,                                                                       
+      adjst_amt AS won_adjst_amt,                       -- 정산금액 
+      won_occr_amt - adjst_amt AS jan_amt  			-- 미정산잔액    
+FROM ( SELECT a.slip_no,                                                                  
+              a.slip_odr,                                                                 
+              TRIM(a.mngmt_item_1) mngmt_item_1,                     -- 관리항목1    
+              TRIM(a.mngmt_item_nm_1) AS mngmt_item_nm_1 ,    -- 관리항목명1
+              TRIM(a.mngmt_item_2) AS mngmt_item_2,                 -- 관리항목2   
+              TRIM(a.mngmt_item_nm_2) AS mngmt_item_nm_2,      -- 관리항목명2 
+              a.accnt_ymd,                                                   		  -- 발생일자 
+              a.won_occr_amt,                                                      -- 발생금액   
+              a.unslip_repay_amt,                                                  -- 가결의반제금액   
+              a.won_adjst_amt,                                                                                                                      
+              a.rmk_1,                                                                    
+              SUM(DECODE(NVL(c.decsn_ex, 'N'), 'Y', b.won_occr_amt, 0)) AS adjst_amt,     
+              SUM(DECODE(NVL(c.decsn_ex, 'N'), 'N', b.won_occr_amt, 0)) AS non_adjst_amt,           
+              MAX(c.accnt_ymd) AS accnt_ymd_1     -- 최종확정일자                                        
+       FROM fspramtcreat a
+       LEFT OUTER JOIN ( fspramtadjst b                                                   
+                         INNER JOIN fspsliph c ON b.unslip_no = c.unslip_no AND c.accnt_ymd <![CDATA[ <= ]]> #{accnt_ymd}
+                       ) ON a.slip_no = b.slip_no AND a.slip_odr = b.slip_odr           
+       WHERE a.accnt_cd = #{accnt_cd}
+       AND   a.accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}                                   
+       AND   a.rmk_1 != '전기이월'   
+       AND   a.won_occr_amt  <![CDATA[ > ]]> 0 
+<if test="reschr_syspayno != null and reschr_syspayno != ''">
+	  AND (a.mngmt_item_1 IN (SELECT accnt_no FROM resbgacctm WHERE prj_no IN (SELECT prj_no FROM resinppare WHERE syspayno = #{reschr_syspayno} AND reschr_clsf ='RAL001'))
+	  OR a.mngmt_item_2 IN (SELECT accnt_no FROM resbgacctm WHERE prj_no IN (SELECT prj_no FROM resinppare WHERE syspayno = #{reschr_syspayno} AND reschr_clsf ='RAL001')))
+</if>      
+<if test="mngmt_item_1 != null and mngmt_item_1 != '' and (string_yn_1 == null or string_yn_1 == '')">
+	  AND a.mngmt_item_1 <![CDATA[ >= ]]> #{mngmt_item_1}
+</if>
+<if test="mngmt_item_3 != null and mngmt_item_3 != '' and (string_yn_1 == null or string_yn_1 == '')">
+	  AND a.mngmt_item_1 <![CDATA[ <= ]]> #{mngmt_item_3}
+</if>  
+<if test="mngmt_item_2 != null and mngmt_item_2 != '' and (string_yn_2 == null or string_yn_2 == '')">
+	  AND a.mngmt_item_2 <![CDATA[ >= ]]> #{mngmt_item_2}
+</if>  
+<if test="mngmt_item_4 != null and mngmt_item_4 != '' and (string_yn_2 == null or string_yn_2 == '')">
+	  AND a.mngmt_item_2 <![CDATA[ <= ]]> #{mngmt_item_4}
+</if>     
+<if test='"Y".equals(string_yn_1)'>
+	  AND (a.mngmt_item_1 LIKE '%' || #{mngmt_item_1} || '%' AND a.mngmt_item_1 LIKE '%' || #{mngmt_item_3} || '%') 
+</if>
+<if test='"Y".equals(string_yn_2)'>
+	  AND (a.mngmt_item_2 LIKE '%' || #{mngmt_item_2} || '%' AND a.mngmt_item_2 LIKE '%' || #{mngmt_item_4} || '%')
+</if>    
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11                                 
+)
+WHERE 1=1
+<if test='"Y".equals(ramt_yn)'>
+	AND (won_occr_amt-adjst_amt) = 0
+</if>
+<if test='"N".equals(ramt_yn)'>
+	AND (won_occr_amt-adjst_amt) <![CDATA[ > ]]> 0
+</if>
+<if test='"21017911".equals(accnt_cd)'>
+	ORDER BY 3, 7, 1
+</if>
+<if test='!"21017911".equals(accnt_cd)'>
+	ORDER BY 7, 1, 3
+</if>
+</select>
+
+<select id="selectFinCashRgstrList" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo"
+	resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">
+	SELECT /* QueryID : kr.re.kitech.biz.fin.fin.selectFinCashRgstrList */
+	slip_ymd
+	,SUBSTR(slip_ymd, 0, 6) AS slip_yymm
+	,slip_no
+	,slip_odr
+	,accnt_ymd
+	,rmk
+	,nvl(dr_amt, 0) AS dr_amt
+	,nvl(cr_amt, 0) AS cr_amt
+	,nvl(jan_amt, 0) AS jan_amt
+	,tag
+	FROM
+	(
+	SELECT slip_ymd
+	,slip_no
+	,slip_odr
+	,accnt_ymd
+	,rmk
+	,dr_amt
+	,cr_amt
+	,jan_amt
+	,contpat_accnt_cd
+	,tag
+	FROM (
+	SELECT '19000198' as slip_ymd
+	,'' as slip_no
+	,0 as slip_odr
+	,'' as accnt_ymd
+	,'' as rmk
+	,sum(a.dr_amt)as dr_amt
+	,sum(a.cr_amt)as cr_amt
+	,sum(case b.base_debit_cr when '1' then dr_amt - cr_amt
+	when '2' then cr_amt - dr_amt end ) as jan_amt
+	,'' as contpat_accnt_cd
+	,'1' as tag
+	FROM ( SELECT accnt_cd
+	,(case substr(#{from_ymd}, 5, 2) when '01' then debit_cryfwd_amt
+	else debit_cryfwd_amt + debit_amt end) as dr_amt
+	,(case substr(#{from_ymd}, 5, 2) when '01' then cr_cryfwd_amt
+	else cr_cryfwd_amt + cr_amt end ) as cr_amt
+	FROM fsaledgr
+	WHERE accnt_yrmon between #{from_mm} and #{to_mm}
+	AND accnt_cd = #{accnt_cd}
+	union all
+	SELECT accnt_cd
+	,case base_debit_cr when '1' then unslip_amt else 0 end as dr_amt
+	,case base_debit_cr when '2' then unslip_amt else 0 end as cr_amt
+	FROM fspslipdecsnd
+	WHERE accnt_ymd between #{pre_from_ymd} and #{pre_to_ymd}
+	AND accnt_cd = #{accnt_cd}
+	)a, xodfaccnt b
+	WHERE a.accnt_cd = b.accnt_cd
+	union all
+	SELECT a.slip_ymd
+	,a.slip_no
+	,a.slip_odr
+	,a.accnt_ymd
+	,a.rmk
+	,a.dr_amt
+	,a.cr_amt
+	,(case b.base_debit_cr when '1' then a.dr_amt - a.cr_amt
+	when '2' then a.cr_amt - a.dr_amt end ) as jan_amt
+	,a.contpat_accnt_cd
+	,'2' as tag
+	FROM
+	(
+	SELECT b.accnt_cd
+	,a.slip_ymd
+	,a.slip_no
+	,b.slip_odr
+	,a.accnt_ymd
+	,b.rmk_1 as rmk
+	,b.base_debit_cr
+	,case b.base_debit_cr when '1' then b.unslip_amt else 0 end as dr_amt
+	,case b.base_debit_cr when '2' then b.unslip_amt else 0 end as cr_amt
+	,b.contpat_accnt_cd
+	FROM fspslipdecsnh a, fspslipdecsnd b
+	WHERE a.slip_no = b.slip_no
+	AND a.accnt_ymd between #{from_ymd} and #{to_ymd}
+	AND b.accnt_cd = #{accnt_cd}
+	)a, xodfaccnt b
+	WHERE a.accnt_cd = b.accnt_cd
+	)
+	union all
+	SELECT (trim(slip_ymd)||'99') slip_ymd
+	,'' as slip_no
+	,0 as slip_odr
+	,'' as accnt_ymd
+	,'' as rmk
+	,sum(dr_amt) as dr_amt
+	,sum(cr_amt) as cr_amt
+	,sum(jan_amt) as jan_amt
+	,'' as contpat_accnt_cd
+	,'2' as tag
+	FROM ( SELECT substr(a.slip_ymd, 1, 6) slip_ymd
+	,sum(a.dr_amt)as dr_amt
+	,sum(a.cr_amt)as cr_amt
+	,sum(case b.base_debit_cr when '1' then a.dr_amt - a.cr_amt
+	when '2' then a.cr_amt - a.dr_amt end ) as jan_amt
+	,'2' as tag
+	FROM
+	(
+	SELECT b.accnt_cd
+	,a.slip_ymd
+	,a.slip_no
+	,b.slip_odr
+	,a.accnt_ymd
+	,b.rmk_1 as rmk
+	,b.base_debit_cr
+	,case b.base_debit_cr when '1' then b.unslip_amt else 0 end as dr_amt
+	,case b.base_debit_cr when '2' then b.unslip_amt else 0 end as cr_amt
+	,b.contpat_accnt_cd
+	FROM fspslipdecsnh a, fspslipdecsnd b
+	WHERE a.slip_no = b.slip_no
+	AND a.accnt_ymd between #{from_ymd} and #{to_ymd}
+	AND b.accnt_cd = #{accnt_cd}
+	)a, xodfaccnt b
+	WHERE a.accnt_cd = b.accnt_cd
+	group by a.slip_ymd, a.accnt_cd
+	)
+	group by slip_ymd
+	union all
+	SELECT '19000197' as slip_ymd
+	,'' as slip_no
+	,0 as slip_odr
+	,'' as accnt_ymd
+	,'' as rmk
+	,sum(dr_amt) as dr_amt
+	,sum(cr_amt) as cr_amt
+	,sum(jan_amt) as jan_amt
+	,'' as contpat_accnt_cd
+	,'3' as tag
+	FROM (
+	SELECT sum(a.dr_amt)as dr_amt
+	,sum(a.cr_amt)as cr_amt
+	,sum(case b.base_debit_cr when '1' then dr_amt - cr_amt
+	when '2' then cr_amt - dr_amt end ) as jan_amt
+	FROM ( SELECT accnt_cd
+	,(case substr(#{from_ymd}, 5, 2) when '01' then debit_cryfwd_amt
+	else debit_cryfwd_amt + debit_amt end) as dr_amt
+	,(case substr(#{from_ymd}, 5, 2) when '01' then cr_cryfwd_amt
+	else cr_cryfwd_amt + cr_amt end ) as cr_amt
+	FROM fsaledgr
+	WHERE accnt_yrmon between #{from_mm} and #{to_mm}
+	AND accnt_cd = #{accnt_cd}
+	union all
+	SELECT accnt_cd
+	,case base_debit_cr when '1' then unslip_amt else 0 end as dr_amt
+	,case base_debit_cr when '2' then unslip_amt else 0 end as cr_amt
+	FROM fspslipdecsnd
+	WHERE accnt_ymd between #{pre_from_ymd} and #{pre_to_ymd}
+	AND accnt_cd = #{accnt_cd}
+	)a, xodfaccnt b
+	WHERE a.accnt_cd = b.accnt_cd
+	union all
+	SELECT sum(a.dr_amt)as dr_amt
+	,sum(a.cr_amt) as cr_amt
+	,sum(case b.base_debit_cr when '1' then dr_amt - cr_amt
+	when '2' then cr_amt - dr_amt end ) as jan_amt
+	FROM
+	(
+	SELECT accnt_cd
+	,base_debit_cr
+	,case base_debit_cr when '1' then unslip_amt else 0 end as dr_amt
+	,case base_debit_cr when '2' then unslip_amt else 0 end as cr_amt
+	FROM fspslipdecsnd
+	WHERE accnt_ymd between #{from_ymd} and #{to_ymd}
+	AND accnt_cd = #{accnt_cd}
+	)a, xodfaccnt b
+	WHERE a.accnt_cd = b.accnt_cd
+	)
+	)
+	ORDER BY tag, slip_ymd ASC
+</select>
+<select id="selectFinDayAccntList" parameterType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmVo"
+	resultType="kr.re.kitech.biz.fin.leg.vo.FinBgaCctmDetlVo">	
+	/* QueryID : kr.re.kitech.biz.fin.fin.selectFinDayAccntList */
+	SELECT 
+	b.accnt_cd_abbr
+	,a.accnt_cd
+	,substr(a.accnt_cd, 0, 1) as gubun_accnt_cd
+	,SUM(decode(a.base_debit_cr,'1',a.unslip_amt, 0)) dr_amt
+	,SUM(decode(a.base_debit_cr,'2',a.unslip_amt, 0)) cr_amt
+	,a.accnt_ymd
+	FROM fspslipdecsnd a,
+	     xodfaccnt b
+	WHERE   accnt_ymd = #{accnt_ymd}
+	AND a.accnt_cd = b.accnt_cd
+	GROUP BY a.accnt_cd, b.accnt_cd_abbr, a.accnt_ymd
+	ORDER BY a.accnt_cd	
+	
+</select>
+
+<select id="selectFspRamtCrate" parameterType="kr.re.kitech.biz.fin.leg.vo.FspRamtCrateVo" resultType="kr.re.kitech.biz.fin.leg.vo.FspRamtCrateVo">
+SELECT  /* kr.re.kitech.biz.fin.leg.selectFspRamtCrate */
+      mngmt_item_1,
+      mngmt_item_nm_1,
+      mngmt_item_2,
+      mngmt_item_nm_2,
+      accnt_ymd,
+      won_occr_amt,
+      adjst_amt AS won_adjst_amt,                              --  정산금액 
+      NVL(unslip_repay_amt, 0) + NVL(non_adjst_amt, 0) AS unslip_repay_amt,    --  가결의반제금액
+      won_occr_amt - NVL(unslip_repay_amt, 0) - adjst_amt - NVL(non_adjst_amt, 0)  AS amt,  --  미정산잔액
+       DECODE(NVL(final_adjst_ymd,''),'', accnt_ymd_1, final_adjst_ymd) AS final_adjst_ymd,
+      rmk_1,                                                                              
+      trim(slip_no)||'-'||round(slip_odr,0) AS occ_slip_no
+FROM ( SELECT 
+                a.slip_no,                                                                  
+                a.slip_odr,
+                NVL(TRIM(a.mngmt_item_1),'') AS mngmt_item_1,                             -- 관리항목1    
+                NVL(TRIM(a.mngmt_item_nm_1),'') AS mngmt_item_nm_1,                   -- 관리항목명1
+                NVL(TRIM(a.mngmt_item_2),'') AS mngmt_item_2,                          -- 관리항목2   
+                NVL(TRIM(a.mngmt_item_nm_2),'') AS mngmt_item_nm_2,                    -- 관리항목명2 
+                a.accnt_ymd,                                                                                        -- 발생일자 
+                
+                
+                a.won_occr_amt,  
+                a.won_adjst_amt,      
+                a.unslip_repay_amt,                                       -- 가결의반제금액 
+                a.final_adjst_ymd,
+                a.rmk_1,  
+                                                 
+              SUM(DECODE(NVL(c.decsn_ex, 'N'), 'Y', b.won_occr_amt, 0)) AS adjst_amt,     
+              SUM(DECODE(NVL(c.decsn_ex, 'N'), 'N', b.won_occr_amt, 0)) AS non_adjst_amt,           
+              MAX(c.accnt_ymd) AS accnt_ymd_1
+       FROM fspramtcreat a                                                                
+       LEFT OUTER JOIN ( fspramtadjst b                                                   
+                                        INNER JOIN fspsliph c ON b.unslip_no = c.unslip_no 
+                                       ) ON a.slip_no = b.slip_no AND a.slip_odr = b.slip_odr             
+       WHERE a.accnt_ymd <![CDATA[ >= ]]> #{accnt_ymd_fr}                          
+       AND   a.accnt_ymd <![CDATA[ <= ]]> #{accnt_ymd_to}                                              
+       AND   a.rmk_1 != '전기이월'                                                        
+       <if test = 'accnt_cd != null and accnt_cd != ""'> AND a.accnt_cd like #{accnt_cd} </if>
+	   <if test = 'reschr_rspns != null and reschr_rspns != ""'> AND ((nvl(a.mngmt_item_1,'') 
+       in(select accnt_no from resbgacctm where prj_no in
+      	 (select prj_no from resinppare 
+     	  where reschr_clsf = 'RAL001' and substr(syspayno,3,6) = #{reschr_rspns}))) or (nvl(a.mngmt_item_2,'')  
+     		  in(select accnt_no from resbgacctm where prj_no in
+     			  (select prj_no from resinppare where reschr_clsf = 'RAL001' and substr(syspayno,3,6) = #{reschr_rspns})))) </if>
+
+    and (#{mngmt_item_1T} = '' or nvl(a.mngmt_item_1,'') <![CDATA[ >= ]]> #{mngmt_item_1T})
+    and (#{mngmt_item_1F} = '' or nvl(a.mngmt_item_1,'') <![CDATA[ <= ]]> #{mngmt_item_1F})
+    and (#{mngmt_item_2T} = '' or nvl(a.mngmt_item_2,'') <![CDATA[ >= ]]> #{mngmt_item_2T})
+    and (#{mngmt_item_2F} = '' or nvl(a.mngmt_item_2,'') <![CDATA[ <= ]]> #{mngmt_item_2F})
+	
+
+ 
+       GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 
+ )
+                                                                                     
+
+<if test = 'base_Adjst_Amt == 1'>WHERE won_occr_amt > adjst_amt</if>
+<if test = 'base_Adjst_Amt == 2'>WHERE won_occr_amt = adjst_amt</if>
+<if test = 'base_Adjst_Amt == 3'>WHERE won_occr_amt >= adjst_amt</if>
+<if test = 'accnt_cd == "21017911"'>ORDER BY 3, 5, 1</if>
+<if test = 'accnt_cd != "21017911"'>ORDER BY 5, 1, 3</if>
+
+</select>
+</mapper>

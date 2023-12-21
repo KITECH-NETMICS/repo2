@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+  <select id="selectListCondoReq" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+    SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCondoReq */ 
+		 a.req_no,
+		 a.req_psn_syspayno,
+		 fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 0) AS req_psn_nm,
+		 a.psn_dept_cd,
+		 a.dept_new_ymd,
+		 a.condo_nm,
+		 a.region_nm,
+		 a.use_room_qty,
+		 a.use_start_ymd,
+		 a.use_cls_ymd,
+		 a.use_nght,
+		 a.use_day,
+		  substr(to_date(a.use_start_ymd, '%Y%m%d'), 0, 10) || ' ~ '||CASE WHEN a.use_cls_ymd  <![CDATA[ <> ]]> '' THEN substr(to_date(a.use_cls_ymd, '%Y%m%d'), 0, 10) ELSE '' END AS visit_term,
+		 a.use_psn_clsf_cd,
+		 fun_xodxcommst_cd_nm(a.use_psn_clsf_cd, 0) AS use_psn_clsf_nm,
+		 a.use_hedcnt,
+		 a.resv_no,
+		 a.use_expct_amt,
+		 a.posi_cd,
+		 fun_posi_nm(a.posi_cd) AS posi_nm,
+		 a.mobile,
+		 a.attach_file_no,
+		 a.req_state,
+		 fun_xodxcommst_cd_nm(a.req_state, 0) AS req_state_nm,
+		 a.regst_psn_syspayno,
+		 substr(a.regst_daytm,0,10) AS regst_daytm,
+		 a.updt_psn_syspayno,
+		 a.updt_daytm,
+		 b.apr_state
+	FROM cgscondoreq a 
+	LEFT JOIN xomxintfatab b ON a.req_no = b.req_no
+	  WHERE to_char(a.regst_daytm,'%Y%m%d') BETWEEN #{use_start_ymd} AND #{use_cls_ymd}
+	  <!-- <if test='param4 == "apr"'>
+	   AND b.apr_state != 'XAD100'
+	  </if> -->
+	  AND a.psn_dept_cd LIKE DECODE(#{psn_dept_cd},'','%',#{psn_dept_cd})
+	  AND (a.req_psn_syspayno LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno}) or a.regst_psn_syspayno LIKE DECODE(#{regst_psn_syspayno},'','%',#{regst_psn_syspayno}))
+	  AND b.apr_state LIKE DECODE(#{apr_state},'','%',#{apr_state})
+	 ORDER BY use_start_ymd, region_nm, condo_nm, req_state
+  </select>
+  
+  <select id="selectCondoReq" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCondoReq */ 
+	 a.req_no,
+	 a.req_psn_syspayno,
+	 fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 0) AS req_psn_nm,
+	 fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 1) AS req_psn_empno, 
+	 a.psn_dept_cd,
+	 a.dept_new_ymd,
+	 fun_dept_nm(a.psn_dept_cd, a.dept_new_ymd) AS dept_nm,
+	 a.condo_nm,
+	 a.region_nm,
+	 a.use_room_qty,
+	 a.use_start_ymd,
+	 a.use_cls_ymd,
+	 a.use_nght,
+	 a.use_day,
+	 a.use_psn_clsf_cd,
+	 a.use_hedcnt,
+	 a.attach_file_no,
+	 b.email,
+	 a.posi_cd,
+	 c.posi_nm,
+	 a.mobile,
+	 a.req_state,
+	 a.regst_psn_syspayno,
+	 fun_humbasicinfo_cd_nm(a.regst_psn_syspayno, 0) AS regst_psn_nm,
+	 fun_humbasicinfo_cd_nm(a.regst_psn_syspayno, 1) AS regst_psn_empno,   
+	 substr(a.regst_daytm,0,10) AS regst_daytm,
+	 a.updt_psn_syspayno,
+	 a.updt_daytm,
+	 a.rejct_resn,
+	 a.us_cost
+	 ,(SELECT apr_state FROM xomxintfatab ax WHERE ax.req_no = a.req_no) AS apr_state
+	FROM cgscondoreq a
+	LEFT OUTER JOIN humbasicinfo b ON a.req_psn_syspayno = b.syspayno 
+	LEFT OUTER JOIN xodhposiinfo c ON a.posi_cd = c.posi_cd
+	  WHERE a.req_no = #{req_no}
+  </select>
+  
+  <insert id="insertCgsCondoReq" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	INSERT /* QueryID : kr.re.kitech.biz.ccs.cgs.insertCgsCondoReq */ 
+			 INTO cgscondoreq(
+	     req_no,
+	     req_psn_syspayno,
+	     psn_dept_cd,
+	     dept_new_ymd,
+	     posi_cd,
+	     mobile,
+	     condo_nm,
+	     region_nm,
+	     use_room_qty,
+	     use_start_ymd,
+	     use_cls_ymd,
+	     use_nght,
+	     use_day,
+	     use_psn_clsf_cd,
+	     use_hedcnt,
+	     req_state,
+	     regst_psn_syspayno,
+	     us_cost,
+	     regst_daytm     
+	) VALUES ( #{req_no}
+			  ,#{req_psn_syspayno}
+			  ,#{psn_dept_cd}
+			  ,#{dept_new_ymd}
+			  ,#{posi_cd}
+			  ,#{mobile}
+			  ,#{condo_nm}
+			  ,#{region_nm}
+			  ,#{use_room_qty}
+			  ,#{use_start_ymd}
+			  ,#{use_cls_ymd}
+			  ,#{use_nght}
+			  ,#{use_day}
+			  ,#{use_psn_clsf_cd}
+			  ,#{use_hedcnt}
+			  ,#{req_state}
+			  ,#{regst_syspayno}
+			  ,#{us_cost}
+			  ,CURRENT)
+  </insert>
+  
+  <!-- 콘도신청 수정 -->
+  <update id="updateCondoReq" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCondoReq */ 
+			     cgscondoreq
+	SET        req_psn_syspayno = #{req_psn_syspayno}
+	          ,psn_dept_cd = #{psn_dept_cd}
+	          ,dept_new_ymd = #{dept_new_ymd}
+	          ,condo_nm = #{condo_nm}
+	          ,region_nm = #{region_nm}
+	          ,use_room_qty = #{use_room_qty}
+	          ,use_start_ymd = #{use_start_ymd}
+	          ,use_cls_ymd = #{use_cls_ymd}
+	          ,use_nght = #{use_nght}
+	          ,use_day = #{use_day}
+	          ,use_psn_clsf_cd = #{use_psn_clsf_cd}
+	          ,use_hedcnt = #{use_hedcnt}
+	          ,posi_cd = #{posi_cd}
+	          ,mobile = #{mobile}
+	          ,req_state = #{req_state}
+	          ,updt_psn_syspayno = #{updt_syspayno}
+	          ,us_cost = #{us_cost}
+	          ,updt_daytm = sysdate
+	WHERE      1=1
+	AND        req_no = #{req_no}
+  </update>
+  
+  <!-- 반려,승인 처리시 수정-->
+  <update id="updateCondoReqReject" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCondoReqReject */ 
+			 cgscondoreq
+	SET req_state = #{req_state},
+	    rejct_resn = #{rejct_resn},
+	    updt_psn_syspayno = #{updt_syspayno},
+	    us_cost = #{us_cost},
+	    updt_daytm = CURRENT
+	WHERE req_no = #{req_no}
+  </update>
+  
+  <!-- 콘도 예약신청상태 수정 -->
+  <update id="updateCondoReqCancel" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCondoReqCancel */ 
+			 cgscondoreq
+	SET req_state = #{req_state},
+	    updt_psn_syspayno = #{updt_syspayno},
+	    updt_daytm = CURRENT
+	WHERE req_no = #{req_no}
+  </update>
+  
+  <delete id="deleteCondoReq" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	DELETE /* QueryID : kr.re.kitech.biz.ccs.cgs.deleteCondoReq */ 
+			 FROM cgscondoreq
+	WHERE req_no = #{req_no}
+  </delete>
+  
+  <!-- 지역명 목록조회 -->
+  <select id="selectCondoRegion" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCondoRegion */ 
+			     distinct trim(region_nm) as region_nm
+	FROM       cgscondo
+	WHERE      1=1
+	AND        condo_nm LIKE DECODE(#{condo_nm},'','%',#{condo_nm})
+  </select>
+  
+  <!-- 지역별 콘도명 목록조회 -->
+  <select id="selectCondoNm" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCondoNm */ 
+			     trim(condo_nm) as condo_nm
+	FROM       cgscondo
+	WHERE      1=1
+	AND        region_nm LIKE DECODE(#{region_nm},'','%',#{region_nm})
+	AND        condo_use_yn LIKE DECODE(#{condo_use_yn},'','%',#{condo_use_yn})
+	GROUP BY condo_nm
+  </select>
+  
+  <select id="selectListCondoReqMnt" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCondoReqMnt */ 
+	 a.req_no,
+	 a.req_psn_syspayno,
+	 fun_humbasicinfo_cd_nm(a.req_psn_syspayno,1) AS emp_no,
+	 fun_humbasicinfo_cd_nm(a.req_psn_syspayno,0) AS req_psn_nm,
+	 a.psn_dept_cd,
+	 a.dept_new_ymd,
+	 a.condo_nm,
+	 a.region_nm,
+	 a.use_room_qty,
+	 a.use_start_ymd,
+	 a.use_cls_ymd,
+	 a.use_nght,
+	 a.use_day,
+	 substr(to_date(a.use_start_ymd, '%Y%m%d'), 0, 10) || ' ~ '||CASE WHEN a.use_cls_ymd <![CDATA[ <> ]]> "" THEN substr(to_date(a.use_cls_ymd, '%Y%m%d'), 0, 10) ELSE '' END AS visit_term,
+	 a.use_psn_clsf_cd,
+	 fun_xodxcommst_cd_nm(a.use_psn_clsf_cd, 0) AS use_psn_clsf_nm,
+	 a.use_hedcnt,
+	 a.resv_no,
+	 a.use_expct_amt,
+	 a.posi_cd,
+	 fun_posi_nm(a.posi_cd) AS posi_nm,
+	 a.mobile,
+	 a.attach_file_no,
+	 a.req_state,
+	 fun_xodxcommst_cd_nm(a.req_state, 0) AS req_state_nm,
+	 a.regst_psn_syspayno,
+	 substr(a.regst_daytm,0,10) AS regst_daytm,
+	 a.updt_psn_syspayno,
+	 a.updt_daytm,
+	 b.apr_state,
+	 c.condo_homepg
+	FROM cgscondoreq a 
+	LEFT JOIN xomxintfatab b ON a.req_no = b.req_no 
+	LEFT JOIN humbasicinfo d ON a.req_psn_syspayno = d.syspayno
+	JOIN cgscondo c ON a.condo_nm = c.condo_nm AND a.region_nm = c.region_nm
+	AND   to_char(a.regst_daytm, '%Y%m%d')  BETWEEN #{use_start_ymd} AND #{use_cls_ymd}
+	AND a.psn_dept_cd LIKE DECODE(#{psn_dept_cd},'','%',#{psn_dept_cd})
+	AND a.req_psn_syspayno LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno})
+	AND b.apr_state LIKE DECODE(#{apr_state},'','%',#{apr_state})
+	AND a.req_no LIKE DECODE(#{input_req_no},'','%',#{input_req_no})
+	AND d.empno LIKE DECODE(#{input_emp_no},'','%',#{input_emp_no})
+	AND b.state_inform_flag = '1'
+	ORDER BY region_nm, condo_nm, use_start_ymd, req_state
+  </select>
+  
+  <update id="updateCondoReqMnt" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoReqVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCondoReqMnt */ 
+			     cgscondoreq
+	SET        
+	           resv_no = #{resv_no},
+	           use_expct_amt = #{use_expct_amt},
+	           updt_psn_syspayno = #{updt_syspayno},
+	           updt_daytm = sysdate
+	WHERE      1=1
+	AND        req_no = #{req_no}
+  </update>
+</mapper>

@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.apr.bpm">
+<!-- 변경신청 결재완료 후 공동발명자 저장전 기존정보 삭제 -->
+<delete id="deletePatCoInvntPsn" parameterType="kr.re.kitech.biz.pat.app.vo.PatStakeRtHisVo">
+DELETE  /* kr.re.kitech.biz.apr.bpm.deletePatCoInvntPsn */
+  FROM patcoinvntpsn
+WHERE req_no = #{req_no}
+AND mngmt_no = #{mngmt_no}
+AND seq NOT IN (SELECT seq FROM patskaterthis WHERE elecapp_docu_no = #{elecapp_docu_no} AND skate_clsf = 'PAS010')
+</delete>
+
+<!-- 발명자 변경신청 결재완료 후 주발명자 업데이트 -->
+<update id="updatePatMastrApr" parameterType="kr.re.kitech.biz.pat.app.vo.PatComVo">
+-- 소연심의결과보고시
+-- 발명자,출원인 변경신청시
+-- 발명신고서 결재완료시 프로그램일때 상태값 수정
+UPDATE /* kr.re.kitech.biz.apr.bpm.updatePatMastrApr */
+      patmastr
+   SET <if test='invnt_syspayno != null and invnt_syspayno != ""'> invnt_syspayno = #{invnt_syspayno}, </if>
+       <if test='co_smitapp_ex != null and co_smitapp_ex != ""'> co_smitapp_ex = #{co_smitapp_ex}, </if>
+       <if test='state != null and state != ""'> state = #{state}, </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+     AND mngmt_no = #{mngmt_no}
+</update>
+
+<!-- 변경신청 결재완료 후 공동출원인 저장전 기존정보 삭제 -->
+<delete id="deletePatCosmitAppVend" parameterType="kr.re.kitech.biz.pat.app.vo.PatStakeRtHisVo">
+DELETE /* kr.re.kitech.biz.apr.bpm.deletePatCosmitAppVend */
+  FROM patcosmitappvend
+WHERE req_no = #{req_no}
+AND mngmt_no = #{mngmt_no}
+AND seq NOT IN (SELECT seq FROM patskaterthis WHERE elecapp_docu_no = #{elecapp_docu_no} AND skate_clsf = 'PAS020')
+</delete>
+
+<!-- 변경신청 결재완료 후 공동출원인 저장 -->
+<update id="updatePatCoSmitappVend" parameterType="kr.re.kitech.biz.pat.app.vo.PatStakeRtHisVo">
+ MERGE  /* kr.re.kitech.biz.apr.bpm.updatePatCoSmitappVend */
+   INTO patcosmitappvend AS a
+USING dual AS b ON 1=1 AND a.req_no = #{req_no} AND a.mngmt_no = #{mngmt_no} AND seq = #{seq}
+WHEN MATCHED THEN
+   UPDATE 
+   SET <if test='vend_type != null'> vend_type =#{vend_type}, </if>
+       <if test='stake_rt != null'> stake_rt =#{stake_rt}, </if>
+       <if test='vend_cd != null'> vend_cd =#{vend_cd}, </if>
+       <if test='vend_nm != null'> vend_nm =#{vend_nm}, </if>
+       <if test='vend_bsn_no != null'> vend_bsn_no =#{vend_bsn_no}, </if>
+       <if test='addr != null'> addr =#{addr}, </if>
+       <if test='charg != null'> charg =#{charg}, </if>
+       <if test='contac_loc != null'> contac_loc =#{contac_loc}, </if>
+       <if test='attach_file_no != null'> attach_file_no =#{attach_file_no}, </if>
+     a.updt_syspayno = #{updt_syspayno},
+     a.updt_daytm = CURRENT
+WHEN NOT MATCHED THEN
+   INSERT (req_no
+         , mngmt_no
+         , seq
+       <if test='vend_type != null'> , vend_type </if>
+       <if test='stake_rt != null'> , stake_rt </if>
+       <if test='vend_cd != null'> , vend_cd </if>
+       <if test='vend_nm != null'> , vend_nm </if>
+       <if test='vend_bsn_no != null'> , vend_bsn_no </if>
+       <if test='addr != null'> , addr </if>
+       <if test='charg != null'> , charg </if>
+       <if test='contac_loc != null'> , contac_loc </if>
+       <if test='attach_file_no != null'> , attach_file_no </if>
+         , regst_syspayno
+         , a.regst_daytm
+   ) VALUES (
+          #{req_no}
+        , #{mngmt_no}
+        , #{seq}
+        <if test='vend_type != null'> , #{vend_type} </if>
+        <if test='stake_rt != null'> , #{stake_rt} </if>
+        <if test='vend_cd != null'> , #{vend_cd} </if>
+        <if test='vend_nm != null'> , #{vend_nm} </if>
+        <if test='vend_bsn_no != null'> , #{vend_bsn_no} </if>
+        <if test='addr != null'> , #{addr} </if>
+        <if test='charg != null'> , #{charg} </if>
+        <if test='contac_loc != null'> , #{contac_loc} </if>
+        <if test='attach_file_no != null'> , #{attach_file_no} </if>
+        , #{regst_syspayno}
+        , CURRENT
+   )
+</update>
+
+<!-- 변경신청 결재완료 후 연구과제 저장전 기존정보 삭제 -->
+<delete id="deletePatRelatReschPrj" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.apr.bpm.deletePatRelatReschPrj */
+  FROM patrelatreschprj
+ WHERE req_no = #{req_no}
+</delete>
+
+<!-- 소연심위 결과보고 원안의결일 경우 patmastr 수정 -->
+<update id="updatePatMastrApr2" parameterType="kr.re.kitech.biz.api.server.vo.biz.PatMastrUpdVo">
+UPDATE /* kr.re.kitech.biz.apr.bpm.updatePatMastrApr2 */
+           patmastr
+   SET state  = #{state}   
+       , rvw_clsf = 'S'
+       , rvw_rslt  = #{rvw_rslt}
+       , eval_act_yn   = 'N'
+       , updt_syspayno = #{updt_syspayno}
+       , updt_daytm    = current
+ WHERE req_no = #{req_no}
+    AND mngmt_no = #{mngmt_no}
+</update>
+
+<!-- 특허외지식재산권 아닐경우 명세서 개수 조회 -->
+<select id="selectPatSpecCnt" resultType="int" parameterType="kr.re.kitech.biz.api.server.vo.biz.PatSpecVo">
+SELECT /* kr.re.kitech.biz.apr.bpm.selectPatSpecCnt */
+      COUNT(1) AS cnt
+  FROM patspec  
+ WHERE req_no = #{req_no}
+   AND mngmt_no = #{mngmt_no}
+</select>
+
+<!-- 명세서 저장 -->
+<insert id="insertPatSpec" parameterType="kr.re.kitech.biz.api.server.vo.biz.PatSpecVo">
+INSERT /* kr.re.kitech.biz.apr.bpm.insertPatSpec */
+   INTO patspec (
+      spec_id
+    , req_no
+    , mngmt_no
+    , job_state_cd
+    , req_psn_syspayno
+    , regst_syspayno
+    , regst_daytm)
+VALUES (
+      #{spec_id}
+    , #{req_no}
+    , #{mngmt_no}
+    , #{job_state_cd}
+    , #{req_psn_syspayno}
+    , #{regst_syspayno}
+    , CURRENT)
+</insert>
+<insert id="insertPatApp" parameterType="kr.re.kitech.biz.api.server.vo.biz.PatSpecVo">
+INSERT /* kr.re.kitech.biz.apr.bpm.insertPatApp */
+   INTO patapp (app_id
+                     , req_no
+                     , mngmt_no
+                     , job_state_cd
+                     , regst_syspayno
+                     , regst_daytm)
+VALUES ( #{app_id}
+        , #{req_no}
+        , #{mngmt_no}
+        , 'P0500'
+        , #{regst_syspayno}
+        , CURRENT)
+</insert>
+<select id="selectPatMastrApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.com.vo.PatMastrVo">
+SELECT /* kr.re.kitech.biz.apr.bpm.selectPatMastrApr */
+       FIRST 1a.req_no 
+     , a.mngmt_no
+     , a.pat_clsf
+     , a.invnt_syspayno
+     , a.invnt_krn_nm 
+     , a.charg_syspayno 
+     , a.dom_oversea_clsf
+     , a.co_smitapp_ex
+     , a.patofic_cd
+     , a.patofic_charg_id
+     , b.interview_yn
+     , NVL(b.pdp_flag,'N') AS pdp_flag
+     , c.accnt_no
+FROM patmastr a
+JOIN patappmastr b ON a.req_no = b.req_no
+LEFT JOIN patapprelatreschprj c ON a.req_no = c.req_no
+WHERE a.req_no = #{req_no}
+</select>
+
+<!-- 포기신청 결재완료시 조회 -->
+<select id="selectPatGiveUpAprList" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.app.vo.PatGiveUpVo">
+SELECT /* kr.re.kitech.biz.apr.bpm.selectPatGiveUpAprList */
+      t1.giveup_req_no, 
+       t2.req_no, 
+       t2.mngmt_no,
+       NVL(t1.multi_app_yn,'N') AS multi_app_yn,
+       a.todo_id,
+       a.work_id
+  FROM patgiveup t1
+  JOIN patmastr t2 ON t1.mngmt_no = t2.mngmt_no
+  LEFT JOIN pattodo a ON t2.mngmt_no = a.mngmt_no AND a.end_yn='N'
+ WHERE t1.giveup_req_no = #{reqNo}
+</select>
+
+<!-- 포기신청 결재완료시 todo table 업데이트 -->
+<update id="updatePatToDoDel" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.apr.bpm.updatePatToDoDel */
+       pattodo
+   SET end_yn = 'Y'
+ WHERE mngmt_no = #{mngmt_no}
+   AND end_yn = 'N'
+</update>
+
+<!-- 우선권 주장/분할 결재 완료후 지재권 데이터생성을 위해 조회  -->
+<select id="selectPatMastrForDvsReq" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.com.vo.PatMastrVo">
+SELECT /* kr.re.kitech.biz.apr.bpm.selectPatMastrForDvsReq */
+       pm.req_no
+     , pm.mngmt_no
+     , pm.pat_clsf
+     , pm.invnt_krn_nm
+     , pm.invnt_eng_nm
+     , pm.detls_krn_nm
+     , pm.detls_eng_nm
+     , pm.invnt_syspayno
+     , pm.invnt_psn_nm
+     , pm.charg_syspayno
+     , pm.patofic_cd
+     , pm.patofic_charg_id
+     , pm.patofic_nm
+     , pm.patofic_charg_nm
+     , pm.patofic_contac_loc
+     , pm.dom_oversea_clsf
+     , pm.oversapp_hope_ex
+     , pm.invnt_clsf
+     , pm.bef_open_yn
+     , pm.ely_open_ex
+     , pm.pat_grd
+     , pm.grd_resn
+     , pm.eval_demnd_ex
+     , pm.prity_eval_ex
+     , pm.co_smitapp_ex
+     , pm.smitapp_way
+     , pm.tech_eval_hope_ex
+     , pm.tech_trans_hope_ex
+     , pm.tech_trans_hope_amt
+     , pm.tech_trans_hope_typ
+     , pm.affir_req_ymd
+     , pm.invnt_psn_rmk
+     , pm.invnt_draft_ymd
+     , pm.invnt_apprvl_complt_ymd
+     , pm.invnt_reject_ymd
+     , pm.invnt_reject_resn
+     , pm.invnt_wrte_syspayno
+     , pm.old_data_mngmt_no
+     , pm.discu_clsf
+     , pm.discu_rst
+     , pm.pre_tech_wrt_invst
+     , pm.attach_file_no_1
+     , pm.attach_file_no_2
+     , pm.attach_file_no_3
+     , pm.attach_file_no_4
+     , pm.tech_field
+     , pm.indst_use_clsf
+     , pm.solve_task
+     , pm.invnt_efct
+     , pm.relat_invnt
+     , pm.plan_attach_file_no
+     , pm.open_attach_file_no
+     , pm.etc_attach_file_no
+     , pm.tech_clsf
+     , pm.smitapp_no AS relat_dom_smitapp_no
+     , pm.ipc_01
+     , pm.ipc_02
+     , pm.ipc_03
+     , pm.exam_reflect_clsf
+     , pm.patofic_mng_no
+     , pm.mandate_psn_syspayno
+     , pm.smitapp_natn_cd
+     , pm.smitapp_natn_nm
+  FROM (
+         SELECT FIRST 1 a.mngmt_no, a.req_no
+         FROM patdvsprrapp a
+         WHERE dp_req_no = #{reqNo}
+         ORDER BY a.smitapp_ymd ASC
+       ) AS pdr
+  JOIN patmastr pm ON pdr.req_no = pm.req_no AND pdr.mngmt_no = pm.mngmt_no
+</select>
+
+<!-- 분할우선권 신청서 조회  -->
+<select id="selectPatDvsPrrApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.apl.vo.PatDvsPrrVo">
+SELECT /* kr.re.kitech.biz.apr.bpm.selectPatDvsPrrApr */
+       FIRST 1
+       draft_syspayno
+     , dp_clsf
+     , attach_file_no
+     , dp_resn
+FROM patdvsprr 
+WHERE dp_req_no = #{reqNo}
+</select>
+
+<!-- 우선권주장/분할 마스터 결재완료 업데이트  -->
+<update id="updatePatDvsPrrApr" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE /* kr.re.kitech.biz.apr.bpm.updatePatDvsPrrApr */
+     patdvsprr
+SET apprvl_complt_ymd = TO_CHAR(CURRENT, '%Y%m%d')
+  , updt_syspayno = #{updt_syspayno}
+  , updt_daytm = CURRENT
+WHERE dp_req_no = #{reqNo}
+</update>
+
+<!-- 우선심사 결재 키정보 조회 -->
+<select id="selectPatPrityEvalReqApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.app.vo.PatComVo">
+SELECT /* kr.re.kitech.biz.apr.bpm.selectPatPrityEvalReqApr */
+       pm.req_no
+     , pm.mngmt_no
+     , pm.invnt_syspayno
+  FROM patprityevalreq a
+  JOIN patmastr pm ON a.mngmt_no = pm.mngmt_no
+ WHERE a.prity_eval_req_no = #{reqNo}
+</select>
+
+<select id="selectPatOaPrdChngReq" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.apl.vo.PatOaPrdChngReqVo">
+SELECT /* kr.re.kitech.biz.apr.bpm.selectPatOaPrdChngReq */
+      b.req_no
+     , b.mngmt_no
+     , b.oa_sn
+     , a.oa_id
+     , a.req_sn
+     , 'E' AS cost_kind
+     , 'E06' AS cost_clsf
+     , b.rcpt_patofic_cd AS patofic_cd
+     , chng_ymd
+  FROM patoaprdchngreq a
+  JOIN patoa b ON a.oa_id = b.oa_id
+ WHERE a.req_no = #{reqNo}
+</select>
+
+<!-- OA마감일 업데이트 -->
+<update id="updatePatOaRcptDueDate" parameterType="kr.re.kitech.biz.pat.apl.vo.PatOaPrdChngReqVo">
+UPDATE /* kr.re.kitech.biz.apr.bpm.updatePatOaRcptDueDate */
+      patoa
+   SET rcpt_due_date = #{chng_ymd}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+ WHERE oa_id = #{oa_id}
+</update>
+
+<!-- OA기간연장 결재완료 후 비용마스터 저장 -->
+<insert id="insertPatCostMaster" parameterType="kr.re.kitech.biz.pat.apl.vo.PatOaPrdChngReqVo">
+ INSERT /* kr.re.kitech.biz.apr.bpm.insertPatCostMaster */
+    INTO patcostmaster (
+      cost_id
+    , req_no
+    , mngmt_no
+    , oa_sn
+    , req_sn
+    , cost_kind
+    , cost_clsf
+    , cost_sn
+    , wri_id
+    , wri_daytm
+    , patofic_cd
+    , cost_cnt
+    , std_price    -- 국내수수료기준금액
+    , supply_price    -- 국내수수료
+    , surtax     -- 국내수수료부가세
+    , subtotal
+    , out_supply_price
+    , out_commission
+    , out_governpay_fee  -- 해외관납료
+    , governpay_fee   -- 국내관납료
+    , total_price
+    , cost_pay_yn    -- 비용 지급유무
+    , regst_syspayno
+    , regst_daytm
+ ) VALUES (
+       FN_UID('')
+     , #{req_no}
+     , #{mngmt_no}
+     , #{oa_sn}
+     , #{req_sn}
+     , #{cost_kind}
+     , #{cost_clsf}
+     , (SELECT NVL(MAX(cost_sn),0)+1 FROM patcostmaster WHERE mngmt_no = #{mngmt_no})
+     , #{wri_id}
+     , CURRENT
+     , #{patofic_cd}
+     , 1
+     , 0
+     , 0
+     , 0
+     , 0
+     , 0
+     , 0
+     , 0
+     , 0
+     , 0
+     , 'N'
+     , #{regst_syspayno}
+     , CURRENT
+  )
+</insert>
+</mapper>

@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/css/sample.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="단건 CRUD 팝업">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_sample">
+            		<w2:keyInfo>
+            			<w2:key id="rowStatus" name="상태" dataType="text"></w2:key>
+            			<w2:key id="empno" name="사번" dataType="text"></w2:key>
+            			<w2:key id="ename" name="성명" dataType="text"></w2:key>
+            			<w2:key id="hiredate" name="입사일" dataType="text"></w2:key>
+            			<w2:key id="sal" name="급여" dataType="number"></w2:key>
+            			<w2:key id="deptno" name="부서번호" dataType="text"></w2:key>
+            			<w2:key id="account" name="설명" dataType="text"></w2:key>
+            			<w2:key id="mgr" name="상관사번" dataType="text"></w2:key>
+            			<w2:key id="mgrname" name="상관이름" dataType="text"></w2:key>
+            			<w2:key id="attachFileNo" name="첨부파일번호" dataType="text"></w2:key>
+            			<w2:key id="validAttachNo" name="유효첨부파일번호" dataType="text"></w2:key>
+            			<w2:key id="attachFileNo2" name="첨부파일번호2" dataType="text"></w2:key>
+            			<w2:key id="attachFileNo3" name="첨부파일번호3" dataType="text"></w2:key>
+            			<w2:key id="attachFileNo4" name="첨부파일번호4" dataType="text"></w2:key>
+            			<w2:key id="attachFileNo5" name="첨부파일번호5" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>      
+            <w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_selectSampleOne" ref='data:json,dma_sample' encoding="UTF-8" mode="asynchronous" 
+				target='data:json,{"id":"dma_sample","key":"empVo"}' action="DmoEmpUpdView.pwkjson" method="post" mediatype="application/json">
+			</xf:submission>
+        	<xf:submission id="sbm_saveSampleOne" ref="data:json,dma_sample" action="DmoEmpSave.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" mode="asynchronous">
+        	</xf:submission>
+        </xf:model>
+        <script src="/cm/js/biz/fin.js" cache="false" />
+        <script type="text/javascript" lazy="false"><![CDATA[
+			
+			/**
+			 * 페이지 언로딩 이벤트
+			 */	
+			scwin.onpageunload = function(){
+			};
+		 
+			/**
+			 * 페이지 로딩 이벤트
+			 * TODO: 첨부파일 컴포넌트 인터페이스 변경 필요: 신규/갱신 일관된 인터페이스로 통합 예정
+			 */
+			scwin.onpageload = function() {
+				console.log(this);
+				// 첨부파일 컴포넌트 초기화
+				com.file.init();
+				var codeOptions = [ { code : "HAG", compID :"sbx_dept" } ]; 
+				com.setCmnCd(codeOptions, function() {
+					// 공통코드 셋팅 콜백
+					var empno = com.getParameter("empno");
+					if (com.isEmpty(empno)) {
+						// 신규 등록에 사용하는 dataMap 빈값으로 초기화
+						com.initDataMap(dma_sample);
+						// 삭제 버튼 숨기고 EMPNO 입력 허용
+						btn_del.hide(); 
+						ibx_empNo.setDisabled(false); 
+						// 첨부파일 컴포넌트 생성
+						com.file.create(upload_A.getID(), {fileKey: 'X951', mode: 'edit'}, function(){
+							com.file.create(upload_B.getID(), {fileKey: 'X951', mode: 'edit'}//, function(){
+//								com.file.create(upload_C.getID(), {fileKey: 'X951', mode: 'edit'}, function(){
+//									com.file.create(upload_D.getID(), {fileKey: 'X951', mode: 'edit'}, function(){
+//										com.file.create(upload_E.getID(), {fileKey: 'X951', mode: 'edit'});
+//									});
+//								});
+//							}
+							);
+						});
+//						new Promise( function(resolve, reject) {
+//							resolve(com.file.create(upload_A.getID(), {fileKey: 'X951', mode: 'edit'}));
+//						})
+//						.then(com.file.create(upload_B.getID(), {fileKey: 'X951', mode: 'edit'})});
+//						.then( function(){while(com.file.hasFilekey(upload_B.getID())){} com.file.create(upload_C.getID(), {fileKey: 'X951', mode: 'edit'})});
+					} else { 
+						dma_sample.set("rowStatus", "U"); // 상태 : 수정
+						// 키 셋팅 및 조회(단건)
+						dma_sample.set("empno", empno); 
+						com.execute(sbm_selectSampleOne, {
+							successCallback : function(e) {
+								
+								// 첨부파일이 등록된 건이라면 첨부파일 번호를 전달한다.
+								var fileKey_A = e.responseJSON.elData.empVo.attachFileNo;
+								fileKey_A = (null == fileKey_A || '' == fileKey_A.trim()) ? 'X951' : fileKey_A;
+								com.file.create(upload_A.getID(), {fileKey: fileKey_A, mode: 'edit'});	
+								
+								var fileKey_B = e.responseJSON.elData.empVo.attachFileNo2;
+								fileKey_B = (null == fileKey_B || '' == fileKey_B.trim()) ? 'X951' : fileKey_B;
+								com.file.create(upload_B.getID(), {fileKey: fileKey_B, mode: 'edit'});
+								
+//								var fileKey_C = e.responseJSON.elData.empVo.attachFileNo3;
+//								fileKey_C = (null == fileKey_C || '' == fileKey_C.trim()) ? 'X951' : fileKey_C;
+//								com.file.create(upload_C.getID(), {fileKey: fileKey_C, mode: 'edit'});	
+//								
+//								var fileKey_D = e.responseJSON.elData.empVo.attachFileNo4;
+//								fileKey_D = (null == fileKey_D || '' == fileKey_D.trim()) ? 'X951' : fileKey_D;
+//								com.file.create(upload_D.getID(), {fileKey: fileKey_D, mode: 'edit'});	
+//								
+//								var fileKey_E = e.responseJSON.elData.empVo.attachFileNo5;
+//								fileKey_E = (null == fileKey_E || '' == fileKey_E.trim()) ? 'X951' : fileKey_E;
+//								com.file.create(upload_E.getID(), {fileKey: fileKey_E, mode: 'edit'});	
+							}
+						});
+						
+					}
+				});
+				
+				
+				
+				// 창 닫기 전 변경사항이 있는지 체크할 데이터컬랙션 객체 정의
+				scwin.checkList = [dma_sample];
+				// Group내 데이터의 유효성 설정
+				com.setValidGroup(grp_sample, [
+					 { id : "empno", mandatory : true, maxLength : 4 }
+					,{ id : "ename", mandatory : true } 
+		//			,{ id : "deptno", mandatory : true } 
+				]);
+			};
+		
+			/**
+			 * 저장
+			 */
+			scwin.btn_save_onclick = function(e) {				
+				// 변경된 사항이 없는지 여부 체크 
+				if (com.isNotModifiedByDataAndAttach(dma_sample, com.file)) {	
+					com.warn("message.xom.wq.013"/*변경된 정보가 없습니다.*/);
+					return;
+				}
+		
+				// com.setValidGroup으로 설정한 정보로 유효성 체크
+				if (com.validateGroup(grp_sample)) {
+					com.confirm("message.xom.wq.017"/*저장 하시겠습니까?*/, function( ret) {
+						if (ret) {
+							com.file.transport( function( attachObj){
+								
+//								debugger
+								console.log(attachObj.upload_A);
+								dma_sample.set("attachFileNo", attachObj.upload_A);
+								dma_sample.set("attachFileNo2", attachObj.upload_B);
+//								dma_sample.set("attachFileNo3", attachObj.upload_C);
+//								dma_sample.set("attachFileNo4", attachObj.upload_D);
+//								dma_sample.set("attachFileNo5", attachObj.upload_E);
+//								 유효 첨부파일 번호를 딜리미터[,]로 연결하여 전달한다.
+//								var attaches = [attachObj.upload_A];
+//								dma_sample.set("validAttachNo", attaches.join(','));
+//								
+								com.execute(sbm_saveSampleOne, {
+									successCallback : function(e) { // 성공 콜백
+										com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+											scwin.closeActionFlag = true; // 저장 후 닫을때는 변경분 체크 안하도록
+//											com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+											scwin.refresh();
+										});
+									}
+								});
+							});
+						}
+					});
+				}
+			};
+		
+			/**
+			 * 삭제
+			 */
+			scwin.btn_del_onclick = function(e) {
+				com.confirm("message.xom.wq.022"/*삭제 하시겠습니까?*/, function(ret) {
+					if (ret) {
+						com.file.deleteAll( function(){
+							dma_sample.set("rowStatus", "D"); // 상태 : 삭제
+							com.execute(sbm_saveSampleOne, {
+								successCallback : function(e) { // 성공 콜백
+									com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+										scwin.closeActionFlag = true; // 삭제 후 닫을때는 변경분 체크 안하도록
+										com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+									});
+								}
+							});
+						});
+					}
+				});
+			};
+		
+			scwin.btn_file_onclick = function(e) {
+				console.log(com.file.uploadMap);
+				console.log(com.file.uploadObj);
+				com.setParameter({empno : '1234'});
+			};
+			
+			scwin.refresh = function() {
+				gcm.win.isRefreshing = true;
+				com.setParameter({ empno : dma_sample.get("empno") });
+				$p.reinitialize();
+			};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pop_contents" id="" style="">
+
+    		<xf:group class="dfbox" id="" style="">
+    			<w2:textbox class="df_tit fl" id="" label="사원 상세" style="" tagname="h3"></w2:textbox>
+    			<xf:group class="fr" id="">
+    				<xf:trigger class="btn_cm AUTH_D" id="btn_del" style="" type="button" ev:onclick="scwin.btn_del_onclick">
+    					<xf:label><![CDATA[삭제]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn_cm AUTH_C" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn_cm" ev:onclick="scwin.btn_file_onclick" id="btn_file" style="" type="button">
+    					<xf:label><![CDATA[파일 컴포넌트 확인]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+
+    		</xf:group>
+    		<xf:group class="tbbox" id="grp_sample" style="">
+    			<xf:group adaptive="layout" adaptiveThreshold="600" class="w2tb tb" id="" style="" tagname="table">
+    				<w2:attributes>
+    					<w2:summary></w2:summary>
+    				</w2:attributes>
+    				<xf:group tagname="colgroup">
+    					<xf:group style="width:150px;" tagname="col"></xf:group>
+    					<xf:group style="" tagname="col"></xf:group>
+    				</xf:group>
+    				<xf:group style="" tagname="tr">
+    					<xf:group class="w2tb_th req" style="" tagname="th">
+    						<w2:textbox class="" id="" label="사번" ref="" style="" userData2=""></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" style="" tagname="td">
+    						<xf:input class="" id="ibx_empNo" placeholder="" style="width:100%;" ref="data:dma_sample.empno" disabled="true"></xf:input>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr">
+    					<xf:group class="w2tb_th req" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						
+    						<w2:textbox class="" id="" label="성명" ref="" style="" userData2=""></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes>
+    							<w2:colspan>1</w2:colspan>
+    							<w2:rowspan>1</w2:rowspan>
+    						</w2:attributes>
+
+    						<xf:input class="" id="" placeholder="" style="width:100%;" ref="data:dma_sample.ename"></xf:input>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr">
+    					<xf:group tagname="th" class="w2tb_th req">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:textbox class="" id="" label="입사일" ref="" style="" userData2=""></w2:textbox>
+    					</xf:group>
+    					<xf:group tagname="td" class="w2tb_td">
+    						<w2:attributes></w2:attributes>
+    						<w2:inputCalendar calendarDisplayFormat="" calendarDisplayFormatFunc=""
+    							calendarValueType="" class="" displayFormat="" id="" ioFormat=""
+    							keepFixedDate="" maxYear="" placeholder="" renderType="" showPlaceHolderOnReadOnly="" style="width:150px;" toolTip="" userData2="" wmode=""
+    							yearSuffix="$blank" ref="data:dma_sample.hiredate">
+    						</w2:inputCalendar>
+    					</xf:group></xf:group><xf:group tagname="tr">
+	<xf:group tagname="th" class="w2tb_th req">
+		<w2:attributes>
+			<w2:scope>row</w2:scope>
+		</w2:attributes>
+		<w2:textbox class="" id="" label="급여" ref="" style="" userData2=""></w2:textbox>
+	</xf:group>
+	<xf:group tagname="td" class="w2tb_td">
+		<w2:attributes></w2:attributes>
+		<xf:input class="" id="" placeholder="" style="width:100%;" ref="data:dma_sample.sal"></xf:input>
+	</xf:group></xf:group><xf:group tagname="tr">
+    					<xf:group class="w2tb_th req" tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+
+    						<w2:textbox class="" id="" label="부서" ref="" style="" userData2=""></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes></w2:attributes>
+
+    						<xf:select1 allOption="" appearance="minimal" chooseOption="" class="" direction="auto" disabled="false" disabledClass="w2selectbox_disabled"
+    							id="sbx_dept" ref="data:dma_sample.deptno" renderType="" style="" submenuSize="auto" chooseOptionLabel="">
+    							<xf:choices></xf:choices>
+    						</xf:select1>
+    					</xf:group>
+				</xf:group>
+    				<xf:group tagname="tr">
+    					<xf:group class="w2tb_th " tagname="th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+
+    						<w2:textbox class="" id="" label="설명" ref="" style="" userData2=""></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" tagname="td">
+    						<w2:attributes></w2:attributes>
+    						<xf:textarea id="" style="width: 100%;height: 50px;" ref="data:dma_sample.account"></xf:textarea>
+    					</xf:group>
+    				</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" class="w2tb_th ">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+
+    					<w2:textbox class="" id="" label="직속상관" ref="" style="" userData2=""></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input class="" id="ibx_value" placeholder="" readOnly="true" style="width:80px;" ref="data:dma_sample.mgr"></xf:input>
+    					<w2:searchbox ev:onblur="scwin.sbx_label_onblur" ev:onkeydown="" ev:onresetclick="scwin.sbx_label_onresetclick"
+    						id="sbx_label" readOnly="" style="width:150px;" ref="data:dma_sample.mgrname">
+    					</w2:searchbox>
+    					<xf:trigger anchorWithGroupClass="" class="btn_search" ev:onclick="scwin.btn_search_onclick" id="btn_search"
+    						style="" type="button">
+    						<xf:label></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+   				</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" class="w2tb_th ">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+
+    					<w2:textbox class="" id="" label="첨부파일" ref="" style="" userData2=""></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+
+    					<xf:group style="width:100%;height:450px;">
+    						<xf:group id="upload_A" style="width:50%;height:150px;" />
+    						<xf:group id="upload_B" style="width:50%;height:150px;" />
+    						<xf:group id="upload_C" style="width:50%;height:150px;" />
+    						<xf:group id="upload_D" style="width:50%;height:150px;" />
+    						<xf:group id="upload_E" style="width:50%;height:150px;" />
+    					</xf:group>
+    				</xf:group>
+   				</xf:group>   				
+   				</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

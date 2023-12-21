@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.lpl.lcp">
+  <select id="selectLcpOvsResMouEz" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpOvsResMouVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpOvsResMouVo">
+select /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpOvsResMouEz */ 
+		 a.accnt_no as accnt_no 
+, a.prj_no
+ , a.accnt_no_nm as accnt_no_nm 
+ , h1.nm as resch_rspns_main 
+ , a.start_ymd || '~' || a.cls_ymd as accnt_ymd 
+ , nvl(gov_cntrbamt, 0)
+      + nvl(gov_subsidy, 0)
+      + nvl(area_share_wide, 0)
+      + nvl(area_share_base, 0)
+      + nvl(self_share, 0) 
+   + nvl(cmpy_cash, 0) 
+   + nvl(cmpy_goods, 0) 
+   + nvl(contpat_goods, 0) 
+   + nvl(intrst_amt, 0) 
+   + nvl(cryfwd_amt, 0) 
+   + nvl(local_gov_cash, 0) 
+   + nvl(univ_cash, 0) 
+   + nvl(etc_cash, 0) as prj_bugt 
+ , x4.cd_nm as attnce_clsf 
+ , d.vend_cd as vend_cd 
+ , d.vend_nm as vend_nm 
+ , x2.cd_nm as natn_cd_nm 
+ , e.cust_no as cust_no 
+ , e.cmpy_nm_krchar as cmpy_nm_krchar 
+ , e.cmpy_nm_eng as cmpy_nm_eng 
+ , e.cmpy_nm_eng_short as cmpy_nm_eng_short 
+ , x1.cd_nm as cust_natn_cd_nm 
+ from resbgacctm a 
+join resinpmast m on a.prj_no = m.prj_no and m.intrn_use_ex = 'Y'
+ left join resinppare b on a.prj_no = b.prj_no  and b.reschr_clsf = 'RAL001' 
+ join v_humbasicinfo h1 on h1.syspayno = b.syspayno 
+ join resinpbugt c on a.prj_no = c.prj_no 
+ left join resinppaco d on a.prj_no = d.prj_no 
+ left join sptcustbaseinfo e on d.vend_cd = e.relat_vend_cd 
+ left join xodxcommst x1 on e.natn_cd = x1.cd 
+ left join xodfvend x3 on x3.vend_cd = d.vend_cd 
+ left join xodxcommst x2 on x3.natn_cd = x2.cd 
+ left join xodxcommst x4 on d.attnce_clsf = x4.cd 
+ where a.accnt_clsf = 'RAR001' 
+<if test="natn_cd != null and natn_cd != ''">
+	 AND  e.natn_cd = #{natn_cd} OR x3.natn_cd = #{natn_cd}
+</if>
+<if test="cmpy_nm_krchar != null and cmpy_nm_krchar != ''">
+	 AND (e.cmpy_nm_krchar like #{cmpy_nm_krchar} OR d.vend_nm like #{vend_nm} )
+</if>
+<if test="accnt_no != null and accnt_no != ''">
+	 AND  a.accnt_no like #{accnt_no} ||'%' 
+</if>
+<if test="accnt_no_nm != null and accnt_no_nm != ''">
+	 AND  a.accnt_no_nm like #{accnt_no_nm} ||'%' 
+</if>
+<if test="start_ymd != null and start_ymd != ''">
+	 AND  a.start_ymd <![CDATA[<=]]> #{start_ymd} 
+</if>
+<if test="cls_ymd != null and cls_ymd != ''">
+	 AND  a.cls_ymd <![CDATA[>=]]> #{cls_ymd} 
+</if>
+  </select> 
+  <select id="selectLcpOvsResMou" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpOvsResMouVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpOvsResMouVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpOvsResMou */ 
+		 a.accnt_no AS accnt_no 
+, a.prj_no
+, a.accnt_no_nm AS accnt_no_nm 
+, h1.nm AS resch_rspns_main 
+, a.start_ymd || '~' || a.cls_ymd AS accnt_ymd 
+, NVL(gov_cntrbamt, 0)
+    + nvl(gov_subsidy, 0)
+    + nvl(area_share_wide, 0)
+    + nvl(area_share_base, 0)
+    + nvl(self_share, 0) 
+  + NVL(cmpy_cash, 0) 
+  + NVL(cmpy_goods, 0) 
+  + NVL(contpat_goods, 0) 
+  + NVL(intrst_amt, 0) 
+  + NVL(cryfwd_amt, 0) 
+  + NVL(local_gov_cash, 0) 
+  + NVL(univ_cash, 0) 
+  + NVL(etc_cash, 0) as prj_bugt 
+ , fun_res_pjvendnatlist(a.prj_no) AS natn_nm 
+FROM resbgacctm a 
+JOIN resinpmast m on a.prj_no = m.prj_no and m.intrn_use_ex = 'Y'
+LEFT JOIN resinppare b ON a.prj_no = b.prj_no  AND b.reschr_clsf = 'RAL001' 
+JOIN v_humbasicinfo h1 ON h1.syspayno = b.syspayno 
+JOIN resinpbugt c ON a.prj_no = c.prj_no 
+LEFT JOIN resinppaco d ON a.prj_no = d.prj_no 
+LEFT JOIN sptcustbaseinfo e ON d.vend_cd = e.relat_vend_cd 
+LEFT JOIN xodfvend x ON d.vend_cd = x.vend_cd
+WHERE a.accnt_clsf = 'RAR001' 
+<if test="natn_cd != null and natn_cd != ''">
+	 AND (e.natn_cd = #{natn_cd} OR x.natn_cd = #{natn_cd})
+</if>
+<if test="cmpy_nm_krchar != null and cmpy_nm_krchar != ''">
+	 AND (e.cmpy_nm_krchar like #{cmpy_nm_krchar} OR d.vend_nm like #{vend_nm} )
+</if>
+<if test="accnt_no != null and accnt_no != ''">
+	 AND a.accnt_no like upper(#{accnt_no})
+</if>
+<if test="accnt_no_nm != null and accnt_no_nm != ''">
+	 AND a.accnt_no_nm like #{accnt_no_nm}
+</if>
+<if test="start_ymd != null and start_ymd != ''">
+	 AND  a.start_ymd <![CDATA[<=]]> #{start_ymd} 
+</if>
+<if test="cls_ymd != null and cls_ymd != ''">
+	 AND  a.cls_ymd <![CDATA[>=]]> #{cls_ymd} 
+</if>
+group by 1,2,3,4,5,6
+  </select>
+  
+  <select id="selectPrjStatus" parameterType="kr.re.kitech.biz.res.agr.vo.ResInpMastVo" resultType="kr.re.kitech.biz.res.agr.vo.ResInpMastStatusVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectPrjStatus */ 
+		  t1.prj_no_seq,
+        t2.accnt_no,
+        DECODE(NVL( TRIM(t2.thyr_yr_orign_ymd), ''), '', '', 
+                    SUBSTR(t2.thyr_yr_orign_ymd, 1, 4)  || '-' || 
+                    SUBSTR(t2.thyr_yr_orign_ymd, 5, 2)  || '-' || 
+                    SUBSTR(t2.thyr_yr_orign_ymd, 7, 2)) || '~' ||
+        DECODE(NVL( TRIM(t2.thyr_yr_cls_ymd), ''), '', '', 
+                    SUBSTR(t2.thyr_yr_cls_ymd, 1, 4)    || '-' || 
+                    SUBSTR(t2.thyr_yr_cls_ymd, 5, 2)    || '-' || 
+                    SUBSTR(t2.thyr_yr_cls_ymd, 7, 2))   AS ymd,
+        t4.nm                                           AS rspns_nm,
+        NVL(t3.gov_cntrbamt  , 0)                       AS gov_cntrbamt,    -- 정부출연금 
+        NVL(t3.gov_subsidy   , 0) +
+        NVL(t3.area_share_wide   , 0) +
+        NVL(t3.area_share_base   , 0) +
+        NVL(t3.self_share    , 0) +       
+        NVL(t3.cmpy_cash     , 0) +
+        NVL(t3.univ_cash     , 0) +
+        NVL(t3.local_gov_cash, 0)                       AS cash,
+        NVL(t3.etc_cash      , 0)                       AS etc_cash,        -- 기타현금        
+        NVL(t3.cmpy_goods    , 0)                       AS cmpy_goods,      -- 기업현물
+        NVL(t3.contpat_goods , 0)                       AS contpat_goods,   -- 상대국현물          
+        NVL(t3.gov_cntrbamt  , 0) +
+        NVL(t3.gov_subsidy   , 0) +
+        NVL(t3.area_share_wide   , 0) +
+        NVL(t3.area_share_base   , 0) +
+        NVL(t3.self_share   , 0) +
+        NVL(t3.cmpy_cash     , 0) +
+        NVL(t3.cmpy_goods    , 0) +
+        NVL(t3.contpat_goods , 0) +
+        NVL(t3.local_gov_cash, 0) +
+        NVL(t3.univ_cash     , 0) +
+        NVL(t3.etc_cash      , 0)                       AS col_sum,         -- 합계   
+        NVL(t3.cmpy_cash     , 0)                       AS cmpy_cash,       -- 기업현금
+        NVL(t3.univ_cash     , 0)                       AS univ_cash,       -- 대학현금
+        NVL(t3.local_gov_cash, 0)                       AS local_gov_cash   -- 지방정부현금                   
+FROM    resinpmast          t1,
+        resinpyear          t2,
+        resinpbugt          t3,
+        humbasicinfo        t4       
+WHERE   t1.prj_no           = t2.prj_no
+AND     t1.prj_no           = t3.prj_no
+AND     t2.accnt_rspns      = t4.syspayno
+AND     t1.prj_no           = #{prj_no}
+  </select>
+
+  <select id="selectPrjStandard" parameterType="kr.re.kitech.biz.res.agr.vo.ResInpMastVo" resultType="kr.re.kitech.biz.res.agr.vo.ResInpMastStandardVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectPrjStandard */ 
+		 t1.accnt_no                                                                                                                                                                                            
+     , t1.prj_no
+     , t2.large_prj_no                                                              -- 대과제번호
+     , fun_xodxcommst_cd_nm(t2.bsns_cd_exclsv_agncy, 0) AS bsns_cd_exclsv_agncy     -- 전담기관                                                                                                                                                                                             
+     , t2.prj_nm                                        AS prj_nm                                                                                                                                                                               
+     , t2.bsns_cd_inout                                                                                                                                                                                       
+     , fun_xodxcommst_cd_nm(t2.bsns_cd_inout, 0)        AS bsns_cd_inout_nm         -- 내외부구분
+     , fun_xodxcommst_cd_nm(t2.ntrm_clsf, 0)            AS ntrm_clsf_nm             -- NTRM분류
+     , t9.smalclsf                                      AS indst_tech_clsf_label    -- 산업기술분류 
+     , fun_xodxcommst_cd_nm(t2.sixt_relat_tech, 0)      AS sixt_relat_tech_nm       -- 6T관련기술명
+     , t2.secrt_prj_ex                                                              -- 보안등급                                                                                                                                            
+     , t2.curr_resch_rspns                                                          -- 현연구책임자                                                                                                                     
+     , t4.nm                                            AS curr_resch_rspns_nm      -- 현연구책임자 
+     , t2.step                                                                      -- 단계                                                                                                                      
+     , t7.dept_nm                                                                                                                                                                                             
+     , t8.posi_nm 
+     , t2.bsns_req_no                                                               -- 사업신청번호                                                                                                                                                                                                                                                                                                
+     , fun_xodxcommst_cd_nm(t2.prj_state, 0)            AS prj_state_nm                                                                                                                                              
+     , t2.prj_state                                                                                                                                                                                                                                                                                                                                                                                      
+     , t1.accnt_rspns                                                               -- 계정책임자
+     , fun_emp_nm(t1.accnt_rspns)                       AS accnt_rspns_nm           -- 계정책임자                                                                                                                                                                                                                                                                                                                        
+     , concat(concat(t3.thyr_yr_orign_ymd, '~'), t3.thyr_yr_cls_ymd)    AS thyr_yr_ymd                                                                                                                                                                                                                                                                                                                                         
+     , decode(nvl(trim(t3.thyr_yr_orign_ymd), ''), '', '', substr(t3.thyr_yr_orign_ymd, 1, 4) || '-' || substr(t3.thyr_yr_orign_ymd, 5, 2) || '-' || substr(t3.thyr_yr_orign_ymd, 7, 2)) || ' ~ ' ||             
+       decode(nvl(trim(t3.thyr_yr_cls_ymd)  , ''), '', '', substr(t3.thyr_yr_cls_ymd  , 1, 4) || '-' || substr(t3.thyr_yr_cls_ymd  , 5, 2) || '-' || substr(t3.thyr_yr_cls_ymd  , 7, 2))                            AS thyr_yr_ymd2 -- 연구기간                                                                                                          
+     , decode(nvl(trim(t2.tot_resch_prd_orign_ymd), ''), '', '', substr(t2.tot_resch_prd_orign_ymd, 1, 4) || '-' || substr(t2.tot_resch_prd_orign_ymd, 5, 2) || '-' || substr(t2.tot_resch_prd_orign_ymd, 7, 2)) 
+       || ' ~ ' ||                                                                                                                                                                                           
+       decode(nvl(trim(t2.tot_resch_prd_cls_ymd)  , ''), '', '', substr(t2.tot_resch_prd_cls_ymd  , 1, 4) || '-' || substr(t2.tot_resch_prd_cls_ymd  , 5, 2) || '-' || substr(t2.tot_resch_prd_cls_ymd  , 7, 2))     AS tot_yr_ymd   -- 총연구기간                                                                                                          
+     , fun_res_bsns_nm( bsns_cd_bsns )              AS bsns_cd_bsns_nm              -- 사업                                                                                                                                                
+     , fun_res_bsns_nm( bsns_cd_detls_bsns )        AS bsns_cd_detls_bsns_nm        -- 세부사업                                                                                                                                                  
+     , fun_res_bsns_nm( bsns_cd_ofic )              AS bsns_cd_ofic_nm              -- 관계부처                                                                                                                                                  
+     , t2.prj_eng_nm                                                                                                                                                                                          
+FROM    resbgacctm                  t1, 
+        resinpmast                  t2,
+        resinpyear                  t3,
+        OUTER(  resindtecc          t9),
+        OUTER ( humbasicinfo        t4,
+                xodhdeptinfo        t7,
+                xodhposiinfo        t8)  
+WHERE   t1.prj_no                   = t2.prj_no
+AND     t1.prj_no                   = t3.prj_no
+AND     t1.accnt_no                 = t3.accnt_no
+AND     t2.curr_resch_rspns         = t4.syspayno
+AND     t4.dept_cd                  = t7.dept_cd
+AND     t4.dept_new_ymd             = t7.dept_new_ymd
+AND     t4.posi_cd                  = t8.posi_cd 
+AND     t2.indst_tech_clsf_label    = t9.cd   
+AND     t2.prj_no                   = #{prj_no}
+  </select>
+  <select id="selectPrgGoal" parameterType="kr.re.kitech.biz.res.agr.vo.ResInpMastVo" resultType="kr.re.kitech.biz.res.agr.vo.ResInpTgctVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectPrgGoal */ 
+       b.prj_no
+     , a.prj_no AS tgct_prj_no
+     , a.middle_rptp_submit_schdl_ymd  -- 중간보고서제출예정일자
+     , a.final_rptp_submit_schdl_ymd    -- 최종보고서제출예정일자
+     , a.dev_contnt                     -- 개발내용
+     , a.dev_goal                       -- 개발목표
+     , a.dev_rst                        -- 개발결과
+     , a.pruse_typ                      -- 활용유형
+     , a.tech_outcm                     -- 기술성과
+     , a.econo_outcm                    -- 경제성과
+     , a.expec_efct_impt_trans          -- 기대효과수입대체
+     , a.expec_efct_exp_incr            -- 기대효과수출증대
+     , a.expec_efct_sales_incr          -- 기대효과매출증대
+     , a.expec_efct_prodct_progrs       -- 기대효과생산성향상
+     , a.expec_efct_emp_crt             -- 기대효과고용창출
+     , a.expec_efct_etc                 -- 기대효과기타
+     , a.resch_contnt                   -- 연구내용
+     , a.expec_efct                     -- 기대효과
+     , a.kwd_krchar                     -- 키워드한글
+     , a.kwd_eng                        -- 키워드영문
+     , a.regst_syspayno                 -- 등록시스템개인번호
+     , a.regst_daytm                    -- 등록일시
+     , a.updt_syspayno                  -- 수정시스템개인번호
+     , a.updt_daytm                     -- 수정일시
+     , c.final_attach_file              -- 최종사업게획서 첨부파일
+     , c.mou_book_attach_file       --협약서
+     , c.bsns_notice_attach_file_no  -- 사업공고문
+     , c.cons_work_attach_file_no   -- 위탁사업계획서
+FROM resinpmast b
+LEFT JOIN resinptgct a ON a.prj_no = b.prj_no
+LEFT JOIN resappmast c  ON b.bsns_req_no = c.bsns_req_no
+WHERE b.prj_no = #{p_prj_no}
+  </select>
+  <select id="selectPrgResearcher" parameterType="kr.re.kitech.biz.res.agr.vo.ResInpMastVo" resultType="kr.re.kitech.biz.res.agr.vo.ResInpPareVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectPrgResearcher */ 
+       a.prj_no                                -- 과제번호
+     , concat(substr(a.resid_regst_no, 1, 6), '-*******') as inppareResiNo   -- 주민등록번호
+     , a.resid_regst_no                        -- 주민등록번호
+     , e.sci_tech_regst_no
+     , a.syspayno                              -- 시스템개인번호
+     , b.empno                                 -- 개인번호
+     --a.nm             as inppareNm           -- 성명
+     , CASE WHEN fun_emp_nm(a.syspayno) == '' THEN a.nm ELSE fun_emp_nm(a.syspayno) END as inppareNm
+     , a.reschr_clsf                           -- 연구원구분
+     , c.cd_nm          as cd_nm_reschr_clsf   -- 연구원구분
+     , a.psnexpns_clsf                         -- 인건비구분
+     , d.cd_nm          as cd_nm_psnexpns_clsf -- 인건비구분
+     , a.attnce_prd_orign_ymd                  -- 참여기간시작일자
+     , a.attnce_prd_cls_ymd                    -- 참여기간종료일자
+     , a.psnexpns_month_unit_price             -- 인건비월단가
+     , a.cash_attnce_rt                        -- 현금참여율
+     , a.goods_attnce_rt                       -- 현물참여율
+     , a.respn_rts                             -- 책임비율
+     , a.cash_amt                              -- 현금금액
+     , a.goods_amt                             -- 현물금액
+     , a.regst_syspayno                        -- 등록시스템개인번호
+     , a.regst_daytm                           -- 등록일시
+     , a.updt_syspayno                         -- 수정시스템개인번호
+     , a.updt_daytm                            -- 수정일시
+     , b.dept_nm                               -- 부서명
+     , b.posi_nm                               -- 직책명
+FROM   resinppare a
+       LEFT OUTER JOIN v_humbasicinfo b
+       ON a.syspayno = b.syspayno
+       LEFT OUTER JOIN humbasicinfo e ON a.syspayno = e.syspayno
+     , xodxcommst c, xodxcommst d
+WHERE  1=1
+AND    a.prj_no        = #{p_prj_no}
+    <if test="anal != null and anal != ''">
+	 and a.anal =#{anal}
+</if>
+AND    a.reschr_clsf   = c.cd
+AND    a.psnexpns_clsf = d.cd
+ORDER BY 9, 7, 6
+  </select>  
+  <select id="selectPrgCompaniesEmp" parameterType="kr.re.kitech.biz.res.agr.vo.ResInpMastVo" resultType="kr.re.kitech.biz.res.agr.vo.ResInpPacoEmpVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectPrgCompaniesEmp */ 
+		  fun_xodxcommst_cd_nm(t4.charg_clsf, 0) AS charg_clsf,   -- 담당업무
+        t2.bsns_psn_regst_no,
+        t2.vend_abbr,                                           -- 업체명
+        t4.charg_nm,
+        t4.charg_tel,
+        t4.charg_etc_info,
+        t4.charg_mail,
+        t4.charg_fax   
+FROM    resinppaco      t1,
+        xodfvend        t2,
+        resinppacp      t4
+WHERE   t1.vend_cd      = t2.vend_cd
+AND     t1.prj_no       = t4.prj_no
+AND     t1.vend_cd      = t4.vend_cd
+AND     t1.prj_no       = #{prj_no}
+ORDER BY    t2.bsns_psn_regst_no, 
+            t4.charg_clsf
+  </select>
+  <select id="selectPrgCompanies" parameterType="kr.re.kitech.biz.res.agr.vo.ResInpMastVo" resultType="kr.re.kitech.biz.res.agr.vo.ResInpPacoVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectPrgCompanies */ 
+		  t2.bsns_psn_regst_no,                   -- 사업자등록번호
+        t2.vend_abbr,                           -- 업체명
+        t2.reprs_psn_nm,                        -- 대표자 성명
+        t3.cd_nm            AS attnce_clsf_nm,  -- 참여구분        
+        t1.trust_rspns_nm,                      -- 위탁책임자성명
+        t1.trust_prj_nm,                        -- 위탁과제명
+        t1.trust_orign_ymd,                     -- 위탁시작일자
+        t1.trust_cls_ymd,                       -- 위탁종료일자        
+        t1.resch_amt_cash,                      -- 연구금액현금
+        t1.resch_amt_goods,                     -- 연구금액현물
+        t1.resch_amt_sum                        -- 연구금액합계        
+FROM    resinppaco      t1,
+        xodfvend        t2,
+        xodxcommst      t3
+WHERE   t1.vend_cd      = t2.vend_cd
+AND     t1.attnce_state = t3.cd
+AND     t1.prj_no       = #{prj_no}
+ORDER BY t2.bsns_psn_regst_no
+  </select>
+  <select id="selectPrgEquipment" parameterType="kr.re.kitech.biz.res.agr.vo.ResInpMastVo" resultType="kr.re.kitech.biz.res.agr.vo.ResInpMatePrjVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectPrgEquipment */ 
+       a.prj_no           -- 과제번호
+     , a.equip_odr        -- 기자재순번
+     , a.equip_clsf       -- 기자재구분
+     , b.cd_nm            -- 기자재구분
+     , a.gdnm             -- 품명
+     , a.amt              -- 금액
+     , 'A'          as A
+     , 'B'          as B
+     , CASE WHEN (a.equip_clsf = 'RBC001') THEN a.amt ELSE 0 END amt2   -- 금액
+     , CASE WHEN (a.equip_clsf = 'RBC002') THEN a.amt ELSE 0 END amt3   -- 금액
+     , a.qty              -- 수량
+     , CASE WHEN (a.equip_clsf = 'RBC001') THEN a.qty ELSE 0 END qty2   -- 수량
+     , CASE WHEN (a.equip_clsf = 'RBC002') THEN a.qty ELSE 0 END qty3   -- 수량
+     , a.regst_syspayno   -- 등록시스템개인번호
+     , a.regst_daytm      -- 등록일시
+     , a.updt_syspayno    -- 수정시스템개인번호
+     , a.updt_daytm       -- 수정일시
+FROM   resinpmate a, xodxcommst b
+WHERE  a.equip_clsf = b.cd
+    <if test="sch_prj_no != null and sch_prj_no != ''">
+	 and a.prj_no    = #{sch_prj_no} 
+</if>
+    <if test="sch_equip_odr != null and sch_equip_odr != ''">
+	 and a.equip_odr = #{sch_equip_odr} 
+</if>
+    <if test="anal != null and anal != ''">
+	 and a.anal = #{anal} 
+</if>
+ORDER BY 3, 5
+  </select>
+  <select id="selectPrgAchievements" parameterType="kr.re.kitech.biz.res.agr.vo.ResInpMastVo" resultType="kr.re.kitech.biz.res.agr.vo.ResAppOtgtVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectPrgAchievements */ 
+		 a.bsns_req_no        
+     , a.odr
+     , a.prj_no
+     , a.sel_yn
+     , a.state_clsf
+     , a.outcm_cd
+     , a.outcm_nm
+     , a.qty
+     , NVL(a.rslt_qty,0) AS rslt_qty
+  , a.aft_fir_qty
+     , NVL(a.aft_fir_rslt_qty,0) AS aft_fir_rslt_qty
+     , a.aft_sec_qty
+     , NVL(a.aft_sec_rslt_qty,0) AS aft_sec_rslt_qty
+     , a.aft_thi_qty
+     , NVL(a.aft_thi_rslt_qty,0) AS aft_thi_rslt_qty
+     , b.seq
+FROM resappotgt a
+JOIN resinpmast c ON a.bsns_req_no = c.bsns_req_no
+JOIN xodxcommst b ON b.cd = a.outcm_cd
+WHERE a.bsns_req_no = #{bsns_req_no}
+ORDER BY a.bsns_req_no, b.seq asc
+  </select>                
+</mapper>

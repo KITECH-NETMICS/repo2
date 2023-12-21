@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+  <select id="selectListCgsSealUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCgsSealUse */ 
+	       a.req_no
+	      ,a.seal_clsf 
+	      ,fun_xodxcommst_cd_nm(a.seal_clsf, 0) as seal_clsf_nm
+	      ,a.stamp_char 
+	      ,a.stamp_std 
+	      ,a.size
+	      ,concat(a.stamp_char, concat(', ', concat(a.stamp_std, concat(', ',a.size)))) as detail_info
+	      ,a.qty
+	      ,a.unit
+	      ,a.mngmt_respn_psn_dept_cd
+	      ,a.mngmt_respn_psn_dept_new_ymd
+	      ,a.mngmt_respn_psn_syspayno
+	      ,a.mngmt_respn_psn_nm
+	      ,a.use_dept_cd
+	      ,a.use_dept_nm
+	      ,a.use_usg
+	      ,a.stamp_req_resn
+	      ,a.use_orign_ymd 
+	      ,a.use_cls_ymd 
+	      ,substr(to_date(a.use_orign_ymd, '%Y%m%d'), 0, 10) || ' ~ '||case when a.use_cls_ymd <![CDATA[<>]]> '' then substr(to_date(a.use_cls_ymd , '%Y%m%d'), 0, 10) else '' end as use_term
+	      ,a.seal_matrl
+	      ,a.spclab_item
+	      ,a.req_ymd
+	      ,b.apr_state      
+	      ,a.pur_ymd
+	      ,a.surty_affir_ymd 
+	      ,a.surty_syspayno
+	      ,case when a.surty_syspayno <![CDATA[<>]]> '' then '인수' else fun_xodxcommst_cd_nm(b.apr_state, 0) end as req_state_nm
+	      ,regst_psn_syspayno
+	FROM  cgsofsealuse a INNER JOIN xomxintfatab b
+	ON a.req_no = b.req_no
+	AND  a.req_no LIKE DECODE(#{req_no},'','%',#{req_no})
+	AND  a.req_ymd between #{req_ymd1} AND #{req_ymd2}
+	AND  a.seal_clsf LIKE DECODE(#{seal_clsf},'','%',#{seal_clsf})
+	AND  a.use_dept_cd LIKE DECODE(#{use_dept_cd},'','%',#{use_dept_cd})
+	AND  a.regst_psn_syspayno LIKE DECODE(#{regst_psn_syspayno},'','%',#{regst_psn_syspayno})
+  </select>
+  
+  <select id="selectCgsSealUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgsSealUse */ 
+	       a.req_no
+	      ,a.seal_clsf 
+	      ,fun_xodxcommst_cd_nm(a.seal_clsf, 0) as seal_clsf_nm
+	      ,a.stamp_char 
+	      ,a.stamp_std 
+	      ,a.size
+	      ,concat(a.stamp_char, concat(', ', concat(a.stamp_std, concat(', ',a.size)))) as detail_info
+	      ,a.qty
+	      ,a.unit
+	      ,a.mngmt_respn_psn_dept_cd
+	      ,a.mngmt_respn_psn_dept_new_ymd
+	      ,fun_dept_nm(a.mngmt_respn_psn_dept_cd,a.mngmt_respn_psn_dept_new_ymd) as mngmt_respn_psn_dept_nm
+	      ,a.mngmt_respn_psn_syspayno
+	      ,fun_humbasicinfo_cd_nm(a.mngmt_respn_psn_syspayno,1) as mngmt_respn_psn_empno
+	      ,a.mngmt_respn_psn_nm
+	      ,a.use_dept_cd
+	      ,a.use_dept_new_ymd
+	      ,a.use_dept_nm
+	      ,a.use_usg
+	      ,a.stamp_req_resn
+	      ,a.use_orign_ymd 
+	      ,a.use_cls_ymd 
+	      ,substr(to_date(a.use_orign_ymd, '%Y%m%d'), 0, 10) || ' ~ '||case when a.use_cls_ymd <![CDATA[<>]]> '' then substr(to_date(a.use_cls_ymd , '%Y%m%d'), 0, 10) else '' end as use_term
+	      ,a.seal_matrl
+	      ,a.spclab_item
+	      ,a.req_ymd
+	      ,b.apr_state      
+	      ,a.pur_ymd
+	      ,a.surty_affir_ymd 
+	      ,a.surty_syspayno
+	      ,case when a.surty_syspayno <![CDATA[<>]]> '' then '인수' else fun_xodxcommst_cd_nm(b.apr_state, 0) end as req_state_nm
+	      ,a.regst_psn_syspayno
+	      ,fun_humbasicinfo_cd_nm(a.regst_psn_syspayno, 0) as req_psn_nm
+	      ,fun_humbasicinfo_cd_nm(a.regst_psn_syspayno, 1) as req_emp_no
+	      ,fun_humbasicinfo_cd_nm(a.regst_psn_syspayno, 8) as req_dept_nm
+	      ,fun_humbasicinfo_cd_nm(a.regst_psn_syspayno, 4) as req_posi_nm
+	      ,a.regst_daytm
+	FROM  cgsofsealuse a INNER JOIN xomxintfatab b
+	ON a.req_no = b.req_no
+	AND  a.req_no LIKE DECODE(#{req_no},'','%',#{req_no})
+	AND  a.seal_clsf LIKE DECODE(#{seal_clsf},'','%',#{seal_clsf})
+	AND  a.use_dept_cd LIKE DECODE(#{use_dept_cd},'','%',#{use_dept_cd})
+	AND  a.regst_psn_syspayno LIKE DECODE(#{regst_psn_syspayno},'','%',#{regst_psn_syspayno})
+  </select>
+  
+  <insert id="insertCgsSealUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo">
+	INSERT /* QueryID : kr.re.kitech.biz.ccs.cgs.insertCgsSealUse */ 
+	INTO cgsofsealuse
+	( 
+	   req_no
+	  ,seal_clsf 
+	  ,stamp_char 
+	  ,stamp_std 
+	  ,size 
+	  ,qty
+	  ,unit
+	  ,mngmt_respn_psn_dept_cd
+	  ,mngmt_respn_psn_dept_new_ymd
+	  ,mngmt_respn_psn_syspayno
+	  ,mngmt_respn_psn_nm
+	  ,use_dept_cd
+	  ,use_dept_new_ymd
+	  ,use_dept_nm
+	  ,use_usg
+	  ,stamp_req_resn
+	  ,use_orign_ymd 
+	  ,use_cls_ymd 
+	  ,seal_matrl
+	  ,spclab_item
+	  ,req_ymd
+	  ,req_state
+	  ,pur_ymd
+	  ,rmk
+	  ,surty_affir_ymd 
+	  ,surty_syspayno
+	  ,regst_psn_syspayno
+	  ,regst_daytm
+	)
+	VALUES
+	(
+	   #{req_no}
+	  ,#{seal_clsf}
+	  ,#{stamp_char}
+	  ,#{stamp_std}
+	  ,#{size}
+	  ,#{qty}
+	  ,#{unit}
+	  ,#{mngmt_respn_psn_dept_cd}
+	  ,#{mngmt_respn_psn_dept_new_ymd}
+	  ,#{mngmt_respn_psn_syspayno}
+	  ,#{mngmt_respn_psn_nm}
+	  ,#{use_dept_cd}
+	  ,#{use_dept_new_ymd}
+	  ,#{use_dept_nm}
+	  ,#{use_usg}
+	  ,#{stamp_req_resn}
+	  ,#{use_orign_ymd}
+	  ,#{use_cls_ymd}
+	  ,#{seal_matrl}
+	  ,#{spclab_item}
+	  ,#{req_ymd}
+	  ,#{req_state}
+	  ,#{pur_ymd}
+	  ,#{rmk}
+	  ,#{surty_affir_ymd}
+	  ,#{surty_syspayno}
+	  ,#{regst_syspayno}
+	  ,sysdate
+	)
+  </insert>
+  
+  <update id="updateCgsSealUsePop" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCgsSealUsePop */ 
+		cgsofsealuse
+	SET        
+         mngmt_respn_psn_nm = #{mngmt_respn_psn_nm}
+        ,mngmt_respn_psn_syspayno = #{mngmt_respn_psn_syspayno}
+        ,mngmt_respn_psn_dept_cd = #{mngmt_respn_psn_dept_cd}
+        ,mngmt_respn_psn_dept_new_ymd = #{mngmt_respn_psn_dept_new_ymd}
+        ,surty_affir_ymd = #{surty_affir_ymd}
+        ,surty_syspayno = #{surty_syspayno}
+        ,req_state = #{req_state}
+        ,updt_psn_syspayno = #{updt_syspayno}
+        ,updt_daytm = sysdate
+	WHERE     1=1
+	AND       req_no = #{req_no}
+	AND       seal_clsf = #{seal_clsf}
+  </update>
+  
+  <delete id="deleteCgsSealUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo">
+	DELETE /* QueryID : kr.re.kitech.biz.ccs.cgs.deleteCgsSealUse */ 
+		cgsofsealuse
+	WHERE 1=1
+	AND   req_no = #{req_no}
+  </delete>
+  
+  <select id="selectCgsSealUsePop" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgsSealUsePop */ 
+	       a.req_no
+	      ,a.seal_clsf 
+	      ,fun_xodxcommst_cd_nm(a.seal_clsf, 0) as seal_clsf_nm
+	      ,a.stamp_char 
+	      ,a.stamp_std 
+	      ,a.size
+	      ,concat(a.stamp_char, concat(', ', concat(a.stamp_std, concat(', ',size)))) as detail_info
+	      ,a.qty
+	      ,a.unit
+	      ,a.mngmt_respn_psn_dept_cd
+	      ,a.mngmt_respn_psn_dept_new_ymd
+	      ,fun_dept_nm(a.mngmt_respn_psn_dept_cd) as mngmt_respn_psn_dept_nm
+	      ,a.mngmt_respn_psn_syspayno
+	      ,fun_humbasicinfo_cd_nm(a.mngmt_respn_psn_syspayno, 1) as mngmt_respn_psn_empno
+	      ,a.mngmt_respn_psn_nm
+	      ,a.use_dept_cd
+	      ,a.use_dept_new_ymd
+	      ,a.use_dept_nm
+	      ,a.use_usg
+	      ,a.stamp_req_resn
+	      ,a.use_orign_ymd 
+	      ,a.use_cls_ymd 
+	       ,substr(to_date(a.use_orign_ymd, '%Y%m%d'), 0, 10) || ' ~ '||case when a.use_cls_ymd <![CDATA[<>]]> '' then substr(to_date(a.use_cls_ymd , '%Y%m%d'), 0, 10) else '' end as use_term
+	      ,a.seal_matrl
+	      ,a.spclab_item
+	      ,a.req_ymd
+	      ,a.req_state
+	      ,a.pur_ymd
+	      ,a.surty_affir_ymd 
+	      ,a.surty_syspayno
+	      ,a.regst_psn_syspayno
+	      ,a.regst_daytm
+	      ,a.updt_psn_syspayno
+	      ,a.updt_daytm
+	      ,b.ext_no
+	      ,b.empno as depthed
+	      ,(select nm from humbasicinfo where empno=b.empno) as nm
+	      ,fun_humbasicinfo_cd_nm(c.depthed, 0) as depthed_nm
+	FROM  cgsofsealuse a LEFT JOIN humbasicinfo b
+	ON a.mngmt_respn_psn_syspayno = b.syspayno
+	LEFT JOIN xodhdeptinfo c
+	ON a.mngmt_respn_psn_dept_cd = c.dept_cd 
+	AND a.mngmt_respn_psn_dept_new_ymd = c.dept_new_ymd
+	WHERE req_no  = #{req_no}
+  </select>
+  
+  <update id="updateCgsSealUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSealUseVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCgsSealUse */ 
+			  cgsofsealuse
+	SET     stamp_char =#{stamp_char}
+	       ,stamp_std =#{stamp_std}
+	       ,size = #{size}
+	       ,qty = #{qty}
+	       ,unit = #{unit}
+	       ,mngmt_respn_psn_dept_cd = #{mngmt_respn_psn_dept_cd}
+	       ,mngmt_respn_psn_dept_new_ymd = #{mngmt_respn_psn_dept_new_ymd}
+	       ,mngmt_respn_psn_syspayno = #{mngmt_respn_psn_syspayno}
+	       ,mngmt_respn_psn_nm = #{mngmt_respn_psn_nm}
+	       ,use_dept_cd = #{use_dept_cd}
+	       ,use_dept_new_ymd = #{use_dept_new_ymd}
+	       ,use_dept_nm = #{use_dept_nm}
+	       ,use_usg = #{use_usg}
+	       ,stamp_req_resn = #{stamp_req_resn}
+	       ,use_orign_ymd  = #{use_orign_ymd}
+	       ,use_cls_ymd  = #{use_cls_ymd}
+	       ,seal_matrl = #{seal_matrl}
+	       ,spclab_item= #{spclab_item}
+	       ,updt_psn_syspayno = #{updt_syspayno}
+	       ,updt_daytm = sysdate
+	WHERE 1=1
+	AND   req_no = #{req_no}
+	AND   seal_clsf = #{seal_clsf}
+  </update>
+</mapper>

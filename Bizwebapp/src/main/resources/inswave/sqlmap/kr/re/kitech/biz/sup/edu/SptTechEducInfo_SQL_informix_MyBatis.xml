@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.edu">
+  <select id="selectSptTechEducInfoSmnrList" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo" resultType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.edu.selectSptTechEducInfoSmnrList */
+	*
+FROM (
+SELECT 
+		 t1.region_centr,
+        fun_xodxcommst_cd_nm(t1.region_centr, 0) AS region_centr_nm, -- 지역본부
+        t1.mngmt_no,  -- 관리번호
+        t1.rspns_syspayno,
+        t2.empno AS rspns_empno,
+        t2.nm AS rspns_nm,      -- 책임자
+        t1.dept_cd,
+        t1.dept_new_ymd,
+        t3.dept_nm,         -- 소속
+        t1.educ_procs,      -- 교육과정
+        t1.educ_start_ymd,      -- 교육시작일자
+        t1.educ_end_ymd,        -- 교육종료일자
+        t1.educ_plce,   -- 교육장소
+        t1.attnce_qty,      -- 참여자 수
+        t1.attach_file_no_01,   -- 개최계획서
+        t1.attach_file_no_02,   -- 결과보고서
+        t1.prcs_state,  
+        DECODE(t1.prcs_state, 'C', '저장', 'R', '제출', 'X', '반려', 'Y', '완료') AS prcs_state_nm,-- 신청상태
+        t5.bsns_psn_regst_no,  -- 사업자번호
+        t5.cmpy_nm_krchar,   --참여업체
+        t4.attnce_nm,  -- 참여자
+        t5.CMPY_ADDR ||CMPY_ADDR_DETLS as addr,
+        t1.send_ymd,
+        /* t6.accnt_no, */
+        /* t6.reqd_amt, */
+        t1.educ_goal,
+        DECODE(t1.educ_goal, '1000', '재직자재교육','0100','신규직원교육','0010','산업계교육','0001','기타','') AS educ_goal_nm,
+        t1.regst_syspayno,
+        t7.empno regst_empno,
+        t7.nm regst_nm,
+        t1.req_no,
+        t8.apr_state,
+        t9.cd_nm AS apr_state_nm ,
+        t11.nm AS contribute_nm ,
+        t12.dept_nm AS contribute_dept_nm
+FROM    spttecheducinfo   t1
+        ,humbasicinfo     t2
+        ,xodhdeptinfo     t3
+        <if test='find_clsf = "A"'>
+        ,(SELECT biz_clsf, mngmt_no, cust_no, attnce_nm
+         FROM   spttecheducattnce 
+         WHERE  seq = 1)  t4
+        </if>
+        <if test='find_clsf != "A"'>
+        ,spttecheducattnce t4
+        </if>
+        ,OUTER (sptcustbaseinfo   t5) 
+        , (SELECT biz_clsf, mngmt_no FROM spttecheducreqdbugt GROUP BY biz_clsf, mngmt_no) t6
+        , humbasicinfo t7
+        , xomxintfatab t8
+        , xodxcommst t9
+        , spttecheduccontribute t10
+        , humbasicinfo    t11
+        , xodhdeptinfo    t12
+WHERE   t1.rspns_syspayno = t2.syspayno
+AND     t1.dept_cd        = t3.dept_cd
+AND     t1.dept_new_ymd   = t3.dept_new_ymd
+AND     t1.biz_clsf       = t4.biz_clsf
+AND     t1.mngmt_no       = t4.mngmt_no
+AND     t4.cust_no        = t5.cust_no
+AND     t1.biz_clsf       = #{biz_clsf}
+AND     t1.biz_clsf  = t6.biz_clsf
+AND     t1.mngmt_no = t6.mngmt_no
+AND     t1.regst_syspayno = t7.syspayno
+AND     t1.req_no = t8.req_no
+AND     t8.apr_state = t9.cd 
+AND     t1.biz_clsf = t10.biz_clsf
+AND     t1.mngmt_no = t10.mngmt_no
+AND     t10.stake_dept = '1'
+AND     t10.syspayno = t11.syspayno
+AND     t11.dept_cd        = t12.dept_cd
+AND     t11.dept_new_ymd   = t12.dept_new_ymd
+<if test="region_centr != null and region_centr != ''">
+	  AND t1.region_centr     = #{region_centr}
+</if>
+<if test="rspns_syspayno != null and rspns_syspayno != ''">
+	  AND t1.rspns_syspayno   = #{rspns_syspayno}
+</if>
+<if test="rspns_empno != null and rspns_empno != ''">
+	  AND (t2.empno           = #{rspns_empno}
+</if>
+<if test="rspns_nm != null and rspns_nm != ''">
+	  OR   t2.nm              = #{rspns_nm})
+</if>
+<if test="educ_start_ymd_st != null and educ_start_ymd_st != ''">
+	     AND t1.educ_start_ymd   <![CDATA[ >= ]]> #{educ_start_ymd_st} 
+</if>
+<if test="educ_start_ymd_ed != null and educ_start_ymd_ed != ''">
+	     AND t1.educ_start_ymd   <![CDATA[ <= ]]> #{educ_start_ymd_ed} 
+</if>
+<if test="educ_procs_like != null and educ_procs_like != ''">
+	  AND t1.educ_procs       LIKE '%' || #{educ_procs_like} || '%'
+</if>
+<if test="apr_state != null and apr_state != ''">
+	  AND t8.apr_state = #{apr_state}
+</if>
+<if test="regst_syspayno != null and regst_syspayno != ''">
+	  AND t1.regst_syspayno   = #{regst_syspayno}
+</if>
+<if test="contribute_dept_nm != null and contribute_dept_nm != ''">
+	  AND t12.dept_nm like '%' || #{contribute_dept_nm} || '%'
+</if>
+)
+WHERE 1=1
+<if test="cmpy_nm_krchar_like != null and cmpy_nm_krchar_like != ''">
+AND cmpy_nm_krchar   LIKE '%' || #{cmpy_nm_krchar_like} || '%'
+</if>
+ORDER BY mngmt_no
+  </select>
+  
+	  <select id="selectSptTechEducInfoDetail" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo" resultType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo">
+	  SELECT /* QueryID : kr.re.kitech.biz.sup.edu.selectSptTechEducInfoDetail */ 
+		  t1.biz_clsf,
+        t1.mngmt_no,
+        t1.rspns_syspayno,
+        t2.nm AS rspns_nm,
+        t2.empno AS rspns_empno,
+        t1.region_centr,
+        fun_xodxcommst_cd_nm(t1.region_centr, 0) AS region_centr_nm, -- 지역본부
+        t1.dept_cd,
+        t1.dept_new_ymd,
+        t3.dept_nm,
+        t1.educ_procs,
+        t1.attnce_qty,
+        t1.educ_start_ymd,
+        t1.educ_end_ymd,
+        t1.educ_grd,
+        fun_xodxcommst_cd_nm(t1.educ_grd, 0) AS educ_grd_nm,
+        t1.educ_goal,
+        t1.educ_plce,
+        t1.rmk,
+        t1.prcs_state,
+        t1.prcs_ymd,
+        t1.prcs_syspayno,
+        t1.reject_rmk,
+        t1.attach_file_no_01,
+        t1.attach_file_no_02,
+        t4.email AS regst_psn_email,
+        t5.email as rspns_email,
+        t4.nm AS regst_psn_nm,
+        t1.regst_syspayno,
+        t1.req_no,
+        t6.apr_state,
+        t7.cd_nm AS apr_state_nm,
+        t9.nm AS contribute_nm,
+        t10.dept_nm AS contribute_dept_nm,
+        t1.educ_purp,
+        t1.educ_form
+FROM    spttecheducinfo t1,
+        humbasicinfo    t2,
+        xodhdeptinfo    t3,
+        humbasicinfo    t4,
+        humbasicinfo    t5,
+        xomxintfatab    t6,
+        xodxcommst t7,
+        spttecheduccontribute t8,
+        humbasicinfo    t9,
+        xodhdeptinfo    t10
+WHERE   t1.rspns_syspayno = t2.syspayno
+AND     t1.dept_cd        = t3.dept_cd
+AND     t1.dept_new_ymd   = t3.dept_new_ymd
+AND     t1.regst_syspayno = t4.syspayno
+and     t1.rspns_syspayno= t5.syspayno
+AND     t1.req_no = t6.req_no
+AND     t6.apr_state = t7.cd
+AND     t1.biz_clsf = t8.biz_clsf
+AND     t1.mngmt_no = t8.mngmt_no
+AND     t8.stake_dept = '1'
+AND     t8.syspayno = t9.syspayno
+AND     t9.dept_cd        = t10.dept_cd
+AND     t9.dept_new_ymd   = t10.dept_new_ymd
+AND     t1.req_no = #{req_no}
+<if test="contribute_dept_nm != null and contribute_dept_nm != ''">
+AND     t10.dept_nm like '%'|| #{contribute_dept_nm} ||'%'
+</if>
+	  </select>
+  
+  	<select id="selectSptTechEducNextMngmtNo" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo" resultType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo">
+		SELECT /* QueryID : kr.re.kitech.biz.sup.edu.selectSptTechEducNextMngmtNo */
+			   TO_CHAR(SYSDATE,'%Y')||'-'||LPAD(TO_CHAR(TRUNC(NVL(TO_NUMBER(MAX(SUBSTR(mngmt_no,6))),0)+1)), 4, '0') AS mngmt_no
+		  FROM spttecheducinfo t1
+		 WHERE 1=1
+		   AND mngmt_no LIKE TO_CHAR(SYSDATE,'%Y')||'%'
+	</select>
+	
+	<update id="mergeSptTechEducInfo" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo">
+		MERGE /* kr.re.kitech.biz.sup.edu.mergeSptTechEducInfo */
+		 INTO spttecheducinfo AS t1
+		USING dual AS t2 ON t1.biz_clsf = #{biz_clsf} AND t1.mngmt_no = #{mngmt_no}
+		 WHEN MATCHED  THEN
+		 UPDATE
+		    SET rspns_syspayno   = #{rspns_syspayno},
+	  			educ_procs   = #{educ_procs},
+	  			attnce_qty    = #{attnce_qty},
+	  			educ_start_ymd   = #{educ_start_ymd},
+	  			educ_end_ymd   = #{educ_end_ymd},
+	  			educ_plce  = #{educ_plce},
+	  			<if test='region_centr != null'>
+		    	region_centr  = #{region_centr},
+	  			</if>
+	  			<if test='dept_cd != null'>
+	  			dept_cd   = #{dept_cd},
+	  			</if>
+	  			<if test='dept_new_ymd != null'>
+	  			dept_new_ymd           = #{dept_new_ymd},
+	  			</if>
+	  			<if test='educ_grd != null'>
+	  			educ_grd  = #{educ_grd},
+	  			</if>
+	  			<if test='educ_goal != null'>
+	  			educ_goal   = #{educ_goal},
+	  			</if>
+	  			<if test='educ_purp != null'>
+	  			educ_purp  = #{educ_purp},
+	  			</if>
+	  			<if test='educ_form != null'>
+	  			educ_form  = #{educ_form},
+	  			</if>
+	  			<if test='rmk != null'>
+	  			rmk   = #{rmk},
+	  			</if>
+	  			prcs_state  = #{cud_type},
+	  			prcs_ymd  = TO_CHAR(SYSDATE,'%Y%m%d'),
+	  			prcs_syspayno  = #{updt_syspayno},
+	  			<if test='reject_rmk != null'>
+	  			reject_rmk   = #{reject_rmk},
+	  			</if>
+	  			<if test='attach_file_no_01 != null'>
+	  			attach_file_no_01            = #{attach_file_no_01},
+	  			</if>
+	  			<if test='attach_file_no_02 != null'>
+	  			attach_file_no_02            = #{attach_file_no_02},
+	  			</if>
+	  			updt_syspayno   = #{updt_syspayno},
+	  			updt_daytm   = SYSDATE
+		 WHEN NOT MATCHED THEN
+		 INSERT (
+		 	req_no,
+		 	biz_clsf,
+		 	mngmt_no,
+		 	rspns_syspayno,
+		 	region_centr,
+		 	dept_cd,
+		 	dept_new_ymd,
+		 	educ_procs,
+		 	attnce_qty,
+		 	educ_start_ymd,
+		 	educ_end_ymd,
+		 	educ_grd,
+		 	educ_goal,
+		 	educ_plce,
+		 	educ_purp,
+		 	educ_form,
+		 	rmk,
+		 	prcs_state,
+		 	prcs_ymd,
+		 	prcs_syspayno,
+		 	send_ymd,
+		 	reject_rmk,
+		 	attach_file_no_01,
+		 	attach_file_no_02,
+		 	regst_syspayno,
+		 	regst_daytm
+		 ) VALUES(
+		 	#{req_no},					/* req_no */
+		 	#{biz_clsf},				/* biz_clsf */
+		 	#{mngmt_no},				/* mngmt_no */
+		 	#{rspns_syspayno},			/* rspns_syspayno */
+		 	#{region_centr},			/* region_centr */
+		 	#{dept_cd},					/* dept_cd */
+		 	#{dept_new_ymd},			/* dept_new_ymd */
+		 	#{educ_procs},				/* educ_procs */
+		 	#{attnce_qty},				/* attnce_qty */
+		 	#{educ_start_ymd},			/* educ_start_ymd */
+		 	#{educ_end_ymd},			/* educ_end_ymd */
+		 	#{educ_grd},				/* educ_grd */
+		 	#{educ_goal},				/* educ_goal */
+		 	#{educ_plce},				/* educ_plce */
+		 	#{educ_purp},				/* educ_purp */
+		 	#{educ_form},				/* educ_form */
+		 	#{rmk},						/* rmk */
+		 	#{cud_type},				/* prcs_state|cud_type */
+		 	TO_CHAR(SYSDATE,'%Y%m%d'),	/* prcs_ymd|nowYMD */
+		 	#{regst_syspayno},			/* prcs_syspayno|regst_syspayno */
+		 	TO_CHAR(SYSDATE,'%Y%m%d'),	/* send_ymd|nowYMD */
+		 	#{reject_rmk},				/* reject_rmk */
+		 	#{attach_file_no_01},		/* attach_file_no_01 */
+		 	#{attach_file_no_02},		/* attach_file_no_02 */
+		 	#{regst_syspayno},			/* regst_syspayno */
+		 	SYSDATE						/* regst_daytm|now */
+		 )
+	</update>
+	
+	<delete id="deleteSptTechEducInfo" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.sup.edu.deleteSptTechEducInfo */ 
+FROM spttecheducinfo 
+WHERE biz_clsf = #{biz_clsf} 
+AND mngmt_no = #{mngmt_no} 
+  </delete>
+    
+  <select id="selectSptTechEducInfoEducList" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo" resultType="kr.re.kitech.biz.sup.edu.vo.SptTechEducInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.edu.selectSptTechEducInfoEducList */ 
+        s1.req_no,
+        s1.region_centr,
+        s1.mngmt_no,  -- 관리번호
+        s1.rspns_syspayno,
+        h1.empno AS rspns_empno,
+        h1.nm AS rspns_nm,      -- 책임자
+        s1.dept_cd,
+        s1.dept_new_ymd,
+        s1.educ_procs,      -- 교육과정
+        s1.educ_start_ymd,      -- 교육시작일자
+        s1.educ_end_ymd,        -- 교육종료일자
+        s1.educ_plce,   -- 교육장소
+        s1.attnce_qty,      -- 참여자 수
+        s1.attach_file_no_01,   -- 개최계획서
+        s1.attach_file_no_02,   -- 결과보고서
+        s1.prcs_state,  
+        d1.dept_nm,         -- 소속
+        x1.cd_nm AS region_centr_nm, 
+        s1.send_ymd,
+        s2.accnt_no,
+        s2.reqd_amt,
+        s1.educ_goal,
+        s1.regst_syspayno,
+        h2.empno AS regst_empno,
+        h2.nm AS regst_nm,        
+        x2.apr_state,
+        x3.cd_nm AS apr_state_nm,
+        s1.educ_purp, 
+        s1.educ_form,
+        x4.cd_nm AS educ_purp_nm,
+        x5.cd_nm AS educ_form_nm,
+        h3.nm AS contribute_nm ,
+        d2.dept_nm AS contribute_dept_nm
+FROM spttecheducinfo s1
+JOIN humbasicinfo h1 ON s1.rspns_syspayno = h1.syspayno
+JOIN xodhdeptinfo d1 ON s1.dept_cd = d1.dept_cd AND s1.dept_new_ymd =  d1.dept_new_ymd
+JOIN xodxcommst x1 ON s1.region_centr = x1.cd AND x1.cd_clsf = 'HCF'
+JOIN spttecheducreqdbugt s2 ON s1.biz_clsf = s2.biz_clsf AND s1.mngmt_no = s2.mngmt_no
+JOIN humbasicinfo h2 ON s1.regst_syspayno = h2.syspayno
+LEFT OUTER JOIN xomxintfatab x2 ON s1.req_no = x2.req_no
+LEFT OUTER JOIN xodxcommst x3  ON x2.apr_state = x3.cd AND x3.cd_clsf = 'XAD'
+JOIN xodxcommst x4 ON s1.educ_purp = x4.cd AND x4.cd_clsf = 'SEE'
+JOIN xodxcommst x5 ON s1.educ_form = x5.cd AND x5.cd_clsf = 'SEF'
+LEFT OUTER JOIN spttecheduccontribute s3 ON s1.biz_clsf = s3.biz_clsf AND s1.mngmt_no = s3.mngmt_no AND s3.stake_dept = 1
+JOIN humbasicinfo h3 ON s3.syspayno = h3.syspayno
+JOIN xodhdeptinfo d2 ON h3.dept_cd = d2.dept_cd AND h3.dept_new_ymd = d2.dept_new_ymd
+WHERE s1.biz_clsf = 'SEA010'
+AND s1.educ_start_ymd   BETWEEN #{educ_start_ymd_st} AND  #{educ_start_ymd_ed}
+<if test="region_centr != null and region_centr != ''">
+AND s1.region_centr         = #{region_centr}  
+</if>
+<if test="rspns_syspayno != null and rspns_syspayno != ''">
+AND s1.rspns_syspayno       = #{rspns_syspayno}  
+</if>
+<if test="educ_procs_like != null and educ_procs_like != ''">
+AND s1.educ_procs     LIKE '%' || #{educ_procs_like} || '%'  
+</if>
+<if test="apr_state != null and apr_state != ''">
+AND x2.apr_state = #{apr_state}  
+</if>
+<if test="regst_syspayno != null and regst_syspayno != ''">
+AND s1.regst_syspayno = #{regst_syspayno}  
+</if>
+<if test="contribute_dept_nm != null and contribute_dept_nm != ''">
+AND d2.dept_nm LIKE '%' || #{contribute_dept_nm} || '%'   
+</if>
+ORDER BY s1.mngmt_no
+  </select>
+	
+	</mapper>

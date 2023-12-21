@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="저널권호정보">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_jurnlSearch">
+        			<w2:keyInfo>
+        				<w2:key id="jurnl_no" name="저널번호" dataType="text"></w2:key>
+        				<w2:key id="jurnl_subj" name="저널명" dataType="text"></w2:key>
+        				<w2:key id="missno_yn" name="결호여부" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_jurnlList" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="jurnl_no" name="저널번호" dataType="text"></w2:column>
+        				<w2:column id="jurnl_subj" name="저널명" dataType="text"></w2:column>
+        				<w2:column id="vol" name="volume" dataType="text"></w2:column>
+        				<w2:column id="no" name="number" dataType="text"></w2:column>
+        				<w2:column id="publ_yr" name="출판년도" dataType="text"></w2:column>
+        				<w2:column id="publ_month" name="출판월" dataType="text"></w2:column>
+        				<w2:column id="wrhsg_ymd" name="입고일" dataType="text"></w2:column>
+        				<w2:column id="wrhsg_schdl_ymd" name="입고예정일" dataType="text"></w2:column>
+        				<w2:column id="missno_yn" name="결호여부" dataType="text"></w2:column>
+        				<w2:column id="file_yn" name="원문여부" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectJurnlList" ref="data:json,dma_jurnlSearch"
+        		target='data:json,{"id":"dlt_jurnlList","key":"invJurnlVolVoList"}' action="SvcKBKINVJURVOL01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script src="/cm/js/biz/kbk.js" cache="false" />
+        <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {	        
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회 버튼 클릭 이벤트
+	 */ 
+	scwin.search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	
+	/**
+	 * 조회
+	 */ 
+	scwin.search = function(e) {
+		
+    	if(scwin.validationCheck() == "N"){
+    		return;
+    	}else {
+			com.execute(sbm_selectJurnlList, {
+				successCallback: function(e){
+					tbx_cnt.setValue(dlt_jurnlList.getRowCount());
+				}
+			});
+		}
+    };
+    
+	
+	/**
+	 * 저널번호조회 버튼 클릭 이벤트
+	 */ 
+	scwin.jurnlNoSearch_onclick = function(e) {
+		
+		var jurnlNoTrim = inputJurnlNo.getValue().trim();
+		var data = {jurnl_no : jurnlNoTrim};
+  		
+		biz.kbk.pop.open(biz.kbk.pop.TYPE.SEL_JUNO, data, function(ret) {
+			dma_jurnlSearch.set("jurnl_no", ret['jurnl_no']);
+			dma_jurnlSearch.set("jurnl_subj", ret['jurnl_subj']);
+		});
+	};
+	
+	
+	/**
+	 * 신규 버튼 클릭 이벤트
+	 */
+	scwin.jurnlNewTrigger_onclick = function(e) {
+		var jurnlno = inputJurnlNo.getValue();
+		if(jurnlno == "")
+		{
+			com.alert("저널번호를 선택한 후에 신규생성 가능합니다.");
+			inputJurnlNo.focus();
+		}
+		else
+		{
+			var data = {
+				cmd : "In",
+				jurnl_no : jurnlno
+			};
+			
+			biz.kbk.pop.open(biz.kbk.pop.TYPE.REG_CTNT, data);
+		} 
+	};
+	
+	
+	/**
+	 * 그리드 링크 클릭 이벤트
+	 */
+	scwin.JurnlGridClick_oncellclick = function(row,col,colId) {
+		if(col == gridJurnal.getColumnIndex("jurnl_no")){ 			
+			var data = {
+				cmd : "Vw",
+				jurnl_no : dlt_jurnlList.getCellData(row, "jurnl_no"),
+				vol : dlt_jurnlList.getCellData(row, "vol"),
+				no : dlt_jurnlList.getCellData(row, "no")
+			};
+			
+     		biz.kbk.pop.open(biz.kbk.pop.TYPE.REG_CTNT, data);
+ 		}
+	};
+	   	
+   	    
+	/**
+	 * 저널명 keyevent
+	 */ 
+	scwin.inputJurnlSubj_onkeypress = function(e) {
+		if(event.keyCode == "13"){
+			
+			dma_jurnlSearch.set("jurnl_no", inputJurnlNo.getValue())
+			dma_jurnlSearch.set("jurnl_subj", inputJurnlSubj.getValue())
+			dma_jurnlSearch.set("missno_yn", selectboxMissNo.getValue())
+			
+		 	scwin.search();
+		 }
+	};
+    
+    
+    /**
+	 * 저널번호 event
+	 */ 
+	scwin.inputJurnlNo_onchange = function(info) {
+		if(inputJurnlNo.getValue() == "") inputJurnlSubj.setValue("");
+	};
+	
+	
+	/**
+	 * 날짜 포맷
+	 */ 
+	scwin.dateFormat = function(ret) {
+		var ymd = ret.trim();
+		
+		if(ymd)
+			return ymd.substr(0, 4) + "-" + ymd.substr(4, 2) + "-" + ymd.substr(6);
+		else
+			return ymd;
+	};
+
+    
+    /**
+	 * validationCheck
+	 */ 
+ 	scwin.validationCheck = function() {	
+	 				    
+	    if(com.isEmpty(inputJurnlNo.getValue()) && com.isEmpty(inputJurnlSubj.getValue()))
+	    {		 
+	    	com.alert("저널번호 혹은 저널명을 입력하세요.");   	
+        	inputJurnlNo.focus();
+	        
+	        return "N";
+	    }
+	};
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="검색조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:160px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style=""></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="저널번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="inpSch" id="" style="width: 120px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="inputJurnlNo" style="" title="저널번호" ref="data:dma_jurnlSearch.jurnl_no" ev:onchange="scwin.inputJurnlNo_onchange"></xf:input>
+    								<xf:trigger class="btn" id="jurnlNoSearch" style="" type="button" title="저널번호 조회" ev:onclick="scwin.jurnlNoSearch_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="저널명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="inputJurnlSubj" style="width:300px;" title="저널명" ref="data:dma_jurnlSearch.jurnl_subj" ev:onkeypress="scwin.inputJurnlSubj_onkeypress"></xf:input>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="결호여부" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>1</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="" chooseOptionLabel="" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="selectboxMissNo" ref="data:dma_jurnlSearch.missno_yn"
+    								style="width:120px;" submenuSize="auto" title="결호여부">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[전체]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[결호]]></xf:label>
+    										<xf:value><![CDATA[Y]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[입고]]></xf:label>
+    										<xf:value><![CDATA[N]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="jurlSearch" type="button" class="btn search" ev:onclick="scwin.search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="margin-top:10px;">
+    			<xf:group class="le" id="">
+    				<xf:group class="result" id="" style="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_cnt" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:trigger class="btn" id="jurnlNewTrigger" style="" type="button" ev:onclick="scwin.jurnlNewTrigger_onclick">
+    					<xf:label><![CDATA[신규]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_jurnlList" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="gridJurnal"
+    			visibleRowNum="20" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.JurnlGridClick_oncellclick">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column9" value="저널번호" displayMode="label"></w2:column>
+    					<w2:column width="200" inputType="text" style="height:28px;" id="column7" value="저널명" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column5" value="volume" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column20" value="number" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column29" value="출판년도" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column27" value="출판월" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column42" value="입고일" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column40" value="입고예정일" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column46" value="결호여부" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column44" value="원문여부" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="70" inputType="link" readOnly="true" style="height:28px;" id="jurnl_no" displayMode="label"></w2:column>
+    					<w2:column width="200" inputType="text" readOnly="true" style="height:28px;" id="jurnl_subj" displayMode="label" class="le">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="vol" escape="false"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="no" displayMode="label"
+    						class="">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="publ_yr" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="publ_month" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="wrhsg_ymd" displayMode="label" readOnly="true" displayFormatter="scwin.dateFormat">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="wrhsg_schdl_ymd" displayMode="label"
+    						readOnly="true" displayFormatter="scwin.dateFormat">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="missno_yn" displayMode="label" readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="file_yn" displayMode="label" readOnly="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="지식재산권 상세 조회 소요비용">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				  	   <w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+				       <w2:key id="mngmt_no" name="mngmt_no" dataType="text"></w2:key>
+				       <w2:key id="cost_kind" name="cost_kind" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				
+				<w2:dataMap baseNode="map" id="dma_result">
+				  <w2:keyInfo>
+				       <w2:key id="appCostSum" name="appCostSum" dataType="text" defaultValue="0"></w2:key>
+				       <w2:key id="oaCostSum" name="oaCostSum" dataType="text" defaultValue="0"></w2:key>
+				       <w2:key id="regCostSum" name="regCostSum" dataType="text" defaultValue="0"></w2:key>
+				       <w2:key id="annualCostSum" name="annualCostSum" dataType="text" defaultValue="0"></w2:key>
+				       <w2:key id="etcCostSum" name="etcCostSum" dataType="text" defaultValue="0"></w2:key>
+				 </w2:keyInfo>
+				<w2:data use="false"></w2:data></w2:dataMap>
+				
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="expns_mngmt_no" name="expns_mngmt_no" dataType="text"></w2:column>
+				       <w2:column id="unslip_no" name="unslip_no" dataType="text"></w2:column>
+				       <w2:column id="acdt_contnt" name="acdt_contnt" dataType="text"></w2:column>
+				       <w2:column id="patofic_nm" name="patofic_nm" dataType="text"></w2:column>
+				       <w2:column id="governpay_fee" name="governpay_fee" dataType="text"></w2:column>
+				       <w2:column id="out_governpay_fee" name="out_governpay_fee" dataType="text"></w2:column>
+				       <w2:column id="supply_price" name="supply_price" dataType="text"></w2:column>
+				       <w2:column id="out_supply_price" name="out_supply_price" dataType="text"></w2:column>
+				       <w2:column id="surtax" name="surtax" dataType="text"></w2:column>
+				       <w2:column id="out_commission" name="out_commission" dataType="text"></w2:column>
+				       <w2:column id="state_cd" name="state_cd" dataType="text"></w2:column>
+				       <w2:column id="total_price" name="total_price" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>
+            
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            
+			<!-- 지식재산권 비용 정보 조회 -->
+			<xf:submission id="sbm_svcpatpsrinqr06" 
+						   ref='data:json,dma_search' 
+						   target='data:json,{"id":"dma_result","key":"patPsrInquiryManageVo"}' 
+						   action="SvcPATPSRINQR06.pwkjson" 
+						   ev:submitdone="scwin.sbm_svcpatpsrinqr06_done" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+			
+			<!-- 지식재산권 비용 정보 조회 -->
+			<xf:submission id="sbm_svcpatpsrinqr07" 
+						   ref='data:json,dma_search' 
+						   target='data:json,{"id":"dlt_list","key":"patPsrInquiryManageVoList"}' 
+						   action="SvcPATPSRINQR07.pwkjson" 
+						   ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+			
+
+
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+			scwin.param = {};
+        
+			scwin.onpageload = function() {
+				// 첨부파일 컴포넌트 초기화
+                com.file.init();
+                
+                scwin.param = com.getParameter();
+                dma_search.setJSON(scwin.param);
+                
+                //dma_search.set("req_no", "I01202000044");
+                //dma_search.set("mngmt_no", "KR20200031");
+                
+                // 비용 조회
+                com.execute(sbm_svcpatpsrinqr06);  
+			
+			};
+			
+			scwin.sbm_svcpatpsrinqr06_done = function(e) {
+				debugger;
+				com.trimDataCollection(dma_result);
+				
+				let appCostSumVal = dma_result.get("appCostSum");
+				let oaCostSumVal = dma_result.get("oaCostSum");
+				let regCostSumVal = dma_result.get("regCostSum");
+				let annualCostSumVal = dma_result.get("annualCostSum");
+				let etcCostSumVal = dma_result.get("etcCostSum");
+				
+				appCostSumVal = WebSquare.util.parseInt(appCostSumVal, 0);
+				oaCostSumVal = WebSquare.util.parseInt(oaCostSumVal, 0);
+				regCostSumVal = WebSquare.util.parseInt(regCostSumVal, 0);
+				annualCostSumVal = WebSquare.util.parseInt(annualCostSumVal, 0);
+				etcCostSumVal = WebSquare.util.parseInt(etcCostSumVal, 0);
+				
+				allCostSum.setValue(appCostSumVal + oaCostSumVal + regCostSumVal + annualCostSumVal + etcCostSumVal);
+								
+			};
+			
+			// 비용 목록 조회
+			scwin.retrieveCostLst = function(e){
+				const kind = $p.getComponentById(e.target.id).getUserData('userData1');			
+				dma_search.set("cost_kind", kind);
+				com.execute(sbm_svcpatpsrinqr07);
+			};
+			
+			scwin.onpageunload = function() {
+				
+			};
+		
+		]]></script>
+    </head>
+    <style><![CDATA[
+    	.link {color: blue;cursor: pointer;border-bottom: 1px solid blue;}
+    ]]></style>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pageWrap" id="" style="">
+    	
+    		<xf:group class="titleSection" id="" style="">
+    			<w2:textbox class="tit_tbl" id="" label="비용" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    	
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+	   			<w2:attributes>
+	   				<w2:summary></w2:summary>
+	   			</w2:attributes>
+	   			<xf:group tagname="caption"></xf:group>
+	   			<xf:group tagname="colgroup">
+	   				<xf:group style="" tagname="col"></xf:group>
+	   				<xf:group style="" tagname="col"></xf:group>
+	   				<xf:group style="" tagname="col"></xf:group>
+	   				<xf:group style="" tagname="col"></xf:group>
+	   				<xf:group style="" tagname="col"></xf:group>
+	   				<xf:group style="" tagname="col"></xf:group>
+	   			</xf:group>
+	   			<xf:group tagname="tr">
+	   				<xf:group class="w2tb_th ce" tagname="th">
+	   					<w2:attributes>
+	   					</w2:attributes>
+	   					<w2:textbox id="" label="출원" style="" tagname="span"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_th ce" tagname="th">
+	   					<w2:attributes>
+	   					</w2:attributes>
+	   					<w2:textbox id="" label="중간사건" style="" tagname="span"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_th ce" tagname="th">
+	   					<w2:attributes>
+	   					</w2:attributes>
+	   					<w2:textbox id="" label="등록" style="" tagname="span"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_th ce" tagname="th">
+	   					<w2:attributes>
+	   					</w2:attributes>
+	   					<w2:textbox id="" label="연차" style="" tagname="span"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_th ce" tagname="th">
+	   					<w2:attributes>
+	   					</w2:attributes>
+	   					<w2:textbox id="" label="기타" style="" tagname="span"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_th ce" tagname="th">
+	   					<w2:attributes>
+	   					</w2:attributes>
+	   					<w2:textbox id="" label="합계" style="" tagname="span"></w2:textbox>
+	   				</xf:group>
+	   			</xf:group>
+	   			<xf:group tagname="tr" userData1="AA">
+	   				<xf:group class="w2tb_td ce link" tagname="td" userData1="AA" ev:onclick="scwin.retrieveCostLst">
+	   					<w2:textbox class="link" id="appCostSum" label="0" style="" tagname="span" ref="data:dma_result.appCostSum" displayFormat="#,####"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_td ce link" tagname="td" userData1="E" ev:onclick="scwin.retrieveCostLst">
+	   					<w2:textbox class="link" id="oaCostSum" label="0" style="" tagname="span" ref="data:dma_result.oaCostSum" displayFormat="#,####"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_td ce link" tagname="td" userData1="F" ev:onclick="scwin.retrieveCostLst">
+	   					<w2:textbox class="link" id="regCostSum" label="0" style="" tagname="span" ref="data:dma_result.regCostSum" displayFormat="#,####"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_td ce link" tagname="td" userData1="G" ev:onclick="scwin.retrieveCostLst">
+	   					<w2:textbox class="link" id="annualCostSum" label="0" style="" tagname="span" ref="data:dma_result.annualCostSum" displayFormat="#,####"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_td ce link" tagname="td" userData1="H" ev:onclick="scwin.retrieveCostLst">
+	   					<w2:textbox class="link" id="etcCostSum" label="0" style="" tagname="span" ref="data:dma_result.etcCostSum" displayFormat="#,####"></w2:textbox>
+	   				</xf:group>
+	   				<xf:group class="w2tb_td ce link" tagname="td" userData1="H" ev:onclick="scwin.retrieveCostLst">
+	   					<w2:textbox class="link" id="allCostSum" label="0" style="" tagname="span" displayFormat="#,####"></w2:textbox>
+	   				</xf:group>
+	   			</xf:group>
+	   				   			
+    		</xf:group>
+    		
+    		<xf:group class="titleSection" id="" style="">
+    			<w2:textbox class="tit_tbl" id="" label="비용 상세 목록" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+			<w2:gridView id="gr" class="grid" dataList="data:dlt_list" style="height: 120px;"
+			  ev:oncellclick="" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"  rowNumHeaderValue="순번" noResultMessage="조회 결과가 없습니다." rowStatusHeaderValue="상태" noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff" rowNumVisible="true" rowNumWidth="60" rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" summaryAuto="true" visibleRowNum="10" autoFit="allColumn">
+			  <w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+			  <w2:header id="header1">
+			    <w2:row id="row1">
+			      <w2:column width="100" inputType="text" displayMode="label" id="patofic_nm" value="사무소"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="unslip_no" value="결의번호"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="acdt_contnt" value="비용항목"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="supply_price" value="국내수수료"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="surtax" value="부가세"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="out_supply_price" value="해외수수료"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="out_commission" value="해외송금수수료"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="governpay_fee" value="관납료"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="out_governpay_fee" value="해외관납료"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="total_price" value="합계"></w2:column>
+			    </w2:row>
+			  </w2:header>
+			  <w2:gBody id="gBody1">
+			    <w2:row id="row2">
+			      <w2:column inputType="text" id="patofic_nm" readOnly="true" textAlign="left"></w2:column>
+			      <w2:column inputType="text" id="unslip_no" readOnly="true"></w2:column>
+			      <w2:column inputType="text" id="acdt_contnt" readOnly="true" textAlign="left"></w2:column>
+			      <w2:column inputType="text" id="supply_price" dataType="number" displayFormat="#,####" readOnly="true" textAlign="right"></w2:column>
+			      <w2:column inputType="text" id="surtax" dataType="number" displayFormat="#,####" readOnly="true" textAlign="right"></w2:column>
+			      <w2:column inputType="text" id="out_supply_price" dataType="number" displayFormat="#,####" readOnly="true" textAlign="right"></w2:column>
+			      <w2:column inputType="text" id="out_commission" dataType="number" displayFormat="#,####" readOnly="true" textAlign="right"></w2:column>
+			      <w2:column inputType="text" id="governpay_fee" dataType="number" displayFormat="#,####" readOnly="true" textAlign="right"></w2:column>
+			      <w2:column inputType="text" id="out_governpay_fee" dataType="number" displayFormat="#,####" readOnly="true" textAlign="right"></w2:column>
+			      <w2:column inputType="text" id="total_price" dataType="number" displayFormat="#,####" readOnly="true" textAlign="right"></w2:column>
+			      </w2:row>
+			  </w2:gBody>
+				<w2:subTotal id="subTotal1" targetColumnID="patofic_nm">
+				    <w2:row id="row1">
+				        <w2:column id="column19" inputType="text" value="총계"></w2:column>
+				        <w2:column id="column18" inputType="text"></w2:column>
+				        <w2:column id="column17" inputType="text"></w2:column>
+				        <w2:column id="column16" inputType="expression" dataType="number" displayFormat="#,###" expression="SUM('supply_price')" textAlign="right" valueType="binary"></w2:column>
+				        <w2:column id="column15" inputType="expression" dataType="number" displayFormat="#,###" expression="SUM('surtax')" textAlign="right" valueType="binary"></w2:column>
+				        <w2:column id="column14" inputType="expression" displayFormat="#,###" dataType="number" expression="SUM('out_supply_price')" textAlign="right" valueType="binary"></w2:column>
+				        <w2:column id="column13" inputType="expression" dataType="number" displayFormat="#,###" expression="SUM('out_commission')" textAlign="right" valueType="binary"></w2:column>
+				        <w2:column id="column12" inputType="expression" dataType="number" displayFormat="#,###" expression="SUM('governpay_fee')" textAlign="right" valueType="binary"></w2:column>
+				        <w2:column id="column20" inputType="expression" dataType="number" displayFormat="#,###" expression="SUM('out_governpay_fee')" textAlign="right" valueType="binary"></w2:column>
+				        <w2:column id="column11" inputType="expression" dataType="number" displayFormat="#,###" expression="SUM('total_price')" textAlign="right" valueType="binary"></w2:column>
+				    </w2:row>
+				</w2:subTotal>
+			</w2:gridView>
+    		   		
+    	</xf:group>
+    </body>
+</html>

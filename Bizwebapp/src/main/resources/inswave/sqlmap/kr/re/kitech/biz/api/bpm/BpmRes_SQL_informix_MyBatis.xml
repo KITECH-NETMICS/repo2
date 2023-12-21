@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.api.bpm">
+<!-- 연구관리 bpm사후처리 프로시저 call -->
+<select id="selectResElecResultSP" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo" statementType="CALLABLE" resultType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+/* kr.re.kitech.biz.api.bpm.selectResElecResultSP */
+{ call srp_res_elec_result(#{reqNo,mode=IN,jdbcType=VARCHAR}
+                          , #{aprState,mode=IN,jdbcType=VARCHAR}
+                          , #{syspayno,mode=IN,jdbcType=VARCHAR}
+                          )
+}
+</select>
+
+<!-- 성과지지표 결재여부 초기화 -->
+<update id="updateResAchIndMst" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE /* kr.re.kitech.biz.api.bpm.updateResAchIndMst */
+       resachindmst
+   SET rcpt_syspayno = ''
+    , aply_yn = 'N'
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = CURRENT
+WHERE rcpt_no = #{reqNo}
+</update>
+
+<!-- 실행예산편선을 위한 계정번호 조회 -->
+<select id="selectResBgAcctmApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.api.server.vo.biz.ResBgAcctmAprVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectResBgAcctmApr */
+       accnt_no         /* 계정번호 */
+     , main_accnt_no
+     , accnt_state      /* 계정상태(RAK) */
+     , bugt_ctrl_psn    /* 예산통제자 */
+     , card_use_ex   
+FROM resbgacctm 
+WHERE accnt_no = ( SELECT DISTINCT accnt_no FROM resbgexect WHERE req_no = #{req_no}
+                             UNION 
+                             SELECT DISTINCT accnt_no FROM resbgprjbugtm WHERE req_no = #{req_no}
+                            )
+</select>
+
+<!-- 결재완료후 실행예산편성(R23) -->
+<select id="selectSrpResBBlReflect" parameterType="kr.re.kitech.biz.api.server.vo.biz.ResBgAcctmAprVo" statementType="CALLABLE" resultType="kr.re.kitech.biz.fin.com.vo.SPComVo">
+/* kr.re.kitech.biz.api.bpm.selectSrpResBBlReflect */
+{ call srp_res_bbl_reflect(#{accnt_no,mode=IN,jdbcType=VARCHAR}
+                         , #{bugt_ctrl_psn,mode=IN,jdbcType=VARCHAR}
+                         )
+}
+</select>
+
+<!-- 결재완료후 프로젝트계정 실행예산편성(R24) -->
+<select id="selectSrpResPrjBBlReflect" parameterType="kr.re.kitech.biz.api.server.vo.biz.ResBgAcctmAprVo" statementType="CALLABLE" resultType="kr.re.kitech.biz.fin.com.vo.SPComVo">
+/* kr.re.kitech.biz.api.bpm.selectSrpResPrjBBlReflect */
+{ call srp_res_prj_bbl_reflect(#{accnt_no,mode=IN,jdbcType=VARCHAR}
+                             , #{bugt_ctrl_psn,mode=IN,jdbcType=VARCHAR}
+                         )
+}
+</select>
+
+<!-- 이지바로 과제 수정예산등록정보 -->
+<update id="updateEzbaroRebgInfo" parameterType="kr.re.kitech.biz.api.server.vo.biz.ResBgAcctmAprVo">
+MERGE /* kr.re.kitech.biz.api.bpm.updateEzbaroRebgInfo */
+ INTO ezbaro_rebginfo AS x
+USING (
+        SELECT e.ofcode
+             , e.prjno
+             , NVL(e.rndbizno,'') AS rndbizno
+             , NVL(e.agreestep, 1) AS agreestep
+             , NVL(e.agreedegr, 1) AS agreedegr
+             , d.bmcode  
+             , SUM(h.bugt_amt) AS amt
+          FROM resbgacctm j
+          JOIN resinpyear g ON j.main_accnt_no = g.accnt_no
+          JOIN ezbaro_prjmon/* 비목별예산정보 */ d ON g.reschamt_card_prj_no = d.prjno 
+          JOIN ezbaro_prjinfo /* 기관별과제정보*/ e ON d.prjno = e.prjno AND d.ofcode = e.ofcode AND d.rndbizno = e.rndbizno AND d.agreestep = e.agreestep AND d.agreedegr = e.agreedegr 
+          join ezbaro_ofvsbm a on e.bmgrp = a.bmgrp and d.bmcode = a.upbmsecd
+          JOIN (
+                  SELECT bmgrp
+                       , SUBSTR(accnt_expns_cd,1,8) AS accnt_expns_cd
+                       , bmseusecd
+                    FROM fbaezitmmap
+                   GROUP BY 1,2,3
+                ) AS f ON a.bmgrp = f.bmgrp AND a.bmseusecd = f.bmseusecd      
+          JOIN bblbugtactrslt h ON j.accnt_no = h.accnt_no AND f.accnt_expns_cd like h.accnt_cd ||'%'
+          WHERE j.main_accnt_no = #{main_accnt_no}
+          AND h.bugt_amt > 0
+          GROUP BY 1,2,3,4,5,6
+    ) AS y ON x.ofcode = y.ofcode AND x.prjno = y.prjno AND x.bmcode = y.bmcode
+         AND x.rndbizno = y.rndbizno AND x.agreestep = y.agreestep AND x.agreedegr = y.agreedegr
+WHEN MATCHED THEN
+   UPDATE
+      SET x.csamt = y.amt
+        , x.updt_syspayno = #{bugt_ctrl_psn}
+        , x.updt_daytm = SYSDATE
+WHEN NOT MATCHED THEN
+   INSERT( x.ofcode
+         , x.prjno
+         , x.rndbizno
+         , x.agreestep
+         , x.agreedegr
+         , x.bmcode
+         , x.csamt
+         , x.regst_syspayno
+         , x.regst_daytm
+         )
+   VALUES( y.ofcode
+         , y.prjno
+         , y.rndbizno
+         , y.agreestep
+         , y.agreedegr
+         , y.bmcode
+         , y.amt
+         , #{bugt_ctrl_psn}
+         , SYSDATE
+         )
+</update>
+
+<!-- 이비바로 과제수정예산 요청 상태 등록 (송신대기 : 10 송신완료 : 11) -->
+<update id="updateEzbaroRebgReq" parameterType="kr.re.kitech.biz.api.server.vo.biz.ResBgAcctmAprVo">
+MERGE /* kr.re.kitech.biz.api.bpm.updateEzbaroRebgReq */
+ INTO ezbaro_rebgreq AS x
+USING (
+  SELECT  a.ofcode
+         , a.prjno
+         , a.rndbizno
+         , a.agreestep
+         , a.agreedegr
+          FROM ezbaro_prjinfo AS a 
+          JOIN resinpyear AS b ON a.prjno = b.reschamt_card_prj_no     
+          JOIN resbgacctm AS c ON b.prj_no = c.prj_no
+         WHERE c.accnt_no = #{accnt_no}
+    ) AS y ON x.ofcode = y.ofcode AND x.prjno = y.prjno AND x.rndbizno = y.rndbizno AND x.agreestep = y.agreestep AND x.agreedegr = y.agreedegr
+WHEN MATCHED THEN
+UPDATE
+      SET x.sendyn = '10'
+        , x.senddate = TO_CHAR(CURRENT, '%Y%m%d')
+        , x.sendtime = TO_CHAR(CURRENT, '%H%M%S')
+        , x.updt_syspayno = #{bugt_ctrl_psn}
+        , x.updt_daytm = SYSDATE
+WHEN NOT MATCHED THEN
+INSERT( x.ofcode
+      , x.prjno
+      , x.rndbizno
+      , x.agreestep
+      , x.agreedegr
+      , x.sendyn
+      , x.senddate
+      , x.sendtime
+      , x.regst_syspayno     
+      , x.regst_daytm
+      )
+VALUES( y.ofcode
+      , y.prjno
+      , y.rndbizno
+      , y.agreestep
+      , y.agreedegr
+      , '11'
+      , TO_CHAR(CURRENT, '%Y%m%d')
+      , TO_CHAR(CURRENT, '%H%M%S')
+      , #{bugt_ctrl_psn}
+      , SYSDATE
+      )
+</update>
+
+<!-- 결재완료 후 연구관리시작품 소연심의저장을 위한 조회  -->
+<select id="selectResTrialGoodsMstr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.rte.vo.ResSmlRvewDVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectResTrialGoodsMstr */
+       FIRST 1 
+       a.req_no AS key_1
+     , 'RBS003' AS biz_clsf /* 연구관리시작품*/
+     , a.item_nm AS rvew_objct
+     , a.user_syspayno AS syspayno
+     , b.accnt_no
+     , a.manager_id AS chrg_psn
+     , '구매금액 '||trunc(a.intro_amt) ||', '||fun_xodxcommst_cd_nm(a.posi_region,0) || ' '||fun_xodxcommst_cd_nm(a.posi_build,0) ||' '|| a.posi_floor||' '|| a.posi_floor AS rmk
+FROM restrialgoodsmstr a
+JOIN restrialgoodsDetl b ON a.req_no = b.req_no
+WHERE a.req_no = #{req_no}
+</select>
+
+<!-- 결재완료 후 기술료인센티브 소연심의저장을 위한 조회  -->
+<select id="selectResCrtPstpictApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.rte.vo.ResSmlRvewDVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectResCrtPstpictApr */
+       a.req_no AS key_1, 
+       'RBS002' AS biz_clsf,
+       c.tech_nm AS rvew_objct,
+       c.resch_rspns_main AS syspayno,
+       f.accnt_no,
+       a.manager_id AS chrg_psn,
+       TRIM(d.vend_nm || ', 입금일자 '|| f.ofic_depst_ymd || ', ' || fun_xodxcommst_cd_nm(e.tech_fee_clsf, 0) ||' ' || <![CDATA[ to_char(a.inct_amt_007, '<<<,<<<,<<<'))]]> AS rmk
+FROM rescrtpstpicth a
+JOIN respstmast c ON a.tech_fee_no = c.tech_fee_no 
+JOIN respstcrtpagr d ON a.tech_fee_no = d.tech_fee_no AND a.tech_fee_mou_odr = d.tech_fee_mou_odr
+JOIN rescrtpsrectl f ON a.depst_req_no = f.req_no
+JOIN rescrtpsrecte e ON f.depst_no = e.depst_no
+WHERE a.req_no = #{req_no}
+</select>
+
+<!-- 결재완료 후 학술대회Pool관리 소연심의저장을 위한 조회  -->
+<select id="selectResConfPoolApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.rte.vo.ResSmlRvewDVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectResConfPoolApr */
+      rcpt_no AS key_1
+    , '' AS key_2
+    , 'RBS012' AS biz_clsf
+    , conf_nm AS rvew_objct
+    , regst_syspayno AS syspayno
+    , chrg_psn 
+FROM resconfpool
+WHERE rcpt_no = #{rcpt_no}
+</select>
+
+<!-- 결재완료 후 사업조정회의 총괄위저장을 위한 조회  -->
+<select id="selectResAppBsnsAdjstApr" resultType="kr.re.kitech.biz.api.server.vo.biz.ResAppBsnsAdjstVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.api.bpm.selectResAppBsnsAdjstApr */
+      req_no AS key_1
+    , '' AS key_2
+    , 'RBS011' AS biz_clsf
+    , bsns_nm
+    , 'G' AS cmt_clsf
+    , prj_knd
+    , rfp_no
+    , bsns_noti_no
+    , bsns_cd_ofic
+    , bsns_nm_detls_bsns
+FROM resappbsnsadjst 
+WHERE req_no = #{req_no}
+</select>
+
+<!-- 주관기관일 경우 사업조정회의 중복체크 -->
+<select id="selectResAppBsnsAdjstChk" resultType="java.util.HashMap" parameterType="kr.re.kitech.biz.api.server.vo.biz.ResAppBsnsAdjstVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectResAppBsnsAdjstChk */
+       a.req_no
+     , a.bsns_req_no
+     , b.consider
+FROM resappbsnsadjst a
+LEFT JOIN resappmast b ON a.bsns_req_no = b.bsns_req_no
+WHERE a.rfp_no = #{rfp_no}
+AND a.bsns_cd_ofic = #{bsns_cd_ofic}
+AND a.bsns_noti_no = #{bsns_noti_no}
+AND REPLACE(a.bsns_nm_detls_bsns,' ', '') LIKE '%'||REPLACE(#{bsns_nm_detls_bsns}, ' ', '')||'%'
+AND REPLACE(a.bsns_nm, ' ', '') LIKE '%'||REPLACE(#{bsns_nm}, ' ', '')||'%'
+AND SUBSTR(a.req_ymd, 1, 6) >= TO_CHAR(EXTEND(SYSDATE, YEAR TO DAY)-3 UNITS MONTH,'%Y%m')
+AND a.req_no != #{key_1}
+</select>
+
+<!-- 중복시 사업조정회의 여부 수정 -->
+<update id="updateResAppMastApr" parameterType="java.util.HashMap">
+UPDATE /* kr.re.kitech.biz.api.bpm.updateResAppMastApr */
+            resappmast  
+ SET <if test='consider != null'> consider = #{consider}, </if>
+     updt_syspayno = #{updt_syspayno},
+     updt_daytm = SYSDATE
+WHERE bsns_req_no = #{bsns_req_no}
+</update>
+
+<!-- 총괄위 안건삭제시 신청번호 초기화 -->
+<update id="updateResSuperRvewdDel" parameterType="kr.re.kitech.biz.res.rte.vo.ResSmlRvewDVo">
+UPDATE /* kr.re.kitech.biz.res.rte.updateResSuperRvewdDel */
+      ressuperrvewd 
+SET req_no = NULL
+  , item_clsf =NULL
+  , item_seq = NULL
+  , updt_syspayno = #{updt_syspayno}
+  , updt_daytm = SYSDATE
+WHERE key_1 = #{key_1}
+AND   key_2 = #{key_2}
+AND   seq = #{seq}
+</update>
+
+<!-- 소연심의 결과보고 후 총괄위 저장을 위한 조회 -->
+<select id="selectResSmlRvewDApr" resultType="kr.re.kitech.biz.api.server.vo.biz.ResSmlRvewDRstVo" parameterType="java.lang.String">
+/* 2018.04.13. 기술료담당자 이메일 추가(xodxcommst.mngmt_item_5)
+   2018.04.17. sub_biz_clsf 추가(파트너기업담당자 메일추가)
+   2018.05.15. 부결난건 재입력 위해 컬럼 seq 추가
+*/
+SELECT /*  kr.re.kitech.biz.api.bpm.selectResSmlRvewDApr */
+       a.key_1 
+     , a.key_2 
+     , a.seq
+     , a.biz_clsf
+     , a.sub_biz_clsf
+     , a.item_clsf  
+     , x1.mngmt_item_2
+     , x1.cd_nm AS biz_clsf_nm
+     , x2.cd_nm || a.item_seq AS item_clsf_seq
+     , x3.cd_nm AS rvew_rst_nm
+     , a.rvew_objct /* 안건제목 */
+     , a.rmk /*  안건내용 */
+     , a.chrg_psn
+     , a.rvew_rst
+     , a.rvew_rst_cd
+     , a.cmt_clsf
+     , a.attach_file_no
+     , c.elecapp_docu_no
+     , c.rvew_sbj    
+     , h.nm AS req_psn_nm
+     , h.email AS email_01
+     , CASE WHEN x1.mngmt_item_2 = 'P' THEN fun_humbasicinfo_cd_nm(b.mandate_psn_syspayno, 11) ELSE x1.mngmt_item_5 END AS email_02
+     , CASE WHEN x1.mngmt_item_2 = 'P' THEN fun_humbasicinfo_cd_nm(b.regst_syspayno, 11) ELSE '' END AS email_03
+     , g.email AS email_04
+     , NVL(b.pdp_flag,'N') AS pdp_flag
+     , b.pat_clsf
+FROM ressmlrvewh c 
+JOIN ressmlrvewd a ON c.req_no = a.req_no
+JOIN xodxcommst x1 ON a.biz_clsf = x1.cd AND x1.cd_clsf ='RBS'
+JOIN xodxcommst x2 ON a.item_clsf = x2.cd AND x2.cd_clsf ='LBL'
+JOIN xodxcommst x3 ON a.rvew_rst_cd = x3.cd AND x3.cd_clsf ='PME'
+JOIN humbasicinfo h ON a.syspayno = h.syspayno
+JOIN humbasicinfo g ON c.regst_syspayno = g.syspayno
+LEFT JOIN patappmastr b ON a.key_1 = b.req_no
+WHERE c.elecapp_docu_no = #{elecapp_docu_no}
+ORDER BY a.item_clsf, a.item_seq
+</select>
+
+<!-- 소연심의 결과보고시 학술대회 원안접수일 경우 학술대회신청->학술대회 마스터 복사입력 -->
+<insert id="insertResConfPoolMastr" parameterType="java.lang.String">
+INSERT /* kr.re.kitech.biz.api.bpm.insertResConfPoolMastr */
+   INTO resconfpoolmaster (
+      rcpt_no
+    , scitech_cd
+    , rscharea
+    , society_nm_ko
+    , society_nm_en
+    , conf_nm
+    , conf_nm_abbr
+    , event_url
+    , event_strdt
+    , event_clsdt
+    , event_rmk
+    , recomm_psn
+    , recomm_rsn
+    , conf_area
+    , conf_area_ctiy
+    , use_yn
+    , check_list
+    , state_code
+    , yr
+    , regst_syspayno
+    , regst_daytm
+)
+SELECT p.rcpt_no
+     , p.scitech_cd
+     , p.rscharea
+     , p.society_nm_ko
+     , p.society_nm_en
+     , p.conf_nm
+     , p.conf_nm_abbr
+     , p.event_url
+     , p.event_strdt
+     , p.event_clsdt
+     , p.event_rmk
+     , p.recomm_psn
+     , p.recomm_rsn
+     , p.conf_area
+     , p.conf_area_ctiy
+     , p.use_yn
+     , p.check_list
+     , 'RZE002'  /* RZE002 미확정 */
+     , p.yr
+     , p.regst_syspayno
+     , SYSDATE
+FROM resconfpool AS p
+JOIN xomxintfatab AS a ON a.req_no = p.rcpt_no
+WHERE rcpt_no = #{req_no}
+</insert>
+
+<!-- 소연심의 결과보고 결재완료시 부결건 재입력  -->
+<insert id="insertResSmlRvewD" parameterType="kr.re.kitech.biz.api.server.vo.biz.ResSmlRvewDRstVo">
+INSERT /* kr.re.kitech.biz.api.bpm.insertResSmlRvewD */
+   INTO ressmlrvewd
+         ( key_1   
+         , key_2
+         , seq
+         , biz_clsf
+         , item_clsf
+         , rvew_objct  
+         , syspayno
+         , accnt_no  
+         , chrg_psn
+         , rmk
+         , cmt_clsf
+         , attach_file_no   
+         , regst_syspayno  
+         , regst_daytm  )
+SELECT key_1, key_2, seq+1, biz_clsf, item_clsf, rvew_objct,syspayno, accnt_no, chrg_psn, rmk, cmt_clsf, attach_file_no, regst_syspayno, SYSDATE
+FROM ressmlrvewd
+WHERE key_1 = #{key_1}
+AND   key_2 = #{key_2}
+AND   seq = #{seq}
+</insert>
+
+<!-- 신청번호로 결의번호 조회 -->
+<select id="selectUnslipNo" resultType="java.lang.String" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.api.bpm.selectUnslipNo */
+        MAX(unslip_no) as unslip_no
+FROM fspslipd
+WHERE req_no = #{req_no}
+</select>
+
+<!-- 기술료입금(2015.12.08)결재완료 후 기여율 연구책임자 100% 입력 -->
+<insert id="insertResCtrContrbtRt" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+INSERT /* kr.re.kitech.biz.api.bpm.insertResCtrContrbtRt */
+   INTO rescrtcontrbtrt
+      (req_no,
+       syspayno,
+       dept_cd,
+       dept_new_ymd,
+       contrbt_rt,
+       contrbt_amt,
+       rmk,
+       regst_syspayno,
+       regst_daytm)
+SELECT a.req_no
+     , b.resch_rspns_main
+     , c.dept_cd
+     , c.dept_new_ymd
+     , 100
+     , a.suply_value
+     , ''
+     , 'system'
+     , SYSDATE
+  FROM rescrtpsrectl a
+  JOIN respstmast b ON a.tech_fee_no = b.tech_fee_no
+  JOIN humbasicinfo c ON b.resch_rspns_main = c.syspayno
+ WHERE a.req_no = #{reqNo}
+   AND NOT EXISTS (SELECT 1 FROM rescrtcontrbtrt WHERE req_no = a.req_no AND syspayno = b.resch_rspns_main)
+</insert>
+<select id="selectResCrtPstpRwdApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.rte.vo.ResSmlRvewDVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectResCrtPstpRwdApr */ 
+		a.req_no AS key_1, 
+       'RBS013' AS biz_clsf,
+       c.tech_nm AS rvew_objct,
+       c.resch_rspns_main AS syspayno,
+       f.accnt_no,
+       a.manager_id AS chrg_psn,
+       TRIM(d.vend_nm || ', 입금일자 '|| f.ofic_depst_ymd || ', ' || fun_xodxcommst_cd_nm(e.tech_fee_clsf, 0) ||' ' || <![CDATA[to_char(a.inct_amt_007, '<<<,<<<,<<<'))]]> AS rmk
+FROM rescrtpstprwdh a
+JOIN respstmast c ON a.tech_fee_no = c.tech_fee_no 
+JOIN respstcrtpagr d ON a.tech_fee_no = d.tech_fee_no AND a.tech_fee_mou_odr = d.tech_fee_mou_odr
+JOIN rescrtpsrectl f ON a.depst_req_no = f.req_no
+JOIN rescrtpsrecte e ON f.depst_no = e.depst_no
+WHERE a.req_no = #{req_no}
+</select>
+<select id="selectResCrtPstpRwdInctAmt006" parameterType="java.lang.String" resultType="double">
+SELECT /* kr.re.kitech.biz.api.bpm.selectResCrtPstpRwdInctAmt006 */ 
+		a.inct_amt_006
+FROM rescrtpstprwdh a
+JOIN respstmast c ON a.tech_fee_no = c.tech_fee_no 
+JOIN respstcrtpagr d ON a.tech_fee_no = d.tech_fee_no AND a.tech_fee_mou_odr = d.tech_fee_mou_odr
+JOIN rescrtpsrectl f ON a.depst_req_no = f.req_no
+JOIN rescrtpsrecte e ON f.depst_no = e.depst_no
+WHERE a.req_no = #{req_no}
+</select>
+<update id="updateResCrtPstpRwdCompltYn" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.api.bpm.updateResCrtPstpRwdCompltYn */
+	rescrtpstprwdh
+SET 
+	complt_yn = 'X'
+WHERE 
+	req_no = #{req_no}
+</update>
+<update id="updateResOutCtrbtEvalRcptInfo" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.api.bpm.updateResOutCtrbtEvalRcptInfo */
+	resachindmst
+SET 
+	aply_yn = 'Y'
+WHERE 
+	rcpt_no = #{rcptno}
+</update>
+</mapper>

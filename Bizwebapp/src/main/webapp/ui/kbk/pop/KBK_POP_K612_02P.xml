@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="원내보고서검색 ">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="rcpt_no" name="접수번호" dataType="text"></w2:key>
+        				<w2:key id="paper_nm" name="논문명" dataType="text"></w2:key>
+        				<w2:key id="accnt_rspns" name="연구책임자" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_paperList" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="rcpt_no" name="접수번호" dataType="text"></w2:column>
+        				<w2:column id="accnt_no" name="계정번호" dataType="text"></w2:column>
+        				<w2:column id="prj_no" name="프로젝트번호" dataType="text"></w2:column>
+        				<w2:column id="accnt_rspns" name="연구책임자" dataType="text"></w2:column>
+        				<w2:column id="paper_nm" name="논문명" dataType="text"></w2:column>
+        				<w2:column id="publpapr_nm" name="게제지명" dataType="text"></w2:column>
+        				<w2:column id="paper_clsf" name="논문구분" dataType="text"></w2:column>
+        				<w2:column id="attach_file" name="attach_file" dataType="text"></w2:column>
+        				<w2:column id="socty_yn" name="socty_yn" dataType="text"></w2:column>
+        				<w2:column id="clsf" name="clsf" dataType="text"></w2:column>
+        				<w2:column id="issu_page_end" name="issu_page_end" dataType="text"></w2:column>
+        				<w2:column id="issu_page_start" name="issu_page_start" dataType="text"></w2:column>
+        				<w2:column id="issu_ymd" name="issu_ymd" dataType="text"></w2:column>
+        				<w2:column id="ed" name="ed" dataType="text"></w2:column>
+        				<w2:column id="prj_no_nm" name="prj_no_nm" dataType="text"></w2:column>
+        				<w2:column id="clsf_cd" name="clsf_cd" dataType="text"></w2:column>
+        				<w2:column id="paper_clsf_cd" name="paper_clsf_cd" dataType="text"></w2:column>
+        				<w2:column id="rcpt_clsf" name="rcpt_clsf" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectPaper" ref="data:json,dma_search"
+        		target='data:json,{"id":"dlt_paperList","key":"kbkPopPaperDetailVoList"}' action="SvcKBKPOPPAPR03.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script src="/cm/js/biz/kbk.js" cache="false" />
+        <script type="text/javascript" lazy="false"><![CDATA[
+
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+	
+		var rptNo = com.getParameter("rptNo");
+                        
+        if(rptNo.trim() != "")
+        {
+        	inputRcptNo.setValue(rptNo);
+        	scwin.search();
+        }
+        
+	};
+
+
+	/**
+	 * 조회 버튼 클릭 이벤트
+	 */
+	scwin.triggerBtnSearch_onclick = function(e) {
+		scwin.search();
+	};
+	
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(e) {
+		
+		var searchk = inputRcptNo.getValue() + inputPaperNm.getValue() + inputAccntRspns.getValue();
+      		
+   		if(searchk.length < 1){
+   			com.alert("검색조건을 한가지 이상 입력해 주시기 바랍니다.");
+   			return;
+   		}
+   		
+   		com.execute(sbm_selectPaper);
+	};
+	
+	
+
+	/**
+	 * 닫기 버튼 클릭 이벤트
+	 */
+	scwin.triggerBtnClose_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	
+	/**
+	 * 그리드 더블클릭 이벤트
+	 */
+	scwin.gridPaper_oncelldblclick = function(row,col,colId) {
+		
+        var rowJSON = gridPaper.getRowJSON(row);
+		com.closePopup(rowJSON);
+		
+	};
+
+		]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group style="" id="grp_search" class="searchSection">
+    		<xf:group id="" class="schbox">
+    			<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    				<w2:attributes>
+    					<w2:summary></w2:summary>
+    				</w2:attributes>
+    				<xf:group tagname="caption"></xf:group>
+    				<xf:group tagname="colgroup">
+    					<xf:group tagname="col" style="width:60px;"></xf:group>
+    					<xf:group tagname="col" style=""></xf:group>
+    					<xf:group tagname="col" style="width:60px;"></xf:group>
+    					<xf:group tagname="col" style=""></xf:group>
+    					<xf:group tagname="col" style="width:70px;"></xf:group>
+    					<xf:group tagname="col" style=""></xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr" style="">
+    					<xf:group tagname="th" style="" class="w2tb_th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:textbox tagname="span" style="" id="" label="접수번호"></w2:textbox>
+    					</xf:group>
+    					<xf:group tagname="td" style="" class="w2tb_td" id="">
+    						<xf:input adjustMaxLength="false" class="inp" id="inputRcptNo" style="width: 150px;" title="접수번호" ref="data:dma_search.rcpt_no"></xf:input>
+    					</xf:group>
+    					<xf:group tagname="th" class="w2tb_th">
+    						<w2:attributes></w2:attributes>
+    						<w2:textbox tagname="span" style="" id="" label="논문명"></w2:textbox>
+    					</xf:group>
+    					<xf:group tagname="td" class="w2tb_td" id="">
+   							<xf:input adjustMaxLength="false" style="" id="inputPaperNm" class="inp" title="과제번호" ref="data:dma_search.paper_nm"></xf:input>
+    					</xf:group>
+    					<xf:group tagname="th" class="w2tb_th"><w2:attributes></w2:attributes><w2:textbox tagname="span" style="" id="" label="연구책임자"></w2:textbox></xf:group>
+    					<xf:group tagname="td" class="w2tb_td" id="">
+   							<xf:input adjustMaxLength="false" style="" id="inputAccntRspns" class="inp" title="보고서명" ref="data:dma_search.accnt_rspns"></xf:input>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" class="schbtn">
+    			<xf:trigger style="" id="triggerBtnSearch" type="button" class="btn search" ev:onclick="scwin.triggerBtnSearch_onclick">
+    				<xf:label><![CDATA[조회]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    	<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    		rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    		rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    		dataList="data:dlt_paperList" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="gridPaper"
+    		visibleRowNum="10" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" sortable="true" filterFocusMode="outfocus"
+    		ev:oncelldblclick="scwin.gridPaper_oncelldblclick">
+    		<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    		<w2:header style="" id="header1">
+    			<w2:row style="" id="row1">
+    				<w2:column width="100" inputType="text" style="height:28px;" id="column9" value="접수번호" displayMode="label"></w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px;" id="column7" value="계정번호" displayMode="label"></w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px;" id="column5" value="프로젝트번호" displayMode="label"></w2:column>
+    				<w2:column width="200" inputType="text" style="height:28px;" id="column3" value="연구책임자" displayMode="label"></w2:column>
+    				<w2:column width="200" inputType="text" style="height:28px;" id="column30" value="논문명" displayMode="label"></w2:column>
+    				<w2:column width="200" inputType="text" style="height:28px;" id="column29" value="게제지명" displayMode="label"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column33" value="논문구분" displayMode="label"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column34" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column36" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column54" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column52" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column50" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column48" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column46" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column44" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column42" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column40" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column38" displayMode="label" hidden="true"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody style="" id="gBody1">
+    			<w2:row style="" id="row2">
+    				<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="rcpt_no" displayMode="label">
+    				</w2:column>
+    				<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="accnt_no" displayMode="label">
+    				</w2:column>
+    				<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="prj_no" escape="false"
+    					displayMode="label">
+    				</w2:column>
+    				<w2:column width="200" inputType="text" readOnly="true" style="height:28px;" id="accnt_rspns" displayMode="label"
+    					escape="false" textAlign="left">
+    				</w2:column>
+    				<w2:column width="200" inputType="text" style="height:28px" id="paper_nm" displayMode="label" readOnly="true" class="le">
+    				</w2:column>
+    				<w2:column width="200" inputType="text" readOnly="true" style="height:28px;" id="publpapr_nm" displayMode="label" class="le"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="paper_clsf" displayMode="label"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="attach_file" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="socty_yn" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="clsf" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="issu_page_end" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="issu_page_start" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="issu_ymd" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="ed" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="prj_no_nm" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="clsf_cd" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="paper_clsf_cd" displayMode="label" hidden="true"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="rcpt_clsf" displayMode="label" hidden="true"></w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="triggerBtnClose" type="button" class="btn pro" ev:onclick="scwin.triggerBtnClose_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="베타테스터 등록">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_tester">
+					<w2:keyInfo>
+						<w2:key id="serviceID" name="서비스ID" dataType="text"></w2:key>
+						<w2:key id="syspayno" name="사번" dataType="text"></w2:key>
+						<w2:key id="dept_cd" name="부서/본부 코드" dataType="text"></w2:key>
+						<w2:key id="start_date" name="시작일" dataType="text"></w2:key>
+						<w2:key id="close_date" name="종료일" dataType="text"></w2:key>
+						<w2:key id="rmk" name="비고" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataMap baseNode="map" id="dma_docuInfo">
+					<w2:keyInfo>
+						<w2:key id="serviceID" name="화면ID" dataType="text"></w2:key>
+						<w2:key id="cn" name="화면명" dataType="text"></w2:key>
+						<w2:key id="betaServiceYN" name="베타유무" dataType="text"></w2:key>
+						<w2:key id="alias" name="문서번호" dataType="text"></w2:key>
+						<w2:key id="viewServiceId" name="보기용 화면ID" dataType="text"></w2:key>
+						<w2:key id="xslurl" name="xslurl" dataType="text"></w2:key>
+						<w2:key id="xslurl_ready" name="xrlurl_ready" dataType="text"></w2:key>
+						<w2:key id="serviceNewUrl" name="신설화면ID" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList baseNode="list" id="dlt_tester" repeatNode="map" saveRemovedData="true"
+					ev:onbeforerowpositionchange="scwin.dlt_except_onbeforerowpositionchange">
+					<w2:columnInfo>
+						<w2:column id="syspayno" name="사번" dataType="text"></w2:column>
+						<w2:column id="serviceID" name="서비스ID" dataType="text"></w2:column>
+						<w2:column id="start_date" name="시작일" dataType="text"></w2:column>
+						<w2:column id="close_date" name="종료일" dataType="text"></w2:column>
+						<w2:column id="cud_mode" name="입력구분" dataType="text"></w2:column>
+						<w2:column id="rmk" name="비고" dataType="text"></w2:column>
+						<w2:column id="chk" name="체크" dataType="text"></w2:column>
+						<w2:column id="empno" name="개인번호" dataType="text"></w2:column>
+						<w2:column id="nm" name="성명" dataType="text"></w2:column>
+					</w2:columnInfo>
+				</w2:dataList>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_selectBetaTesterList" ref="data:json,dma_docuInfo"
+				target='data:json,[{"id":"dlt_tester","key":"betaTesterVoList"},{"id":"dma_docuInfo","key":"betaTesterVo"}]' action="SvcCOMCONSVCR02.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<xf:submission id="sbm_updateBetaServiceYN" ref="data:json,dma_docuInfo" action="SvcCOMCONSVCU01.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<xf:submission id="sbm_saveBetaTester" ref="data:json,dma_tester" action="SvcCOMCONSVCM01.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<xf:submission id="sbm_deleteBetaTester" ref="" action="SvcCOMCONSVCD01.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+	scwin.help = `
+<b>xslurl</b> : 
+	- 베타 유무가 "<b style="color:red">베타</b>" 일 경우 :
+		베타 테스터를 제외한 일반 사용자의 경우 스냅샷을 생성할 때 xslurl 경로에 해당하는 스냅샷 템플릿을 이용한다.
+	- 베타 유무가 "<b style="color:red">오픈</b>" 일 경우 :
+		모든 사용자가 스냅샷을 생성할 때 xslurl 경로에 해당하는 스냅샷을 이용한다.
+
+<b>xslurl_ready</b> :
+	- 베타 유무가 "<b style="color:red">베타</b>" 일 경우 :
+		베타 테스터에 해당하는 테스트 사용자의 경우 스냅샷을 생성할 때 xslurl_ready 경로에 해당하는 스냅샷 템플릿을 이용한다.
+	- 베타 유무가 "<b style="color:red">오픈</b>" 일 경우 :
+		해당 경로의 스냅샷은 사용하지 않는다.`;
+
+	scwin.schClsf = [com.pop.TYPE.HUM, com.pop.TYPE.DEPT];
+
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = async function() {
+		let params = com.getParameter();
+		let menuObj = await gcm.win.getMenuObj(params.serviceID);
+		let betaServiceYn = menuObj.betaServiceYN ? menuObj.betaServiceYN : "N";
+		let viewSvrIdString = com.isNotEmpty(params.alias) ? `(${params.alias})` : "";
+
+		dma_docuInfo.set("serviceID", menuObj.serviceID);
+		dma_docuInfo.set("cn", menuObj.cn);
+		dma_docuInfo.set("betaServiceYN", betaServiceYn);
+		dma_docuInfo.set("alias", params.alias);
+		dma_docuInfo.set("viewServiceId", `${menuObj.serviceID}${viewSvrIdString}`);
+		dma_docuInfo.set("serviceNewUrl", menuObj.serviceNewUrl)
+
+		if (com.isEmpty(dma_docuInfo.get("alias"))) {
+			tab_docuConst.disableTab(1);
+			tab_docuConst.disableTab(2);
+		}
+
+		scwin.search();
+		com.setEnterKeyEvent(group3, scwin.btn_sch_onclick);
+	};
+
+	scwin.search = async function() {
+		let ret = await com.execute(sbm_selectBetaTesterList);
+		tbx_testerResult.setValue(ret.responseJSON.elData.totalCount);
+
+		let menuObj = await gcm.win.getMenuObj(dma_docuInfo.get("serviceID"));
+		let betaServiceYn = menuObj.betaServiceYN ? menuObj.betaServiceYN : "N";
+		dma_docuInfo.set("serviceNewUrl", menuObj.serviceNewUrl)
+		grp_testerBox.setDisabled(betaServiceYn != "Y");
+		inp_sch_nm.setDisabled(true);
+	};
+
+	scwin.saveTester = async function() {
+		let ret = await com.execute(sbm_saveBetaTester);
+
+		await com.alert("message.xom.wq.023");
+		scwin.search();
+	}
+
+	scwin.btn_betaSave_onclick = async function(e) {
+		await com.execute(sbm_updateBetaServiceYN);
+		await gcm.win.refreshMenuObj(dma_docuInfo.get("serviceID"));
+		scwin.search();
+	};
+
+	scwin.btn_refreshMenu_onclick = async function() {
+		await gcm.win.refreshMenuObj(dma_docuInfo.get("serviceID"));
+		scwin.search();
+	};
+
+	scwin.btn_sch_onclick = async function(e) {
+		let clsf = Number(sbx_kind_cd.getValue());
+		var data = [{ empno : inp_sch.getValue(), nm : inp_sch.getValue(), work_clsf : "HAG010" }
+				  , { dept_cd : inp_sch.getValue()}];
+
+		let ret = await com.pop.open(scwin.schClsf[clsf], data[clsf]);
+		
+		let schCode = "";
+		let schNm = "";
+
+		if (clsf == 0) {
+			schCode = ret.empno;
+			schNm	= ret.nm;
+			dma_tester.set("syspayno", ret.syspayno);
+		} else {
+			schCode = ret.dept_cd;
+			schNm	= ret.dept_nm;
+			dma_tester.set("dept_cd", ret.dept_cd);
+		}
+		inp_sch.setValue(schCode);
+		inp_sch_nm.setValue(schNm);
+	};
+
+	scwin.sbx_issuClsf_onchange = function(info) {
+		inp_sch.setValue("");
+		inp_sch_nm.setValue("");
+		dma_tester.set("dept_cd", "");
+		dma_tester.set("syspayno", "");
+	};
+
+	scwin.inp_sch_onchange = function(info) {
+		if(info.newValue == "") {	
+			inp_sch.setValue("");
+			inp_sch_nm.setValue("");
+			dma_tester.set("dept_cd", "");
+			dma_tester.set("syspayno", "");
+		}
+	};
+
+	// 테스터 저장 함수
+	scwin.btn_apply_onclick = async function(e) {
+		if (com.isEmpty(dma_docuInfo.get("serviceID"))) {
+			alert("serviceID 값이 누락 되었습니다.");
+			return false;
+		}
+			
+		dma_tester.set("serviceID", dma_docuInfo.get("serviceID"));
+		let valInfoArr = [  
+			{ id : "serviceID", mandatory : true }
+			, { id : "start_date", mandatory : true }
+		]
+		// com.setValidGrid로 설정한 정보로 유효성 체크
+		if (com.validateData(dma_tester, valInfoArr, false)) {
+			if (com.isEmpty(dma_tester.get("dept_cd")) && com.isEmpty(dma_tester.get("syspayno"))) {
+				alert("테스터 주체구분이 누락되었습니다.");
+				return false;
+			}
+
+			// 유효성 만족 한다면 테스터 저장
+			if (await com.confirm("message.xom.wq.017")) {
+				scwin.saveTester();
+			}
+		}
+	};
+	
+	// 테스터 삭제 함수
+	scwin.btn_del_onclick = async function(e) {
+		let chkDataList = dlt_tester.getMatchedJSON("chk", "Y");
+		
+		if (chkDataList.length > 0) {
+			if (await com.confirm("message.xom.wq.022"/*삭제 하시겠습니까?*/)) {
+				await com.execute(sbm_deleteBetaTester, {requestData : { betaTesterVoList : chkDataList } });
+
+				await com.alert("message.xom.wq.023");
+				scwin.search();
+			}
+		}
+	};
+]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+		<xf:group class="pageWrap" id="" style="">
+			<xf:group class="searchSection" id="grp_search" style="">
+				<xf:group class="schbox" id="">
+					<xf:group class="w2tb tbl" id="" style="" tagname="table">
+						<w2:attributes>
+							<w2:summary></w2:summary>
+						</w2:attributes>
+						<xf:group tagname="caption"></xf:group>
+						<xf:group tagname="colgroup">
+							<xf:group style="width:60px;" tagname="col"></xf:group>
+							<xf:group style="width:300px;" tagname="col"></xf:group>
+							<xf:group style="width:60px;" tagname="col"></xf:group>
+							<xf:group style="width:290px;" tagname="col"></xf:group>
+							<xf:group style="width:70px;" tagname="col"></xf:group>
+							<xf:group tagname="col"></xf:group>
+						</xf:group>
+						<xf:group style="" tagname="tr">
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+								<w2:textbox id="" label="화면ID" style="" tagname="span"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" tagname="td">
+								<w2:attributes></w2:attributes>
+								<xf:input adjustMaxLength="false" class="inp" ev:onkeypress="scwin.inp_sch_service_id_onkeypress"
+									id="inp_sch_service_id" style="" title="부서명" ref="data:dma_docuInfo.viewServiceId" disabled="true">
+								</xf:input>
+								<xf:input adjustMaxLength="false" class="inp" disabled="true" id="inp_sch_service_nm" style="width: 132px;"
+									title="화면 상세" ref="data:dma_docuInfo.cn">
+								</xf:input>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+				<xf:group class="schbtn" id="">
+				</xf:group>
+			</xf:group>
+			<xf:group class="tabcont">
+				<w2:tabControl alwaysDraw="true" class="" confirmFalseAction="new" confirmTrueAction="exist" id="tab_docuConst" style=""
+	    					useConfirmMessage="false" useMoveNextTabFocus="false" useTabKeyOnly="true">
+   					<w2:tabs disabled="false" id="tabs1" label="베타 관리" style=""></w2:tabs>
+   					<w2:tabs disabled="false" id="tabs2" label="결재 제약" style=""></w2:tabs>
+   					<w2:content alwaysDraw="true" id="content1" style="">
+   					<xf:group style="" id="" class="titleSection">
+						<w2:textbox tagname="h3" style="" id="" label="베타 및 ServiceNewUrl 관리" class="tit_tbl">
+						</w2:textbox>
+					</xf:group>
+   					<xf:group class="w2tb tbl" id="grp_serviceNewUrl" style="" tagname="table">
+							<w2:attributes>
+								<w2:summary>
+								</w2:summary>
+							</w2:attributes>
+								<xf:group tagname="caption" text="예외 상세정보">
+								</xf:group>
+								<xf:group tagname="colgroup">
+									<xf:group style="width:140px;" tagname="col">
+									<xf:group style="" tagname="col"></xf:group>
+									<xf:group style="width:140px;" tagname="col"></xf:group>
+									<xf:group style="" tagname="col"></xf:group>
+								</xf:group>
+								<xf:group tagname="tr">
+									<xf:group class="w2tb_th" style="" tagname="th">
+										<w2:attributes>
+											<w2:scope>row</w2:scope>
+										</w2:attributes>
+										<w2:textbox id="" label="serviceNewUrl" style="" tagname="span"></w2:textbox>
+									</xf:group>
+									<xf:group class="w2tb_td" style="" tagname="td">
+										<w2:attributes>
+										</w2:attributes>
+										<xf:input adjustMaxLength="false" class="inp full" id="ibx_serviceNewUrl" style="" title="변경" ref="data:dma_docuInfo.serviceNewUrl" ev:onchange="" disabled="">
+										</xf:input>
+									</xf:group>
+								</xf:group>
+								<xf:group tagname="tr">
+									<xf:group class="w2tb_th" style="" tagname="th">
+										<w2:attributes>
+											<w2:scope>row</w2:scope>
+										</w2:attributes>
+										<w2:textbox id="" label="베타 유무" style="" tagname="span"></w2:textbox>
+									</xf:group>
+									<xf:group class="w2tb_td" style="" tagname="td" id="">
+										<w2:attributes>
+											<w2:colspan>3</w2:colspan>
+										</w2:attributes>
+										<xf:select1 appearance="full" class="radioGroup" cols="" id="rbx_isBeta"
+		   									ref="data:dma_docuInfo.betaServiceYN" renderType="radiogroup" rows="1" style="" title="베타 구분">
+		   									<xf:choices>
+		   										<xf:item>
+		   											<xf:label><![CDATA[베타]]></xf:label>
+		   											<xf:value><![CDATA[Y]]></xf:value>
+		   										</xf:item>
+		   										<xf:item>
+		   											<xf:label><![CDATA[오픈]]></xf:label>
+		   											<xf:value><![CDATA[N]]></xf:value>
+		   										</xf:item>
+		   									</xf:choices>
+		   								</xf:select1>
+									</xf:group>
+								</xf:group>
+							</xf:group>
+						</xf:group>
+   						<xf:group class="btnGroup" id="">
+   							<xf:group style="" id="" class="le">
+    						</xf:group>
+   							<xf:group class="ri">
+								<xf:trigger class="btn" ev:onclick="scwin.btn_refreshMenu_onclick" id="btn_refreshMenu" style="margin-left : 4px;"
+   									type="button">
+   									<xf:label><![CDATA[메뉴 갱신]]></xf:label>
+   								</xf:trigger>
+   								<xf:trigger class="btn pro conf" ev:onclick="scwin.btn_betaSave_onclick" id="btn_betaSave"
+   									style="height:22px;" type="button">
+   									<xf:label><![CDATA[저장]]></xf:label>
+   								</xf:trigger>   							
+   							</xf:group>
+   						</xf:group>
+   						<xf:group id="grp_testerBox">
+   							<xf:group style="" id="" class="titleSection">
+								<w2:textbox tagname="h3" style="" id="" label="베타 테스터 관리" class="tit_tbl">
+								</w2:textbox>
+							</xf:group>
+	   						<xf:group style="height:35px;" id="" class="titleSection">
+	   							<xf:group class="le" id="" style="">
+	   								<xf:group class="result" id="">
+	   									<w2:span id="" label="*조회결과 " style=""></w2:span>
+	   									<w2:span class="numtotal" id="tbx_testerResult" label="0" style=""></w2:span>
+	   									<w2:span id="" label="건" style=""></w2:span>
+	   								</xf:group>
+	   							</xf:group>
+	   							<xf:group id="" class="ri">
+	   								<xf:group style="" id="" class="btnarea">
+	   									<xf:trigger style="" id="btn_del" type="button" class="btn pro" ev:onclick="scwin.btn_del_onclick">
+	   										<xf:label><![CDATA[삭제]]></xf:label>
+	   									</xf:trigger>
+	   								</xf:group>
+	   							</xf:group>
+	   						</xf:group>
+	   						<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+	   							rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+	   							rowNumBackgroundColor="#fff" noResultMessageClass="noResult" selectedCellColor="#fbf2cd" rowNumWidth="60"
+	   							dataList="data:dlt_tester" evenRowBackgroundColor="#f7faff" style="height: 85px;margin-bottom:10px;" autoFit="allColumn" id="" visibleRowNum="10"
+	   							class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" fixedRow="0" filterFocusMode="outfocus" sortEvent="onclick"
+	   							sortable="true">
+	   							<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+	   							<w2:header id="header1" style="">
+	   								<w2:row id="row1" style="">
+	   									<w2:column checkboxLabel="전체선택" displayMode="label" fixColumnWidth="true" id="column1"
+    											inputType="checkbox" readOnly="false" style="height:28px;" value="선택" width="45">
+    										</w2:column>
+	   									<w2:column displayMode="label" id="column28" inputType="text" style="height:28px;" value="개인번호"
+	   										width="70">
+	   									</w2:column>
+	   									<w2:column displayMode="label" id="column28" inputType="text" style="height:28px;" value="성명"
+	   										width="70">
+	   									</w2:column>
+	   									<w2:column displayMode="label" id="column28" inputType="text" style="height:28px;" value="서비스ID"
+	   										width="70">
+	   									</w2:column>
+	   									<w2:column displayMode="label" id="column28" inputType="text" style="height:28px;" value="시작일"
+	   										width="70">
+	   									</w2:column>
+	   									<w2:column displayMode="label" id="column28" inputType="text" style="height:28px;" value="종료일"
+	   										width="70">
+	   									</w2:column>
+	   									<w2:column displayMode="label" id="column28" inputType="text" style="height:28px;" value="비고"
+	   										width="70">
+	   									</w2:column>
+	   								</w2:row>
+	   							</w2:header>
+	   							<w2:gBody id="gBody1" style="">
+	   								<w2:row id="row2" style="">
+	   									<w2:column id="chk" inputType="checkbox" style="" value="" width="70" readOnly=""></w2:column>
+	   									<w2:column id="empno" inputType="text" style="" value="" width="70" readOnly="true"></w2:column>
+	   									<w2:column id="nm" inputType="text" style="" value="" width="70" readOnly="true"></w2:column>
+	   									<w2:column id="serviceID" inputType="text" style="" value="" width="70" readOnly="true"></w2:column>
+	   									<w2:column id="start_date" inputType="text" style="" value="" width="70" readOnly="true" displayFormat="yyyy-MM-dd" dataType="date"></w2:column>
+	   									<w2:column id="close_date" inputType="text" style="" value="" width="70" readOnly="true" displayFormat="yyyy-MM-dd" dataType="date"></w2:column>
+	   									<w2:column id="rmk" inputType="text" style="" value="" width="70" readOnly="true"></w2:column>
+	   								</w2:row>
+	   							</w2:gBody>
+	   						</w2:gridView>
+	   						<xf:group id="grp_exceptInfo" class="mt20" style="margin-top:40px !important;">
+	   							<xf:group class="tbbox" id="" style="">
+	   								<xf:group class="w2tb tbl" id="" style="" tagname="table">
+	   									<w2:attributes>
+	   										<w2:summary></w2:summary>
+	   									</w2:attributes>
+	   									<xf:group tagname="caption" text="예외 상세정보"></xf:group>
+	   									<xf:group tagname="colgroup">
+	   										<xf:group style="width:140px;" tagname="col"></xf:group>
+	   										<xf:group style="" tagname="col"></xf:group>
+	   										<xf:group style="width:140px;" tagname="col"></xf:group>
+	   										<xf:group style="" tagname="col"></xf:group>
+	   										<xf:group style="width:140px;" tagname="col"></xf:group>
+	   										<xf:group style="" tagname="col"></xf:group>
+	   									</xf:group>
+	   									<xf:group tagname="tr">
+	   										<xf:group class="w2tb_th" style="" tagname="th">
+	   											<w2:attributes>
+	   												<w2:scope>row</w2:scope>
+	   											</w2:attributes>
+	   											<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+	   											<w2:textbox id="" label="입력구분" style="" tagname="span"></w2:textbox>
+	   										</xf:group>
+	   										<xf:group class="w2tb_td" style="" tagname="td" id="">
+	   											<w2:attributes></w2:attributes>
+	   											<xf:select1 allOption="" appearance="minimal" chooseOption="" chooseOptionLabel="- 선택 -"
+	   												class="sel full" direction="auto" disabled="true" disabledClass="w2selectbox_disabled"
+	   												ev:onchange="scwin.sbx_issuClsf_onchange" id="sbx_kind_cd" ref="" style="" submenuSize="auto" title="예외구분">
+	   												<xf:choices>
+	   													<xf:item>
+	   														<xf:label><![CDATA[개인번호(단건)]]></xf:label>
+	   														<xf:value><![CDATA[0]]></xf:value>
+	   													</xf:item>
+	   													<xf:item>
+	   														<xf:label><![CDATA[부서(다건)]]></xf:label>
+	   														<xf:value><![CDATA[1]]></xf:value>
+	   													</xf:item>
+	   												</xf:choices>
+	   											</xf:select1>
+	   										</xf:group>
+	   										<xf:group class="w2tb_th" style="" tagname="th">
+	   											<w2:attributes>
+	   												<w2:scope>row</w2:scope>
+	   											</w2:attributes>
+	   											<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+	   											<w2:textbox id="" label="대상자" style="" tagname="span"></w2:textbox>
+	   										</xf:group>
+	   										<xf:group class="w2tb_td" style="" tagname="td">
+	   											<w2:attributes></w2:attributes>
+	   											<xf:group class="inpSch" id="group3" style="width: 30%;">
+	   												<xf:input adjustMaxLength="false" class="inp" id="inp_sch"
+	   													ev:onkeypress="scwin.inp_sch_onkeypress" style="" title="화면ID" ref="" ev:onchange="scwin.inp_sch_onchange">
+	   												</xf:input>
+	   												<xf:trigger class="btn" ev:onclick="scwin.btn_sch_onclick" id="btn_sch"
+	   													style="" title="조회" type="button">
+	   													<xf:label><![CDATA[검색]]></xf:label>
+	   												</xf:trigger>
+	   											</xf:group>
+	   											<xf:input adjustMaxLength="false" class="inp" disabled="true" id="inp_sch_nm"
+	   												style="width: 65%;" title="검색값" ref="">
+	   											</xf:input>
+	   										</xf:group>
+	   										<xf:group class="w2tb_th" tagname="th">
+	   											<w2:attributes>
+	   												<w2:scope>row</w2:scope>
+	   											</w2:attributes>
+	   											<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+	   											<w2:textbox id="" label="예외기간" style="" tagname="span"></w2:textbox>
+	   										</xf:group>
+	   										<xf:group class="w2tb_td" tagname="td">
+	   											<w2:attributes></w2:attributes>
+	   											<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal req"
+	   												focusOnDateSelect="false" footerDiv="false" id="ica_start_date" placeholder="시작일" readOnly="false"
+	   												ref="data:dma_tester.start_date" renderDiv="true" rightAlign="false" style="width:150px;" title="예외시작일자" disabled="true">
+	   											</w2:inputCalendar>
+	   											<w2:span id="" label="~" style="margin:0 5px 0 5px;"></w2:span>
+	   											<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal"
+	   												focusOnDateSelect="false" footerDiv="false" id="ica_close_date" placeholder="종료일" readOnly="false"
+	   												ref="data:dma_tester.close_date" renderDiv="true" rightAlign="false" style="width:150px;" title="예외종료일자" disabled="true">
+	   											</w2:inputCalendar>
+	   										</xf:group>
+	   									</xf:group>
+	   									<xf:group style="" tagname="tr">
+	   										<xf:group class="w2tb_th" tagname="th">
+	   											<w2:attributes>
+	   												<w2:scope>row</w2:scope>
+	   											</w2:attributes>
+	   											<w2:textbox id="" label="비고" style="" tagname="span"></w2:textbox>
+	   										</xf:group>
+	   										<xf:group class="w2tb_td" tagname="td">
+	   											<w2:attributes>
+	   												<w2:colspan>5</w2:colspan>
+	   												<w2:rowspan>1</w2:rowspan>
+	   											</w2:attributes>
+	   											<xf:input adjustMaxLength="false" class="inp full" ev:onchange="scwin.tb_empno_onchange"
+	   												id="inp_rmk" ref="data:dma_tester.rmk" style="" title="비고" disabled="true">
+	   											</xf:input>
+	   										</xf:group>
+	   									</xf:group>
+	   								</xf:group>
+	   							</xf:group>
+	   							<xf:group style="" id="" class="btnGroup">
+	   								<xf:group style="" id="" class="le"></xf:group>
+	   								<xf:group id="" class="ri">
+	   									<xf:trigger style="" id="btn_apply" type="button" class="btn pro conf"
+	   										ev:onclick="scwin.btn_apply_onclick">
+	   										<xf:label><![CDATA[테스터 추가]]></xf:label>
+	   									</xf:trigger>
+	   								</xf:group>
+	   							</xf:group>
+	   						</xf:group>
+   						</xf:group>
+   					</w2:content>
+   					<w2:content alwaysDraw="false" id="content2" style="" src="/ui/com/ext/appvConstraintMng.xml">
+   						
+   					</w2:content>
+				</w2:tabControl>
+			</xf:group>
+		</xf:group>
+
+	</body>
+</html>

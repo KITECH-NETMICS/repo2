@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.apr">
+
+	<resultMap id="collectionResultMap" type="kr.re.kitech.biz.apr.vo.AppFormVo">
+	    <result column="aid" jdbcType="VARCHAR" property="aid" />
+	    <result column="defcat" jdbcType="VARCHAR" property="defcat" />
+	    <result column="div" jdbcType="VARCHAR" property="div" />
+	    <result column="mdiv" jdbcType="VARCHAR" property="mdiv" />
+	    <result column="appname" jdbcType="VARCHAR" property="appname" />
+	    <result column="sclist_cd" jdbcType="VARCHAR" property="sclist_cd" />
+	    <result column="scapp_cd" jdbcType="VARCHAR" property="scapp_cd" />
+	    <result column="reqnum" jdbcType="VARCHAR" property="reqnum" /> 
+	    <result column="isvisible" jdbcType="VARCHAR" property="isvisible" />
+	    <result column="lstupdate" jdbcType="VARCHAR" property="lstUpdate" />
+	    <result column="procdefalias" jdbcType="VARCHAR" property="procDefAlias" />
+	    <result column="appseq" jdbcType="VARCHAR" property="appSeq" />
+	    <result column="description" jdbcType="VARCHAR" property="description" />
+	    <result column="rolecode" jdbcType="VARCHAR" property="rolecode" />
+	    <result column="managerrole" jdbcType="VARCHAR" property="managerrole" />
+	    <result column="prodverid" jdbcType="VARCHAR" property="prodverid" />
+	    <collection property="userVo" ofType="kr.re.kitech.biz.xom.core.vo.UserVo">
+	        <id property="userinfo" column="userinfo"/>
+	        <result property="uid" column="uid"/>
+	        <result property="sn" column="sn"/>
+	        <result property="empno" column="empno"/>
+	        <result property="cn" column="cn"/>
+	    </collection>
+	</resultMap>
+
+	<select id="selectAppForm" parameterType="kr.re.kitech.biz.apr.vo.AppFormVo" resultMap="collectionResultMap">
+		SELECT 	/* QueryID : kr.re.kitech.biz.apr.vo.selectAppForm */
+			  aid
+			, defcat
+			, defcat
+			, div
+			, mdiv
+			, appname
+			, sclist_cd
+			, scapp_cd
+			, scapp_ch_cd
+			, reqnum
+			, isvisible
+			, lstupdate
+			, procdefalias
+			, appseq
+			, description
+			, rolecode
+			, uid
+			, sn
+			, empno
+			, cn
+		FROM (	
+			SELECT
+				distinct 
+				amap.aid
+				, amap.defcat
+				, amap.div
+				, amap.mdiv
+				, amap.appname
+				, amap.sclist_cd
+				, amap.scapp_cd
+				, amap.scapp_ch_cd
+				, amap.reqnum
+				, amap.isvisible
+				, amap.lstupdate
+				, amap.procdefalias
+				, amap.appseq
+				, (case when def.description is null then '' else def.description end) description
+				, amap.rolecode
+				, amap.managerrole
+				, def.prodverid
+				, x3.empcode AS uid
+				, CASE WHEN x3.empcode IS NOT NULL and x4.empsn IS NULL THEN 'NOUSER' ELSE x4.empsn END AS sn
+				, NVL(x4.empsn[3,8],'') AS empno
+				, NVL(x4.empname,'') AS cn
+			FROM appv_applicationmap amap
+			LEFT JOIN bpm:bpm_procdef def ON (CASE WHEN amap.procdefalias is null or amap.procdefalias='' then amap.reqnum else amap.procdefalias end)= def.alias
+			JOIN appv_managerrolemapping x2 ON amap.aid = x2.aid
+			LEFT JOIN roleusertable x3 ON x3.rolecode = x2.managerrole
+			LEFT JOIN bpm:emptable x4 ON x4.empcode = x3.empcode
+			LEFT JOIN humbasicinfo x5 ON x5.syspayno = x4.empsn
+			JOIN xodxcommst t1 on t1.cd_clsf = 'APR' and t1.cd_nm = amap.div
+			WHERE 1=1
+			<if test="appname != null and appname != ''">
+				AND amap.appname LIKE '%' || #{appname} || '%'
+			</if>
+			<if test="div != null and div != ''">
+			   AND t1.cd  = #{div}
+			</if>
+			 AND amap.isvisible = 1
+			 AND nvl(x5.retire_ymd,  '') = ''
+      		 AND (x5.work_clsf = 'HAG010' or x5.work_clsf is null)
+			 ORDER BY appseq, appname		  
+		)
+		WHERE (sn is null OR sn != 'NOUSER' )
+	</select>
+	
+	<select id="getAppForm" parameterType="kr.re.kitech.biz.apr.vo.AppFormVo" resultType="kr.re.kitech.biz.apr.vo.AppFormVo">
+		SELECT 	/* QueryID : kr.re.kitech.biz.apr.getAppForm */
+			 appname
+			,rule_yn
+		FROM appv_applicationmap
+		WHERE procdefalias = #{reqnum}
+	</select>
+</mapper>
+		 		 

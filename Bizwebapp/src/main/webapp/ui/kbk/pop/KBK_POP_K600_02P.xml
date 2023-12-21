@@ -1,0 +1,650 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="연구보고서">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="regst_no" name="등록번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_report">
+            		<w2:keyInfo>
+            			<w2:key id="regst_no" name="코드" dataType="text"></w2:key>
+            			<w2:key id="rcpt_no" name="rcpt_no" dataType="text"></w2:key>
+            			<w2:key id="regst_ymd" name="등록일자" dataType="text"></w2:key>
+            			<w2:key id="centr_cd" name="센터구분" dataType="text"></w2:key>
+            			<w2:key id="rptp_nm" name="보고서명" dataType="text"></w2:key>
+            			<w2:key id="eng_rptp_nm" name="영문명" dataType="text"></w2:key>
+            			<w2:key id="resch_respn_psn" name="연구책임자" dataType="text"></w2:key>
+            			<w2:key id="attnce_reschr_psn" name="참여연구원" dataType="text"></w2:key>
+            			<w2:key id="prj_no" name="연구번호" dataType="text"></w2:key>
+            			<w2:key id="rptp_no" name="보고서번호" dataType="text"></w2:key>
+            			<w2:key id="publ_yr" name="출간일" dataType="text"></w2:key>
+            			<w2:key id="bsns_cd_inout" name="내외부구분" dataType="text"></w2:key>
+            			<w2:key id="bsns_cd_ofic" name="관계부처" dataType="text"></w2:key>
+            			<w2:key id="bsns_cd_exclsv_agncy" name="전담기관" dataType="text"></w2:key>
+            			<w2:key id="bsns_cd_bsns" name="사업분류" dataType="text"></w2:key>
+            			<w2:key id="bsns_cd_detls_bsns" name="내역사업" dataType="text"></w2:key>
+            			<w2:key id="outsd_open_yn" name="원외공개" dataType="text"></w2:key>
+            			<w2:key id="outsd_unopn_cls_ymd" name="대외비만료일" dataType="text"></w2:key>
+            			<w2:key id="insd_open_yn" name="원내공개" dataType="text"></w2:key>
+            			<w2:key id="insd_unopn_cls_ymd" name="대내비만료일" dataType="text"></w2:key>
+            			<w2:key id="page" name="페이지" dataType="text"></w2:key>
+            			<w2:key id="kitech_publc_yn" name="생기원발간" dataType="text"></w2:key>
+            			<w2:key id="idx" name="키워드" dataType="text"></w2:key>
+            			<w2:key id="abst" name="초록" dataType="text"></w2:key>
+            			<w2:key id="rmk" name="수기사항" dataType="text"></w2:key>
+            			<w2:key id="attach_file_no" name="첨부파일번호" dataType="text"></w2:key>
+            			<w2:key id="rowStatus" name="상태" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        	<xf:submission id="sbm_selectReport" ref="data:json,dma_search" target='data:json,dma_report' action="SvcKBKPOPDTLR02.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_saveReport" ref="data:json,dma_report" action="SvcKBKPOPDTLM02.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_deleteReport" ref="data:json,dma_report" action="SvcKBKPOPDTLD02.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script src="/cm/js/biz/res.js" cache="false" />
+        <script type="text/javascript" lazy="false"><![CDATA[        
+	/****************************************************
+	 * 화면 설명 : 연구보고서등록 팝업
+	 * 변경 이력 : 2022-09-01	홍성민	최초 작성
+	 * serviceId : K651
+	 ****************************************************/    
+	scwin.data = {};
+	
+	scwin.onpageload = function() {
+		com.file.init();
+		
+		//checkRole
+		com.biz.checkRole({ serviceId : "K602", roleCodes : com.getLoginInfo('roleCode')}, function(e){
+			if(!e.isRoleYn){
+				btn_save.setStyle("display", "none");
+				btn_del.setStyle("display", "none");
+			}
+		});
+		
+		var regst_no = com.getParameter("regst_no");
+		
+		var codeOptions = [ { code : "BAC", compID : "sbx_centr_cd"},
+							{ code : "RHA", compID : "sbx_bsns_cd_inout"},
+							{ code : "RHB", compID : "sbx_bsns_cd_exclsv_agncy"}];
+							
+		com.setCmnCd(codeOptions, function() {
+			scwin.data = {
+				"oficComp" : sbx_bsns_cd_ofic,
+				"bsnsComp" : sbx_bsns_cd_bsns,
+				"detlsComp" : sbx_bsns_cd_detls_bsns
+			}
+			if (com.isEmpty(regst_no)) {
+				com.initDataMap(dma_report);
+				com.file.create(upload_A.getID(), {fileKey: 'K611', mode: 'edit'});
+				btn_del.hide();
+				biz.res.com.setBsnsCd(scwin, scwin.data);
+			} else {
+				dma_search.set("regst_no", regst_no); 
+				
+				scwin.search();
+			}
+		});		
+	};
+	
+	scwin.onpageunload = function() {
+		com.file.destroy(upload_A.getID());
+	};	
+	
+	/**
+	* 조회
+	*/
+	scwin.search = function(){
+		com.execute(sbm_selectReport,{
+			successCallback : function(e) {
+				dma_report.set("rowStatus", "U");
+				
+				scwin.data.oficCd = e.responseJSON.elData.bsns_cd_ofic;
+				scwin.data.bsnsCd = e.responseJSON.elData.bsns_cd_bsns;
+				scwin.data.detlsCd = e.responseJSON.elData.bsns_cd_detls_bsns;
+				
+				var fileKey = e.responseJSON.elData.attach_file_no;
+				fileKey = (null == fileKey || '' == fileKey.trim()) ? 'K611' : fileKey;
+				com.file.create(upload_A.getID(), {fileKey: fileKey, mode: 'edit'});
+				com.res.setBsnsCd(scwin.data);
+				com.biz.disabledButtons("XAD010", dma_report.get("regst_no"));
+			}
+		});
+	};
+	
+	/**
+	* 닫기 버튼 클릭 이벤트
+	*/
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**
+	* 저장 버튼 클릭 이벤트
+	*/
+	scwin.btn_save_onclick = function(e) {
+		var isValid = com.validateData(dma_report, [
+			{id : "rptp_nm", mandatory : true}
+		]);
+		if (!isValid) return ;	
+		
+		com.confirm("message.xom.wq.017", function(ret) {
+			if (ret) {
+				com.file.transport( function(attachObj){
+					dma_report.set("attach_file_no", attachObj.upload_A);
+					
+					com.execute(sbm_saveReport, {
+						successCallback : function() {
+							com.alert("message.xom.wq.023", function(){
+								if(dma_report.get("rowStatus") == "U"){
+									scwin.search();
+								}else{
+									com.closePopup({});
+								}
+							});
+						}
+					});	
+				});
+			}
+		});
+	};
+	
+	/**
+	* 삭제 버튼 클릭 이벤트
+	*/
+	scwin.btn_del_onclick = function(e) {
+		com.confirm("message.xom.wq.022", function(ret) {
+			if (ret) {
+				com.execute(sbm_deleteReport, {
+					successCallback : function(e) {
+						com.alert("message.xom.wq.023", function() {
+							com.closePopup({})
+						});
+					}
+				});
+			}
+		});
+	};
+	
+	/**
+	* 접수번호 버튼 클릭 이벤트
+	*/
+	scwin.btn_search_rcpt_onclick = function(e) {
+		var data = {};
+		biz.kbk.pop.open(biz.kbk.pop.TYPE.SEL_RSCH, data, 
+			function(ret) { 
+				dma_report.set("resch_respn_psn", ret.prj_no_mst);
+				dma_report.set("attnce_reschr_psn", ret.prj_no_sub);
+				dma_report.set("prj_no", ret.prj_no);
+				dma_report.set("rptp_no", ret.accnt_no);
+				dma_report.set("rptp_nm", ret.rptp_nm);
+				dma_report.set("bsns_cd_inout", ret.bsns_cd_inout);
+				dma_report.set("bsns_cd_exclsv_agncy", ret.bsns_cd_exclsv_agncy);
+				dma_report.set("outsd_open_yn", ret.outsd_rptp_open_yn);
+				dma_report.set("outsd_unopn_cls_ymd", ret.outsd_unopn_prd_cls_ymd);
+				dma_report.set("insd_open_yn", ret.insd_rptp_open_yn);
+				dma_report.set("insd_unopn_cls_ymd", ret.insd_unopn_prd_cls_ymd);
+				dma_report.set("idx", ret.kwd);
+				dma_report.set("abst", ret.resch_contnt);
+				// 첨부파일은 pdf로 다시 저장해서 올리므로 가지고 올 필요없음(2023.02.21. XC220230076A)
+				//dma_report.set("attach_file_no", ret.attach_file);
+				dma_report.set("rcpt_no", ret.rcpt_no);
+
+				scwin.data.oficCd = ret.bsns_cd_ofic;
+				scwin.data.bsnsCd = ret.bsns_cd_bsns;
+				scwin.data.detlsCd = ret.bsns_cd_detls_bsns;
+				
+				biz.res.com.setBsnsCd(scwin, scwin.data);
+			}
+		);
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="연구보고서  상세정보"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="등록번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_regst_no" style="" title="등록번호" ref="data:dma_report.regst_no" readOnly="true"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="접수번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:group class="inpSch full" id="" style="">
+    						<xf:input adjustMaxLength="false" class="inp" id="inp_rcpt_no" style="" title="접수번호" ref="data:dma_report.rcpt_no" readOnly="true"></xf:input>
+    						<xf:trigger class="btn" id="btn_search_rcpt" style="" type="button" title="접수번호 조회" ev:onclick="scwin.btn_search_rcpt_onclick">
+    							<xf:label><![CDATA[검색]]></xf:label>
+    						</xf:trigger>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th" style="">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="등록일자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td" style="">
+    					<w2:attributes></w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal  req" focusOnDateSelect="false" footerDiv="false" id="cal_regst_ymd"
+    						placeholder="시작일" renderDiv="true" rightAlign="false" style="" title="등록일자" ref="data:dma_report.regst_ymd" readOnly="true">
+    					</w2:inputCalendar>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="보고서명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full req" id="inp_rptp_nm" style="" title="보고서명" ref="data:dma_report.rptp_nm"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="영문보고서명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_eng_rptp_nm" style="" title="영문보고서명" ref="data:dma_report.eng_rptp_nm"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="연구책임자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_rstrpt_docu_no" style="" title="연구책임자" ref="data:dma_report.resch_respn_psn"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="참여연구원" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_rst" style="" title="참여연구원" ref="data:dma_report.attnce_reschr_psn"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="과제번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_pjt_no" style="" title="과제번호" ref="data:dma_report.prj_no"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="계정번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_accnt_no" style="" title="계정번호" ref="data:dma_report.rptp_no"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="발행년도" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inp_publ_yr" style="" title="발행년도" ref="data:dma_report.publ_yr"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="소장처(센터)" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -" class="sel full"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_centr_cd" ref="data:dma_report.centr_cd" style="" submenuSize="auto"
+    						title="소장처(센터)">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="내외부구분" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -" class="sel full"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_bsns_cd_inout" ref="data:dma_report.bsns_cd_inout" style="" submenuSize="auto"
+    						title="내외부구분">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="전담기관" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -" class="sel full"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_bsns_cd_exclsv_agncy" ref="data:dma_report.bsns_cd_exclsv_agncy" style="" submenuSize="auto" title="전담기관">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="관계부처" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -" class="sel full"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_bsns_cd_ofic" style="" submenuSize="auto"
+    						title="관계부처" ref="data:dma_report.bsns_cd_ofic">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="사업분류" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 id="sbx_bsns_cd_bsns" allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -"
+    						class="sel full" direction="auto" disabled="false" disabledClass="w2selectbox_disabled" style="" submenuSize="auto" title="내외부구분"
+    						ref="data:dma_report.bsns_cd_bsns">
+    						<xf:choices></xf:choices>
+    					</xf:select1></xf:group>
+    				
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="사업소분류" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -" class="sel full"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_bsns_cd_detls_bsns" style="" submenuSize="auto"
+    						title="내외부구분" ref="data:dma_report.bsns_cd_detls_bsns">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					<w2:colspan>1</w2:colspan><w2:rowspan>2</w2:rowspan></w2:attributes>
+    					<w2:textbox id="" label="공개여부" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select appearance="full" class="chkGroup" cols="" id="" ref="data:dma_report.outsd_open_yn" renderType="checkboxgroup" rows=""
+    						selectedindex="-1" style="" title="삽도">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[원외공개]]></xf:label>
+    								<xf:value><![CDATA[Y]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="대외비만료일자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false" id=""
+    						placeholder="시작일" renderDiv="true" rightAlign="false" style="" title="대외비만료일자" ref="data:dma_report.outsd_unopn_cls_ymd">
+    					</w2:inputCalendar>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="생기원발간" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select appearance="full" class="chkGroup" cols="" id="" ref="data:dma_report.kitech_publc_yn" renderType="checkboxgroup" rows=""
+    						selectedindex="-1" style="" title="생기원발간">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[]]></xf:label>
+    								<xf:value><![CDATA[Y]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select appearance="full" class="chkGroup" cols="" id="" ref="data:dma_report.insd_open_yn" renderType="checkboxgroup" rows=""
+    						selectedindex="-1" style="" title="삽도">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[원내공개]]></xf:label>
+    								<xf:value><![CDATA[Y]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="대내비만료일자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false" id=""
+    						placeholder="만료일" renderDiv="true" rightAlign="false" style="" title="대내비만료일자" ref="data:dma_report.insd_unopn_cls_ymd">
+    					</w2:inputCalendar>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="페이지" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="페이지" ref="data:dma_report.page"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="키워드" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:textarea id="" style="height: 80px;" title="목차" ref="data:dma_report.idx"></xf:textarea>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="초록" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:textarea id="" style="height: 80px;" title="목차" ref="data:dma_report.abst"></xf:textarea>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="주기사항" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="등록번호" ref="data:dma_report.rmk"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="원문파일" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:group class="full" id="upload_A" style="height:150px;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class=" btn pro conf" ev:onclick="scwin.btn_save_onclick" id="btn_save" style="" type="button">
+    				<xf:label><![CDATA[저장]]></xf:label>
+    			</xf:trigger><xf:trigger class=" btn  pro " ev:onclick="scwin.btn_del_onclick" id="btn_del" style="" type="button">
+    					<xf:label><![CDATA[삭제]]></xf:label>
+    				</xf:trigger><xf:trigger class=" btn  pro " ev:onclick="scwin.btn_close_onclick" id="btn_close" style="" type="button">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				
+
+    			</xf:group>
+    			
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

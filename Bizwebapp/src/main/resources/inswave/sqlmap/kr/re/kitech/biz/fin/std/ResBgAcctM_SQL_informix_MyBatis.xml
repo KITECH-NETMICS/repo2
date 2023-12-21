@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.std">
+<!-- 계정번호관리 - 그리드 다건 조회 -->
+<select id="selectResBgAcctMList" parameterType="kr.re.kitech.biz.fin.std.vo.ResBgAcctMVo" resultType="kr.re.kitech.biz.fin.std.vo.ResBgAcctMVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.std.selectResBgAcctMList */
+	a.accnt_no
+	, a.accnt_rspns
+	, b.nm AS accnt_rspns_nm
+	, b.empno AS accnt_rspns_empno
+	, TRIM(b.nm) || '(' || b.empno || ')' AS accnt_rspns_nm_empno
+	, a.bugt_ctrl_psn
+	, c.nm AS bugt_nm
+	, c.empno AS bugt_empno
+	, a.accnt_state
+	, a.accnt_no_nm
+	, a.fin_bsns_clsf
+	, a.start_ymd
+	, TRIM(a.cls_ymd) AS cls_ymd
+	, NVL(a.tot_prj_start_ymd, '') AS tot_prj_start_ymd
+	, NVL(a.tot_prj_cls_ymd, '') AS tot_prj_cls_ymd
+	, CASE WHEN SUBSTR(a.accnt_no,1,2) != 'PX' OR NVL(a.tot_prj_start_ymd,'') = '' THEN ''
+		   ELSE a.tot_prj_start_ymd ||'~'|| a.tot_prj_cls_ymd 
+   	   	   END AS rsut_use_orign_cls_ymd
+	, a.ctrl_lmt_rt
+	, a.psn_pay_rt
+	, a.itm_solve_base
+	, i.itm_solve_base_nm
+	, a.tax_cd
+	, a.pbs_ex
+	, a.card_use_ex
+	, a.fomat_unit
+	, a.accnt_grp
+	, a.usg_clsf
+	, a.rmk
+	, a.mngmt_clsf
+	, d.relat_accnt_no
+	, h.accnt_no_nm AS relat_accnt_no_nm
+	, NVL(e.cd_nm,'') AS tax_cd_nm
+	, f.cd_nm usg_clsf_nm
+	, h.tot_prj_start_ymd || '~' || h.tot_prj_cls_ymd AS tot_prj_ymd
+ FROM resbgacctm a
+ JOIN humbasicinfo b ON a.accnt_rspns = b.syspayno
+ JOIN humbasicinfo c ON a.bugt_ctrl_psn = c.syspayno
+ LEFT JOIN resadxreqm d ON a.accnt_no = d.creat_accnt_no
+ LEFT JOIN xodxcommst e ON e.cd = a.tax_cd
+ LEFT JOIN xodxcommst f ON f.cd = a.usg_clsf
+ LEFT JOIN fbaitmbase g ON a.itm_solve_base = g.itm_solve_base
+ LEFT JOIN resbgacctm h ON d.relat_accnt_no = h.accnt_no
+ LEFT JOIN fbaitmbase i ON i.itm_solve_base = a.itm_solve_base
+ WHERE 1=1
+<if test='start_ymd != null and start_ymd != ""'> AND a.start_ymd LIKE #{start_ymd} || '%' </if>
+<if test='accnt_grp != null and accnt_grp != ""'> AND a.accnt_grp = #{accnt_grp} </if>
+<if test='accnt_no != null and accnt_no != ""'> AND a.accnt_no LIKE #{accnt_no}  || '%' </if>
+<if test='accnt_rspns != null and accnt_rspns != ""'> AND a.accnt_rspns LIKE '%' || #{accnt_rspns} || '%'</if>
+<if test='bugt_ctrl_psn != null and bugt_ctrl_psn != ""'> AND a.bugt_ctrl_psn LIKE '%' || #{bugt_ctrl_psn} || '%'</if>
+</select>
+<!-- 계정번호관리 - 계정번호 단건 등록 -->
+<insert id="insertResBgAcctM" parameterType="kr.re.kitech.biz.fin.std.vo.ResBgAcctMVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.std.insertResBgAcctM */ 
+	INTO resbgacctm (
+		accnt_no
+        , main_accnt_no
+        , accnt_rspns
+        , accnt_clsf
+        , bugt_ctrl_psn
+        , accnt_state
+        , accnt_no_nm
+        , fin_bsns_clsf
+        , start_ymd
+        , cls_ymd
+        , ctrl_lmt_rt
+        , itm_solve_base
+        , tax_cd
+        , pbs_ex
+        , card_use_ex
+        , fomat_unit
+        , accnt_grp
+        , usg_clsf
+        , rmk
+        , mngmt_clsf
+        , psn_pay_rt
+        , regst_syspayno
+        , regst_daytm
+        , tot_prj_start_ymd
+        , tot_prj_cls_ymd
+        )
+VALUES ( 
+		#{accnt_no}
+		, #{main_accnt_no}
+		, #{accnt_rspns}
+		, #{accnt_clsf}
+		, #{bugt_ctrl_psn}
+		, #{accnt_state}
+		, #{accnt_no_nm}
+		, #{fin_bsns_clsf}
+		, #{start_ymd}
+		, #{cls_ymd}
+		, #{ctrl_lmt_rt}
+		, #{itm_solve_base}
+		, #{tax_cd}
+		, #{pbs_ex}
+		, #{card_use_ex}
+		, #{fomat_unit}
+		, #{accnt_grp}
+		, #{usg_clsf}
+		, #{rmk}
+		,'F'
+		, #{psn_pay_rt}
+		, #{regst_syspayno}
+		, CURRENT
+		, #{tot_prj_start_ymd}
+		, #{tot_prj_cls_ymd}
+		)
+</insert>
+<!-- 계정번호관리 - 관리항목조회 -->
+<select id="selectResBgAcctMCd" parameterType="kr.re.kitech.biz.fin.std.vo.ResBgAcctMVo" resultType="java.util.HashMap">
+SELECT /* QueryID : kr.re.kitech.biz.fin.std.selectResBgAcctMCd */
+    b.cd
+    , NVL(b.mngmt_item_2, '') AS mngmt_item_2
+FROM resbgacctm a
+LEFT JOIN xodxcommst b ON a.accnt_grp = b.cd
+WHERE b.cd_clsf = 'FAK'
+AND (mngmt_item_2 = 'D' OR mngmt_item_2 = 'L')
+AND a.accnt_no = #{accnt_no}
+</select>
+<!-- 계정번호관리 - 계정번호 단건 수정 -->
+<update id="updateResBgAcctM" parameterType="kr.re.kitech.biz.fin.std.vo.ResBgAcctMVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.std.updateResBgAcctM */ 
+	resbgacctm
+SET accnt_rspns = #{accnt_rspns}
+	, bugt_ctrl_psn = #{bugt_ctrl_psn}
+	<if test="accnt_clsf != null and accnt_clsf != ''"> , accnt_clsf = #{accnt_clsf} </if>
+    , accnt_state = #{accnt_state}
+    , accnt_no_nm = #{accnt_no_nm}
+    , fin_bsns_clsf = #{fin_bsns_clsf}
+    , start_ymd = #{start_ymd}
+    , cls_ymd = #{cls_ymd}
+	<if test="tot_prj_start_ymd != null and tot_prj_start_ymd != ''"> , tot_prj_start_ymd = #{tot_prj_start_ymd} </if>
+	<if test="tot_prj_cls_ymd != null and tot_prj_cls_ymd != ''"> , tot_prj_cls_ymd = #{tot_prj_cls_ymd} </if>
+	<if test="psn_pay_rt != null and psn_pay_rt != ''"> , psn_pay_rt = #{psn_pay_rt} </if>
+    , ctrl_lmt_rt = #{ctrl_lmt_rt}
+    , itm_solve_base = #{itm_solve_base}
+	<if test="tax_cd != null and tax_cd != ''"> , tax_cd = #{tax_cd} </if>
+    , pbs_ex = #{pbs_ex}
+	<if test="card_use_ex != null and card_use_ex != ''"> , card_use_ex = #{card_use_ex} </if>
+    , fomat_unit = #{fomat_unit}
+    , accnt_grp = #{accnt_grp}
+    , usg_clsf = #{usg_clsf}
+    , rmk = #{rmk}
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = CURRENT
+WHERE accnt_no = #{accnt_no}
+</update>
+<!-- 계정번호관리 - 계정번호 단건 삭제 -->
+<delete id="deleteResBgAcctM" parameterType="kr.re.kitech.biz.fin.std.vo.ResBgAcctMVo">
+DELETE /* QueryID : kr.re.kitech.biz.fin.std.deleteResBgAcctM */ 
+FROM resbgacctm 
+WHERE accnt_no = #{accnt_no}
+</delete>
+</mapper>

@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ev="http://www.w3.org/2001/xml-events"
+	xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="지식재산권 상세 메인">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate/>
+		<xf:model>
+			<xf:instance>
+				<data />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+			
+			<w2:dataMap baseNode="map" id="dma_send_bpm">
+			  <w2:keyInfo>
+			  		<w2:key id="chk" name="chk" dataType="text"></w2:key>
+					<w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+					<w2:key id="mngmt_no" name="mngmt_no" dataType="text"></w2:key>
+					<w2:key id="ref_no" name="ref_no" dataType="text"></w2:key>
+					<w2:key id="curr_state_cd" name="curr_state_cd" dataType="text"></w2:key>
+					<w2:key id="invnt_krn_nm" name="invnt_krn_nm" dataType="text"></w2:key>
+					<w2:key id="invnt_psn_nm" name="invnt_psn_nm" dataType="text"></w2:key>
+					<w2:key id="patofic_nm" name="patofic_nm" dataType="text"></w2:key>
+					<w2:key id="job_title" name="job_title" dataType="text"></w2:key>
+					<w2:key id="todo_title" name="todo_title" dataType="text"></w2:key>
+					<w2:key id="todo_due_date" name="todo_due_date" dataType="text"></w2:key>
+					<w2:key id="todo_pro" name="todo_pro" dataType="text"></w2:key>
+					<w2:key id="page_id" name="page_id" dataType="text"></w2:key>
+					<w2:key id="page_detail_id" name="page_detail_id" dataType="text"></w2:key>
+					<w2:key id="smitapp_no" name="smitapp_no" dataType="text"></w2:key>
+					<w2:key id="status" name="status" dataType="text"></w2:key>
+					<w2:key id="defname" name="defname" dataType="text"></w2:key>
+					<w2:key id="type" name="type" dataType="text"></w2:key>
+			 </w2:keyInfo>
+			</w2:dataMap>
+			
+			<w2:dataMap baseNode="map" id="dma_send_bpm_yn">
+			  <w2:keyInfo>
+			       <w2:key id="bpm_yn" name="bpm_yn" dataType="text"></w2:key>
+			       <w2:key id="mngmt_no" name="mngmt_no" dataType="text"></w2:key>
+			 </w2:keyInfo>
+			</w2:dataMap>
+						
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+
+		<!-- 출원업무 BPM 처리 -->
+		<xf:submission id="sbm_svcpatptdpatsi01" 
+					   ref='data:json,{"id":"dma_send_bpm","key":"patPtdLstVo"}' 
+					   target='' 
+					   action="SvcPATPTDPATSI01.pwkjson" 
+					   ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+
+		<!-- 지식재산권 결재 유무 변경 -->
+		<xf:submission id="sbm_svcpatpsrinqu03" 
+					   ref='data:json,dma_send_bpm_yn' 
+					   target='' 
+					   action="SvcPATPSRINQU03.pwkjson" 
+					   ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+		
+		</xf:model>
+		<script src="/cm/js/biz/pat.js" cache="false" />
+		<script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 지식재산권 상세 메인
+ 	 * 변경 이력 : 2023-10-31	이대훈	최초 작성
+ 	 ****************************************************/
+	 
+ 	scwin.param = {};
+ 	scwin.GLOBAL_VARS = {};
+
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		buttonManager.hide();
+		const uid = com.getLoginInfo('uid');
+		if (!/patsysdev|leedar|mklee|patent11|arilike|jskimpat|kimhoon|leeyh|eipkimjt/.test(uid)) {
+			buttonManager.show();
+		}
+		scwin.param = com.getParameter();
+		scwin.initialize_wframe();
+	};
+	
+	scwin.initialize_wframe = async function() {
+		
+		const rowJSON = scwin.param;
+    
+	    const dataObject = {
+	        "type" : "json", 
+	        "name" : "param",
+	        "data" : rowJSON
+	    };
+	
+	    const setFrameSource = async (serviceId, frame) => {
+	        const menuObj = await com.getMenuObj(serviceId);
+	        frame.setSrc(menuObj.serviceNewUrl, {"dataObject": dataObject});
+	    };
+	
+	    // 모든 비동기 작업을 동시에 실행
+	    await Promise.all([
+	        setFrameSource("IA02", iframetab1),
+	        setFrameSource("IA03", iframetab2),
+	        setFrameSource("IA04", iframetab3),
+	        setFrameSource("IA05", iframetab4),
+	        setFrameSource("IA06", iframetab5),
+	        setFrameSource("IA07", mailFrame),
+	        setFrameSource("IA08", processFrame)
+	    ]);
+	    
+    };
+    
+	
+	scwin.onpageunload = function() {
+	};
+	
+	/**
+	 * 목록 버튼 클릭시 이벤트
+	 */
+	scwin.trigger_list_onclick = function(e) {
+	    let menuIdToMove;
+        
+        // 기본 메뉴 이동
+        menuIdToMove = "IA01";
+	    com.moveList(menuIdToMove);
+	};
+
+	/**
+	 * 선택 탭 변경시
+	 */
+	scwin.tac_sample_onchange = function(tabID,idx,userTabID) {
+		com.setFullHeight();
+		com.getComponent(userTabID).getWindow().com.file.globalSetting();		
+	};
+		
+	scwin.open_attach_popup = function() {
+	
+		const mngmtNo = scwin.param.mngmt_no;
+		
+		const data = {
+	      mngmt_no: mngmtNo
+	    };
+	
+	    com.pop.open(biz.pat.pop.TYPE.PAT_ATTACH, data, function(ret) {});
+	};
+	
+	
+	scwin.open_mail_send_popup = function() {
+
+	    const req_no = scwin.param.req_no;
+	    const mngmt_no = scwin.param.mngmt_no;
+	    const sn = com.getLoginInfo('sn');
+	    
+	    const data = {
+			req_no: req_no,
+	      	mngmt_no: mngmt_no,
+	      	sn: sn
+	    };
+	    
+	    com.pop.open(biz.pat.pop.TYPE.PAT_MAIL_SEND, data);
+	};
+	
+	scwin.open_fam_popup = function() {
+		
+		const req_no = scwin.param.req_no;
+	    const mngmt_no = scwin.param.mngmt_no;
+	    
+	    const data = {
+			req_no: req_no,
+	      	mngmt_no: mngmt_no
+	    };
+	    
+	    com.pop.open(biz.pat.pop.TYPE.PAT_FAM, data, function(ret) {
+	    	scwin.param.req_no = ret.req_no; 
+	    	scwin.param.mngmt_no = ret.mngmt_no;
+	    	
+	    	scwin.initialize_wframe();
+	    	
+	    });	
+	};
+	
+	scwin.send_bpm = function(e) {
+		const userData = $p.getComponentById(e.target.id).getUserData('userData1');
+		const sn = com.getLoginInfo("sn");
+		
+		dma_send_bpm.set("mngmt_no", scwin.param.mngmt_no);
+		dma_send_bpm.set("req_no", scwin.param.req_no);
+		dma_send_bpm.set("type", userData);
+		dma_send_bpm.set("reporter_id", sn);
+		
+		com.confirm("잘못된 데이터가 존재할 경우 정확히 삭제처리후\n진행하시기 바랍니다.\n\n 진행하시겠습니까?", function(ret) {
+             if (ret) {
+	             com.execute(sbm_svcpatptdpatsi01, {
+					successCallback : function(e){
+						com.alert("저장하였습니다.");
+					}
+				});
+             }
+        });
+        	
+	};
+	
+	scwin.send_bpm_yn = function(e) {
+				
+		dma_send_bpm_yn.set("mngmt_no", scwin.param.mngmt_no);
+		
+		com.confirm("결재정보를 " + bpm_yn.getText() +"로 변경하시겠습니까?", function(ret) {
+             if (ret) {
+	             com.execute(sbm_svcpatpsrinqu03, {
+					successCallback : function(e){
+						com.alert("저장하였습니다.");
+					}
+				});
+             }
+        });
+        	
+	};
+		
+	]]></script>
+	<style><![CDATA[
+		.pageWrap .pageWrap{padding: 0}
+	]]></style>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml"></w2:wframe>
+		<xf:group class="pageWrap" style="">
+			<xf:group class="searchSection step">
+				<xf:group class="le">
+					<xf:trigger class="btn" type="button" ev:onclick="scwin.trigger_list_onclick">
+						<xf:label><![CDATA[목록]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+				<xf:group class="btnbox">
+					<xf:trigger id="" class="btn" type="button" ev:onclick="scwin.open_fam_popup">
+						<xf:label><![CDATA[패밀리목록]]></xf:label>
+					</xf:trigger>
+					<xf:trigger id="btnFile" class="btn" type="button" ev:onclick="scwin.open_attach_popup">
+						<xf:label><![CDATA[관련첨부파일 조회]]></xf:label>
+					</xf:trigger>
+					<xf:trigger id="btnMail" class="btn" type="button" ev:onclick="scwin.open_mail_send_popup">
+						<xf:label><![CDATA[메일발송]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+				
+			</xf:group>
+			<xf:group class="" id="buttonManager" style="margin:10px 0 0 0">
+    			<xf:group class="ri" id="">
+    				<xf:group class="" id="" style="">
+    					<xf:select1 id="bpm_yn" chooseOption="false" style="width: 70px;height:22px;margin:0 5px" submenuSize="auto" allOption="false"
+							disabled="false" direction="auto" appearance="minimal" disabledClass="w2selectbox_disabled" ref="data:dma_send_bpm_yn.bpm_yn">
+							<xf:choices>
+								<xf:item>
+									<xf:label>결재유</xf:label>
+									<xf:value>Y</xf:value>
+								</xf:item>
+								<xf:item>
+									<xf:label>결재무</xf:label>
+									<xf:value>N</xf:value>
+								</xf:item>
+							</xf:choices>
+						</xf:select1>
+	    				<xf:trigger id="" class="btn" type="button" ev:onclick="scwin.send_bpm_yn">
+	    					<xf:label><![CDATA[결재저장]]></xf:label>
+	    				</xf:trigger>
+    					<xf:trigger id="" class="btn" type="button" ev:onclick="scwin.send_bpm" userData1="A">
+	    					<xf:label><![CDATA[선행접수]]></xf:label>
+	    				</xf:trigger>
+	    				<xf:trigger id="" class="btn" type="button" ev:onclick="scwin.send_bpm" userData1="B">
+	    					<xf:label><![CDATA[선행의뢰]]></xf:label>
+	    				</xf:trigger>
+	    				<xf:trigger id="" class="btn" type="button" ev:onclick="scwin.send_bpm" userData1="C">
+	    					<xf:label><![CDATA[명세의뢰]]></xf:label>
+	    				</xf:trigger>
+	    				<xf:trigger id="" class="btn" type="button" ev:onclick="scwin.send_bpm" userData1="E">
+	    					<xf:label><![CDATA[우선심사]]></xf:label>
+	    				</xf:trigger>
+	    				<xf:trigger id="" class="btn" type="button" ev:onclick="scwin.send_bpm" userData1="D">
+	    					<xf:label><![CDATA[출원요청]]></xf:label>
+	    				</xf:trigger>
+	    				<xf:trigger id="" class="btn" type="button" ev:onclick="scwin.send_bpm" userData1="F">
+	    					<xf:label><![CDATA[심사청구]]></xf:label>
+	    				</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+			<xf:group class="tabcont">
+				<w2:tabControl id="tabMain" alwaysDraw="true" confirmFalseAction="new" confirmTrueAction="exist" useConfirmMessage="false" useMoveNextTabFocus="false" useTabKeyOnly="true" tabScroll="false" ev:onchange="scwin.tac_sample_onchange">
+					<w2:tabs disabled="false" id="iframetab1" label="기본정보"></w2:tabs>
+					<w2:tabs disabled="false" id="iframetab2" label="출원"></w2:tabs>
+					<w2:tabs disabled="false" id="iframetab3" label="등록"></w2:tabs>
+					<w2:tabs disabled="false" id="iframetab4" label="사후관리"></w2:tabs>
+					<w2:tabs disabled="false" id="iframetab5" label="소요비용"></w2:tabs>
+					<w2:tabs disabled="false" id="mailFrame" label="메일이력"></w2:tabs>
+					<w2:tabs disabled="false" id="processFrame" label="프로세스"></w2:tabs>
+					<w2:content alwaysDraw="false" id="content1">
+						<w2:wframe id="iframetab1" processMsgFrame="true"></w2:wframe>
+					</w2:content>
+					<w2:content alwaysDraw="false" id="content2">
+						<w2:wframe id="iframetab2" processMsgFrame="true"></w2:wframe>
+					</w2:content>
+					<w2:content alwaysDraw="false" id="content3">
+						<w2:wframe id="iframetab3" processMsgFrame="true"></w2:wframe>
+					</w2:content>
+					<w2:content alwaysDraw="false" id="content4">
+						<w2:wframe id="iframetab4" processMsgFrame="true"></w2:wframe>
+					</w2:content>
+					<w2:content alwaysDraw="false" id="content5">
+						<w2:wframe id="iframetab5" processMsgFrame="true"></w2:wframe>
+					</w2:content>
+					<w2:content alwaysDraw="false" id="content6">
+						<w2:wframe id="mailFrame" processMsgFrame="true"></w2:wframe>
+					</w2:content>
+					<w2:content alwaysDraw="false" id="content7">
+						<w2:wframe id="processFrame" processMsgFrame="true"></w2:wframe>
+					</w2:content>
+				</w2:tabControl>
+			</xf:group>
+
+		</xf:group>
+	</body>
+</html>

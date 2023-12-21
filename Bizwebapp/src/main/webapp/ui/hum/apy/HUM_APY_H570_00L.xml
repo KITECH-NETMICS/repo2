@@ -1,0 +1,700 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="지도교수(활용책임자)변경신청조회(목록)">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="apr_state" name="apr_state" dataType="text"></w2:key>
+            			<w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+            			<w2:key id="syspayno" name="syspayno" dataType="text"></w2:key>
+            			<w2:key id="tar_syspayno" name="tar_syspayno" dataType="text"></w2:key>
+            			<w2:key id="dept_cd" name="dept_cd" dataType="text"></w2:key>
+            			<w2:key id="req_ymd_from" name="req_ymd_from" dataType="text"></w2:key>
+            			<w2:key id="req_ymd_to" name="req_ymd_to" dataType="text"></w2:key>
+            			<w2:key id="req_no_knd" name="req_no_knd" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="req_no" name="req_no" dataType="text"></w2:column>
+            			<w2:column id="req_ymd" name="req_ymd" dataType="text"></w2:column>
+            			<w2:column id="empno" name="empno" dataType="text"></w2:column>
+            			<w2:column id="nm" name="nm" dataType="text"></w2:column>
+            			<w2:column id="dept_nm" name="dept_nm" dataType="text"></w2:column>
+            			<w2:column id="posi_nm" name="posi_nm" dataType="text"></w2:column>
+            			<w2:column id="tar_syspayno" name="tar_syspayno" dataType="text"></w2:column>
+            			<w2:column id="tar_empno" name="tar_empno" dataType="text"></w2:column>
+            			<w2:column id="tar_nm" name="tar_nm" dataType="text"></w2:column>
+            			<w2:column id="tar_dept_nm" name="tar_dept_nm" dataType="text"></w2:column>
+            			<w2:column id="tar_posi_nm" name="tar_posi_nm" dataType="text"></w2:column>
+            			<w2:column id="apr_state" name="apr_state" dataType="text"></w2:column>
+            			<w2:column id="apr_state_nm" name="apr_state_nm" dataType="text"></w2:column>
+            			<w2:column id="approval_state" name="approval_state" dataType="text"></w2:column>
+            			<w2:column id="rmk" name="rmk" dataType="text"></w2:column>
+            			<w2:column id="attach_file_no" name="attach_file_no" dataType="text"></w2:column>
+            			<w2:column id="old_dept_nm" name="old_dept_nm" dataType="text"></w2:column>
+            			<w2:column id="old_pruse_respn_psn" name="old_pruse_respn_psn" dataType="text"></w2:column>
+            			<w2:column id="new_dept_nm" name="new_dept_nm" dataType="text"></w2:column>
+            			<w2:column id="new_pruse_respn_psn" name="new_pruse_respn_psn" dataType="text"></w2:column>
+            			<w2:column id="chk" name="chk" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+           <!-- 조회 -->
+             <xf:submission id="sbm_selectData" ref='data:json,dma_search'
+            	target='data:json,dlt_list' action="SvcHUMAPYPRSR01.pwkjson" method="post"
+            	mediatype="application/json" encoding="UTF-8" mode="asynchronous" instance="" replace="" errorHandler="" customHandler="" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+            </xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+	 * 화면 설명 : 지도교수(활용책임자)변경신청조회(목록)
+	 * 변경 이력 : 2023-08-10 swt 최초생성
+	 * serviceId : H570
+	 ****************************************************/
+
+    /*************************************************************************************************************
+     *
+     *	페이지 이벤트 함수
+     *
+     *************************************************************************************************************/
+    /*
+     * 페이지 열기
+     */
+	scwin.onpageload = function() {
+		
+		//권한
+		com.biz.checkRole({ serviceId : "H570", roleCodes : com.getLoginInfo('roleCode')}, function(e){
+    		if(!e.isRoleYn){	//권한 없을 경우
+		      	grp_dept.setDisabled(true);			//부서 비활성화
+		      	grp_rspns.setDisabled(true);		//신청자 비활성화
+		      	grp_rspns_2.setDisabled(true);		//대상자 비활성화
+			}
+	   	});
+	   	
+		//권한('roleCode')에 따른 [승인] 버튼 구분 (2020.08.10. 승인 권한 적용(롤코드 학생연구담당(1003125)))
+		if (com.getLoginInfo('roleCode').indexOf("1003125") < 0) {
+			btn_save.hide();
+		} else {
+			btn_save.show();
+		}
+		
+		//날짜세팅
+		ica_from.setValue(scwin.preMonthCalc(com.getServerDateTime()));		//이전달 세팅
+		ica_to.setValue(com.getServerDateTime());
+		
+		//조회날짜 기간역전 체크
+		com.checkPeriod(ica_from, ica_to);
+		
+		//엔터키 이벤트
+		com.setEnterKeyEvent(grp_dept, scwin.selectDept);
+		com.setEnterKeyEvent(grp_rspns, scwin.btn_rspns_onclick);
+		com.setEnterKeyEvent(grp_rspns_2, scwin.btn_tar_rspns_onclick);
+		
+		//라디오버튼  세팅
+		selectRadio.setValue("");
+				
+		//로그인 세션을 통한 초기 검색조건 세팅
+		inp_dept_cd.setValue(com.getLoginInfo("deptCode"));		//부서코드
+		inp_dept_nm.setValue(com.getLoginInfo("deptName"));		//부서명
+		inp_empno.setValue(com.getLoginInfo("empno"));			//신청자 사원번호
+		inp_nm.setValue(com.getLoginInfo("cn"));				//신청자명
+		
+				
+		//공통코드 (selectbox)
+		var codeOptions = [ { code : "XAD", compID : "selectboxApr_state" } ];	//결재상태
+		com.setCmnCd(codeOptions, function() {	
+			
+			scwin.search();
+		});
+		
+	};
+	
+	/**
+	 * 페이지 닫기
+	 */
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회 버튼 클릭 이벤트
+	 */
+	scwin.btn_sel_onclick = function(e) {
+		scwin.search();	
+	};
+	
+	/**
+	 * 조회 기능
+	 */
+	scwin.search = function() {
+		
+		if (com.isEmpty(ica_from.getValue()) || com.isEmpty(ica_to.getValue())) {
+			com.warn("신청일을 지정해주세요.");
+			return false;
+		}
+	
+		//조회조건 세팅
+		dma_search.set('req_ymd_from', ica_from.getValue());		//조회 시작일
+		dma_search.set('req_ymd_to', ica_to.getValue());			//조회 종료일
+		dma_search.set('req_no_knd', selectRadio.getValue());		//radioBox
+		dma_search.set('req_no', inp_req_no.getValue());			//신청 번호
+
+		com.execute(sbm_selectData, {
+			successCallback : function(e) {
+				
+				//데이터 초기화
+				dlt_list.removeAll();
+				//데이터 조회한거 세팅				
+				dlt_list.setJSON(e.responseJSON.humApyPrsInfoVoList, true);
+				//조회건수 cnt
+				tbx_result.setValue(dlt_list.getTotalRow());
+				
+			}
+		});	
+		
+	}
+	
+	/**
+	 * 부서 검색 버튼 클릭 이벤트
+	 */
+	scwin.btn_dpet_search_onclick = function(e) {
+		scwin.selectDept("img");
+	};
+	
+	/**
+	 * 부서 조회 팝업
+	 */	
+	scwin.selectDept = function(data) {
+		// 버튼(img)으로 팝업함수 바로 호출 처음 변수에 아무것도 넣지 않으면 최초 서브미션도 실행 안함.
+		data == "img"  ? data = {dept_nm : ""} : com.isKorean(inp_dept_cd.getValue()) ? data = { dept_nm : inp_dept_cd.getValue()} : data = { dept_cd : inp_dept_cd.getValue()};
+		
+		com.pop.open( com.pop.TYPE.DEPT, data, function(ret){
+			//dma_search.set("dept_cd", ret.dept_cd);
+			//dma_search.set("dept_nm", ret.dept_nm);
+			
+			inp_dept_cd.setValue(ret.dept_cd);
+			inp_dept_nm.setValue(ret.dept_nm);
+			dma_search.set("dept_cd", ret.dept_cd);		//신청자 개인번호
+			
+		});
+	};
+	
+	/**
+	 * 신청자 검색 버튼 클릭 이벤트
+	 */
+	scwin.btn_rspns_onclick = function(e) {
+		
+		var data = { empno : inp_empno.getValue(), work_clsf : "HAG010" }
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			
+			inp_empno.setValue(ret.empno);					//신청자 사원번호
+			inp_nm.setValue(ret.nm);						//신청자 성명
+			dma_search.set("syspayno", ret.syspayno);		//신청자 개인번호
+			
+		});
+		
+	};
+	
+	/**
+	 * 대상자 검색 버튼 클릭 이벤트
+	 */
+	scwin.btn_tar_rspns_onclick = function(e) {
+		
+		var data = { empno : inp_tar_empno.getValue(), work_clsf : "HAG010" }
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+
+			inp_tar_empno.setValue(ret.empno);				//대상자 사원번호
+			inp_tar_nm.setValue(ret.nm);					//대상자 성명
+			dma_search.set("tar_syspayno", ret.syspayno);	//대상자 개인번호
+			
+		});
+		
+	};
+
+	/**
+	 * 엑셀다운로드 버튼 클릭 이벤트
+	 */
+	scwin.btn_down_excel_onclick = function(e) {
+		
+		var now = com.getServerDateTime("yyyyMMdd");
+		var name = '지도교수(활용책임자)변경신청내역_' + now + '.xlsx';
+		
+		var option = {
+			    fileName : name,
+			    removeColumns : "0"
+		};
+		com.downloadGridExcel(grd_list, option);
+		
+	};
+
+	/**
+	 * 신규 버튼 클릭 이벤트
+	 */
+	scwin.btn_req_onclick = function(e) {
+		
+		//선택한 radio값 전달
+		var data = { selectRadio : selectRadio.getValue() };
+		
+		//if : 빈값
+		if(selectRadio.getValue() == "") {
+		
+			com.alert("지도교수나 활용책임자 둘중하나를 선택하여 주십시오.");
+			return;
+		
+		//else if : 지도교수
+		} else if(selectRadio.getValue() == "H3A") {
+		
+			//지도교수 신청 양식
+			scwin.openDetail(data);	
+		
+		//else if : 활용책임자
+		} else if(selectRadio.getValue() == "H3B") {
+		
+			//활용책임자 신청 양식
+			scwin.openDetail(data);
+		
+		}
+		
+	};
+	
+	/**
+	 * 신규 신청화면 이동
+	 */	
+	scwin.openDetail = function(data) {
+		 
+//		com.openTabMenu("H579", data, function() {
+//			scwin.search();
+//		});
+		
+		//to-be : serviceID 생성 전까지 사용
+		com.openTabUrl("지도교수(활용책임자) 변경신청", "/ui/hum/apy/HUM_APY_H579_00D.xml", 1, data, function() {
+			scwin.search();
+		});
+	};
+	
+	/**
+	 * 부서 번호 변경 이벤트
+	 */	
+	scwin.inp_dept_cd_onchange = function(info) {
+		if(info.newValue == "") {
+			inp_dept_nm.setValue("");
+			dma_search.set("dept_cd", "");
+		}
+	};
+	
+	/**
+	 * 신청자 번호 변경 이벤트
+	 */	
+	scwin.inp_empno_onchange = function(info) {
+		if(info.newValue == "") {
+			inp_nm.setValue("");
+			dma_search.set("syspayno", "");
+		}
+	};
+
+	/**
+	 * 대상자 번호 변경 이벤트
+	 */	
+	scwin.inp_tar_empno_onchange = function(info) {
+		if(info.newValue == "") {
+			inp_tar_nm.setValue("");
+			dma_search.set("tar_syspayno", "");
+		}
+	};
+
+	/**
+	 * 결재상태 변경 이벤트
+	 */	
+	scwin.selectboxApr_state_onchange = function(info) {
+		//변경에 따라 검색조건 세팅		
+		dma_search.set("apr_state", info.newValue);
+	};
+
+	/**
+	 * gird 내 cell 클릭 이벤트
+	 */	
+	scwin.grd_list_oncellclick = function(row,col,colId) {
+		if (colId == "req_no") {
+			var data = { req_no : dlt_list.getCellData(row, "req_no") };
+			scwin.openDetail(data);
+		}	
+	};
+
+	/**
+	 * gird 내 cell 클릭 이벤트
+	 */	
+	scwin.openDetail = function(data) {
+		
+		com.openTabMenu("H579", data, function() {
+			scwin.search();
+		});
+		
+		//to-be : 로컬용 (serviceID 등록 전 사용)
+//		com.openTabUrl("활용책임자 변경신청", "/ui/hum/apy/HUM_APY_H579_00D.xml", 1, data, function() {
+//			scwin.search();
+//		});
+
+	};
+	
+	
+	/**
+	 * 승인 버튼 클릭 이벤트
+	 */	
+	scwin.btn_save_onclick = function(e) {
+
+		//승인전 필수체크 실행
+		if (!scwin.preSave()) {
+			return false;
+		}
+		
+		//체크된 정보만 받아와서 승인처리
+		com.confirm("승인처리 하시겠습니까?", function(ret){		
+			if (ret) {
+			
+				//체크한 데이터 가져오기
+				var rowIdx = grd_list.getCheckedIndex("chk");
+				//for문으로 선택한 행들 한번씩 처리하기
+				for(var i = 0; i < rowIdx.length; i++) {
+					var chkData = dlt_list.getRowJSON(rowIdx[i]);
+		
+					//승인 요청
+					com.executeDynamic({ id : "sbm_approvalHumApy", action : "SvcHUMAPYPRSAPPRU01.pwkjson" }, {
+						requestData: chkData
+					  , successCallback: function(e) {
+							com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+								//새로고침
+								scwin.search();
+							});
+						}
+					});
+				}
+			}
+			
+		});
+		
+	};
+	
+	/**
+	 * 승인 전 필수체크 실행
+	 */	
+	scwin.preSave = function(e) {
+
+		var rowIdx = grd_list.getCheckedIndex("chk");
+		
+		if(rowIdx.length == 0){
+			com.alert(com.getMsg("message.xom.co.com.0003", "승인할 행"));
+			return false;
+		}
+		
+		//체크한 개수만큼 반복문
+		for (var i = 0; i < rowIdx.length; i++) {
+			
+			var approval_state = dlt_list.getCellData(rowIdx[i], "approval_state");
+			var apr_state_nm = dlt_list.getCellData(rowIdx[i], "apr_state_nm");
+			
+			//체크한 행에 대해서
+			if (dlt_list.getCellData(rowIdx[i], "chk") == "Y") {
+				
+				if (approval_state == "승인완료") {
+					com.alert("승인 완료된 건입니다.");
+					return false;
+				}
+
+				if (apr_state_nm.trim() != "결재완료") {
+					com.alert("결재완료 이후 승인 가능합니다.");
+					return false;
+				}
+				
+			}
+			
+		}
+		
+		return true;
+	};
+	
+	/**
+	* 현재 날짜에서 1개월을 뺀 날짜 반환
+	**/
+	scwin.preMonthCalc = function(nDate) {
+		var year = nDate.substr(0, 4);
+		var month = nDate.substr(4, 2);
+		var day = nDate.substr(6, 2);
+	
+		var myDate = new Date(year, month - 2, day);
+	
+		var giyear = myDate.getFullYear();
+		var gimonth = myDate.getMonth() + 1;
+	
+		var gidate = myDate.getDate();
+	
+		("" + gimonth).length == 1 ? gimonth = "0" + gimonth : gimonth;
+		("" + gidate).length == 1 ? gidate = "0" + gidate : gidate;
+		var from_day = giyear + '' + gimonth + '' + gidate;
+	
+		return from_day;
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group class="pageWrap" id="" style="">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="" style="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:240px;" tagname="col"></xf:group>
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="width:240px;" tagname="col"></xf:group>
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="width:240px;" tagname="col"></xf:group>
+    						<xf:group style="width:20px;" tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="신청일" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpcalWrap" id="" style="">
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    									footerDiv="false" id="ica_from" placeholder="시작일" renderDiv="true" rightAlign="false" style="">
+    								</w2:inputCalendar>
+    								<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    									footerDiv="false" id="ica_to" placeholder="종료일" renderDiv="true" rightAlign="false" style="">
+    								</w2:inputCalendar>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="신청번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_req_no" style="width: 150px;"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="결재상태" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 appearance="minimal" chooseOption="true" class="sel" direction="auto" disabled="false"
+    								disabledClass="w2selectbox_disabled" id="selectboxApr_state" ref="" style="width:150px;" submenuSize="auto"
+    								chooseOptionLabel="- 전체 -" visibleRowNum="10" ev:onchange="scwin.selectboxApr_state_onchange">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 appearance="full" class="radioGroup" cols="" id="selectRadio" ref="" renderType="radiogroup" rows=""
+    								selectedIndex="-1" style="">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[전체]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[지도교수]]></xf:label>
+    										<xf:value><![CDATA[H3A]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[활용책임자]]></xf:label>
+    										<xf:value><![CDATA[H3B]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="부서" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpSch" id="grp_dept" style="width: 90px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="inp_dept_cd" style="" ev:onchange="scwin.inp_dept_cd_onchange" ref="data:dma_search.dept_cd"></xf:input>
+    								<xf:trigger class="btn" id="btn_dpet_search" style="" type="button" ev:onclick="scwin.btn_dpet_search_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_dept_nm" style="width: 122px;" disabled="true"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="신청자(성명)" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="inpSch" id="grp_rspns" style="width: 90px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="inp_empno" style="" ev:onchange="scwin.inp_empno_onchange"></xf:input>
+    								<xf:trigger class="btn" id="btn_rspns" style="" type="button" ev:onclick="scwin.btn_rspns_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_nm" style="width: 122px;" disabled="true"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="대상자(성명)" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpSch" id="grp_rspns_2" style="width: 90px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="inp_tar_empno" style="" ev:onchange="scwin.inp_tar_empno_onchange"></xf:input>
+    								<xf:trigger class="btn" id="btn_tar_rspns" style="" type="button" ev:onclick="scwin.btn_tar_rspns_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_tar_nm" style="width: 122px;" disabled="true"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_sel" style="" type="button" ev:onclick="scwin.btn_sel_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="">
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:group class="btnarea" id="" style="">
+    					<xf:trigger class="btn" id="btn_req" style="" type="button" ev:onclick="scwin.btn_req_onclick">
+    						<xf:label><![CDATA[신규]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger class="btn icon down" id="btn_down_excel" style="" type="button"
+    						ev:onclick="scwin.btn_down_excel_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_list" defaultCellHeight="28"
+    			evenRowBackgroundColor="#f7faff" id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb"
+    			rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태"
+    			rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    			selectedRowColor="#fbf2cd" style="height: 85px;" visibleRowNum="20" sortable="true" ev:oncellclick="scwin.grd_list_oncellclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column checkboxLabel="선택" displayMode="label" fixColumnWidth="true" id="column1" inputType="checkbox"
+    						readOnly="false" style="height:28px;" value="chk_all" width="45">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="신청번호" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="신청일" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="개인번호(신청자)" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" sortable="true" style="height:28px;" value="성명(신청자)"
+    						width="100">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="부서(신청자)" width="200"></w2:column>
+    					<w2:column displayMode="label" id="column21" inputType="text" style="height:28px" value="직급(신청자)" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column23" inputType="text" style="height:28px" value="개인번호(대상자)" width="100"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column25" value="성명(대상자)" displayMode="label"></w2:column>
+    					<w2:column width="200" inputType="text" style="height:28px" id="column27" value="부서(대상자)" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column39" value="직급(대상자)" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column37" value="변경전지도교수" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column35" value="변경전지도교수부서" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column33" value="변경후지도교수" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column29" value="변경후지도교수부서" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column31" value="결재상태" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column41" value="승인상태" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column checkboxLabel="선택" displayMode="label" id="chk" inputType="checkbox" readOnly="false"
+    						style="height:28px;" width="50">
+    					</w2:column>
+    					<w2:column displayMode="label" id="req_no" inputType="link" readOnly="true" style="height:28px;" width="100" textAlign="center"></w2:column>
+    					<w2:column displayMode="label" id="req_ymd" inputType="text" readOnly="true" style="height:28px;" value=""
+    						width="100" displayFormat="####-##-##" textAlign="center">
+    					</w2:column>
+    					<w2:column class="" displayMode="label" escape="false" id="empno" inputType="text" readOnly="true"
+    						style="height:28px;" width="100" textAlign="center">
+    					</w2:column>
+    					<w2:column displayMode="label" id="nm" inputType="text" readOnly="true" style="height:28px;" width="100"></w2:column>
+    					<w2:column displayMode="label" id="dept_nm" inputType="text" readOnly="true" style="height:28px;" width="200" textAlign="center"></w2:column>
+    					<w2:column displayMode="label" id="posi_nm" inputType="text" style="height:28px" value="" width="100" readOnly="true"></w2:column>
+    					<w2:column displayMode="label" id="tar_empno" inputType="text" style="height:28px" value="" width="100" readOnly="true"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="tar_nm" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="200" inputType="text" style="height:28px" id="tar_dept_nm" value="" displayMode="label" readOnly="true" textAlign="center"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="tar_posi_nm" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="old_pruse_respn_psn" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="old_dept_nm" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="new_pruse_respn_psn" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="new_dept_nm" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="apr_state_nm" value="" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="approval_state" value="" displayMode="label" readOnly="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group class="btnGroup" id="group1" style="">
+    			<xf:group class="le" id="" style=""></xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class=" btn pro conf" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[승인]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

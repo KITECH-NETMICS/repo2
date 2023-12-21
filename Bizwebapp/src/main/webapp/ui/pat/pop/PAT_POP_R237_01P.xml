@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="첨부파일 다운로드">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_result_search">
+        			<w2:keyInfo>
+        				<w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+        				<w2:key id="mngmt_no" name="mngmt_no" dataType="text"></w2:key>
+        				<w2:key id="searchGbn" name="name3" dataType="text"></w2:key>
+        				<w2:key id="biz_clsf" name="name4" dataType="text"></w2:key>
+        				<w2:key id="roleCode" name="name5" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataMap baseNode="map" id="dma_attach_search" style="">
+        			<w2:keyInfo>
+        				<w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataMap baseNode="map" id="dma_result">
+        			<w2:keyInfo>
+        				<w2:key id="pat_clsf" name="pat_clsf" dataType="text"></w2:key>
+				        <w2:key id="rpt_srh_attach_file" name="rpt_srh_attach_file" dataType="text"></w2:key>
+				        <w2:key id="rpt_announce_attach_file" name="rpt_announce_attach_file" dataType="text"></w2:key>
+				        <w2:key id="pct_attach_file_no" name="pct_attach_file_no" dataType="text"></w2:key>
+				        <w2:key id="etc_attach_file_no" name="etc_attach_file_no" dataType="text"></w2:key>
+				        <w2:key id="out_deed_attach_file_no" name="out_deed_attach_file_no" dataType="text"></w2:key>
+				        <w2:key id="com_apply_attach_file_no" name="com_apply_attach_file_no" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataMap baseNode="map" id="dma_attach" style="">
+        			<w2:keyInfo>
+        				<w2:key id="pat_clsf" name="pat_clsf" dataType="text"></w2:key>
+      	 				<w2:key id="attach_file_no_2" name="attach_file_no_2" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectResult" ref="data:json,dma_result_search" target="data:json,dma_result" action="SvcPATPOPR06.pwkjson" method="post" mediatype="application/json" encoding="UTF-8"
+        		instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+        		ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission abortTrigger="" action="SvcPATPOPR07.pwkjson" customHandler="" encoding="UTF-8" errorHandler="" ev:submit="" ev:submitdone=""
+        		ev:submiterror="" id="sbm_selectAttach" instance="" mediatype="application/json" method="post" mode="asynchronous" processMsg=""
+        		ref="data:json,dma_attach_search" replace="" target="data:json,dma_attach" style="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 첨부파일 다운로드 팝업
+ 	 * 변경 이력 : 2023-10-18	lsh 	최초 작성
+ 	 ****************************************************/
+ 	scwin.data = {};  	  
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */ 
+	scwin.onpageload = function() {
+		// parentGbn : 호출부모 구분
+		// PSM01 : 소연심의 국내출원 심의대상 (발명신고서, 선행기술조사 보고서, 발표자료)
+		// PSM02 : 소연심의 자유발명,기타,프로그램 저작물 (발명신고서)
+		// PSM03 : 소연심의 안건조회
+		// PII01 : 발명자인터뷰 (발명신고서, 선행기술조사 보고서)
+		// PSE01 : 지심의 등록 국외출원 (발명신고서, 선행기술조사 보고서, PCT사업화 계획서)
+		// PSE02 : 지심의 등록 공동출원 (과제 협약서)
+		// PSE03 : 지심의 조회 국외출원 (발명신고서, 선행기술조사 보고서, PCT사업화 계획서)
+		// PSE04 : 지심의 조회 공동출원 (공동출원사유서, 과제협약서)
+		
+		scwin.data.typeCode = "IA68";
+		
+		// 파일 컴포넌트 초기화
+		com.file.init();
+		
+		var param = com.getParameter();
+		
+		if (param != null) {
+			// parameter 설정
+			dma_result_search.setJSON(param);
+			dma_attach_search.setJSON(param);
+			
+			// 전역변수 선언
+			scwin.data.parentGbn = dma_result_search.get("searchGbn");
+			scwin.data.bizClsf = dma_result_search.get("biz_clsf");
+			scwin.data.roleCode = dma_result_search.get("roleCode");
+			scwin.data.today = com.getServerDateTime();
+			
+			if (scwin.data.parentGbn == "PSE01" || scwin.data.parentGbn == "PSE02") {
+				// as-is에서 사용처 확인 불분명함
+				//refNo = WebSquare.xml.getValue(paramXml, "GridAttachFile/refNo", "value");
+				//objExamId = WebSquare.xml.getValue(paramXml, "GridAttachFile/objExamId", "value");
+			}
+			
+			if (scwin.data.bizClsf == "RBS006" && scwin.data.today >= "20211102") {
+				rpt_srh_attach_file_lbl.setValue("자유발명신고서");
+				grpFile3.hide();
+				grpFile4.hide();
+				grpFile5.hide();
+				grpFile6.hide();
+			}
+			
+			scwin.search();
+		} 
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(e) {
+		if (scwin.data.bizClsf == "RBS006" && scwin.data.today >= "20211102") {
+			com.execute(sbm_selectAttach, {
+				successCallback : function(e) {
+					scwin.data.patClsf = dma_attach.get("pat_clsf");
+					
+					// 자유발명신고서
+					var attachFileNo_A = dma_attach.get("attach_file_no_2").trim();
+					//console.log("------------- attachFileNo_A : " + attachFileNo_A);
+					com.file.create(upload_A.getID(), {fileKey: ("" !== attachFileNo_A) ? attachFileNo_A : scwin.data.typeCode, mode: "view"});
+				}
+			});
+		} else {
+			com.execute(sbm_selectResult, {
+				successCallback : function(e) {
+					scwin.data.patClsf = dma_result.get("pat_clsf");
+					
+					// 선행기술조사서
+					var attachFileNo_A = dma_result.get("rpt_srh_attach_file");
+					com.file.create(upload_A.getID(), {fileKey: ("" !== attachFileNo_A.trim()) ? attachFileNo_A.trim() : scwin.data.typeCode, mode: "view" , target:"IPMS"});
+					
+					// 발표자료
+					var attachFileNo_B = dma_result.get("rpt_announce_attach_file");
+					com.file.create(upload_B.getID(), {fileKey: ("" !== attachFileNo_B.trim()) ? attachFileNo_B.trim() : scwin.data.typeCode, mode: "view" , target:"IPMS"});
+					
+					// PCT사업화계획서
+					var attachFileNo_C = dma_result.get("pct_attach_file_no");
+					com.file.create(upload_C.getID(), {fileKey: ("" !== attachFileNo_C.trim()) ? attachFileNo_C.trim() : scwin.data.typeCode, mode: "view" , target:"IPMS"});
+					
+					// 공동출원사유서
+					var attachFileNo_D = dma_result.get("com_apply_attach_file_no");
+					com.file.create(upload_D.getID(), {fileKey: ("" !== attachFileNo_D.trim()) ? attachFileNo_D.trim() : scwin.data.typeCode, mode: "view" , target:"IPMS"});
+
+					// 과제협약서 등
+					var attachFileNo_E = dma_result.get("etc_attach_file_no");
+					com.file.create(upload_E.getID(), {fileKey: ("" !== attachFileNo_E.trim()) ? attachFileNo_E.trim() : scwin.data.typeCode, mode: "view" , target:"IPMS"});
+				}
+			});
+			
+		}
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		if (scwin.data.parentGbn == "PSE01" || scwin.data.parentGbn == "PSE02") {
+			com.closePopup(dma_result.getJSON());
+		} else {
+			com.closePopup();
+		}
+	};
+		
+	/**
+	 * 발명신고서 버튼 클릭 이벤트
+	 */	
+	scwin.btn_report_onclick = function(e) {
+		var reqNo = dma_result_search.get("req_no");
+		var managerYn = "";
+		var ozrCode = "";
+		
+		if (scwin.data.roleCode.indexOf("1016102") > 0) { //지식재산권-관리자
+			managerYn = "Y"
+		} else {
+			managerYn = "N"
+		}
+			
+		if (scwin.data.bizClsf == "RBS006" && scwin.data.today >= "20211102") { // 자유발명심의
+			ozrCode = "I012";
+		} else {
+			// OZR 정보
+			var ozrName = "";
+			var patClsf = scwin.data.patClsf;
+			
+			// 특허, 실용신안
+			if(patClsf == "PAT070" || patClsf == "PAT020"){
+				ozrCode = "I007";
+			}else if(patClsf == "PAT030"){// 상표
+				ozrCode = "I008";
+			}else if(patClsf == "PAT040"){// 디자인
+				ozrCode = "I009";
+			}else if(patClsf == "PAT050"){// 프로그램
+				ozrCode = "I010";
+			}
+		}
+		
+		//오즈 report 호출
+		if(reqNo.trim() != ""){
+			let node = "req_no=" + reqNo + "&manager_yn=" + managerYn;
+			com.oz.openPopup({
+			    ozrCode : ozrCode,      
+			    param: node
+			});
+		}else{
+			com.alert("인쇄할 내용이 없습니다.");
+		}
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pop_contents" id="" style="">
+    		<xf:group tagname="table" style="width:100%;" id="" class="w2tb tbl">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group tagname="col" style="width:180px;"></xf:group>
+    				<xf:group tagname="col" style=""></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="" id="grpFile1">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="발명신고서" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:trigger class="btn" id="btn_report" style="" type="button" ev:onclick="scwin.btn_report_onclick">
+    						<xf:label><![CDATA[발명신고서]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" id="grpFile2">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="rpt_srh_attach_file_lbl" label="선행기술조사서" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:group class="fileuploadBox" id="upload_A" style="height:150px;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" id="grpFile3">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="발표자료" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:group class="fileuploadBox" id="upload_B" style="height:150px;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" id="grpFile4">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="PCT사업화계획서" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:group class="fileuploadBox" id="upload_C" style="height:150px;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" id="grpFile5">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="공동출원사유서" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:group class="fileuploadBox" id="upload_D" style="height:150px;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" id="grpFile6">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="과제협약서" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:group class="fileuploadBox" id="upload_E" style="height:150px;"></xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="btnGroup" id="" style="">
+    			<xf:group class="le" id="" style=""></xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class=" btn pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

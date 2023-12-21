@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.lib">
+		
+
+	
+<select id="selectLoanList" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibLoanVo" resultType="kr.re.kitech.biz.kbk.lib.vo.LibLoanVo">
+SELECT   a.loan_no loan_no,
+         a.loan_book_no loan_book_no,
+         b.book_nm book_nm,
+         a.loan_ymd loan_ymd,
+         a.retrn_schdl_ymd retrn_schdl_ymd,
+         a.retrn_ymd retrn_ymd
+         <if test="flag == 'loan'">, case when a.resv_ymd <![CDATA[<>]]> "" then "예약중" else "" end as resv </if>
+  FROM   kbkbookloan a 
+  JOIN   kbkbook b ON a.loan_book_no = b.regst_no
+WHERE 1=1
+AND   a.loan_psn_syspayno = #{loan_psn_syspayno}
+<if test="loan_ymd != null and loan_ymd != ''">  AND   a.loan_ymd  LIKE #{loan_ymd} </if>
+<if test="flag == 'loan'">AND   a.retrn_ymd = "" </if>
+<if test="flag == 'retrngrid'">AND   a.retrn_ymd <![CDATA[<>]]> "" </if>
+</select>
+<select id="selectReservList" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibLoanVo" resultType="kr.re.kitech.biz.kbk.lib.vo.LibLoanVo">
+SELECT   a.loan_no ,
+         a.loan_book_no ,
+         a.centr_cd,
+         c.book_nm ,
+         a.loan_ymd ,
+         a.retrn_schdl_ymd ,
+         a.retrn_ymd, 
+         a.resv_ymd,
+         "예약중" as resv
+  FROM   kbkbookloan a 
+  JOIN kbkbook c ON a.loan_book_no = c.regst_no
+WHERE 1=1
+AND   a.resv_psn_syspayno = #{resv_psn_syspayno}
+<if test="resv_ymd != null and resv_ymd != ''"> AND   a.resv_ymd  LIKE #{resv_ymd} </if>
+AND   a.loan_book_no NOT IN(SELECT loan_book_no FROM kbkbookloan WHERE loan_psn_syspayno = #{loan_psn_syspayno} and loan_ymd <![CDATA[>=]]> 
+(SELECT max(resv_ymd) as resv_ymd FROM kbkbookloan WHERE resv_psn_syspayno = #{resv_psn_syspayno}))
+UNION
+SELECT   a.loan_no ,
+         a.loan_book_no ,
+         a.centr_cd,
+         c.rptp_nm,
+         a.loan_ymd ,
+         a.retrn_schdl_ymd ,
+         a.retrn_ymd, 
+         a.resv_ymd,
+         "예약중" as resv
+  FROM   kbkbookloan a 
+  JOIN kbkreschrptp c ON a.loan_book_no = c.regst_no
+WHERE 1=1
+AND   a.resv_psn_syspayno = #{resv_psn_syspayno}
+<if test="resv_ymd != null and resv_ymd != ''"> AND   a.resv_ymd  LIKE #{resv_ymd} </if>
+AND   a.loan_book_no NOT IN(SELECT loan_book_no FROM kbkbookloan WHERE loan_psn_syspayno = #{loan_psn_syspayno} and loan_ymd <![CDATA[>=]]> 
+(SELECT max(resv_ymd) as resv_ymd FROM kbkbookloan WHERE resv_psn_syspayno = #{resv_psn_syspayno}))
+</select>
+<update id="updateReserv" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibLoanVo">
+UPDATE kbkbookloan
+   SET resv_psn_syspayno = #{resv_psn_syspayno},
+       resv_ymd = #{resv_ymd}
+ WHERE loan_no = #{loan_no}
+</update>
+</mapper>

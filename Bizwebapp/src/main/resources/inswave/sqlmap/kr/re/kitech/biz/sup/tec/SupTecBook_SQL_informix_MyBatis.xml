@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.sup.tec">
+<!-- 성적서 계산서 발행시 발행업체와 기술지원요청 업체가 다를 경우 계산서 발행업체 저장 -->
+<update id="updateSptTecBillIssuInfo" parameterType="kr.re.kitech.biz.api.server.vo.biz.SptRstBookVo">
+MERGE /* kr.re.kitech.biz.sup.tec.updateSptTecBillIssuInfo */
+  INTO spttecbillissuinfo AS a
+USING dual AS b ON a.cust_no = #{cust_no} AND a.cunsl_rcpt_no = #{cunsl_rcpt_no} AND a.tech_supt_req_no = #{tech_supt_req_no}
+WHEN MATCHED THEN
+  UPDATE
+     SET bill_no = #{bill_no} /* 계산서번호 */
+       , issu_clsf = #{issu_clsf} /* 발급구분 */
+       , issu_vend_cust_no = #{issu_vend_cust_no} /* 발급업체고객번호 */
+       , updt_syspayno = #{updt_syspayno}
+       , updt_daytm        = CURRENT   /* 수정일시 */
+WHEN NOT MATCHED THEN
+  INSERT ( cust_no           /* 고객번호 */
+         , cunsl_rcpt_no     /* 상담접수번호 */
+         , tech_supt_req_no  /* 기술지원접수번호 */
+         , bill_no           /* 계산서번호 */
+         , issu_clsf         /* 발급구분 */
+         , issu_vend_cust_no /* 발급업체고객번호 */
+         , regst_syspayno    /* 등록시스템개인번호 */
+         , regst_daytm  )
+  VALUES( #{cust_no}
+        , #{cunsl_rcpt_no}
+        , #{tech_supt_req_no}
+        , #{bill_no}
+        , #{issu_clsf}
+        , #{issu_vend_cust_no}
+        , #{regst_syspayno}
+        , CURRENT )
+</update>
+
+<!-- 성적서에서 계산서 발행 후 계산서 번호 업데이트 -->
+<update id="updateSptRstBook" parameterType="kr.re.kitech.biz.sup.tec.vo.SptRstBookVo">
+UPDATE /* kr.re.kitech.biz.fin.tax.updateSptRstBook */
+     sptrstbook
+   SET bill_no = #{bill_no}
+     , bill_issu_ymd = #{bill_issu_ymd}
+     , prcs_state = #{prcs_state}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+WHERE req_no = #{rst_book_req_no}
+</update>
+</mapper>

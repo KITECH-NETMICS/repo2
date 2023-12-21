@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.sup.cus">
+<!-- 고객멘토정보 입력  -->
+<insert id="insertSptCustMentrInfo" parameterType="kr.re.kitech.biz.sup.cus.vo.SptCustMentrInfoVo">
+INSERT /* kr.re.kitech.biz.sup.cus.insertSptCustMentrInfo */
+  INTO sptcustmentrinfo (
+        cust_no       ,   -- 고객번호
+        bizwrk_clsf   ,   -- 업무 구분
+        syspayno      ,   -- 시스템개인번호
+        seq           ,   -- 일련번호
+        mngmt_region  ,   -- 관리지역
+        mentr_yn      ,   -- 맨토여부
+        regst_syspayno,
+        regst_daytm
+     )
+VALUES (
+        #{cust_no}
+      , #{bizwrk_clsf}
+      , #{syspayno}
+      , #{seq}
+      , #{mngmt_region}
+      , #{mentr_yn}
+      , #{regst_syspayno}
+      ,  CURRENT
+     )
+</insert>
+
+<!-- 고객 업무 담당자 저장 -->
+<insert id="insertSptCustCharg" parameterType="kr.re.kitech.biz.sup.cus.vo.SptCustChargVo">
+INSERT /* kr.re.kitech.biz.sup.cus.insertSptCustCharg */
+   INTO sptcustcharg (
+         cust_no         /* 고객번호 */
+       , seq             /* 일련번호 */
+       , bizwrk          /* 업무분류 */
+      <if test='appont_no != null'> , appont_no </if>   /* 지정번호(파트너)*/
+      <if test='affair_respn_psn != null'> , affair_respn_psn </if>                       /* 실무책임자 */
+      <if test='affair_respn_psn_dept != null'> , affair_respn_psn_dept </if>             /* 실무책임자부서 */
+      <if test='affair_respn_psn_posi != null'> , affair_respn_psn_posi </if>             /* 실무책임자직위 */
+      <if test='affair_respn_psn_tel != null'> , affair_respn_psn_tel </if>               /* 실무책임자전화번호 */
+      <if test='affair_respn_psn_mobile_no != null'> , affair_respn_psn_mobile_no </if>   /* 실무책임자휴대폰번호 */
+      <if test='affair_respn_psn_email != null'> , affair_respn_psn_email </if>           /* 실무책임자이메일 */
+       , regst_syspayno 
+       , regst_daytm
+     )
+VALUES ( 
+        #{cust_no}
+      , #{seq}
+      , #{bizwrk}
+     <if test='appont_no != null'>, #{appont_no} </if>
+     <if test='affair_respn_psn != null'>, #{affair_respn_psn} </if>
+     <if test='affair_respn_psn_dept != null'>, #{affair_respn_psn_dept} </if>
+     <if test='affair_respn_psn_posi != null'>, #{affair_respn_psn_posi} </if>
+     <if test='affair_respn_psn_tel != null'>, #{affair_respn_psn_tel} </if>
+     <if test='affair_respn_psn_mobile_no != null'>, #{affair_respn_psn_mobile_no} </if>
+     <if test='affair_respn_psn_email != null'>, #{affair_respn_psn_email} </if>
+      , #{regst_syspayno}
+      , CURRENT
+     )
+</insert>
+
+<!-- 고객정보에 있는지 체크 -->
+<select id="selectSptCustBaseInfoCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.sup.cus.selectSptCustBaseInfoCnt */
+       COUNT(*) cnt
+  FROM sptcustbaseinfo
+ WHERE cust_no = #{cust_no}
+</select>
+
+<!-- 고객정보 저장 -->
+<insert id="insertSptCustBaseInfo" parameterType="kr.re.kitech.biz.sup.cus.vo.SptCustBaseInfoVo">
+INSERT /* kr.re.kitech.biz.sup.cus.insertSptCustBaseInfo */
+  INTO sptcustbaseinfo (cust_no            ,  /* 고객번호 */
+                        bsns_psn_regst_no  ,  /* 사업개인등록번호 */
+                        supt_clsf          ,  /* 지원구분 */
+                        agncy_clsf         ,  /* 기관구분 */
+                        dom_excpt_clsf     ,  /* 국내외구분 */
+                        natn_cd            ,  /* 국가코드*/
+                        natn_nm            ,  /* 국가코드*/
+                        cmpy_nm_krchar     ,  /* 기업명한글  */
+                        cmpy_nm_krchar_odr ,  /* 기업명한글(고객명만) */
+                       <if test='cmpy_nm_eng != null'> cmpy_nm_eng,   /*기업명영문 */ </if>
+                       <if test='cmpy_nm_eng_short != null'> cmpy_nm_eng_short,  /* 기업명영문 약어 */ </if>
+                       <if test='corp_regst_no != null'> corp_regst_no ,   /* 법인등록번호 */ </if>
+                       <if test='reprs_psn != null'> reprs_psn ,   /* 대표자  */</if>
+                       <if test='reprs_psn_mobile_no != null'> reprs_psn_mobile_no, /* 대표자휴대폰번호 */ </if>
+                       <if test='reprs_psn_email != null'> reprs_psn_email, /* 대표자이메일*/ </if>
+                       <if test='estb_ymd != null'> estb_ymd, /* 창업일자*/ </if>
+                       <if test='cmpy_reprs_tel != null'> cmpy_reprs_tel, /* 기업대표전화 */ </if>
+                       <if test='cmpy_fax_no != null'> cmpy_fax_no, /* 기업팩스번호*/ </if>
+                       <if test='homepg != null'> homepg,  /* 홈페이지*/ </if>
+                       <if test='cmpy_post_no != null'> cmpy_post_no,/* 기업우편번호*/ </if>
+                       <if test='cmpy_addr != null'> cmpy_addr,  /* 기업주소*/ </if>
+                       <if test='cmpy_addr_detls != null'> cmpy_addr_detls,   /* 기업주소상세*/ </if>
+                       <if test='cmpy_addr_01 != null'> cmpy_addr_01,  /* 도로명주소*/ </if>
+                        factry_use_ex ,   /* 공장사용유무*/
+                       <if test='factry_post_no != null'> factry_post_no,   /* 공장우편번호*/ </if>
+                       <if test='factry_addr != null'> factry_addr,   /* 공장주소*/ </if>
+                       <if test='factry_addr_detls != null'> factry_addr_detls, /* 공장주소상세*/ </if>
+                       <if test='factry_reprs_tel != null'> factry_reprs_tel,   /* 공장대표전화*/ </if>
+                       <if test='factry_fax_no != null'> factry_fax_no,  /* 공장팩스번호*/ </if>
+                       <if test='bizcatg != null'> bizcatg,   /* 업태*/ </if>
+                       <if test='item != null'> item ,   /* 항목*/ </if>
+                       <if test='biztyp != null'> biztyp, /* 업종*/ </if>
+                       <if test='region_prcond != null'> region_prcond, /* 소재권역*/ </if>
+                       <if test='cmpy_typ_clsf != null'> cmpy_typ_clsf,  /* 영리/비영리구분*/ </if>
+                       <if test='cmpy_typ != null'> cmpy_typ,   /* 기업유형*/ </if>
+                       <if test='std_indst_clsf != null'> std_indst_clsf, /* 표준산업분류*/ </if>
+                       <if test='std_indst_regst != null'> std_indst_regst, /* 표준산업분류작성일자*/ </if>
+                       <if test='std_indst_syspayno != null'> std_indst_syspayno, /* 표준산업분류작성자*/ </if>
+                       <if test='main_prodct_item != null'> main_prodct_item,  /* 주생산품목*/ </if>
+                        closebiz_ex,   /* 폐업유무*/ 
+                       <if test='closebiz_ymd != null'> closebiz_ymd, /* 폐업일자*/ </if>
+                       <if test='closebiz_cause != null'> closebiz_cause, /* 폐업사유*/ </if>
+                       <if test='reprs_clsf != null'> reprs_clsf, /* 대표구분*/ </if>
+                       <if test='attach_file_no != null'> attach_file_no,  /* 첨부파일번호*/ </if>
+                       <if test='rmk != null'> rmk,  /* 적요*/ </if>
+                        wrte_complt, /* 작성완료구분*/
+                        his_complt, /* 경영연혁 작성완료구분*/
+                       <if test='std_cust != null'> std_cust,   /* 표준거래처*/  </if>
+                       <if test='use_yn != null'> use_yn,  /* 사용유무*/  </if>
+                       <if test='unuse_cause != null'> unuse_cause,  /* 미사용사유*/ </if>
+                       <if test='cr_grd != null'> cr_grd, /* 신용등급*/   </if>
+                       <if test='enp_scd != null'> enp_scd,  /* 기업상태*/  </if>
+                       <if test='cmpy_kind != null'> cmpy_kind,  /* 기업형태*/  </if>
+                       <if test='cmpy_scale != null'> cmpy_scale,  /* 기업규모*/ </if>
+                       <if test='cono_pid != null'> cono_pid, /* 법인번호*/  </if>
+                       <if test='std_indst_nm != null'> std_indst_nm,  /* 표준산업분류*/ </if>
+                        regst_syspayno ,
+                        regst_daytm )
+ VALUES (  #{cust_no}
+         , #{bsns_psn_regst_no}
+         , #{supt_clsf}
+         , #{agncy_clsf}
+         , #{dom_excpt_clsf}
+         , #{natn_cd}
+         , #{natn_nm}
+         , #{cmpy_nm_krchar}
+         , #{cmpy_nm_krchar_odr}
+        <if test='cmpy_nm_eng != null'> , #{cmpy_nm_eng}   /*기업명영문 */ </if>
+        <if test='cmpy_nm_eng_short != null'> , #{cmpy_nm_eng_short}  /* 기업명영문 약어 */ </if>
+        <if test='corp_regst_no != null'> , #{corp_regst_no}    /* 법인등록번호 */ </if>
+        <if test='reprs_psn != null'> , #{reprs_psn}    /* 대표자  */</if>
+        <if test='reprs_psn_mobile_no != null'> , #{reprs_psn_mobile_no} /* 대표자휴대폰번호 */ </if>
+        <if test='reprs_psn_email != null'> , #{reprs_psn_email} /* 대표자이메일*/ </if>
+        <if test='estb_ymd != null'> , #{estb_ymd} /* 창업일자*/ </if>
+        <if test='cmpy_reprs_tel != null'> , #{cmpy_reprs_tel} /* 기업대표전화 */ </if>
+        <if test='cmpy_fax_no != null'> , #{cmpy_fax_no} /* 기업팩스번호*/ </if>
+        <if test='homepg != null'> , #{homepg}  /* 홈페이지*/ </if>
+        <if test='cmpy_post_no != null'> , #{cmpy_post_no}/* 기업우편번호*/ </if>
+        <if test='cmpy_addr != null'> , #{cmpy_addr}  /* 기업주소*/ </if>
+        <if test='cmpy_addr_detls != null'> , #{cmpy_addr_detls}   /* 기업주소상세*/ </if>
+        <if test='cmpy_addr_01 != null'> , #{cmpy_addr_01}  /* 도로명주소*/ </if>
+         , 'N' /* 공장사용유무*/ 
+        <if test='factry_post_no != null'> , #{factry_post_no}   /* 공장우편번호*/ </if>
+        <if test='factry_addr != null'> , #{factry_addr}   /* 공장주소*/ </if>
+        <if test='factry_addr_detls != null'> , #{factry_addr_detls} /* 공장주소상세*/ </if>
+        <if test='factry_reprs_tel != null'> , #{factry_reprs_tel}   /* 공장대표전화*/ </if>
+        <if test='factry_fax_no != null'> , #{factry_fax_no}  /* 공장팩스번호*/ </if>
+        <if test='bizcatg != null'> , #{bizcatg}   /* 업태*/ </if>
+        <if test='item != null'> , #{item}    /* 항목*/ </if>
+        <if test='biztyp != null'> , #{biztyp} /* 업종*/ </if>
+        <if test='region_prcond != null'> , #{region_prcond} /* 소재권역*/ </if>
+        <if test='cmpy_typ_clsf != null'> , #{cmpy_typ_clsf}  /* 영리/비영리구분*/ </if>
+        <if test='cmpy_typ != null'> , #{cmpy_typ}   /* 기업유형*/ </if>
+        <if test='std_indst_clsf != null'> , #{std_indst_clsf} /* 표준산업분류*/ </if>
+        <if test='std_indst_regst != null'> , #{std_indst_regst} /* 표준산업분류작성일자*/ </if>
+        <if test='std_indst_syspayno != null'> , #{std_indst_syspayno} /* 표준산업분류작성자*/ </if>
+        <if test='main_prodct_item != null'> , #{main_prodct_item}  /* 주생산품목*/ </if>
+         , 'N' /* 폐업유무*/
+        <if test='closebiz_ymd != null'> , #{closebiz_ymd} /* 폐업일자*/ </if>
+        <if test='closebiz_cause != null'> , #{closebiz_cause} /* 폐업사유*/ </if>
+        <if test='reprs_clsf != null'> , #{reprs_clsf} /* 대표구분*/ </if>
+        <if test='attach_file_no != null'> , #{attach_file_no}  /* 첨부파일번호*/ </if>
+        <if test='rmk != null'> , #{rmk}  /* 적요*/ </if>
+         , 'N' /* 작성완료구분*/ 
+         , 'N' /* 경영연혁 작성완료구분*/ 
+        <if test='std_cust != null'> , #{std_cust}   /* 표준거래처*/  </if>
+        <if test='use_yn != null'> , #{use_yn}  /* 사용유무*/  </if>
+        <if test='unuse_cause != null'> , #{unuse_cause}  /* 미사용사유*/ </if>
+        <if test='cr_grd != null'> , #{cr_grd} /* 신용등급*/   </if>
+        <if test='enp_scd != null'> , #{enp_scd}  /* 기업상태*/  </if>
+        <if test='cmpy_kind != null'> , #{cmpy_kind}  /* 기업형태*/  </if>
+        <if test='cmpy_scale != null'> , #{cmpy_scale}  /* 기업규모*/ </if>
+        <if test='cono_pid != null'> , #{cono_pid} /* 법인번호*/  </if>
+        <if test='std_indst_nm != null'> , #{std_indst_nm}  /* 표준산업분류*/ </if>
+        , #{regst_syspayno}
+        , SYSDATE)
+</insert>
+
+<!-- 재무거래처정보에 의한 고객정보등록 -->
+<update id="updateSptCustBaseInfoByVend" parameterType="kr.re.kitech.biz.sup.cus.vo.SptCustBaseInfoVo">
+-- 기업정보가 거래처에만 등록되어있을때
+ MERGE /* kr.re.kitech.biz.sup.cus.updateSptCustBaseInfoByVend */
+   INTO sptcustbaseinfo AS a
+ USING (
+         SELECT a.vend_cd 
+              , a.bsns_psn_regst_no 
+              , '00000000000000000000' AS supt_clsf 
+              , '' AS agncy_clsf
+              , DECODE(a.dom_excpt_clsf,'FCA001', 'RFK001','FCA002', 'RFK002', '') AS dom_excpt_clsf 
+              , a.natn_cd 
+              , b.cd_nm AS natn_nm 
+              , vend_abbr 
+              , vend_fulnm 
+              , corp_resid_no 
+              , reprs_psn_nm
+              , bizcatg -- 업태
+              , biztyp -- 업종 
+              , tel_no 
+              , fax 
+              , homepg  
+              , postmt_no 
+              , addr
+              , detls_addr
+              , 'N' AS factry_use_ex
+              , '' AS cmpy_typ_clsf
+              , NVL(cmpy_typ,'') AS cmpy_typ
+              , 'M' AS closebiz_ex
+              , 'N' AS reprs_clsf
+              , 'N' AS wrte_complt
+          FROM xodfvend a
+          JOIN xodxcommst b ON a.natn_cd = b.cd
+         WHERE a.vend_cd = #{cust_no}
+       ) AS b ON 1=1 AND a.cust_no = b.vend_cd
+       
+WHEN MATCHED THEN
+  UPDATE 
+     SET cmpy_nm_krchar = #{cmpy_nm_krchar}
+       , cmpy_nm_krchar_odr = #{cmpy_nm_krchar_odr}
+       , reprs_psn = #{reprs_psn}
+       , cmpy_reprs_tel = #{cmpy_reprs_tel}
+       , cmpy_post_no = #{cmpy_post_no}
+       , cmpy_addr = #{cmpy_addr}
+    <if test='cmpy_addr_detls != null'>  , cmpy_addr_detls = #{cmpy_addr_detls} </if>
+       , cmpy_fax_no = #{cmpy_fax_no}
+       , bizcatg = #{bizcatg}
+       , item = #{item}
+       , updt_syspayno = #{updt_syspayno}
+       , updt_daytm = SYSDATE
+       
+WHEN NOT MATCHED THEN
+    INSERT  (
+           a.cust_no        
+         , a.bsns_psn_regst_no         
+         , a.supt_clsf
+         , a.agncy_clsf        
+         , a.dom_excpt_clsf         
+         , a.natn_cd
+         , a.natn_nm        
+         , a.cmpy_nm_krchar        
+         , a.cmpy_nm_krchar_odr
+         , a.corp_regst_no        
+         , a.reprs_psn   
+         , a.bizcatg
+         , a.item
+         , a.cmpy_reprs_tel
+         , a.cmpy_fax_no        
+         , a.homepg        
+         , a.cmpy_post_no
+         , a.cmpy_addr        
+         , a.cmpy_addr_detls        
+         , a.factry_use_ex
+         , a.cmpy_typ_clsf        
+         , a.cmpy_typ        
+         , a.closebiz_ex
+         , a.reprs_clsf        
+         , a.wrte_complt        
+         , a.regst_syspayno
+         , a.regst_daytm) 
+    VALUES ( b.vend_cd 
+           , b.bsns_psn_regst_no 
+           , b.supt_clsf 
+           , b.agncy_clsf
+           , b.dom_excpt_clsf 
+           , b.natn_cd 
+           , b.natn_nm 
+           , b.vend_abbr 
+           , REPLACE(REPLACE(REPLACE(b.vend_fulnm, '(주)',''), '주)', ''), '㈜', '')
+           , b.corp_resid_no 
+           , b.reprs_psn_nm 
+           , b.bizcatg -- 업태
+           , b.biztyp -- 업종 
+           , b.tel_no 
+           , b.fax 
+           , b.homepg  
+           , b.postmt_no 
+           , b.addr
+           , b.detls_addr
+           , b.factry_use_ex
+           , b.cmpy_typ_clsf
+           , b.cmpy_typ
+           , b.closebiz_ex
+           , b.reprs_clsf
+           , b.wrte_complt
+           , #{regst_syspayno}
+           , SYSDATE)
+</update>
+
+<!-- 기술지원내역등록 고객정보조회 -->
+<select id="selectSptCustBaseInfo" parameterType="kr.re.kitech.biz.sup.cus.vo.SptCustSrcVo" resultType="kr.re.kitech.biz.sup.cus.vo.SptCustBaseInfoVo">
+SELECT /* kr.re.kitech.biz.sup.cus.selectSptCustBaseInfo */
+        cust_no
+      , cmpy_typ /* 기업유형 */
+      , cmpy_nm_krchar /* 회사 명  */
+      , TRIM(REPLACE(bsns_psn_regst_no, '-', '')) AS bsns_psn_regst_no  /* 사업자 등록 번호 */
+      , supt_clsf  /* 지원구분  */
+      , reprs_psn         /* 대표자 */
+      , cmpy_reprs_tel    /* 회사전화 번호 */
+      , cmpy_fax_no       /* 회사 팩스 번호*/
+      , bizcatg           /* 업태 */
+      , item              /* 종목 */
+      , cmpy_post_no      /* 회사우편번호 */
+      , cmpy_addr /* 회사주소 */
+      , cmpy_addr_detls
+  FROM sptcustbaseinfo
+ WHERE 1=1
+ <choose>
+  <when test = 'cust_no != null and cust_no != ""'> AND cust_no = #{cust_no} </when>
+  <when test = 'bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND bsns_psn_regst_no = #{bsns_psn_regst_no} </when>
+  <otherwise> AND cmpy_nm_krchar_odr = TRIM(REPLACE(#{cmpy_nm_krchar}, '(주)', '')) </otherwise>
+ </choose>
+</select>
+
+<!-- 기업정보관리 조회 -->
+<select id="selectSptCustBaseInfoList" parameterType="kr.re.kitech.biz.sup.cus.vo.SptCustSrcVo" resultType="kr.re.kitech.biz.sup.cus.vo.SptCustBaseInfoMntVo">
+SELECT /* kr.re.kitech.biz.sup.cus.selectSptCustBaseInfoList */
+       t1.cust_no   -- 고객번호
+     , t1.enp_scd
+     , t2.cd_nm AS enp_scd_nm  -- 기업유형
+     , DECODE(SUBSTR(t1.supt_clsf, 1, 1), '1', 'V', '') AS supt_par -- 파트너기업
+     , DECODE(SUBSTR(t1.supt_clsf, 6, 1), '1', 'V', '') AS supt_gbl  -- 성장지원기업
+     , DECODE(SUBSTR(t1.supt_clsf, 2, 1), '1', 'V', '') AS supt_inc -- 창업보육기업
+     , DECODE(SUBSTR(t1.supt_clsf, 19, 1), '1', 'V', '') AS supt_rtl -- 렌탈랩기업
+     , t1.cmpy_nm_krchar        -- 회사명한글
+     , t1.cmpy_nm_krchar || ' (' || t1.cust_no || ')' AS cust_nm   -- 회사명한글 (고객번호)
+     , t1.reprs_psn                -- 대표자
+     , t1.bsns_psn_regst_no        -- 사업자 등록번호
+     , t1.cmpy_addr || t1.cmpy_addr_detls AS cmpy_addr  -- 회사주소
+     , t1.cmpy_addr_01       -- 회사지번주소    
+     , t1.cmpy_reprs_tel       -- 회사대표전화번호
+     , t1.cmpy_fax_no          -- 회사팩스번호
+     , t1.reprs_clsf           -- 대표 구분
+     , DECODE (t1.enp_scd, '04', t1.closebiz_ymd, '') AS closebiz_ymd     -- 폐업 일자
+  FROM sptcustbaseinfo t1
+  LEFT JOIN sptkebcomcode t2 ON t2.cd_class = '0018' AND t1.enp_scd = t2.cd
+  LEFT JOIN sptcustmanage t5 ON t1.cust_no = t5.cust_no AND NOT EXISTS (SELECT 1 FROM sptcustmanage WHERE cust_no = t5.cust_no AND base_yrmon > t5.base_yrmon)
+  <if test='relt_yr != null and relt_yr != ""'> JOIN sptcustreltyear a ON t1.cust_no = a.cust_no </if>
+ WHERE t1.agncy_clsf NOT IN ('LCO001', 'LCO002', 'LCO003', 'LCO004', 'LCC001', 'LCC002', 'LCC004', 'LCC005', 'LCC006', 'LCC007')
+   AND t1.use_yn='Y'
+<if test='cust_no != null and cust_no != ""'> AND t1.cust_no = #{cust_no} </if>
+<if test='cmpy_nm_krchar != null and cmpy_nm_krchar != ""'> AND UPPER(t1.cmpy_nm_krchar) LIKE '%'||UPPER(#{cmpy_nm_krchar})||'%' </if>
+<if test='bsns_psn_regst_no != null and bsns_psn_regst_no != ""'> AND t1.bsns_psn_regst_no = #{bsns_psn_regst_no} </if>
+<if test='wrte_complt != null and wrte_complt != ""'> AND DECODE(NVL(t1.wrte_complt, ''), '', 'N', t1.wrte_complt) = #{wrte_complt} </if>
+<if test='his_complt != null and his_complt != ""'> AND DECODE(NVL(t1.his_complt, ''), '', 'N', t1.his_complt) = #{his_complt} </if>
+<if test='sales_amt_st != null and sales_amt_st != ""'> AND t5.sales_amt >= TO_NUMBER(#{sales_amt_st}) * 1000 </if>
+<if test='sales_amt_ed != null and sales_amt_ed != ""'> AND t5.sales_amt <![CDATA[ <= ]]> TO_NUMBER(#{sales_amt_ed}) * 1000 </if>
+<if test='emp_no_st != null and emp_no_st != ""'> AND t5.emp_no >= TO_NUMBER(#{emp_no_st}) </if>
+<if test='emp_no_ed != null and emp_no_ed != ""'> AND t5.emp_no <![CDATA[ <= ]]> TO_NUMBER(#{emp_no_ed}) </if>
+<if test='relt_yr != null and relt_yr != ""'> AND a.relt_yr = #{relt_yr} </if>
+<if test='cmpy_clsf != null and cmpy_clsf != ""'> AND ( 1=2
+  <foreach item="item" index="index" collection="cmpy_clsf.split(',')"> 
+     OR SUBSTR(t1.supt_clsf, DECODE('${item}','SCH010', 1, 'SCH020', 2,'SCH060', 6,'SCH190', 19), 1) = '1'
+  </foreach>
+  )
+</if>
+<if test='supt_clsf != null and supt_clsf != ""'> AND (NVL(t1.supt_clsf,'') = '' 
+  <foreach item="item" index="index" collection="supt_clsf.split(',')"> 
+     OR SUBSTR(t1.supt_clsf, TO_NUMBER(SUBSTR('${item}',4, 2)), 1) = '1'
+  </foreach>
+  )
+</if>
+<if test='use_yn != null and use_yn != ""'> AND t1.use_yn = #{use_yn} </if>
+<if test='enp_scd != null and enp_scd != ""'> AND t1.enp_scd = #{enp_scd} </if>   /* 기업상태 */
+ORDER BY t1.cmpy_nm_krchar_odr
+</select>
+</mapper>

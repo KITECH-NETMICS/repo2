@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.hum.tax">
+<select id="selectHumTaxPayInfoExcel" parameterType="kr.re.kitech.biz.hum.tax.vo.HumTaxPayVo" resultType="kr.re.kitech.biz.hum.tax.vo.HumTaxPayVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.tax.selectHumTaxPayInfoExcel */ 
+ymd 
+,adjst_yr
+,syspayno
+,empno
+,occugrp_nm
+,nm
+,resid_no
+,adjst_clsf
+,adjst_clsf_nm
+,work_land_nm
+,work_clsf_nm
+,retire_yy
+,retire_ymd
+,dept_cd
+,dept_nm
+,posi_nm
+,occutyp_nm
+,incom_sum
+,tot_salry
+,fretax_oversea_work
+,fretax_givbirth_childcr
+,fretax_resch_actn
+,fretax_etc
+,fretax_exps_offer
+,fretax_sum
+,incomtax_3
+,residtax_3
+,oversea_work_3
+,givbirth_extra_3
+,resch_orgn_3
+,etc_3
+,fretax_work_incom_3
+,incomtax_1_3
+,tot_salry_sum
+,work_incom_dedct
+,work_incom_amt
+,tax_rts
+,overl_tax_std
+,calc_taxamt
+,taxamt_dedct_sum
+,incomtax
+,residtax
+,decsn_taxamt
+,incomtax_1
+,residtax_1
+,incomtax_2
+,residtax_2
+,colct_incomtax
+,colct_residtax
+,decsn_colct_taxamt 
+,insr_sum
+,year_salamt_501
+,year_salamt_503
+,year_salamt_504
+,year_salamt_517
+,year_salamt_551
+,year_salamt_802
+,year_salamt_803
+,year_salamt_804
+,year_salamt_818 
+FROM 
+( 
+ SELECT 
+ TO_CHAR(CURRENT, '%Y%m%d') AS ymd,     --출력일자
+ a.adjst_yr,                             --정산년도
+ a.syspayno,                             --시스템개인번호
+ b.empno,                                --사번
+ b.occugrp_nm,                           --직군
+ b.nm,                                   --이름
+ b.resid_no,                             --주민번호
+ a.adjst_clsf,                           --정산코드
+ fun_xodxcommst_cd_nm(a.adjst_clsf,0) AS adjst_clsf_nm,   --정산코드명
+ fun_xodxcommst_cd_nm(b.work_land,0) AS work_land_nm,    --근무지역
+ b.work_clsf_nm,                         --근무
+ SUBSTR(b.retire_ymd,0,4) AS retire_yy, --퇴직년도
+ b.retire_ymd,                           --퇴직일자
+ b.dept_cd,                              --부서코드
+ b.dept_nm,                              --부서명
+ NVL(b.duty_cd,'') AS duty_cd,
+ b.posi_cd,  
+ b.posi_nm,                              --직급명
+ b.occutyp_nm,                           --직무구분
+ NVL(a.tot_salry_1,0) + NVL(a.bns,0)+NVL(a.apprvl_bns,0)
+  + NVL(a.fretax_oversea_work,0) + NVL(a.fretax_givbirth_childcr,0)
+  + NVL(a.fretax_resch_actn,0) + NVL(a.fretax_etc,0) + NVL(a.fretax_exps_offer,0)  AS incom_sum,   --주_총소득
+ NVL(a.tot_salry_1,0) + NVL(a.bns,0)+NVL(a.apprvl_bns,0) AS tot_salry,                             --주_총급여
+ NVL(a.fretax_oversea_work,0) AS fretax_oversea_work,         --주_국외수당비과세
+ NVL(a.fretax_givbirth_childcr,0) AS fretax_givbirth_childcr, --주_출산보육비비과세 
+ NVL(a.fretax_resch_actn,0) AS fretax_resch_actn,             --주_연구보조비비과세
+ NVL(a.fretax_etc,0) AS fretax_etc,                           --주_중식비과세
+ NVL(a.fretax_exps_offer,0) AS fretax_exps_offer,             --주_자가보조비비과세
+ NVL(a.fretax_sum,0) AS fretax_sum,                           --주_비과세계 
+(SELECT SUM(NVL(salry,0)+NVL(bns,0)+NVL(apprvl_bns,0) + NVL(oversea_work,0) + NVL(givbirth_extra,0) + NVL(resch_orgn,0) + NVL(etc,0) + NVL(fretax_work_incom,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) as incomtax_3, --종_총소득 
+(SELECT SUM(NVL(salry,0)+NVL(bns,0)+NVL(apprvl_bns,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS residtax_3, --종_총급여
+(SELECT SUM(NVL(oversea_work,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS oversea_work_3,                     --종_국외수당 
+(SELECT SUM(NVL(givbirth_extra,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS givbirth_extra_3,                 --종_출산보육비 
+(SELECT SUM(NVL(resch_orgn,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS resch_orgn_3,                         --종_연구보조비 
+(SELECT SUM(NVL(etc,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS etc_3,                                       --종_중식비과세 
+(SELECT SUM(NVL(fretax_work_incom,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS fretax_work_incom_3,           --종_비과세계
+ NVL(a.tot_salry_1,0) + NVL(a.bns,0)+NVL(a.apprvl_bns,0)
+  + NVL(a.fretax_oversea_work,0) + NVL(a.fretax_givbirth_childcr,0)
+  + NVL(a.fretax_resch_actn,0) + NVL(a.fretax_etc,0) + NVL(a.fretax_exps_offer,0)
++ (SELECT SUM(NVL(salry,0)+NVL(bns,0)+NVL(apprvl_bns,0) + NVL(oversea_work,0) + NVL(givbirth_extra,0) + NVL(resch_orgn,0) + NVL(etc,0) + NVL(fretax_work_incom,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) as incomtax_1_3,         --주종총소득
+NVL(a.tot_salry_1,0) + NVL(a.bns,0)+NVL(a.apprvl_bns,0) + (SELECT SUM(NVL(salry,0)+NVL(bns,0)+NVL(apprvl_bns,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) as tot_salry_sum,                         --주총급여
+ --a.tot_salry_1 + nvl(c.salry,0)+nvl(c.bns,0)+nvl(c.apprvl_bns,0) as residtax_1_3,
+ NVL(a.work_incom_dedct,0) AS work_incom_dedct,               --근로소득공제
+ NVL(a.work_incom_amt,0) AS work_incom_amt,                   --근로소득금액
+ DECODE(NVL(a.overl_tax_std,0), 0, 0, ROUND((NVL(a.calc_taxamt,0) / NVL(a.overl_tax_std,0))*100))||'%' AS tax_rts, --과세세율
+ NVL(a.overl_tax_std,0) AS overl_tax_std,                     --종합소득과세표준
+ NVL(a.calc_taxamt,0) AS calc_taxamt,                         --산출세액
+ NVL(a.taxamt_dedct_sum,0) AS taxamt_dedct_sum,               --세액공제
+ NVL(a.incomtax,0) AS incomtax,                               --결정세액_소득세
+ NVL(a.residtax,0) AS residtax,                               --결정세액_주민세
+ NVL(a.decsn_taxamt,0) AS decsn_taxamt,                       --결정세액계
+ NVL(a.incomtax_1,0) AS incomtax_1,                           --주_기납부세액_소득세
+ NVL(a.residtax_1,0) AS residtax_1,                           --주_기납부세액_주민세
+ NVL(a.incomtax_2,0) AS incomtax_2,                           --종_기납부세액_소득세
+ NVL(a.residtax_2,0) AS residtax_2,                           --종_기납부세액_주민세
+ NVL(a.colct_incomtax,0) AS colct_incomtax,                   --차감징수세액_소득세
+ NVL(a.colct_residtax,0) AS colct_residtax,                   --차감징수세액_주민세
+ NVL(a.decsn_colct_taxamt,0) AS decsn_colct_taxamt,            --차감징수세액계  
+ NVL(a.helth_insr_amt,0) + NVL(a.emp_insr_amt,0) + NVL(a.anuty_insr,0) AS insr_sum, --4대보험계  
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'501',1),0) AS year_salamt_501,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'503',1),0) AS year_salamt_503,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'504',1),0) AS year_salamt_504,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'517',1),0) AS year_salamt_517,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'551',1),0) AS year_salamt_551,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'802',1),0) AS year_salamt_802,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'803',1),0) AS year_salamt_803,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'804',1),0) AS year_salamt_804,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'818',1),0) AS year_salamt_818 
+ FROM humytaxinfo a 
+ INNER JOIN v_humbasicinfo b ON a.syspayno = b.syspayno 
+ LEFT OUTER JOIN humytaxbfwork c ON a.adjst_yr = c.adjst_yr AND a.syspayno = c.syspayno AND c.seq = '1'
+ WHERE NVL(a.adjst_cls_ymd,'') != ''
+ AND NVL(a.adjst_cls_ymd,'')  <![CDATA[ <= ]]>  '20131231'
+ AND NOT(a.adjst_yr = '2014' AND a.syspayno  =  '20070213') --나경환 제외
+ <if test="adjst_yr != null and adjst_yr != ''">
+	 and a.adjst_yr LIKE #{adjst_yr}
+	</if>
+ <if test="syspayno != null and syspayno != ''">
+	 and b.resid_no IN(SELECT resid_no FROM humbasicinfo WHERE syspayno LIKE #{syspayno})
+	</if>
+UNION ALL
+ SELECT 
+ TO_CHAR(CURRENT, '%Y%m%d') AS ymd,     --출력일자
+ a.adjst_yr,                             --정산년도
+ a.syspayno,                             --시스템개인번호
+ b.empno,                                --사번
+ b.occugrp_nm,                           --직군
+ b.nm,                                   --이름
+ b.resid_no,                             --주민번호
+ a.adjst_clsf,                           --정산코드
+ fun_xodxcommst_cd_nm(a.adjst_clsf,0) AS adjst_clsf_nm,   --정산코드명
+ fun_xodxcommst_cd_nm(b.work_land,0) AS work_land_nm,    --근무지역
+ b.work_clsf_nm,                         --근무
+ SUBSTR(b.retire_ymd,0,4) AS retire_yy, --퇴직년도
+ b.retire_ymd,                           --퇴직일자
+ b.dept_cd,                              --부서코드
+ b.dept_nm,                              --부서명
+ NVL(b.duty_cd,'') AS duty_cd,
+ b.posi_cd,  
+ b.posi_nm,                              --직급명
+ b.occutyp_nm,                           --직무구분
+ NVL(a.salry,0) + NVL(a.bns,0)+NVL(a.apprvl_bns,0)
+  + NVL(a.fretax_oversea_work,0) + NVL(a.fretax_givbirth_childcr,0)
+  + NVL(a.fretax_resch_actn,0) + NVL(a.drill_asist_allow,0) + 0 AS incom_sum,   --주_총소득
+ NVL(a.salry,0) + NVL(a.bns,0)+NVL(a.apprvl_bns,0) AS tot_salry, --주_총급여
+ NVL(a.fretax_oversea_work,0) AS fretax_oversea_work,         --주_국외수당비과세
+ NVL(a.fretax_givbirth_childcr,0) AS fretax_givbirth_childcr, --주_출산보육비비과세 
+ NVL(a.fretax_resch_actn,0) AS fretax_resch_actn,             --주_연구보조비비과세
+ NVL(a.drill_asist_allow,0) AS fretax_etc,                           --주_중식비과세
+ 0 AS fretax_exps_offer,             --주_자가보조비비과세
+ NVL(a.fretax_sum,0) AS fretax_sum, --주_비과세계 
+(SELECT SUM(NVL(salry,0)+NVL(bns,0)+NVL(apprvl_bns,0) + NVL(oversea_work,0) + NVL(givbirth_extra,0) + NVL(resch_orgn,0) + NVL(etc,0) + NVL(fretax_work_incom,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) as incomtax_3, --종_총소득 
+(SELECT SUM(NVL(salry,0)+NVL(bns,0)+NVL(apprvl_bns,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS residtax_3, --종_총급여
+(SELECT SUM(NVL(oversea_work,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS oversea_work_3,                     --종_국외수당 
+(SELECT SUM(NVL(givbirth_extra,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS givbirth_extra_3,                 --종_출산보육비 
+(SELECT SUM(NVL(resch_orgn,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS resch_orgn_3,                         --종_연구보조비 
+(SELECT SUM(NVL(etc,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS etc_3,                                       --종_중식비과세 
+(SELECT SUM(NVL(fretax_work_incom,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) AS fretax_work_incom_3,           --종_비과세계
+ NVL(a.salry,0) + NVL(a.bns,0)+NVL(a.apprvl_bns,0)
+  + NVL(a.fretax_oversea_work,0) + NVL(a.fretax_givbirth_childcr,0)
+  + NVL(a.fretax_resch_actn,0) + NVL(a.drill_asist_allow,0) + 0
++ (SELECT SUM(NVL(salry,0)+NVL(bns,0)+NVL(apprvl_bns,0) + NVL(oversea_work,0) + NVL(givbirth_extra,0) + NVL(resch_orgn,0) + NVL(etc,0) + NVL(fretax_work_incom,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) as incomtax_1_3,         --주종총소득
+NVL(a.salry,0) + NVL(a.bns,0)+NVL(a.apprvl_bns,0) + (SELECT SUM(NVL(salry,0)+NVL(bns,0)+NVL(apprvl_bns,0)) FROM humytaxbfwork WHERE adjst_yr = c.adjst_yr AND syspayno = c.syspayno) as tot_salry_sum,                         --주총급여
+ --a.salry + nvl(c.salry,0)+nvl(c.bns,0)+nvl(c.apprvl_bns,0) as residtax_1_3,
+ NVL(a.work_incom_dedct,0) AS work_incom_dedct,               --근로소득공제
+ NVL(a.work_incom_amt,0) AS work_incom_amt,                   --근로소득금액
+ DECODE(NVL(a.overl_tax_std,0), 0, 0, ROUND((NVL(a.calc_taxamt,0) / NVL(a.overl_tax_std,0))*100))||'%' AS tax_rts, --과세세율
+ NVL(a.overl_tax_std,0) AS overl_tax_std,                     --종합소득과세표준
+ NVL(a.calc_taxamt,0) AS calc_taxamt,                         --산출세액
+ NVL(a.taxamt_dedct_sum,0) AS taxamt_dedct_sum,               --세액공제
+ NVL(a.incomtax,0) AS incomtax,                               --결정세액_소득세
+ NVL(a.residtax,0) AS residtax,                               --결정세액_주민세
+ NVL(a.decsn_taxamt,0) AS decsn_taxamt,                       --결정세액계
+ NVL(a.incomtax_1,0) AS incomtax_1,                           --주_기납부세액_소득세
+ NVL(a.residtax_1,0) AS residtax_1,                           --주_기납부세액_주민세
+ NVL(a.incomtax_2,0) AS incomtax_2,                           --종_기납부세액_소득세
+ NVL(a.residtax_2,0) AS residtax_2,                           --종_기납부세액_주민세
+ NVL(a.colct_incomtax,0) AS colct_incomtax,                   --차감징수세액_소득세
+ NVL(a.colct_residtax,0) AS colct_residtax,                   --차감징수세액_주민세
+ NVL(a.decsn_colct_taxamt,0) AS decsn_colct_taxamt,            --차감징수세액계  
+ NVL(a.helth_insr_amt,0) + NVL(a.emp_insr_amt,0) + NVL(a.pepl_anuty_insr,0) AS insr_sum, --4대보험계  
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'501',1),0) AS year_salamt_501,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'503',1),0) AS year_salamt_503,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'504',1),0) AS year_salamt_504,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'517',1),0) AS year_salamt_517,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'551',1),0) AS year_salamt_551,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'802',1),0) AS year_salamt_802,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'803',1),0) AS year_salamt_803,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'804',1),0) AS year_salamt_804,
+ NVL(fun_hum_get_salamt_year_cd(a.adjst_yr,a.syspayno,'818',1),0) AS year_salamt_818 
+ FROM humycalinfo_2014 a 
+ INNER JOIN v_humbasicinfo b ON a.syspayno = b.syspayno 
+ LEFT OUTER JOIN humytaxbfwork c ON a.adjst_yr = c.adjst_yr AND a.syspayno = c.syspayno AND c.seq = '1'
+ WHERE NVL(a.adjst_cls_ymd,'') !=  ''
+ AND (NVL(a.adjst_cls_ymd,'')  <![CDATA[ >= ]]>   '20140101' OR a.syspayno = '20070213') 
+ <if test="adjst_yr != null and adjst_yr != ''">
+	 and a.adjst_yr LIKE #{adjst_yr}
+	</if>
+ <if test="syspayno != null and syspayno != ''">
+	 and b.resid_no IN(SELECT resid_no FROM humbasicinfo WHERE syspayno LIKE #{syspayno})
+	</if>
+) 
+WHERE 1=1 
+ORDER BY adjst_yr DESC, dept_cd, DECODE(duty_cd, '', 0), posi_cd, nm
+</select>
+<select id="selectHumTaxPayInfoList" parameterType="kr.re.kitech.biz.hum.tax.vo.HumTaxPayVo" resultType="kr.re.kitech.biz.hum.tax.vo.HumTaxPayVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.tax.selectHumTaxPayInfoList */ 
+    a.adjst_yr 
+    ,a.adjst_cd
+    ,a.adjst_clsf
+    ,a.syspayno 
+    ,b.empno 
+    ,trim(b.nm) as nm 
+    ,trim(b.resid_no) as resid_no
+    ,CASE WHEN b.posi_cd IN('350010','351010','354000') THEN 'HYY020'
+       ELSE 'HYY010'
+     END AS user_div
+    ,b.entr_ymd
+    ,b.retire_ymd
+    ,b.work_clsf
+    ,b.dept_cd
+    ,b.dept_nm
+    ,b.posi_cd
+    ,b.posi_nm
+    ,b.duty_cd
+    ,b.duty_nm
+    ,a.yrly_work_incom     --연간근로소득
+    ,a.fretax_sum          --비과세소득합계
+    ,a.tot_salry           --총급여
+    ,a.work_incom_dedct    --근로소득공제
+    ,a.work_incom_amt      --근로소득금액
+    ,a.human_dedct_sum     --인적공제
+    ,a.anuty_insr_sum      --연금보험합계
+    ,a.spcl_dedct_sum      --특별공제
+    ,a.etc_dedct_sum       --기타공제
+    ,a.overl_tax_std       --종합과세표준
+    ,TRUNC(c.cuml_rt)||'%' AS tax_rts --과세세율
+    ,a.calc_taxamt         --산출세액
+    ,a.taxamt_dedct_sum    --세액공제/감면
+    ,a.incomtax
+    ,a.residtax
+    ,a.decsn_taxamt
+    ,a.incomtax_1
+    ,a.residtax_1
+    ,a.decsn_taxamt_1
+    ,a.colct_incomtax
+    ,a.colct_residtax
+    ,a.decsn_colct_taxamt
+    --,a.decsn_taxamt        --결정세액
+    --,(a.decsn_taxamt_1 + a.decsn_taxamt_2 ) AS pre_payment_tax
+    --,a.decsn_colct_taxamt  --차감 징수세액
+FROM (
+ SELECT 
+ a.adjst_yr  --정산연도
+ ,a.adjst_clsf AS adjst_cd 
+ ,d.cd_nm AS adjst_clsf
+ ,a.syspayno --시스템개인번호
+ ,a.yrly_work_incom     --연간근로소득
+ ,a.fretax_sum          --비과세소득합계
+ ,a.tot_salry           --총급여
+ ,a.work_incom_dedct    --근로소득공제
+ ,a.work_incom_amt      --근로소득금액
+ ,a.human_dedct_sum     --인적공제y
+ ,a.anuty_insr_sum      --연금보험합계
+ ,a.spcl_dedct_sum      --특별공제
+ ,a.etc_dedct_sum       --기타공제
+ ,a.overl_tax_std       --종합과세표준
+ --,TRUNC(c.cuml_rt)||'%' AS tax_rts --과세세율
+ ,a.calc_taxamt         --산출세액
+ ,a.taxamt_dedct_sum    --세액공제/감면
+ ,a.incomtax
+ ,a.residtax
+ ,a.decsn_taxamt
+ ,a.incomtax_1
+ ,a.residtax_1
+ ,a.decsn_taxamt_1
+ ,a.colct_incomtax
+ ,a.colct_residtax
+ ,a.decsn_colct_taxamt
+ FROM humytaxinfo a
+ INNER JOIN   humbasicinfo b ON a.syspayno = b.syspayno
+ INNER JOIN   xodhposiinfo c ON b.posi_cd = c.posi_cd
+ INNER JOIN   xodxcommst d ON a.adjst_clsf = d.cd
+ WHERE a.adjst_cls_ymd IS NOT NULL
+ AND a.adjst_cls_ymd  <![CDATA[ <= ]]>  '20131231' 
+ AND NOT(a.adjst_yr = '2014' AND a.syspayno = '20070213') --나경환 제외
+ UNION ALL
+ SELECT 
+ a.adjst_yr  --정산연도
+ ,a.adjst_clsf AS adjst_cd 
+ ,d.cd_nm AS adjst_clsf
+ ,a.syspayno --시스템개인번호
+ ,NVL(a.salry,0) AS yrly_work_incom --연간근로소득
+ ,a.fretax_sum          --비과세소득합계
+ ,a.tot_salry           --총급여
+ ,a.work_incom_dedct    --근로소득공제
+ ,a.work_incom_amt      --근로소득금액
+ ,NVL(a.base_self,0) + NVL(a.base_wife,0) + NVL(a.base_dpnd_fam,0) + NVL(a.add_path_prefrt,0) + NVL(a.add_disapsn,0) + NVL(a.add_woman_psn,0) + NVL(a.lone_parent_fam,0) AS human_dedct_sum --인적공제
+ ,a.anuty_insr_sum      --연금보험합계
+ ,a.spcl_dedct_sum      --특별공제
+ ,a.etc_dedct_sum       --기타공제
+ ,a.overl_tax_std       --종합과세표준
+ --,TRUNC(c.cuml_rt)||'%' AS tax_rts --과세세율
+ ,a.calc_taxamt         --산출세액
+ ,a.taxamt_dedct_sum    --세액공제/감면
+ ,a.incomtax
+ ,a.residtax
+ ,a.decsn_taxamt
+ ,a.incomtax_1
+ ,a.residtax_1
+ ,a.decsn_taxamt_1
+ ,a.colct_incomtax
+ ,a.colct_residtax
+ ,a.decsn_colct_taxamt
+ FROM humycalinfo_2014 a
+ INNER JOIN   humbasicinfo b ON a.syspayno = b.syspayno
+ INNER JOIN   xodhposiinfo c ON b.posi_cd = c.posi_cd
+ INNER JOIN   xodxcommst d ON a.adjst_clsf = d.cd
+ WHERE a.adjst_cls_ymd IS NOT NULL
+ AND (a.adjst_cls_ymd  <![CDATA[ >= ]]>  '20140101' OR a.syspayno = '20070213')
+) a
+INNER JOIN v_humbasicinfo b ON b.syspayno = a.syspayno 
+LEFT OUTER JOIN humsltaxrt c ON c.belng_yr = a.adjst_yr AND c.lolmt_amt_excd  <![CDATA[ < ]]>  a.overl_tax_std AND c.uplmt_amt_belw  <![CDATA[ >= ]]>  a.overl_tax_std AND c.base_clsf = 'HSJ020'
+WHERE 1 = 1
+    <if test="dept_cd != null and dept_cd != ''">
+	 and b.dept_cd = #{dept_cd}
+	</if>
+    <if test="resid_no != null and resid_no != ''">
+	 and b.resid_no[8,14] = #{resid_no}
+	</if>
+    <if test="adjst_yr != null and adjst_yr != ''">
+	 and a.adjst_yr LIKE #{adjst_yr}
+	</if>
+    <if test="syspayno != null and syspayno != ''">
+	 and b.resid_no IN(SELECT resid_no FROM humbasicinfo WHERE syspayno = #{syspayno})
+	</if> 
+ORDER BY a.adjst_yr DESC, b.dept_cd, b.duty_cd, b.posi_cd, b.nm
+</select>
+<select id="selectTaxPayInfoList" parameterType="kr.re.kitech.biz.hum.tax.vo.HumTaxPayVo" resultType="kr.re.kitech.biz.hum.tax.vo.HumTaxPayVo">
+/* XDA : kitech.hum.sal.xda.HumSlmmPayAmtMS07 월급여 지급: 연말정산 체크리스트(원천징수부 출력용) 목록 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumSlmmPayAmt */ 
+  belng_yrmon,
+  pay - amt_102 - amt_110 - amt_117 - amt_122 AS pay_sum,
+  fretax_amt_meal,
+  fretax_amt_research,
+  incomtax,
+  residtax,
+  tax_sum
+FROM (
+SELECT
+  b.belng_yrmon,  --귀속연월
+  SUM(b.salry_cd_amt*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1) AS pay,  -- 급여
+  h.amt_102,
+  h.amt_110,
+  h.amt_117,
+  h.amt_122,
+  NVL(fun_hum_get_salamt(f.belng_yrmon, f.syspayno, '110',2),0) AS fretax_amt_meal,    --비과세 식대
+  NVL(fun_hum_get_salamt(f.belng_yrmon, f.syspayno, '102',2),0) AS fretax_amt_research,    --비과세 연구보조비
+  g.incomtax,
+  g.residtax,
+  (g.incomtax + g.residtax) AS tax_sum  --세액계
+FROM humslmmpaycd b
+JOIN xodhslcode c ON c.salry_cd = b.salry_cd AND c.cd_clsf = 'HSP010' AND c.base_ymd = (select MAX(base_ymd) from xodhslgrp where base_ymd <![CDATA[ <= ]]> #{belng_yr} ||'1221' AND salry_cd_grp = 'HSC120')
+JOIN xodhslgrp a ON a.base_ymd = c.base_ymd AND a.salry_cd = c.salry_cd AND a.salry_cd_grp = 'HSC120' AND a.nottn_yn = 'Y'
+JOIN xodxcommst d ON d.cd = b.pay_typ
+JOIN humbasicinfo e ON e.syspayno = b.syspayno
+JOIN humslmmpayamt f ON f.belng_yrmon = b.belng_yrmon AND f.syspayno = e.syspayno
+JOIN (  -- 소득세, 주민세
+    SELECT
+  b.belng_yrmon,
+  b.syspayno,
+  SUM(DECODE(b.salry_cd, '701', b.salry_cd_amt, 0)) AS incomtax, --소득세 
+  SUM(DECODE(b.salry_cd, '702', b.salry_cd_amt, 0)) AS residtax --주민세
+FROM humslmmpaycd b
+JOIN xodhslcode c ON c.salry_cd = b.salry_cd AND c.cd_clsf = 'HSP030' AND c.base_ymd = (select MAX(base_ymd) from xodhslgrp where base_ymd <![CDATA[ <= ]]> #{belng_yr} ||'1221' AND salry_cd_grp = 'HSC120')
+JOIN xodhslgrp a ON a.base_ymd = c.base_ymd AND a.salry_cd = c.salry_cd AND a.salry_cd_grp = 'HSC120' AND a.nottn_yn = 'Y'
+JOIN xodxcommst d ON d.cd = b.pay_typ
+JOIN humbasicinfo e ON e.syspayno = b.syspayno
+JOIN humslmmpayamt f ON f.belng_yrmon = b.belng_yrmon AND f.syspayno = e.syspayno
+WHERE ((e.posi_cd NOT IN ('350010','351010','354000')) OR (e.posi_cd IN('350010','351010','354000') AND b.belng_yrmon <![CDATA[ <= ]]> '201302'))
+AND f.close_yn = 'Y'
+AND b.belng_yrmon LIKE #{belng_yr}||'%'
+AND b.syspayno = #{syspayno}
+GROUP BY 1,2
+) g ON g.belng_yrmon = b.belng_yrmon AND g.syspayno = e.syspayno
+JOIN (  -- 비과세 금액
+    SELECT
+  b.belng_yrmon,
+  b.syspayno,
+  SUM(DECODE(b.salry_cd, '102', b.fretax_amt, 0)) AS amt_102,
+  SUM(DECODE(b.salry_cd, '110', b.fretax_amt, 0)) AS amt_110,
+  SUM(DECODE(b.salry_cd, '117', b.fretax_amt, 0)) AS amt_117,
+  SUM(DECODE(b.salry_cd, '122', b.fretax_amt, 0)) AS amt_122
+FROM humslmmpaycd b
+JOIN xodhslcode c ON c.salry_cd = b.salry_cd AND c.cd_clsf = 'HSP010' AND c.base_ymd = (select MAX(base_ymd) from xodhslgrp where base_ymd <![CDATA[ <= ]]> #{belng_yr} ||'1221' AND salry_cd_grp = 'HSC120')
+JOIN xodhslgrp a ON a.base_ymd = c.base_ymd AND a.salry_cd = c.salry_cd AND a.salry_cd_grp = 'HSC120' AND a.nottn_yn = 'Y'
+JOIN humbasicinfo e ON e.syspayno = b.syspayno
+JOIN humslmmpayamt f ON f.belng_yrmon = b.belng_yrmon AND f.syspayno = e.syspayno
+WHERE ((e.posi_cd NOT IN ('350010','351010','354000')) OR (e.posi_cd IN('350010','351010','354000') AND b.belng_yrmon <![CDATA[ <= ]]> '201302'))
+AND f.close_yn = 'Y'
+AND b.belng_yrmon LIKE #{belng_yr}||'%'
+AND b.syspayno = #{syspayno}
+GROUP BY 1,2
+) h ON h.belng_yrmon = b.belng_yrmon AND h.syspayno = e.syspayno
+WHERE b.pay_typ  !='HSD021'
+AND b.belng_yrmon LIKE #{belng_yr}||'%'
+AND ((e.posi_cd NOT IN ('350010','351010','354000')) OR (e.posi_cd IN('350010','351010','354000') AND b.belng_yrmon <![CDATA[ <= ]]> '201302'))
+AND f.close_yn = 'Y'
+AND b.syspayno = #{syspayno}
+GROUP BY 1,3,4,5,6,7,8,9,10,11
+)
+ORDER BY 1
+</select>
+</mapper>

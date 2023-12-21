@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ass.rpt">
+  <select id="selectAssRpt" parameterType="kr.re.kitech.biz.ass.rpt.vo.AssRptVo" resultType="kr.re.kitech.biz.ass.rpt.vo.AssRptVo">
+SELECT /* QueryID : kr.re.kitech.biz.ass.rpt.selectAssRpt */ 
+		 t2.user_syspayno
+     , t1.aset_clsf
+     , t6.cd_nm AS aset_clsf_nm
+     , t2.finnc
+     , t12.cd_nm AS finnc_nm
+     , t1.aset_no
+     , t2.old_aset_no
+     , t1.intro_ymd
+     , t3.accnt_no
+     , t3.accnt_cd
+     , TRIM(NVL(t2.aset_nm, '')) AS aset_nm
+     , t1.intro_amt
+     , TRIM(NVL(t5.dept_nm, '')) AS dept_nm
+     , TRIM(NVL(t4.nm, '')) AS user_nm
+     , TRIM(NVL(t8.nm, '')) AS respn_nm
+     , t2.posi_region
+     , NVL(t10.cd_nm, ' ') AS posi_region_nm
+     , t2.posi_build
+     , NVL(t11.cd_nm, ' ') AS posi_build_nm
+     , TRIM(t2.posi_floor) AS posi_floor
+     , t2.posi_detls
+     , TRIM(NVL(t14.cd_nm, '')) AS use_scop_nm
+     , NVL(t10.cd_nm, ' ')||' '||NVL(t11.cd_nm, ' ') ||' '||TRIM(t2.posi_floor) ||' '||t2.posi_detls  AS posi_nm
+     , t16.prcs_ymd -- 처리 일자
+     , t16.cause -- 불용 사유
+     , fun_xodxcommst_cd_nm(t16.unuse_clsf, 0) AS unuse_clsf
+     , NVL(t15.depre_sum_amt,0) AS depre_sum_amt
+     , NVL(t15.residual_amt,0) AS residual_amt
+FROM assmastrh t1
+JOIN assmastrb t2 ON t1.aset_no = t2.aset_no
+JOIN xodxcommst t6 ON t1.aset_clsf = t6.cd
+LEFT JOIN assaccnt t3 ON t1.aset_no = t3.aset_no AND NOT EXISTS (SELECT * FROM assaccnt WHERE aset_no = t3.aset_no AND accnt_odr <![CDATA[ < ]]> t3.accnt_odr)
+LEFT JOIN assmastrtech t13 ON t1.aset_no = t13.aset_no
+LEFT JOIN xodxcommst t14 ON t13.use_scop = t14.cd
+LEFT JOIN humbasicinfo t4 ON t2.user_syspayno  = t4.syspayno
+LEFT JOIN xodhdeptinfo t5 ON t4.dept_cd = t5.dept_cd AND t4.dept_new_ymd = t5.dept_new_ymd
+LEFT JOIN humbasicinfo t8 ON t5.depthed = t8.syspayno
+LEFT JOIN xodxcommst t10 ON t2.posi_region = t10.cd AND t10.cd_clsf ='HBX'
+LEFT JOIN xodxcommst t11 ON t2.posi_build = t11.cd AND t11.cd_clsf ='APA'
+LEFT JOIN xodxcommst t12 ON t2.finnc = t12.cd AND t12.cd_clsf ='ACA'
+LEFT JOIN assdepreactrslt t15 ON t1.aset_no = t15.aset_no AND t15. depre_yr=(SELECT MAX(depre_yr) FROM assdepreactrslt WHERE aset_no = t1.aset_no)
+LEFT JOIN assunuse t16 ON t1.aset_no = t16.aset_no AND t16.req_no=(SELECT MAX(req_no) FROM assunuse WHERE aset_no = t16.aset_no)
+WHERE t1.aset_typ = 'AAA010'
+AND (( #{aset_gubun} = '1' AND t1.aset_state IN ('AAI010','AAI040'))
+    OR ( #{aset_gubun} = '2' AND t1.aset_state = #{aset_state} )
+    OR ( #{aset_gubun} = '3' )) -- aset_gubun
+<if test = 'aset_clsf != null and aset_clsf != ""'>AND  t1.aset_clsf = #{aset_clsf} </if>
+<if test = 'dept_cd != null and dept_cd != ""'>AND t4.dept_cd = #{dept_cd} </if>
+<if test = 'mngmt_mbody != null and mngmt_mbody != ""'>AND t2.mngmt_mbody = #{mngmt_mbody} </if>
+<if test = 'intro_ymd_st != null and intro_ymd_st != ""'>AND t1.intro_ymd <![CDATA[ >= ]]> #{intro_ymd_st}</if>
+<if test = 'intro_ymd_ed != null and intro_ymd_ed != ""'>AND t1.intro_ymd <![CDATA[ <= ]]> #{intro_ymd_ed} </if>
+<if test = 'posi_region != null and posi_region != ""'>AND t2.posi_region = #{posi_region} </if>
+<if test = 'aset_no != null and aset_no != ""'>AND t1.aset_no = #{aset_no} </if>
+<if test = 'user_syspayno != null and user_syspayno != ""'>AND ( '' = #{user_syspayno} OR t2.user_syspayno = #{user_syspayno} )</if>
+<if test = 'aset_nm != null and aset_nm !=""'>AND t1.aset_nm LIKE  '%'||#{aset_nm}||'%'</if>
+ORDER BY t2.finnc, t1.aset_clsf
+  </select>
+</mapper>

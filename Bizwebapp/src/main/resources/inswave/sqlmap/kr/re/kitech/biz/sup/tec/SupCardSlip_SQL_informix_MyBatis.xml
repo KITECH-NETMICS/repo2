@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.sup.tec">
+<!-- 카드처리내역 조회 -->
+<select id="selectSptTranCardPrcs" resultType="kr.re.kitech.biz.sup.pop.vo.SptTranTableVo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptCardSlipSrcVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTranCardPrcsList */
+      a.processdate
+     , a.seq_no
+     , a.dtrandate -- 거래발생일자
+     , a.ddealgubun
+     , DECODE(a.ddealgubun, 'A' , '승인', 'C', '취소', 'D', '매입취소', 'P', '부분취소', '') AS ddealgubun_nm  -- 승인구분
+     , TRIM(a.dapplno) AS dapplno -- 승인번호
+     , a.dcontrolno  -- 거래번호
+     , TRIM(CASE WHEN LENGTH(TRIM(a.dmembdealno)) > 10 THEN LEFT(a.dmembdealno, 10) ELSE a.dmembdealno END) AS kolas_no -- 접수번호
+     , b.decsn_suply_value -- 공급가액
+     , b.decsn_tax_amt  -- 부가세
+     , a.unslip_no  -- 미수결의번호
+     , a.unslip_odr
+     , DECODE(NVL(c.decsn_ex,'N'), 'Y' , '확정', '미확정') AS decsn_ex
+     , d.hprovdate  -- 정산예정일자
+     , d.dorderdate  -- 입금일자
+     , d.dprovfee  -- 수수료
+     , d.dprovvat  -- 부가세
+     , a.dsettletype  -- 구분(01 카드, 02 가상계좌)
+     , d.processdate -- 발생일자
+     , a.hcreatedate
+     , a.dsaleamt
+  FROM spt_tran_table a 
+  LEFT JOIN spttecrcptinfo b ON a.dmembdealno = b.kolas_no
+  LEFT JOIN fspsliph c ON a.unslip_no = c.unslip_no
+  LEFT JOIN spt_prov_table d ON a.dcontrolno = d.dcontrolno AND a.dapplno = d.dapplno AND a.ddealgubun = d.ddealgubun
+ WHERE a.processdate BETWEEN #{from_ymd}||'000000' AND #{to_ymd} ||'235959'
+   AND a.dsettletype = '01'  -- 카드
+ <if test='unslip_no != null and unslip_no != ""'> AND a.unslip_no = #{unslip_no} </if>
+ <if test='card_appl_no != null and card_appl_no != ""'> AND a.dapplno = #{card_appl_no} </if>
+ <if test='ddealgubun != null and ddealgubun != ""'> AND a.ddealgubun = #{ddealgubun} /* 승인구분 */ </if>
+ <if test='hprovdate != null and hprovdate != ""'> AND d.hprovdate = #{hprovdate} /* 정상일자 */ </if>
+ <if test='kolas_no != null and kolas_no !=""'> AND a.dmembdealno = #{kolas_no} </if>
+   AND a.dapplno NOT IN ( SELECT dapplno 
+                            FROM ( SELECT dapplno, dtrandate,
+                                          DECODE( (MAX(ddealgubun)||MIN(ddealgubun) ), 'CA' ,1 , 0 )  cancel
+                                        , COUNT(*) cnt
+                                     FROM spt_tran_table 
+                                    WHERE processdate BETWEEN #{from_ymd} ||'000000' AND #{to_ymd}||'235959'
+                                    GROUP BY dapplno,dtrandate
+                                 ) 
+                           WHERE cnt = 2 AND cancel = 1 AND 'Y' = #{today_yn} )
+   AND a.dmembdealno LIKE #{wrk_clsf} ||'%'
+ ORDER BY a.processdate, a.dcontrolno, a.dapplno, a.dmembdealno
+</select>
+
+<!-- 카드처리내역 접수번호 수정 -->
+<update id="updateSptTranTable" parameterType="kr.re.kitech.biz.sup.pop.vo.SptTranTableVo">
+UPDATE spt_tran_table 
+   SET dmembdealno = #{kolas_no}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE dapplno = #{dapplno}  
+AND ddealgubun = #{ddealgubun}
+AND dcontrolno = #{dcontrolno}
+;
+
+UPDATE spt_prov_table 
+   SET dmembtrno = #{kolas_no}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE dapplno = #{dapplno}
+AND ddealgubun = #{ddealgubun}
+AND dcontrolno = #{dcontrolno}
+;
+</update>
+
+<!-- 기술지원카드결의생성 -->
+<select id="selectSptTecCardSlip" parameterType="kr.re.kitech.biz.sup.tec.vo.SptCardSlipSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecCardSlipVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecCardSlip */
+       c.vend_cd
+     , c.vend_abbr
+     , a.kolas_no
+     , a.accnt_no
+     , a.tech_supt_req_no
+     , b.accnt_rspns
+     , b.fomat_unit
+     , TRIM(d.dapplno) AS card_appl_no
+     , a.card_issu_ymd
+     , a.proof_yn
+     , d.unslip_no AS unslip_no
+     , d.unslip_odr
+     , e.decsn_ex
+     , b.tax_cd
+     , d.dcontrolno
+     , d.dsaleamt -- 승인금액
+     , d.unslip_no AS misu_unslip_no  -- 미수결의번호
+     , d.unslip_odr AS misu_unslip_odr
+     , CASE WHEN b.tax_cd = 'FTX001' THEN FLOOR(d.dsaleamt * 10 / 11) ELSE d.dsaleamt END AS suply_value  -- 공급가액
+     , CASE WHEN b.tax_cd = 'FTX001' THEN d.dsaleamt - FLOOR(d.dsaleamt * 10 / 11) ELSE 0 END AS tax_amt  -- 세액
+    <if test='slip_typ_cd != null and slip_typ_cd == "457"'>
+     , a.accnt_no AS rmk
+     , g1.ddealgubun   -- 승인구분
+     , g1.dtrandate  -- 취소일자
+     , NVL(g1.dsaleamt,0) AS dsaleamt  -- 취소금액
+    </if>
+    <if test='slip_typ_cd != null and slip_typ_cd == "456"'>
+     , d.ddealgubun   -- 승인구분
+     , k.test_req_nm AS rmk
+     , d.dtrandate
+     , g.dprovfee 
+     , g.dprovvat
+    </if>
+     , f.apr_state
+     , gg.mngmt_item_1 AS fee_accnt_no
+     , gr.accnt_rspns AS fee_accnt_rspns
+     , gr.fomat_unit AS fee_fomat_unit
+     , h.divsn_clsf
+     , h.srpt_cd
+  FROM spt_tran_table d   
+  JOIN spttecrcptinfo a ON d.dapplno = a.card_appl_no AND d.dtrandate = a.card_issu_ymd   -- 승인건
+  JOIN resbgacctm b ON b.accnt_no = a.accnt_no
+  JOIN xodfvend c ON c.vend_cd = a.cust_no
+ <if test='slip_typ_cd != null and slip_typ_cd == "456"'>
+  JOIN spttecactrslt k ON a.tech_supt_req_no = k.tech_supt_req_no AND k.seq = 1
+  JOIN spt_prov_table g ON  d.dapplno = g.dapplno AND d.ddealgubun = g.ddealgubun AND d.dcontrolno = g.dcontrolno AND g.damount > 0
+  LEFT JOIN spt_tran_table dd ON dd.dapplno = d.dapplno AND dd.dcontrolno = d.dcontrolno AND dd.dtrandate = d.dtrandate AND dd.ddealgubun != 'A'  -- 취소건
+ </if>
+ <if test='slip_typ_cd != null and slip_typ_cd == "457"'>
+  JOIN spt_tran_table g1 ON d.dapplno = g1.dapplno AND d.dtrandate != g1.dtrandate AND g1.ddealgubun != 'A'
+ </if>
+  LEFT JOIN fspsliph e ON 
+       <if test='slip_typ_cd != null and slip_typ_cd == "457"'> e.unslip_no = g1.unslip_no </if>
+       <if test='slip_typ_cd != null and slip_typ_cd != "457"'> e.unslip_no = a.unslip_no </if>  
+  LEFT JOIN xomxintfatab f ON f.req_no = e.unslip_no
+  JOIN xodxcommst gg ON gg.cd = 'STO020'
+  JOIN resbgacctm gr ON gg.mngmt_item_1 = gr.accnt_no
+  LEFT JOIN resadxreqm h ON b.accnt_no = h.creat_accnt_no
+ WHERE d.ddealgubun = 'A'
+   AND d.dsettletype = '01'  -- 카드(02 가상계좌)
+   AND d.dmembdealno LIKE 'C%'
+ <if test='slip_typ_cd != null and slip_typ_cd == "456"'> 
+   AND d.dsaleamt - NVL(dd.dsaleamt,0) > 0 /*당일 승인 및 취소 건은 조회대상에서 제외 */
+   AND d.dtrandate BETWEEN #{from_ymd} AND #{to_ymd}
+ </if>
+ <if test='slip_typ_cd != null and slip_typ_cd == "457"'> 
+   AND g1.dtrandate BETWEEN #{from_ymd} AND #{to_ymd} 
+ </if>
+ <if test='card_appl_no != null and card_appl_no != ""'> AND a.card_appl_no = #{card_appl_no} </if>
+ <if test='accnt_no != null and accnt_no != ""'> AND a.accnt_no = #{accnt_no} </if>
+ <if test='vend_abbr != null and vend_abbr != ""'> AND c.vend_abbr LIKE '%'||#{vend_abbr} ||'%' </if>
+ <if test='kolas_no != null and kolas_no != ""'> AND a.kolas_no = #{kolas_no} </if>
+ <if test='unslip_no != null and unslip_no != ""'> AND d.unslip_no = #{unslip_no} </if>
+ <if test='slip_yn != null and slip_yn == "N"'> AND e.unslip_no IS NULL </if>
+ <if test='slip_yn != null and slip_yn == "Y"'> AND e.unslip_no IS NOT NULL  </if>
+ ORDER BY d.unslip_no, d.unslip_odr, d.dapplno
+</select>
+
+<!-- 카드결의 생성 후 결의번호 업데이트 -->
+<update id="updateSptTranCardSlipNo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecCardSlipVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTranCardSlipNo */
+      spt_tran_table
+   SET unslip_no = #{unslip_no}
+     , unslip_odr = #{unslip_odr}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+WHERE ddealgubun = #{ddealgubun}
+  AND dapplno =#{card_appl_no}
+  AND dcontrolno = #{dcontrolno}
+</update>
+
+<!-- 결의삭제 후 결의번호 초기화 -->
+<update id="updateSptTranCardSlipDel" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTranCardSlipDel */
+      spt_tran_table
+   SET unslip_no = ''
+     , unslip_odr = ''
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE unslip_no = #{unslip_no}
+</update>
+
+<!-- 취소결의시 미수결의내역 조회 -->
+<select id="selectSptTecCardMisuSlip" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo" resultType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecCardMisuSlip */
+       a.total_amt
+     , a.unslip_amt
+     , a.tax_amt
+     , a.fomat_unit
+     , a.accnt_no 
+     , a.accnt_rspns
+     , a.accnt_cd
+     , a.expns_cd
+     , a.ramt_mngmt_1
+     , a.ramt_mngmt_2
+     , a.evid_cd               
+  FROM fspslipd a 
+ WHERE a.base_debit_cr = '2'
+   AND a.unslip_no = #{unslip_no}
+   AND a.req_no = #{kolas_no}
+</select>
+
+<!-- 취소결의 삭제시 미수결의정보 조회 -->
+<select id="selectSptTranTableMisu" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecCardSlipVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTranTableMisu */
+       a.dapplno
+     , a.dcontrolno
+     , a.unslip_no
+     , a.unslip_odr
+     , d.tech_supt_req_no
+     , c.wrte_ymd
+  FROM spt_tran_table a 
+  JOIN spt_tran_table b ON b.dapplno = a.dapplno  AND b.dcontrolno = a.dcontrolno AND b.ddealgubun != 'A'  -- 승인취소 건
+  JOIN fspsliph c ON c.unslip_no = a.unslip_no
+  JOIN spttecrcptinfo d ON a.dmembdealno = d.kolas_no
+ WHERE b.unslip_no = #{unslip_no}
+   AND a.ddealgubun = 'A'
+</select>
+
+<!-- 카드정산결의 조회 -->
+<select id="selectSptCardAdjstSlip" parameterType="kr.re.kitech.biz.sup.tec.vo.SptCardSlipSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecCardSlipVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptCardAdjstSlip */
+        TRIM(a.dapplno)  AS card_appl_no -- 승인번호
+      , a.hprovdate  -- 정산예정일
+      , a.dcontrolno
+      , e.unslip_no  -- 정산결의번호
+      , e.decsn_ex  
+      , f.apr_state
+      , MIN(c.decsn_ex) AS misu_decsn_ex
+      , MAX(DECODE(b.ddealgubun, 'A', c.rmk, '')) AS rmk
+      , MAX(DECODE(b.ddealgubun, 'A', b.dtrandate, '')) AS dtrandate  -- 승인일자
+      , MAX(CASE WHEN b.ddealgubun = 'A' THEN b.unslip_no ELSE '' END) AS misu_unslip_no  -- 카드미수결의번호
+      , MAX(CASE WHEN b.ddealgubun != 'A' THEN b.unslip_no ELSE '' END) AS cnl_unslip_no  -- 카드취소결의번호
+      , MAX(DECODE(b.ddealgubun, 'A', b.dsaleamt, 0)) AS dsaleamt  -- 승인 or 취소금액
+      , MAX(DECODE(b.ddealgubun, 'A', 0, b.dsaleamt)) AS cnl_dsaleamt  -- 승인 or 취소금액
+  FROM spt_prov_table a 
+  JOIN spt_tran_table b ON b.dcontrolno = a.dcontrolno
+  JOIN fspsliph c ON b.unslip_no = c.unslip_no
+  LEFT JOIN fspsliph e ON a.adjst_unslip_no = e.unslip_no -- 카드정산 결의
+  LEFT JOIN fspsliph e1 ON b.cnl_adjst_unslip_no = e1.unslip_no -- 카드취소 건 정산 결의
+  LEFT JOIN xomxintfatab f ON a.adjst_unslip_no = f.req_no -- 정산결의 결재상태
+  LEFT JOIN xomxintfatab f1 ON b.cnl_adjst_unslip_no = f1.req_no
+ WHERE a.hprovdate BETWEEN #{from_ymd} AND #{to_ymd}  -- 정산예정일
+ <if test='card_appl_no != null and card_appl_no != ""'> AND a.dapplno = #{card_appl_no} </if>
+ <if test='dtrandate != null and dtrandate != ""'> AND EXISTS (SELECT 1 FROM spt_tran_table WHERE dtrandate = #{dtrandate}  /* 승인일자 */) </if>
+ <if test='misu_unslip_no != null and misu_unslip_no != ""'> AND EXISTS (SELECT 1 FROM spt_tran_table WHERE unslip_no =#{misu_unslip_no}) /* 카드미수 or 카드취소 건 결의번호 */ </if>
+ <if test='unslip_no != null and unslip_no != ""'> AND a.adjst_unslip_no = #{unslip_no} </if>
+ <if test='slip_yn != null and slip_yn == "N"'> AND NVL(adjst_unslip_no, '') = '' </if>
+ <if test='slip_yn != null and slip_yn == "Y"'> AND NVL(adjst_unslip_no, '') != '' </if>
+   AND a.damount > 0
+   AND a.dsettletype = '01'  -- 카드 (02 가상계좌)
+   AND a.dmembtrno LIKE 'C%'
+ GROUP BY 1,2,3,4,5,6
+ ORDER BY 1, 2 --a.dapplno, a.hprovdate
+</select>
+
+<!-- 카드정산결의시 취소결의내역 조회 -->
+<select id="selectSptCardAdjstSlipDetl" parameterType="kr.re.kitech.biz.sup.tec.vo.SptCardSlipSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecCardSlipVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptCardAdjstSlipDetl */
+        b.ddealgubun
+      , dcontrolno
+      , TRIM(b.dapplno) AS card_appl_no
+      , a.accnt_no
+      , a.accnt_rspns
+      , a.fomat_unit
+      , a.unslip_amt AS dsaleamt
+      , c.mngmt_detls_nm AS vend_abbr
+      , f.mngmt_detls_cd AS kolas_no
+      , a.rmk_1 AS rmk
+      , d.accnt_ymd
+      , e.mngmt_detls_cd AS mngmt_accnt_no
+      , g.slip_no
+      , g.slip_odr
+  FROM spt_tran_table b
+  JOIN fspsliph d ON b.unslip_no = d.unslip_no
+  JOIN fspslipd a ON b.unslip_no = a.unslip_no AND b.unslip_odr = a.unslip_odr  
+  JOIN fspslipdecsnd g ON b.unslip_no = g.unslip_no AND b.unslip_odr = g.unslip_odr
+  LEFT JOIN fspslipmngmt c ON b.unslip_no = c.unslip_no AND b.unslip_odr = c.unslip_odr AND c.mngmt_item_cd = '3001'
+  LEFT JOIN fspslipmngmt e ON e.unslip_no = b.unslip_no AND e.unslip_odr = b.unslip_odr AND e.mngmt_item_cd = '1200'
+  LEFT JOIN fspslipmngmt f ON b.unslip_no = f.unslip_no AND b.unslip_odr = f.unslip_odr AND f.mngmt_item_cd = '3006'
+ WHERE b.unslip_no = #{unslip_no}
+   AND b.dapplno = #{card_appl_no}
+</select>
+
+<!-- 정산결의번호 업데이트 -->
+<update id="updateSptProvTableUnslipNo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecCardSlipVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptProvTableUnslipNo */
+      spt_prov_table
+   SET <if test='unslip_no != null and unslip_no.substring(0,3) == "458"'>
+           adjst_unslip_no = #{unslip_no}
+         , adjst_unslip_odr = #{unslip_odr}
+         </if>
+         <if test='unslip_no != null and unslip_no.substring(0,3) == "216"'>
+           unslip_no = #{unslip_no}
+         , unslip_odr = #{unslip_odr}
+         </if>
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE ddealgubun = 'A'
+   AND dapplno = #{card_appl_no}
+   AND dcontrolno = #{dcontrolno}
+  <if test='ddealgubun != null and ddealgubun == "A"'> AND damount > 0 </if>
+  <if test='ddealgubun != null and ddealgubun != "A"'> AND damount <![CDATA[< ]]> 0 </if>
+</update>
+
+<!-- 카드정산결의 취소시 결의번호 초기화 -->
+<update id="updateSptProvTableSlipDel" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSlipSrcVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptProvTableSlipDel */
+      spt_prov_table
+   SET adjst_unslip_no = ''
+     , adjst_unslip_odr = null
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE adjst_unslip_no = #{unslip_no}
+</update>
+
+<!-- 기술지원 카드 수수료결의 생성 조회 -->
+<select id="selectSptTecCardFeeSlip" parameterType="kr.re.kitech.biz.sup.tec.vo.SptCardSlipSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecCardSlipVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecCardFeeSlip */ 
+       a.dtrandate  -- 거래발생일자         
+     , d.ddealgubun -- 승인구분   
+     , DECODE(d.ddealgubun, 'A', '승인', '취소') AS ddealgubun_nm
+     , d.dcontrolno -- 거래일련번호
+     , b.kolas_no  -- 접수번호
+     , x1.mngmt_item_1 AS accnt_no
+     , a.dsaleamt -- 거래금액
+     , TRIM(d.dapplno) AS card_appl_no -- 승인번호
+     , d.hprovdate -- 정산예정일
+     , d.adjst_unslip_no -- 정산결의번호
+     , d.dprovfee -- 수수료
+     , d.dprovvat -- 부가세    
+     , c.unslip_no -- 수수료결의
+     , c.decsn_ex
+     , e.accnt_rspns
+     , e.fomat_unit
+     , f1.accnt_cd
+     , g.apr_state
+     , f2.bill_no
+  FROM spt_tran_table a 
+  JOIN spt_prov_table d ON a.dcontrolno = d.dcontrolno 
+  JOIN spttecrcptinfo b ON a.dmembdealno = b.kolas_no
+  JOIN xodxcommst x1 ON cd = 'STO020'
+  JOIN resbgacctm e ON x1.mngmt_item_1 = e.accnt_no
+  LEFT JOIN fbaitmaccntexpns f1 ON e.itm_solve_base = f1.itm_solve_base AND f1.expns_cd = '383' AND f1.use_ex = 'Y'
+  LEFT JOIN fspsliph c ON d.unslip_no = c.unslip_no
+  LEFT JOIN fspslipd f2 ON c.unslip_no = f2.unslip_no AND f2.base_debit_cr= '2'
+  LEFT JOIN xomxintfatab g ON c.unslip_no = g.req_no
+ WHERE d.hprovdate LIKE #{hprovdate}||'%'
+  <if test='from_ymd != null and from_ymd != ""'> AND a.dtrandate >= #{from_ymd} </if> 
+  <if test='to_ymd != null and to_ymd != ""'> AND a.dtrandate <![CDATA[ <= ]]> #{to_ymd} </if> 
+  <if test='kolas_no != null and kolas_no != ""'> AND a.dmembdealno = #{kolas_no} </if>
+   AND a.ddealgubun = 'A'
+   AND a.dsettletype = '01'
+   AND a.dmembdealno LIKE 'C%'
+ ORDER BY a.dtrandate, a.dcontrolno
+</select>
+
+<!-- 카드수수료결의 취소시 결의번호 초기화 -->
+<update id="updateSptProvFeeSlipDel" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptProvFeeSlipDel */
+      spt_prov_table
+   SET unslip_no = ''
+     , unslip_odr = null
+ WHERE unslip_no = #{unslip_no}
+</update>
+</mapper>

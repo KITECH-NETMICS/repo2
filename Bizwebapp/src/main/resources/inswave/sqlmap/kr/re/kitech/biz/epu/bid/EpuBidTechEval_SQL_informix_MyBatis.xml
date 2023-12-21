@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.epu.bid">
+	
+<select id="selectEpuBidTechEvalList" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalSrchVo" resultType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.epu.bid.selectEpuBidTechEvalList */ 
+		 inout_psn_clsf_cd
+     , fun_xodxcommst_cd_nm(pur_clsf_cd, 0) AS pur_clsf_cd
+     , bid_noti_no||'-'||chg_no AS bid_noti_no      -- 발주번호
+     , bid_ord_no||'-'||ord_chg_no AS bid_ord_no       -- 발주번호
+     , bid_title       -- 공고명
+     , chg_no
+     , CASE WHEN cnt <![CDATA[ > ]]> 1 THEN pur_req_no||' 외 '||(cnt-1)||'건'
+            ELSE pur_req_no END AS pur_req_no
+     , open_ymd
+     , eval_state
+     , eval_state_text
+     , bid_val_score
+     , eval_clsf_cd
+     , eval_clsf_cd_text
+     , ord_chg_no
+     , partcode
+     , progress_status
+     , dept_typ
+FROM( SELECT DECODE(t1.inout_psn_clsf_cd, '2', '외자', '내자') AS inout_psn_clsf_cd
+           , t1.pur_clsf_cd 
+           , t3.bid_noti_no       -- 공고번호
+           , t3.chg_no
+           , t1.bid_ord_no       -- 발주번호
+           , t1.bid_title       -- 공고명
+           , t1.open_ymd     -- 개찰일자           
+           , t4.eval_state      --처리상태
+           , t8.cd_nm AS eval_state_text
+           , t4.bid_val_score
+           , t4.eval_clsf_cd --심사구분
+           , t7.cd_nm AS eval_clsf_cd_text
+           , t3.ord_chg_no
+           , t9.partcode
+           , t3.progress_status
+           , b.dept_typ
+           , t2.pur_req_no
+           , COUNT(*) AS cnt
+      FROM epuordmastr t1 
+      JOIN epuordreqitem t2 on t1.bid_ord_no = t2.bid_ord_no AND t1.chg_no = t2.chg_no
+      JOIN epunotimastr t3 ON t1.bid_ord_no = t3.bid_ord_no AND t1.chg_no = t3.chg_no
+      JOIN epunotitechevalmastr t4 ON t3.bid_noti_no = t4.bid_noti_no AND t3.chg_no = t4.chg_no
+      JOIN humbasicinfo a ON t1.regst_syspayno = a.syspayno
+      JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd     
+      JOIN xodxcommst t7 ON t7.cd_clsf = 'PRC' AND t7.cd = t4.eval_clsf_cd
+      JOIN xodxcommst t8 ON t8.cd_clsf = 'PRD' AND t8.cd = t4.eval_state
+      LEFT JOIN bpm:emptable t9 ON t9.empsn = t4.assist_charger_cd
+      WHERE t1.contrct_method <![CDATA[ <> ]]>'4100'
+      AND ( '' = #{open_ymd_st} OR substr(t1.open_ymd, 0, 8) <![CDATA[ >= ]]> #{open_ymd_st} ) --open_ymd_st
+      AND ( '' = #{open_ymd_ed} OR substr(t1.open_ymd, 0, 8) <![CDATA[ <= ]]> #{open_ymd_ed} ) --open_ymd_ed
+      AND ( '' = #{eval_clsf_cd} OR t4.eval_clsf_cd = #{eval_clsf_cd} ) --eval_clsf_cd
+      AND ( '' = #{bid_title} OR t1.bid_title LIKE '%'|| #{bid_title} ||'%' ) --bid_title
+      AND ( '' = #{pur_req_no} OR t2.pur_req_no = #{pur_req_no} ) --pur_req_no
+      AND ( '' = #{bid_ord_no} OR t1.bid_ord_no = #{bid_ord_no} ) --bid_ord_no
+      AND ( '' = #{bid_noti_no} OR t3.bid_noti_no = #{bid_noti_no} ) --bid_noti_no
+      AND ( '' = #{renoti_after_yn} OR t4.renoti_after_yn = #{renoti_after_yn} ) --renoti_after_yn
+      GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+    ) 
+WHERE ( '' = #{partcode} OR partcode = #{partcode})
+AND   ( '' = #{dept_typ} OR dept_typ = #{dept_typ})
+ORDER BY bid_ord_no DESC
+</select>
+
+
+
+
+
+
+
+
+
+
+
+<select id="selectEpuBidTechEvalMasInfo" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalSrchVo" resultType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.epu.bid.selectEpuBidTechEvalMasInfo */ 
+		t6.apr_state,
+		 t1.bid_noti_no
+      ,t1.chg_no
+      ,t1.assist_yn
+      ,t1.assist_charger_cd
+      ,t1.eval_state
+      ,t1.assist_charger_nm
+      ,t1.bid_val_score
+      ,t1.tech_eval_doc_no
+      ,t1.eval_clsf_cd
+      ,t2.bid_ord_no
+      ,t3.bid_title
+      ,t3.chg_no AS ord_chg_no
+      ,t1.tech_eval_assist_doc_no
+      ,t1.tech_nego_yn_cd
+      ,t2.regst_syspayno AS sys_pay_no
+      ,t3.pur_clsf_cd
+      ,t4.cd_nm
+      ,t3.bid_clsf_cd
+      ,t1.charger_cd
+      ,t1.charger_nm
+      ,t5.pur_req_no
+      ,t3.pq_score
+      ,t1.eval_attach_file_no
+      ,t6.endpoints
+      ,t7.endpoints as endpoints_assist
+      ,t2.progress_status AS noti_progress_status
+      ,t3.org_bid_ord_no
+      ,t3.org_chg_no
+      ,t1.eval_assist_attach_file_no
+      ,h.nm AS charge_nm
+      ,h.ext_no
+      ,t1.renoti_after_yn
+      ,t1.rmk
+FROM epunotitechevalmastr t1
+JOIN epunotimastr t2 ON t2.bid_noti_no = t1.bid_noti_no AND t2.chg_no = t1.chg_no
+JOIN epuordmastr t3 ON t3.bid_ord_no = t2.bid_ord_no AND t3.chg_no = t2.ord_chg_no
+JOIN epuordreqitem t5 ON t3.bid_ord_no = t5.bid_ord_no AND t3.chg_no = t5.chg_no AND NOT EXISTS ( SELECT * FROM epuordreqitem WHERE bid_ord_no = t5.bid_ord_no AND chg_no = t5.chg_no AND item_odr <![CDATA[ < ]]> t5.item_odr )
+JOIN xodxcommst t4 ON t4.cd_clsf = 'PRC' AND t4.cd = t1.eval_clsf_cd
+JOIN humbasicinfo h ON t3.regst_syspayno = h.syspayno
+LEFT JOIN xomxintfatab t6 ON t6.req_no = t1.tech_eval_doc_no
+LEFT JOIN xomxintfatab t7 ON t7.req_no = t1.tech_eval_assist_doc_no
+WHERE t1.eval_clsf_cd = #{eval_clsf_cd}
+AND ('' = #{bid_ord_no} OR t2.bid_ord_no = #{bid_ord_no} )
+AND ('' = #{ord_chg_no} OR t2.ord_chg_no = #{ord_chg_no} )
+AND ('' = #{tech_eval_doc_no} OR t1.tech_eval_doc_no = #{tech_eval_doc_no} )
+AND ('' = #{tech_eval_assist_doc_no} OR t1.tech_eval_assist_doc_no = #{tech_eval_assist_doc_no} )
+AND ('' = #{tech_eval_doc_no} OR t1.tech_eval_doc_no = #{tech_eval_doc_no} )
+</select>
+<select id="selectEpuBidTechEvalComInfo" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalSrchVo" resultType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.epu.bid.selectEpuBidTechEvalComInfo */ 
+		 t1.odr     --순번
+     , t1.vend_no --업체코드
+     , NVL(t2.bsns_psn_regst_no, t1.bsns_psn_regst_no) AS bsns_psn_regst_no   --사업자등록번호
+     , NVL(t2.vend_nm, x.vend_abbr) AS vend_nm   --상호명
+     , NVL(t3.ceo_nm, reprs_psn_nm) AS ceo_nm   --대표자명
+     , t1.tot_score   --기술평가점수
+     , t1.succ_yn -- 합격여부
+     , t1.eval_clsf_cd -- 심사구분
+FROM epunotitecheval t1
+LEFT JOIN epuvendinfog2b t2 ON t2.bsns_psn_regst_no = t1.bsns_psn_regst_no
+LEFT JOIN epuceoinfog2b t3 ON t3.bsns_psn_regst_no = t2.bsns_psn_regst_no AND t3.reprs_ceo_yn = 'Y'  
+LEFT JOIN xodfvend x ON t1.vend_no = x.vend_cd
+WHERE t1.bid_noti_no = #{bid_noti_no}
+AND   t1.chg_no = #{chg_no}
+AND   t1.eval_clsf_cd = #{eval_clsf_cd}
+ORDER BY t1.odr
+</select>
+
+<update id="updateEpuBidTechEvalInfo" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.epu.bid.updateEpuBidTechEvalInfo */ 
+		 epunotitechevalmastr
+SET eval_state = #{eval_state}
+  , assist_charger_cd = #{assist_charger_cd}
+  , assist_charger_nm = #{assist_charger_nm}
+  , bid_val_score = #{bid_val_score}
+  , tech_eval_doc_no = #{tech_eval_doc_no}
+  , eval_attach_file_no = #{eval_attach_file_no}
+  , charger_cd = #{charger_cd}
+  , charger_nm = #{charger_nm}
+  , eval_assist_attach_file_no = #{eval_assist_attach_file_no}
+  , renoti_after_yn = #{renoti_after_yn}
+  , rmk = #{rmk}
+  , updt_syspayno = #{updt_syspayno}
+  , updt_daytm = SYSDATE
+WHERE bid_noti_no = #{bid_noti_no}
+AND chg_no = #{chg_no}
+AND eval_clsf_cd = #{eval_clsf_cd}
+</update>
+<insert id="insertEpuBidTechEvalVendInfo" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.epu.bid.insertEpuBidTechEvalVendInfo */ 
+		 INTO epunotitecheval
+(  bid_noti_no
+ , chg_no
+ , vend_no
+ , bsns_psn_regst_no
+ , tot_score
+ , rcpt_no
+ , eval_state
+ , regst_ymd
+ , odr
+ , succ_yn
+ , eval_clsf_cd
+ , regst_syspayno
+ , regst_daytm
+)VALUES(
+    #{bid_noti_no}
+  , #{chg_no}
+  , #{vend_no}
+  , #{bsns_psn_regst_no}
+  , #{tot_score}
+  , ''
+  , '1'
+  , TO_CHAR(sysdate, '%Y%M%d')
+  , #{odr}
+  , #{succ_yn}
+  , #{eval_clsf_cd}
+  , #{regst_syspayno}
+  , SYSDATE
+)
+</insert>
+<delete id="deleteEpuBidTechEvalVendInfoAll" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.epu.bid.deleteEpuBidTechEvalVendInfoAll */ 
+		 epunotitecheval
+WHERE 1=1
+AND bid_noti_no = #{bid_noti_no}
+</delete>
+<update id="updateEpuBidTechEvalVendScore" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.epu.bid.updateEpuBidTechEvalVendScore */ 
+		 epunotitechevalmastr
+SET bid_val_score = #{bid_val_score}
+, tech_eval_assist_doc_no = #{tech_eval_assist_doc_no}
+, eval_state = #{eval_state}
+, tech_nego_yn_cd = #{tech_nego_yn_cd}
+, eval_attach_file_no = #{eval_attach_file_no}
+, eval_assist_attach_file_no = #{eval_assist_attach_file_no}
+WHERE bid_noti_no = #{bid_noti_no}
+AND chg_no = #{chg_no}
+AND eval_clsf_cd = #{eval_clsf_cd}
+</update>
+<update id="updateEpuBidTechEvalInfoApr" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.epu.bid.updateEpuBidTechEvalInfoApr */ 
+		 EPUNOTITECHEVALMASTR
+SET
+ eval_state = #{eval_state}
+WHERE 1 = 1
+AND ( '' = #{bid_noti_no} OR bid_noti_no = #{bid_noti_no} )
+AND ( '' = #{chg_no} OR chg_no = #{chg_no} )
+AND ( '' = #{eval_clsf_cd} OR eval_clsf_cd = #{eval_clsf_cd} )
+AND ( '' = #{tech_eval_assist_doc_no} OR tech_eval_assist_doc_no = #{tech_eval_assist_doc_no} )
+</update>
+<update id="updateEpuBidTechEvalInfoReqDaytm" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.epu.bid.updateEpuBidTechEvalInfoReqDaytm */ 
+		 EPUNOTITECHEVALMASTR
+SET tech_req_daytm = sysdate
+WHERE bid_noti_no = #{bid_noti_no}
+AND chg_no = #{chg_no}
+AND eval_clsf_cd = #{eval_clsf_cd}
+</update>
+<select id="selectDeptToManager" resultType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalSrchVo">
+SELECT /* QueryID : kr.re.kitech.biz.epu.bid.selectDeptToManager */ 
+    A.syspayno AS syspayno,
+    C.empno AS empno,
+    C.nm AS nm
+FROM xodrdeptpurman A
+JOIN humbasicinfo B
+ON A.dept_cd = B.dept_cd 
+AND A.dept_new_ymd = B.dept_new_ymd
+JOIN humbasicinfo C
+ON A.syspayno = C.syspayno
+WHERE A.role_type = #{role_type}
+AND B.syspayno = #{syspayno}
+</select>
+<select id="selectEpuBidTechEvalEndPoint" resultType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalInfoVo" parameterType="kr.re.kitech.biz.epu.bid.vo.EpuBidTechEvalSrchVo">
+SELECT /* QueryID : kr.re.kitech.biz.epu.com.selectEpuBidTechEvalEndPoint */ 
+		 endpoint FROM bpm:bpm_worklist a
+WHERE instid IN ( SELECT instid FROM bpm:bpm_procinst WHERE name = #{name} AND defname = #{defname} AND isdeleted <![CDATA[ <> ]]>'1')
+AND title = #{title}
+AND NOT EXISTS (SELECT * FROM bpm:bpm_worklist  WHERE instid = a.instid AND title = #{title} AND taskid <![CDATA[ > ]]> a.taskid)
+</select>
+</mapper>

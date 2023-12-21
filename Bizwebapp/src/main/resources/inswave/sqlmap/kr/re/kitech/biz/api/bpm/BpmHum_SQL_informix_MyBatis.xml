@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.api.bpm">
+<!-- 아르바이트 활용신청내역 조회 -->
+<select id="selectHumApyPtInfo" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.api.bpm.selectHumApyPtInfo */
+       req_no				/* 신청번호 */
+       , seq				/* 일련번호 */
+       , pruse_orign_ymd	/* 활용시작일 */
+       , pruse_cls_ymd		/* 활용종료일 */
+       , accnt_no			/* 계정번호 */
+       , accnt_cd			/* 회계코드 */
+       , expns_cd			/* 비용코드 */
+       , day_amt			/* 일당 */
+       , bankaccnt_no		/* 계좌번호 */
+       , bank_cd			/* 은행명 */
+       , depstr_nm			/* 예금주 */
+FROM humapyptinfo
+WHERE req_no = #{reqNo}
+</select>
+
+<!-- 아르바이트 기간조회 -->
+<select id="selectXomdtmast" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+SELECT	/* kr.re.kitech.biz.api.bpm.selectXomdtmast */
+		SUBSTR(ymd, 1, 6) AS base_yrmon
+		, MIN(ymd) AS use_st_ymd
+		, MAX(ymd) as use_ed_ymd
+		, 0 AS job_days
+FROM xomdtmst
+WHERE ymd BETWEEN #{pruse_orign_ymd} AND #{pruse_cls_ymd}
+AND SUBSTR(ymd, 1, 6) NOT IN (
+	SELECT pay_yrmon
+	FROM humapyarcost
+	WHERE req_no = #{req_no} AND seq = #{seq}
+	)
+GROUP BY 1
+ORDER BY 1
+</select>
+
+<!-- 지도교수(활용책임자) 수정건 조회 -->
+<select id="selectHumPruse" parameterType="java.lang.String" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPruseVo">
+SELECT	/* kr.re.kitech.biz.api.bpm.selectHumPruse */
+		a.req_no
+		, a.pruse_respn_psn
+		, a.respn_clsf
+		, a.data_clsf
+		, a.use_yn 
+		, b.tar_syspayno AS syspayno
+FROM humapypruserespninfo a
+JOIN humapybasic b ON a.req_no = b.req_no
+WHERE a.req_no = #{reqNo}
+AND a.data_clsf <![CDATA[<>]]> 'O'
+</select>
+
+<!-- 인사정보 활용책임자 수정 -->
+<update id="updateHumBasic" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPruseVo">
+UPDATE humbasicinfo	/* kr.re.kitech.biz.api.bpm.updateHumBasic */
+SET pruse_respn_psn = #{pruse_respn_psn}
+WHERE syspayno = #{syspayno}
+</update>
+
+<!-- 지도교수(활용책임자) 승인처리 -->
+<update id="updateHumApyPruserEspnInfo" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE humapypruserespninfo	/* kr.re.kitech.biz.api.bpm.updateHumApyPruserEspnInfo */
+SET approval_state ='승인완료'
+	, updt_syspayno = #{updt_syspayno}
+	, updt_daytm = CURRENT
+WHERE req_no = #{reqNo}
+</update>
+
+<!-- EIP 정보변경신청서 상세조회 -->
+<select id="selectHumApyInfoChg" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT	/* kr.re.kitech.biz.api.bpm.selectHumApyInfoChg */
+		a.req_no
+        , a.req_ymd
+        , a.syspayno
+        , b.empno
+        , b.nm
+        , d.dept_nm
+        , c.posi_nm
+        , b.posi_cd
+        , a.image_attach_file_no
+        , a.sign_attach_file_no
+        , a.image_bf_attach_file_no
+        , a.sign_bf_attach_file_no
+        , a.regst_syspayno
+        , e.apr_state
+        , f.cd_nm AS apr_state_nm
+        , e.endpoints
+FROM humimgchginfo a
+JOIN humbasicinfo b ON b.syspayno = a.syspayno
+JOIN xodhposiinfo c ON c.posi_cd = b.posi_cd
+JOIN xodhdeptinfo d ON d.dept_cd = b.dept_cd AND d.dept_new_ymd = b.dept_new_ymd
+JOIN xomxintfatab e ON e.req_no = a.req_no
+JOIN xodxcommst f ON f.cd = e.apr_state
+WHERE a.req_no = #{reqNo}
+</select>
+
+<!-- EIP 정보변경 이미지 수정 -->
+<update id="updateHumApyInfoChgImg" parameterType="java.util.HashMap">
+UPDATE humimgchginfo	/* kr.re.kitech.biz.api.bpm.updateHumApyInfoChgImg */
+SET image_attach_file_no = #{image_attach_file_no}
+	, sign_attach_file_no = #{sign_attach_file_no}
+	, image_bf_attach_file_no = #{image_bf_attach_file_no}
+	, sign_bf_attach_file_no = #{sign_bf_attach_file_no}
+	, updt_daytm = CURRENT
+WHERE req_no = #{req_no}
+</update>
+
+<!-- 휴복직신청자 인사정보 조회 -->
+<select id="selectHumMobile" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT	/* kr.re.kitech.biz.api.bpm.selectHumMobile */
+	 t2.mobile
+	, t2.syspayno
+	, t2.nm
+FROM humapylandr t1
+JOIN humbasicinfo t2 on t2.syspayno = t1.syspayno
+WHERE t1.req_no = #{reqNo}
+</select>
+</mapper>

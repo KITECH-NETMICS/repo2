@@ -1,0 +1,874 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.app">
+  <select id="selectPatChngReqMS01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.app.xda.PatChngReqMS01 변경신청 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatChngReqMS01 */
+		 a.req_no
+     , a.mngmt_no
+     , a.invnt_krn_nm
+     , b.skate_clsf
+     , h.nm
+     , b.elecapp_docu_no
+     , b.input_ymd
+     , b.his_seq
+     , b.acdt_unusual_item
+  , MIN(seq) AS seq
+FROM patmastr a
+JOIN patskaterthis b ON a.req_no = b.req_no AND a.mngmt_no = b.mngmt_no
+JOIN humbasicinfo h ON b.regst_syspayno = h.syspayno
+WHERE b.his_seq <![CDATA[ > ]]> 0
+<if test="req_no != null and req_no != ''">
+AND (a.req_no = #{req_no} OR a.mngmt_no = #{req_no})
+</if>
+<if test="input_ymd_st != null and input_ymd_st != ''">
+AND b.input_ymd BETWEEN #{input_ymd_st} AND  #{input_ymd_ed}
+</if>
+<if test="invnt_krn_nm != null and invnt_krn_nm != ''">
+AND a.invnt_krn_nm LIKE '%'||#{invnt_krn_nm}||'%'
+</if>
+<if test="regst_syspayno != null and regst_syspayno != ''">
+AND b.regst_syspayno = #{regst_syspayno}
+</if>
+<if test="skate_clsf != null and skate_clsf != ''">
+AND b.skate_clsf = #{skate_clsf}
+</if>
+GROUP BY 1,2,3,4,5,6,7,8,9
+UNION
+SELECT DISTINCT
+       a.req_no
+     , a.mngmt_no
+     , a.invnt_krn_nm
+     , 'PAS099'
+     , h.nm
+     , b.elecapp_docu_no
+     , b.input_ymd
+     , b.seq AS his_seq
+     , b.acdt_unusual_item
+  , 1 AS seq
+FROM patmastr a
+LEFT JOIN patrelatreschprjhis b ON a.req_no = b.req_no
+JOIN humbasicinfo h ON b.regst_syspayno = h.syspayno
+WHERE b.seq <![CDATA[ > ]]> 0
+<if test="req_no != null and req_no != ''">
+AND (a.req_no = #{req_no} OR a.mngmt_no = #{req_no})
+</if>
+<if test="input_ymd_st != null and input_ymd_st != ''">
+AND b.input_ymd BETWEEN #{input_ymd_st} AND  #{input_ymd_ed}
+</if>
+<if test="invnt_krn_nm != null and invnt_krn_nm != ''">
+AND a.invnt_krn_nm LIKE '%'||#{invnt_krn_nm}||'%'
+</if>
+<if test="regst_syspayno != null and regst_syspayno != ''">
+AND b.regst_syspayno = #{regst_syspayno}
+</if>
+<if test="skate_clsf != null and skate_clsf != ''">
+AND 'PAS099' = #{skate_clsf}
+</if>
+ORDER BY b.input_ymd DESC, req_no, his_seq DESC
+  </select>
+  <select id="selectPatSkatertHisMS07" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.chr.xda.PatSkatertHisMS07 이력테이블 max값 가져오기 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatSkatertHisMS07 */
+		 max(nvl(his_seq,0)) his_seq_max
+FROM patskaterthis a
+WHERE a.req_no = #{req_no}
+AND   a.mngmt_no = #{mngmt_no}
+AND   a.skate_clsf = #{skate_clsf}
+  </select>
+  <select id="selectPatRelatReschPrjHisMS02" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.chr.xda.PatRelatReschPrjHisMS02 계정변경 이력 또는 변경신청 다건*/
+-- 2018.03.16. 변경신청에서 사용할 수 있도록 쿼리 변경(dynamic)
+-- 2018.03.20. 변경신청 결재완료 후 소연심 안건등록을 위해 patmastr join
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatRelatReschPrjHisMS02 */
+      a.req_no
+    , a.seq
+    , a.elecapp_docu_no
+    , a.input_ymd
+    , a.accnt_no
+    , a.prj_no
+    , a.prj_nm
+    , a.resch_respn_syspayno
+    , a.prj_term
+    , a.attach_file_no
+    , a.acdt_unusual_item
+    , a.regst_syspayno
+    , a.regst_daytm
+    , b.nm AS resch_respn_syspaynm
+    , b.work_clsf
+    , c.nm
+    , c.empno
+    , d.charg_syspayno
+    , MAX(d.smitapp_ymd) AS smitapp_ymd
+FROM patrelatreschprjhis a
+JOIN humbasicinfo b ON a.resch_respn_syspayno = b.syspayno
+JOIN humbasicinfo c ON a.regst_syspayno = c.syspayno
+JOIN patmastr d ON a.req_no = d.req_no
+<where>
+	<if test="req_no != null and req_no != ''">
+	 	AND a.req_no = #{req_no}
+	</if>
+	<if test="elecapp_docu_no != null and elecapp_docu_no != ''">
+	 	AND a.elecapp_docu_no= #{elecapp_docu_no}
+	</if>
+	<if test="seq != null and seq != ''">
+	 	AND a.seq = #{seq}
+	</if>
+</where>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
+  </select>
+  <select id="selectAppPatSkateRtHisMS01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.app.xda.PatSkateRtHisMS01 변경신청 저장 후 조회 다건*/
+-- 2018.03.21. 결재완료 후 patcoinvntpsn저장을 위하여 patmastr join
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectAppPatSkateRtHisMS01 */
+    a.req_no
+    , a.mngmt_no
+    , a.elecapp_docu_no
+    , a.skate_clsf
+    , DECODE(a.skate_clsf, 'PAS020', a.blong_clsf, '') AS vend_type
+    , a.seq
+    , a.input_ymd
+    , a.his_seq
+    , a.stake_rt
+    , a.blong_clsf
+    , a.blong_cd
+    , a.blong_nm
+    , a.dept_new_ymd
+    , a.invnt_psn_clsf
+    , a.syspayno
+    , a.vend_cd
+    , REPLACE(a.vend_nm, '㈜', '(주)') AS vend_nm
+    , a.vend_bsn_no
+    , a.nm_krn
+    , a.nm_eng
+    , nvl(a.resid_regst_no,h.resid_no) as resid_regst_no
+    , a.contac_loc
+    , a.email
+    , a.addr
+    , a.charg
+    , a.attach_file_no
+    , a.acdt_unusual_item
+    , a.chng_state
+    , a.regst_syspayno  -- 신청자
+    , b.empno
+    , b.nm
+    , h.work_clsf
+    , c.smitapp_ymd
+    , c.charg_syspayno
+FROM patskaterthis a
+JOIN humbasicinfo b ON a.regst_syspayno = b.syspayno
+JOIN patmastr c ON a.req_no = c.req_no AND a.mngmt_no = c.mngmt_no
+LEFT JOIN humbasicinfo h ON a.syspayno = h.syspayno
+<where>
+	<if test="elecapp_docu_no != null and elecapp_docu_no != ''">
+  		AND a.elecapp_docu_no = #{elecapp_docu_no}
+	</if>
+	<if test="elecapp_docu_no == null or elecapp_docu_no == ''">
+    	AND a.req_no = #{req_no}
+		AND a.mngmt_no = #{mngmt_no}
+		AND a.skate_clsf = #{skate_clsf}
+		AND a.his_seq = #{his_seq}
+	</if>
+</where>
+ORDER BY a.seq
+  </select>
+  <delete id="deletePatRelatReschPrjSD01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatRelatReschPrjSD01 관련연구과제 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatRelatReschPrjSD01 */
+FROM    patrelatreschprj
+WHERE   req_no      = #{req_no}
+<if test="accnt_no != null and accnt_no != ''">
+	  AND     accnt_no    = #{accnt_no}
+	</if>
+  </delete>
+  <insert id="insertPatRelatReschPrjSI01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatRelatReschPrjSI01 관련연구과제 등록 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.app.insertPatRelatReschPrjSI01 */
+		 INTO patrelatreschprj (req_no              ,    /* 의뢰번호                  */
+                              accnt_no            ,    /* 계정번호                  */
+                              prj_no              ,    /* 과제번호                  */
+                              prj_nm              ,    /* 과제명                    */
+                              resch_respn_syspayno,    /* 연구책임시스템개인번호    */
+                              prj_term            ,    /* 연구기간                  */
+                              regst_syspayno      ,    /* 등록시스템개인번호        */
+                              regst_daytm         )    /* 등록일시                  */
+VALUES (#{req_no},
+        #{accnt_no},
+        #{prj_no},
+        #{prj_nm},
+        #{resch_respn_syspayno},
+        #{prj_term},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+  <delete id="deletePatCoInvntPsnSD01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatCoInvntPsnSD01 공동발명자 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatCoInvntPsnSD01 */
+FROM    patcoinvntpsn
+WHERE   req_no      = #{req_no}
+AND     mngmt_no    = #{mngmt_no}
+  </delete>
+  <delete id="deletePatCoSmitappVendSD01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatCoSmitappVendSD01 공동출원업체 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatCoSmitappVendSD01 */
+FROM    patcosmitappvend
+WHERE   req_no      = #{req_no}
+AND     mngmt_no    = #{mngmt_no}
+  </delete>
+  <select id="selectPatRelatReschPrjSS02" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatRelatReschPrjSS02 계정변경 seq 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatRelatReschPrjSS02 */
+		  NVL(MAX(seq), 0) + 1    AS seq
+FROM    patrelatreschprjhis
+WHERE   req_no = #{req_no}
+  </select>
+  <insert id="insertPatCoSmitappVendSI01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatCoSmitappVendSI01 공동출원업체 등록 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.app.insertPatCoSmitappVendSI01 */
+		 INTO patcosmitappvend (req_no        ,   -- 의뢰번호
+                              mngmt_no      ,   -- 관리번호
+                              seq           ,   -- 일련번호
+                              vend_type     ,   -- 업체구분
+                              stake_rt      ,   -- 지분율
+                              vend_nm       ,   -- 업체명
+                              vend_cd       ,   -- 업체코드
+                              vend_bsn_no   ,   -- 사업자번호
+                              addr          ,   -- 주소
+                              charg         ,   -- 담당자
+                              contac_loc    ,   -- 연락처
+                              attach_file_no ,  -- 첨부파일
+                              regst_syspayno,   -- 등록시스템개인번호
+                              regst_daytm   )   -- 등록일시
+VALUES (#{req_no},
+        #{mngmt_no},
+        #{seq},
+        #{vend_type},
+        #{stake_rt},
+        #{vend_nm},
+        #{vend_cd},
+        #{vend_bsn_no},
+        #{addr},
+        #{charg},
+        #{contac_loc},
+        #{attach_file_no},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+  <insert id="insertPatCoInvntPsnSI01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatCoInvntPsnSI01 공동발명자 등록 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.app.insertPatCoInvntPsnSI01 */
+		 INTO patcoinvntpsn ( req_no            ,  -- 의뢰번호
+                            mngmt_no          , --  관리번호
+                            seq               ,  -- 일련번호
+                            syspayno          ,  -- 시스템개인번호
+                            blong_clsf        ,  -- 소속구분
+                            blong_cd          ,  -- 소속코드
+                            dept_new_ymd      ,  -- 소속부서생성일
+                            blong_nm          ,  -- 소속명
+                            nm_krn            ,  -- 성명국문
+                            nm_eng            ,  -- 성명영문
+                            resid_regst_no    ,  -- 주민등록번호
+                            contac_loc        ,  -- 연락처
+                            email             ,  -- 이메일
+                            addr              ,  -- 주소
+                            stake_rt          ,  -- 지분율
+                            stake_dept        ,  -- 실적부서
+                            invnt_psn_clsf    ,  -- 발명자구분
+                            trans_ex          ,  -- 양도유무
+                            co_invnt_affir_ex ,  -- 공동발명확인유무
+                            co_invnt_affir_ymd,  -- 공동발명확인일자
+                            co_invnt_affir_rmk,  -- 공동발명확인비고
+                            co_invnt_retn_ymd ,  -- 공동발명반송일자
+                            co_invnt_retn_rmk ,  -- 공동발명반송비고
+                            attach_file_no    ,  -- 첨부파일
+                            regst_syspayno    ,  -- 등록시스템개인번호
+                            regst_daytm       )  -- 등록일시
+VALUES (#{req_no},
+        #{mngmt_no},
+        #{seq},
+        #{syspayno},
+        #{blong_clsf},
+        #{blong_cd},
+        #{dept_new_ymd},
+        #{blong_nm},
+        #{nm_krn},
+        #{nm_eng},
+        #{resid_regst_no},
+        #{contac_loc},
+        #{email},
+        #{addr},
+        #{stake_rt},
+        #{stake_dept},
+        #{invnt_psn_clsf},
+        #{trans_ex},
+        #{co_invnt_affir_ex},
+        #{co_invnt_affir_ymd},
+        #{co_invnt_affir_rmk},
+        #{co_invnt_retn_ymd},
+        #{co_invnt_retn_rmk},
+        #{attach_file_no},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+  <update id="updatePatMastrSU01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatMastrSU01 특허마스터 변경 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.app.updatePatMastrSU01 */
+		  patmastr
+SET     <if test="pat_clsf != null and pat_clsf != ''">
+	  pat_clsf               = #{pat_clsf},
+	</if>  /* 특허구분               */
+  <if test="pat_grd != null and pat_grd != ''">
+	  pat_grd                 = #{pat_grd},
+	</if>  /* 발명의등급                   */
+  <if test="state != null and state != ''">
+	  state                  = #{state},
+	</if>  /* 상태                   */
+  <if test="invnt_krn_nm != null and invnt_krn_nm != ''">
+	  invnt_krn_nm            = #{invnt_krn_nm},
+	</if>  /* 발명국문명칭           */
+  <if test="invnt_eng_nm != null and invnt_eng_nm != ''">
+	  invnt_eng_nm            = #{invnt_eng_nm},
+	</if>  /* 발명영문명칭           */
+  <if test="detls_krn_nm != null and detls_krn_nm != ''">
+	  detls_krn_nm            = #{detls_krn_nm},
+	</if>  /* 명세국문명칭           */
+  <if test="detls_eng_nm != null and detls_eng_nm != ''">
+	  detls_eng_nm            = #{detls_eng_nm},
+	</if>  /* 명세영문명칭           */
+  <if test="smitapp_krn_nm != null and smitapp_krn_nm != ''">
+	  smitapp_krn_nm          = #{smitapp_krn_nm},
+	</if>  /* 출원국문명칭           */
+  <if test="smitapp_eng_nm != null and smitapp_eng_nm != ''">
+	  smitapp_eng_nm          = #{smitapp_eng_nm},
+	</if>  /* 출원영문명칭           */
+  <if test="regst_krn_nm != null and regst_krn_nm != ''">
+	  regst_krn_nm            = #{regst_krn_nm},
+	</if>  /* 등록국문명칭           */
+  <if test="regst_eng_nm != null and regst_eng_nm != ''">
+	  regst_eng_nm            = #{regst_eng_nm},
+	</if>  /* 등록영문명칭           */
+  <if test="trans_nm != null and trans_nm != ''">
+	  trans_nm                = #{trans_nm},
+	</if>  /* 양도명칭               */
+  <if test="smitapp_no != null and smitapp_no != ''">
+	  smitapp_no              = #{smitapp_no},
+	</if>  /* 출원번호               */
+  <if test="smitapp_ymd != null and smitapp_ymd != ''">
+	  smitapp_ymd             = #{smitapp_ymd},
+	</if>  /* 출원일자               */
+  <if test="smitapp_reg_ymd != null and smitapp_reg_ymd != ''">
+	  smitapp_reg_ymd         = #{smitapp_reg_ymd},
+	</if>  /* 출원실적년월           */
+  <if test="regst_no != null and regst_no != ''">
+	  regst_no                = #{regst_no},
+	</if>  /* 등록번호               */
+  <if test="regst_ymd != null and regst_ymd != ''">
+	  regst_ymd               = #{regst_ymd},
+	</if>  /* 등록일자               */
+  <if test="regst_reg_ymd != null and regst_reg_ymd != ''">
+	  regst_reg_ymd           = #{regst_reg_ymd},
+	</if>  /* 등록실적년월           */
+  <if test="invnt_syspayno != null and invnt_syspayno != ''">
+	  invnt_syspayno          = #{invnt_syspayno},
+	</if>  /* 발명시스템개인번호     */
+  <if test="charg_syspayno != null and charg_syspayno != ''">
+	  charg_syspayno          = #{charg_syspayno},
+	</if>  /* 담당시스템개인번호     */
+  <if test="patofic_cd != null and patofic_cd != ''">
+	  patofic_cd              = #{patofic_cd},
+	</if>  /* 특허사무소코드         */
+  <if test="patofic_charg_id != null and patofic_charg_id != ''">
+	  patofic_charg_id        = #{patofic_charg_id},
+	</if>  /* 특허사무소담당자아이디 */
+  <if test="patofic_nm != null and patofic_nm != ''">
+	  patofic_nm              = #{patofic_nm},
+	</if>  /* 특허사무소담당자아이디 */
+  <if test="patofic_charg_nm != null and patofic_charg_nm != ''">
+	  patofic_charg_nm        = #{patofic_charg_nm},
+	</if>  /* 특허사무소담당자아이디 */
+  <if test="patofic_contac_loc != null and patofic_contac_loc != ''">
+	  patofic_contac_loc      = #{patofic_contac_loc},
+	</if>  /* 특허사무소담당자아이디 */
+  <if test="right_expir_ymd != null and right_expir_ymd != ''">
+	  right_expir_ymd         = #{right_expir_ymd},
+	</if>  /* 권리만료일자           */
+  <if test="right_mnt_final_seq != null and right_mnt_final_seq != ''">
+	  right_mnt_final_seq     = #{right_mnt_final_seq},
+	</if>  /* 권리유지최종차수       */
+  <if test="dom_oversea_clsf != null and dom_oversea_clsf != ''">
+	  dom_oversea_clsf        = #{dom_oversea_clsf},
+	</if>  /* 국내해외구분           */
+  <if test="oversapp_hope_ex != null and oversapp_hope_ex != ''">
+	  oversapp_hope_ex        = #{oversapp_hope_ex},
+	</if>  /* 해외출원희망유무       */
+  <if test="pct_chk != null and pct_chk != ''">
+	  pct_chk                 = #{pct_chk},
+	</if>  /* PCT 진입 여부          */
+  <if test="smitapp_natn_cd != null and smitapp_natn_cd != ''">
+	  smitapp_natn_cd         = #{smitapp_natn_cd},
+	</if>  /* 출원국가코드           */
+  <if test="smitapp_natn_nm != null and smitapp_natn_nm != ''">
+	  smitapp_natn_nm         = #{smitapp_natn_nm},
+	</if>  /* 출원국가코드           */
+  <if test="open_no != null and open_no != ''">
+	  open_no                 = #{open_no},
+	</if>  /* 공개번호               */
+  <if test="intrn_smitapp_no != null and intrn_smitapp_no != ''">
+	  intrn_smitapp_no        = #{intrn_smitapp_no},
+	</if>  /* 국제출원번호           */
+  <if test="intrn_smitapp_ymd != null and intrn_smitapp_ymd != ''">
+	  intrn_smitapp_ymd       = #{intrn_smitapp_ymd},
+	</if>  /* 국제출원일자           */
+  <if test="prityrgt_main_rspns_no != null and prityrgt_main_rspns_no != ''">
+	  prityrgt_main_rspns_no  = #{prityrgt_main_rspns_no},
+	</if>  /* 우선권주장번호         */
+  <if test="prityrgt_main_rspns_ymd != null and prityrgt_main_rspns_ymd != ''">
+	  prityrgt_main_rspns_ymd = #{prityrgt_main_rspns_ymd},
+	</if>  /* 우선권주장일자         */
+  <if test="open_ex != null and open_ex != ''">
+	  open_ex                 = #{open_ex},
+	</if>  /* 공개유무               */
+  <if test="open_ymd != null and open_ymd != ''">
+	  open_ymd                = #{open_ymd},
+	</if>  /* 공개일자               */
+  <if test="open_contnt != null and open_contnt != ''">
+	  open_contnt             = #{open_contnt},
+	</if>  /* 공개내용               */
+  <if test="invnt_clsf != null and invnt_clsf != ''">
+	  invnt_clsf              = #{invnt_clsf},
+	</if>  /* 발명구분               */
+  <if test="ely_open_ex != null and ely_open_ex != ''">
+	  ely_open_ex             = #{ely_open_ex},
+	</if>  /* 조기공개유무           */
+  <if test="eval_demnd_ex != null and eval_demnd_ex != ''">
+	  eval_demnd_ex           = #{eval_demnd_ex},
+	</if>  /* 심사청구유무           */
+  <if test="prity_eval_ex != null and prity_eval_ex != ''">
+	  prity_eval_ex           = #{prity_eval_ex},
+	</if>  /* 우선심사유무           */
+  <if test="smitapp_occr_clsf != null and smitapp_occr_clsf != ''">
+	  smitapp_occr_clsf       = #{smitapp_occr_clsf},
+	</if>  /* 출원발생구분           */
+  <if test="co_smitapp_ex != null and co_smitapp_ex != ''">
+	  co_smitapp_ex           = #{co_smitapp_ex},
+	</if>  /* 공동출원유무           */
+  <if test="smitapp_way != null and smitapp_way != ''">
+	  smitapp_way             = #{smitapp_way},
+	</if>  /* 출원방법               */
+  <if test="tech_eval_hope_ex != null and tech_eval_hope_ex != ''">
+	  tech_eval_hope_ex       = #{tech_eval_hope_ex},
+	</if>  /* 기술평가희망유무       */
+  <if test="tech_trans_hope_ex != null and tech_trans_hope_ex != ''">
+	  tech_trans_hope_ex      = #{tech_trans_hope_ex},
+	</if>  /* 기술이전희망유무       */
+  <if test="tech_trans_hope_amt != null and tech_trans_hope_amt != ''">
+	  tech_trans_hope_amt     = #{tech_trans_hope_amt},
+	</if>  /* 기술이전희망금액       */
+  <if test="tech_trans_hope_typ != null and tech_trans_hope_typ != ''">
+	  tech_trans_hope_typ     = #{tech_trans_hope_typ},
+	</if>  /* 기술이전희망유형       */
+  <if test="affir_req_ymd != null and affir_req_ymd != ''">
+	  affir_req_ymd           = #{affir_req_ymd},
+	</if>  /* 확인요청일자           */
+  <if test="invnt_psn_rmk != null and invnt_psn_rmk != ''">
+	  invnt_psn_rmk           = #{invnt_psn_rmk},
+	</if>  /* 발명자비고             */
+  <if test="invnt_draft_ymd != null and invnt_draft_ymd != ''">
+	  invnt_draft_ymd         = #{invnt_draft_ymd},
+	</if>  /* 발명기안일자           */
+  <if test="invnt_apprvl_complt_ymd != null and invnt_apprvl_complt_ymd != ''">
+	  invnt_apprvl_complt_ymd = #{invnt_apprvl_complt_ymd},
+	</if>  /* 발명결재완료일자       */
+  <if test="invnt_reject_ymd != null and invnt_reject_ymd != ''">
+	  invnt_reject_ymd        = #{invnt_reject_ymd},
+	</if>  /* 발명부결일자           */
+  <if test="invnt_reject_resn != null and invnt_reject_resn != ''">
+	  invnt_reject_resn       = #{invnt_reject_resn},
+	</if>  /* 발명부결사유           */
+  <if test="invnt_wrte_syspayno != null and invnt_wrte_syspayno != ''">
+	  invnt_wrte_syspayno     = #{invnt_wrte_syspayno},
+	</if>  /* 발명작성시스템개인번호 */
+  <if test="prityrgt_wdrw_ymd != null and prityrgt_wdrw_ymd != ''">
+	  prityrgt_wdrw_ymd       = #{prityrgt_wdrw_ymd},
+	</if>  /* 우선권취하일자         */
+  <if test="old_data_mngmt_no != null and old_data_mngmt_no != ''">
+	  old_data_mngmt_no       = #{old_data_mngmt_no},
+	</if>  /* 구데이터관리번호       */
+  <if test="attach_file_no_1 != null and attach_file_no_1 != ''">
+	  attach_file_no_1        = #{attach_file_no_1},
+	</if>  /* 첨부파일 */
+  <if test="tech_clsf != null and tech_clsf != ''">
+	  tech_clsf               = #{tech_clsf},
+	</if>  /* 기술분류 */
+  <if test="relat_dom_smitapp_no != null and relat_dom_smitapp_no != ''">
+	  relat_dom_smitapp_no    = #{relat_dom_smitapp_no},
+	</if>  /* 관련국내출원번호 */
+  <if test="pre_tech_wrt_invst != null and pre_tech_wrt_invst != ''">
+	  pre_tech_wrt_invst      = #{pre_tech_wrt_invst},
+	</if>  /* 선행기술조사서여부 */
+  <if test="attach_file_no_2 != null and attach_file_no_2 != ''">
+	  attach_file_no_2        = #{attach_file_no_2},
+	</if>  /* 첨부파일 */
+  <if test="attach_file_no_3 != null and attach_file_no_3 != ''">
+	  attach_file_no_3        = #{attach_file_no_3},
+	</if>  /* 첨부파일 */
+  <if test="attach_file_no_4 != null and attach_file_no_4 != ''">
+	  attach_file_no_4        = #{attach_file_no_4},
+	</if>  /* 첨부파일 */
+  <if test="ipc_01 != null and ipc_01 != ''">
+	  ipc_01                  = #{ipc_01},
+	</if>  /* IPC01 */
+  <if test="ipc_02 != null and ipc_02 != ''">
+	  ipc_02                  = #{ipc_02},
+	</if>  /* IPC02 */
+  <if test="ipc_03 != null and ipc_03 != ''">
+	  ipc_03                  = #{ipc_03},
+	</if>  /* IPC03 */
+  <if test="exam_reflect_clsf != null and exam_reflect_clsf != ''">
+	  exam_reflect_clsf       = #{exam_reflect_clsf},
+	</if> /* 질평가반영여부*/
+        updt_syspayno   = #{updt_syspayno},                                                                    /* 수정시스템개인번호     */
+        updt_daytm      = CURRENT                                                               /* 수정일시               */
+WHERE   req_no          = #{req_no}
+  <if test="mngmt_no != null and mngmt_no != ''">
+	  AND     mngmt_no        = #{mngmt_no}
+	</if>
+  </update>
+  <select id="selectHumBasicInfoSS04" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.hum.com.xda.HumBasicInfoSS04 사번,개인번호,이름,부서코드,부서갱신일,부서명 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectHumBasicInfoSS04 */
+a.syspayno, a.empno, a.nm, a.dept_cd, a.dept_new_ymd, b.dept_nm
+FROM humbasicinfo a
+JOIN xodhdeptinfo b ON b.dept_cd = a.dept_cd AND b.dept_new_ymd = a.dept_new_ymd
+WHERE a.syspayno = #{syspayno}
+  </select>
+  <delete id="deletePatSkatertHisSD01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatSkatertHisSD01 사건조회-지분율변경 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatSkatertHisSD01 */
+		 FROM patskaterthis
+WHERE req_no = #{req_no}
+AND   mngmt_no = #{mngmt_no}
+AND   skate_clsf = #{skate_clsf}
+AND   his_seq = #{his_seq}
+<if test="seq != null and seq != ''">
+seq = #{seq}
+</if>
+  </delete>
+  <delete id="deletePatRelatReschPrjHisSD01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatRelatReschPrjHisSD01 이력삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatRelatReschPrjHisSD01 */
+		 FROM patrelatreschprjhis
+WHERE   req_no = #{req_no}
+AND     seq = #{seq}
+  </delete>
+  <select id="selectPatSkatertHisSS03" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatSkatertHisSS03 사건조회-지분율변경테이블his_seq 생성 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatSkatertHisSS03 */
+		  NVL(MAX(his_seq), 0) + 1    AS his_seq
+FROM    patskaterthis
+WHERE   req_no      = #{req_no}
+AND     mngmt_no    = #{mngmt_no}
+AND     skate_clsf  = #{skate_clsf}
+  </select>
+  <insert id="insertPatRelatReschPrjHisSI01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatRelatReschPrjHisSI01 계정변경 이력 저장 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.app.insertPatRelatReschPrjHisSI01 */
+		 INTO patrelatreschprjhis(
+      req_no,
+      seq,
+      elecapp_docu_no,
+      input_ymd,
+      accnt_no,
+      prj_no,
+      prj_nm,
+      resch_respn_syspayno,
+      prj_term,
+      attach_file_no ,
+      acdt_unusual_item,
+      regst_syspayno,
+      regst_daytm
+) VALUES( #{req_no},#{seq},#{elecapp_docu_no},#{input_ymd},#{accnt_no},#{prj_no},#{prj_nm},#{resch_respn_syspayno},#{prj_term},#{attach_file_no},#{acdt_unusual_item},#{regst_syspayno},CURRENT)
+  </insert>
+  <insert id="insertPatSkatertHisSI01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatSkatertHisSI01 사건조회-지분율변경등록 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.app.insertPatSkatertHisSI01 */
+		 INTO patskaterthis(
+      req_no,       -- 신청번호
+      mngmt_no,     -- 관리번호
+      elecapp_docu_no,
+      skate_clsf ,  -- 지분구분(공동발명자, 공동출원업체:PCA)
+      seq,
+      input_ymd  ,   -- 입력일자
+      his_seq    ,   -- 지분율변경 순번
+      stake_rt   ,   -- 지분율
+      stake_dept ,   -- 실적부서
+      blong_clsf ,   -- 소속구분 (내부, 외부, 개인, 업체)
+      blong_cd,       -- 소속코드(내부-부서코드)
+      blong_nm,
+      dept_new_ymd ,  -- 부서생성일
+      invnt_psn_clsf, -- 주발명자구분
+      syspayno ,  -- 내부인 일 경우
+      vend_cd,  -- 업체코드(업체)
+      vend_nm,  -- 업체명
+      vend_bsn_no  ,  -- 사업자, 주민번호
+      nm_krn,  -- 성명국문(개인, 외부)
+      nm_eng,  -- 성명영문(개인, 외부))
+      resid_regst_no,  -- 주민등록번호(개인)
+      contac_loc,  -- 연락처(개인, 외부)
+      email,       -- 이메일(개인, 외부)
+      post_no,     -- 우편번호(개인, 외부)
+      addr ,       -- 주소(개인, 외부)
+      charg,       -- 대표자
+      attach_file_no,
+      acdt_unusual_item ,  -- 사건특이사항
+      chng_state,
+      regst_syspayno ,
+      regst_daytm )
+VALUES ( #{req_no},#{mngmt_no},#{elecapp_docu_no},#{skate_clsf},#{seq},#{input_ymd},#{his_seq},#{stake_rt},#{stake_dept},#{blong_clsf},#{blong_cd},#{blong_nm},#{dept_new_ymd},#{invnt_psn_clsf},#{syspayno},#{vend_cd},#{vend_nm},#{vend_bsn_no},#{nm_krn},#{nm_eng},#{resid_regst_no},#{contac_loc},#{email},#{post_no},#{addr},#{charg},#{attach_file_no},#{acdt_unusual_item},#{chng_state},#{regst_syspayno},SYSDATE)
+  </insert>
+  <update id="updatePatSkatertHisSU01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatSkatertHisSU01 사건조회-지분율변경수정 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.app.updatePatSkatertHisSU01 */
+		 patskaterthis
+SET
+    <if test="stake_rt != null and stake_rt != ''">
+	  stake_rt = #{stake_rt},
+	</if>
+    <if test="stake_dept != null and stake_dept != ''">
+	  stake_dept = #{stake_dept},
+	</if>
+    <if test="blong_clsf != null and blong_clsf != ''">
+	  blong_clsf = #{blong_clsf},
+	</if>
+    <if test="blong_cd != null and blong_cd != ''">
+	  blong_cd = #{blong_cd},
+	</if>
+    <if test="blong_nm != null and blong_nm != ''">
+	  blong_nm = #{blong_nm},
+	</if>
+    <if test="dept_new_ymd != null and dept_new_ymd != ''">
+	  dept_new_ymd = #{dept_new_ymd},
+	</if>
+    <if test="invnt_psn_clsf != null and invnt_psn_clsf != ''">
+	  invnt_psn_clsf = #{invnt_psn_clsf},
+	</if>
+    <if test="syspayno != null and syspayno != ''">
+	  syspayno = #{syspayno},
+	</if>
+    <if test="vend_cd != null and vend_cd != ''">
+	  vend_cd = #{vend_cd},
+	</if>
+    <if test="vend_nm != null and vend_nm != ''">
+	  vend_nm = #{vend_nm},
+	</if>
+    <if test="vend_bsn_no != null and vend_bsn_no != ''">
+	  vend_bsn_no = #{vend_bsn_no},
+	</if>
+    <if test="nm_krn != null and nm_krn != ''">
+	  nm_krn = #{nm_krn},
+	</if>
+    <if test="nm_eng != null and nm_eng != ''">
+	  nm_eng = #{nm_eng},
+	</if>
+    <if test="resid_regst_no != null and resid_regst_no != ''">
+	  resid_regst_no = #{resid_regst_no},
+	</if>
+    <if test="contac_loc != null and contac_loc != ''">
+	  contac_loc = #{contac_loc},
+	</if>
+    <if test="email != null and email != ''">
+	  email = #{email},
+	</if>
+    <if test="post_no != null and post_no != ''">
+	  post_no = #{post_no},
+	</if>
+    <if test="addr != null and addr != ''">
+	  addr = #{addr},
+	</if>
+    <if test="charg != null and charg != ''">
+	  charg = #{charg},
+	</if>
+    <if test="attach_file_no != null and attach_file_no != ''">
+	  attach_file_no = #{attach_file_no},
+	</if>
+    <if test="acdt_unusual_item != null and acdt_unusual_item != ''">
+	  acdt_unusual_item = #{acdt_unusual_item},
+	</if>
+    <if test="chng_state != null and chng_state != ''">
+	  chng_state = #{chng_state},
+	</if>
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = CURRENT
+	WHERE req_no = #{req_no}
+	AND   mngmt_no = #{mngmt_no}
+	AND   skate_clsf = #{skate_clsf}
+	AND   input_ymd = #{input_ymd}
+	AND   seq = #{seq}
+  </update>
+  <delete id="deletePatRelatReschPrjHisSD02" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatRelatReschPrjHisSD02 연구과제 변경 신청 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatRelatReschPrjHisSD02 */
+		 FROM patrelatreschprjhis WHERE elecapp_docu_no = #{req_no}
+  </delete>
+  <delete id="deletePatSkatertHisSD02" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.com.xda.PatSkatertHisSD02 변경신청서 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatSkatertHisSD02 */
+		 FROM patskaterthis
+WHERE elecapp_docu_no = #{req_no}
+  </delete>
+  <select id="selectPatSkatertHisMS01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.chr.xda.PatSkatertHisMS01 사건조회-지분율변경(공동발명자_current) 다건*/
+-- 2018.03.19. 컬럼추가 (chng_state)
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatSkatertHisMS01 */
+		  t1.req_no
+      , t1.mngmt_no
+      , t1.seq
+      , TRIM(t1.invnt_psn_clsf) AS invnt_psn_clsf
+      , t1.blong_clsf
+      , t1.syspayno
+      , fun_xodxcommst_cd_nm(t1.blong_clsf, 0) AS blong_clsf_nm
+      , DECODE(t1.blong_clsf, 'PDT010', t2.dept_cd, 'PDT020', t1.blong_cd) AS blong_cd
+      , TRIM(DECODE(t1.blong_clsf, 'PDT010', t4.dept_nm, 'PDT020', t1.blong_nm)) AS blong_nm
+      , DECODE(t1.blong_clsf, 'PDT010', t2.dept_new_ymd, 'PDT020', t1.dept_new_ymd) AS dept_new_ymd
+      , DECODE(t1.blong_clsf, 'PDT010', DECODE(t1.syspayno, NULL, t1.nm_krn, t2.nm), 'PDT020', t1.nm_krn) AS nm_krn
+      , t1.nm_eng
+      , t1.resid_regst_no
+      , substr(t1.resid_regst_no, 0, 6)||'*******' AS resid_no_dis
+      , t1.contac_loc
+      , t1.email
+      , t1.post_no
+      , t1.addr
+      , t1.detls_addr
+      , t1.stake_rt
+      , t1.stake_dept
+      , ''  AS rmk
+      , t1.attach_file_no
+      , t2.work_clsf
+      , 'RHN001' AS chng_state
+      , COUNT(t3.seq) AS cnt
+FROM patcoinvntpsn t1
+LEFT JOIN humbasicinfo t2 ON t1.syspayno = t2.syspayno
+LEFT JOIN xodhdeptinfo t4 ON t2.dept_cd = t4.dept_cd AND t2.dept_new_ymd = t4.dept_new_ymd
+LEFT JOIN xomxcomattachfile t3 ON t1.attach_file_no = t3.attach_file_no
+WHERE t1.req_no = #{req_no}
+AND   t1.mngmt_no = #{mngmt_no}
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24
+ORDER BY t1.req_no, t1.seq
+  </select>
+  <select id="selectPatRelatResChprjMS01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.chr.xda.PatRelatResChprjMS01 관련연구과제조회(사건조회, 변경신청) 다건*/
+-- 2018.03.19. 연구책임자 조회시 curr_resch_rspns로 검색, work_clsf
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatRelatResChprjMS01 */
+		 t1.req_no    /* 의뢰번호  */
+     , t1.accnt_no  /* 계정번호  */
+     , t1.prj_no    /* 과제번호  */
+     , t1.prj_nm    /* 과제명    */
+     , t3.curr_resch_rspns AS resch_respn_syspayno  /* 연구책임시스템개인번호   */
+     , t2.nm AS resch_respn_syspaynm   /* 연구책임성명  */
+     , t2.work_clsf
+     , t1.prj_term   /* 기간    */
+     , t4.cd_nm  AS bsns_cd_inout  /* 과제구분*/
+FROM patrelatreschprj t1
+JOIN resinpmast t3 ON t3.prj_no = t1.prj_no
+JOIN xodxcommst t4 ON t4.cd = t3.bsns_cd_inout
+LEFT JOIN humbasicinfo t2 ON t3.curr_resch_rspns = t2.syspayno
+WHERE
+<if test="req_no != null and req_no != ''">
+req_no = #{req_no}
+</if>
+  </select>
+  <select id="selectPatSkatertHisMS02" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.chr.xda.PatSkatertHisMS02 사건조회-지분율변경(출원업체_current) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatSkatertHisMS02 */
+		 t1.req_no,
+       t1.seq,
+       t1.vend_type,
+       t1.vend_cd          ,
+       DECODE(t1.vend_type, '2', '개인', '1', '업체')   AS vend_type_nm,
+       t1.vend_nm,
+       t1.vend_bsn_no,
+       t1.addr,
+       t1.charg,
+       t1.contac_loc,
+       t1.stake_rt,
+       ''   AS rmk,
+       t1.attach_file_no ,
+       COUNT(t3.seq) AS cnt
+FROM patcosmitappvend t1
+LEFT JOIN xomxcomattachfile t3 ON t1.attach_file_no = t3.attach_file_no
+WHERE t1.req_no = #{req_no}
+  AND t1.mngmt_no = #{mngmt_no}
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
+ORDER BY t1.req_no, t1.seq
+  </select>
+  <select id="selectPatCoInvntPsnSS01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.chr.xda.PatCoInvntPsnSS01 변경신청(주발명자 조회) 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatCoInvntPsnSS01 */
+		 a.syspayno, b.work_clsf,
+       CASE WHEN b.work_clsf = 'HAG010' THEN a.syspayno
+       ELSE (SELECT syspayno FROM humbasicinfo WHERE resid_no = b.resid_no AND NVL(retire_ymd, '') = '') END AS invnt_syspayno
+FROM patcoinvntpsn a
+JOIN humbasicinfo b ON a.syspayno = b.syspayno
+WHERE a.req_no = #{req_no}
+AND   a.mngmt_no = #{mngmt_no}
+AND   a.invnt_psn_clsf = '1'
+  </select>
+  <select id="selectPatPsrBasicInfoSS01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+-- 2018.03.09. 변경신청 신규생성으로 charg_syspayno 추가
+/* XDA : kitech.pat.psr.xda.PatPsrBasicInfoSS01 지재권 기본 정보 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatPsrBasicInfoSS01 */
+     pm.req_no
+     , pm.mngmt_no
+     , pm.pat_clsf
+     , xdc1.cd_nm AS pat_clsf_nm
+     , pm.state
+     , ps.state_desc AS state_nm
+     , pm.patofic_mng_no
+     , pm.smitapp_natn_cd
+     , pcm.cd_desc AS smitapp_natn_nm
+     , pm.tech_clsf
+     , xdc2.cd_nm AS tech_clsf_nm
+     , pm.right_expir_ymd
+     , pm.smitapp_occr_clsf
+     , xdc3.cd_nm AS smitapp_occr_clsf_nm
+     , pm.smitapp_no
+     , pm.smitapp_ymd
+     , pm.regst_no
+     , pm.regst_ymd
+     , pm.invnt_krn_nm
+     , pm.invnt_eng_nm
+     , pm.bef_open_yn
+     , pm.ely_open_ex
+     , pm.eval_demnd_ex
+     , pm.prity_eval_ex
+     , pm.open_attach_file_no
+     , pm.relat_dom_smitapp_no
+     , pm.intrn_smitapp_no
+     , pm.intrn_smitapp_ymd
+     , pm.regst_reg_ymd
+     , pm.smitapp_reg_ymd
+     , pm.prityrgt_main_rspns_no
+     , pm.prityrgt_main_rspns_ymd
+     , pm.bpm_yn
+     , pm.charg_syspayno
+     , pg1.giveup_req_no
+FROM patmastr pm
+LEFT JOIN xodxcommst xdc1 ON xdc1.cd = pm.pat_clsf
+LEFT JOIN xodxcommst xdc2 ON xdc2.cd = pm.tech_clsf
+LEFT JOIN xodxcommst xdc3 ON xdc3.cd = pm.smitapp_occr_clsf
+LEFT JOIN patstatecode ps ON ps.state_cd = pm.state
+LEFT JOIN patcodemastr pcm ON pcm.cd_nm = pm.smitapp_natn_cd
+LEFT JOIN patgiveup pg1 ON pm.mngmt_no = pg1.mngmt_no
+WHERE pm.req_no = #{req_no}
+<if test="mngmt_no != null and mngmt_no != ''">
+AND pm.mngmt_no = #{mngmt_no}
+</if>
+  </select>
+  <select id="selectPatRelatReschPrjHisSS01" parameterType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo" resultType="kr.re.kitech.biz.pat.app.vo.PatAppChangeVo">
+/* XDA : kitech.pat.chr.xda.PatRelatReschPrjHisSS01 지재권 계정변경신청 최대차수 구하기 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatRelatReschPrjHisSS01 */ 
+             MAX(seq) AS max_seq
+FROM patrelatreschprjhis a     
+WHERE a.req_no = #{req_no}
+  </select>
+</mapper>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="kr.re.kitech.biz.api.bpm"><select id="selectPurChrgSysPayNo" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.api.bpm.selectPurChrgSysPayNo */
+         FIRST 1 syspayno
+FROM humbasicinfo
+WHERE email = ( SELECT endpoint
+                FROM bpm_worklist
+                WHERE instid in ( SELECT instid
+                                  FROM bpm:bpm_procinst
+                                  WHERE name = #{pur_req_no} )
+                AND ext2 = 'XAD060'
+                AND status = 'COMPLETED') || '@kitech.re.kr'
+AND work_clsf = 'HAG010'
+ORDER by dept_new_ymd DESC
+</select>
+
+<!-- 구매진행상태 수정 -->
+<update id="mergeXodpPorgrsState" parameterType="kr.re.kitech.biz.api.server.vo.biz.ApiEpuVo">
+MERGE /* kr.re.kitech.biz.api.bpm.mergeXodpPorgrsState */
+    INTO xodpprogrsstate a 
+ USING dual b ON a.pur_req_no = #{pur_req_no} AND a.state_cd = #{state_cd}
+ WHEN MATCHED THEN
+    UPDATE
+    SET a.job_psn_syspayno = #{charg_syspayno}
+      , a.state_ymd = TO_CHAR(CURRENT, '%Y%m%d')
+      , a.updt_syspayno = #{updt_syspayno}
+      , a.updt_daytm = CURRENT
+ WHEN NOT MATCHED THEN
+    INSERT (
+             a.pur_req_no
+           , a.state_cd
+           , a.job_psn_syspayno
+           , a.state_ymd
+           , a.regst_syspayno
+           , a.regst_daytm
+           ) 
+    VALUES (
+             #{pur_req_no}
+           , #{state_cd}
+           , #{charg_syspayno}
+           , TO_CHAR(CURRENT, '%Y%m%d')
+           , #{regst_syspayno}
+           , CURRENT
+          )
+</update>
+
+<!-- 구매담당자 조회 -->
+<select id="selectChrgPsnDeptInfo" parameterType="java.lang.String" resultType="kr.re.kitech.biz.api.server.vo.biz.ApiEpuVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectChrgPsnDeptInfo */
+       a.syspayno  AS charg_syspayno --시스템개인번호
+     , b.dept_cd   AS charg_dept_cd --부서코드
+     , b.dept_new_ymd  AS charg_dept_new_ymd --부서신설일
+     , b.fomat_unit AS charg_region_clsf   --지역구분
+     , b.divsn_dept  AS charg_divsn_dept--본부코드
+     , c.cd  AS cont_mgmt_mbody--구매계약관리추제
+FROM humbasicinfo a
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+JOIN xodxcommst c ON b.fomat_unit = c.mngmt_item_4
+WHERE a.syspayno = #{syspayno}
+AND a.work_clsf = 'HAG010' --근무상태코드
+AND c.cd_clsf = 'ARB' --관리주체코드
+</select>
+
+<!-- 구매마스터 구매담당자 업데이트 -->
+<update id="updatePurReqMastrChrg" parameterType="kr.re.kitech.biz.api.server.vo.biz.ApiEpuVo">
+UPDATE /* kr.re.kitech.biz.api.bpm.updatePurReqMastrChrg */
+      purreqmastr
+SET charg_syspayno  = #{charg_syspayno}    /* 담당자 시스템개인번호 */
+  <if test='charg_dept_cd != null'> , charg_dept_cd = #{charg_dept_cd}  /* 담당자 부서코드 */  </if>  
+  <if test='charg_dept_new_ymd != null'> , charg_dept_new_ymd = #{charg_dept_new_ymd} </if>  
+  <if test='charg_region_clsf != null'> , charg_region_clsf = #{charg_region_clsf}  /* 담당자 지역구분 */ </if>  
+  <if test='charg_divsn_dept != null'> , charg_divsn_dept = #{charg_divsn_dept}    /* 담당자 본부부서 */ </if>  
+  <if test='cont_mgmt_mbody != null'> , cont_mgmt_mbody = #{cont_mgmt_mbody}      /* 담당자 관리주체 코드 */  </if>  
+   , rcpt_ymd = TO_CHAR(CURRENT, '%Y%m%d')    /* 접수일자 */
+   , updt_syspayno = #{updt_syspayno}
+   , updt_daytm SYSDATE
+WHERE pur_req_no = #{pur_req_no}
+</update>
+
+<!-- 계정변경신청 결재완료시 대상 조회 -->
+<select id="selectPurAccntChngHApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.epu.req.vo.PurAccntChngDVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectPurAccntChngHApr */
+       a.req_no      /* 계정변경 신청번호 */
+     , a.req_ymd
+     , b.req_seq     /* 계정변경 신청번호순번 */
+     , b.pur_req_no
+     , b.accnt_odr     
+     , b.chng_aftr_accnt_no  /* 변경후 계정번호 */    
+FROM puraccntchngh a
+JOIN puraccntchngd b ON a.req_no = b.req_no
+JOIN bblenfrc c ON b.req_no = c.req_no AND b.req_seq = c.req_seq
+WHERE a.contrct_no IN (SELECT contrct_no FROM puraccntchngh WHERE req_no = #{req_no})
+AND   c.part_all_clsf <![CDATA[ <> ]]> 'F'
+</select>
+
+<!-- 결재반려시 예가 상태값 수정 -->
+<update id="updateEpuNotiEstipr" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE  /* kr.re.kitech.biz.api.bpm.updateEpuNotiEstipr */
+      epunotiestipr
+   SET progress_state = '1'
+     , updt_syspayno = #{updt_syspayno}
+	 , updt_daytm = SYSDATE
+ WHERE esti_doc_no = #{reqNo}
+</update>
+
+<!-- 결재반려시 계약 상태값 수정 -->
+<update id="updateEpuContrctMastrApr" parameterType="java.util.HashMap">
+UPDATE  /* kr.re.kitech.biz.api.bpm.updateEpuContrctMastrApr */
+    epucontrctmastr
+SET progress_state = #{progress_state} /* 계약 상태값 */   
+  , updt_syspayno = #{updt_syspayno}
+  , updt_daytm = SYSDATE
+WHERE contrct_no = #{contrct_no}
+AND chng_seq = #{chng_seq}
+</update>
+
+<!-- 적격심사 결과 심사부서결재 결재완료시 상태값 수정 -->
+<update id="updateEpuNotiTechEvalMastrApr" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE /* kr.re.kitech.biz.api.bpm.updateEpuNotiTechEvalMastrApr */
+        epunotitechevalmastr
+   SET tech_response_daytm = sysdate
+   <if test ='reqNo.substring(0,3) == "P93"'> , eval_state = 'PRD060' </if>
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE tech_eval_assist_doc_no = #{reqNo }
+</update>
+
+<!-- 기술협상평가 응답일자 등록 -->
+<update id="updateEpuNotiTechNego" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE /* kr.re.kitech.biz.api.bpm.updateEpuNotiTechNego */
+       epunotitechnego
+SET tech_nego_response_daytm = sysdate
+WHERE app_doc_no2 = #{reqNo}
+</update>
+
+<!-- 결재승인(계약해지)일경우 계약 상태값 수정 -->
+<update id="updateEpuContrctMastrCnsl" parameterType="kr.re.kitech.biz.api.server.vo.ApiBpmVo">
+UPDATE /* kr.re.kitech.biz.api.bpm.updateEpuContrctMastrCnsl */
+      epucontrctmastr
+SET progress_state = '5',  --진행상태
+      updt_syspayno = #{updt_syspayno},
+      updt_daytm = SYSDATE
+WHERE contrct_canc_req_no = #{reqNo}
+</update>
+
+</mapper>

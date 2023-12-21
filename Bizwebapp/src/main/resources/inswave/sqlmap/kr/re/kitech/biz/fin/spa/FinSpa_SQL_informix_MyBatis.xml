@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.spa">
+<!-- 결의번호업데이트 (생성 또는 삭제시)  -->
+<update id="updateResCrtPstpIctH" parameterType="kr.re.kitech.biz.fin.spa.vo.FinSpaSlipUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateResCrtPstpIctH */
+         rescrtpstpicth
+SET  unslip_no = #{unslip_no},
+       unslip_odr = #{unslip_odr},
+       updt_syspayno  = #{updt_syspayno},
+       updt_daytm = CURRENT
+WHERE  req_no = #{req_no}
+</update>
+
+<!-- 결의서삭제를 위한 조회 -->
+<select id="selectResCrtPstpIctHDel" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.spa.vo.FinSpaSlipUpdVo">
+SELECT /* kr.re.kitech.biz.fin.spa.selectResCrtPstpIctHDel */
+       req_no,
+       unslip_no
+FROM rescrtpstpicth 
+WHERE unslip_no = #{unslip_no}
+</select>
+<!-- 연구비송금결의 삭제를 위한 조회 -->
+<select id="selectResBgRemtlDel" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.exc.vo.ResBgRemtlVo">
+SELECT DISTINCT /* kr.re.kitech.biz.fin.spa.selectResBgRemtlDel */
+       req_no,
+       unslip_no,
+       bill_no
+FROM resbgremtl
+WHERE req_no = #{req_no}
+</select>
+
+<!-- 결의취소시 결의번호 초기화 및 결의금액 업데이트 -->
+<update id="updateKtxIssuMstrDel" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateKtxIssuMstrDel */
+        ktx_issu_mstr
+SET  trans_amt=(select sum(unslip_amt) from fspslipd where bill_no = #{bill_no}),
+      unslip_no = ''
+WHERE issu_seqno = #{bill_no}
+</update>
+
+<!-- 결의취소시 송금내역 결의번호 초기화 -->
+<update id="updateResBgRemtlDel" parameterType="kr.re.kitech.biz.res.exc.vo.ResBgRemtlVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateResBgRemtlDel */
+      resbgremtl
+SET  unslip_no = null
+   , updt_syspayno = #{updt_syspayno}
+WHERE req_no = #{req_no}
+</update>
+
+<!-- 결의취소시 집행내역 결의번호 초기화 -->
+<update id="updateBblenfrcDel" parameterType="kr.re.kitech.biz.fin.com.vo.DelBblEnfrcVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateBblenfrcDel */
+    bblenfrc
+SET unslip_amt = 0
+   , unslip_no  = ""
+   , unslip_odr = null
+   , journ_cd = ''
+   , journ_odr = null
+  <if test='part_all_clsf != null'> , part_all_clsf = #{part_all_clsf} </if>
+   , updt_syspayno = #{updt_syspayno}
+   , updt_daytm = SYSDATE
+WHERE unslip_no = #{unslip_no}
+<if test='req_no != null and req_no != ""'> AND req_no = #{req_no} </if>
+</update>
+
+<!-- 결의취소시 결의번호로 구매내역 조회 -->
+<select id="selectPurPayReqMastrDel" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.spa.vo.PurPayReqMastrVo">
+SELECT /* kr.re.kitech.biz.fin.spa.selectPurPayReqMastrDel */
+           req_no
+         , expns_clsf
+  FROM purpayreqmastr
+ WHERE unslip_no = #{unslip_no}
+</select>
+
+<!-- 결의취소시 결의번호로 계정내역 조회 -->
+<select id="selectPurPayReqAccntDel" parameterType="java.lang.String" resultType="kr.re.kitech.biz.epu.giv.vo.PurPayReqAccntVo">
+SELECT /* kr.re.kitech.biz.fin.spa.selectPurPayReqAccntDel */
+       a.req_no
+     , a.accnt_odr
+     , a.odr
+     , a.accnt_no
+     , a.pay_amt
+     , a.suply_value
+     , a.fin_pay_amt
+     , a.fin_suply_value
+     , a.ctrl_req_no
+     , a.ctrl_req_seq
+     , a.occr_slip_no
+     , a.occr_slip_odr
+     , b.tax_cd
+FROM purpayreqaccnt a
+JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+WHERE a.req_no = #{req_no}
+</select>
+
+<!-- 결의취소시 집행내역 초기화 -->
+<update id="updateBblenFrcPurSlipDel" parameterType="kr.re.kitech.biz.epu.giv.vo.PurPayReqAccntVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateBblenFrcPurSlipDel */
+      bblenfrc
+   SET unslip_amt = NVL(unslip_amt, 0) - #{unslip_amt} 
+     , trans_amt = NVL(trans_amt, 0) - #{unslip_amt} 
+     , unslip_no  = (CASE WHEN unslip_amt - #{unslip_amt} >0 THEN unslip_no ELSE '' END)
+     , unslip_odr = (CASE WHEN unslip_amt - #{unslip_amt} >0 THEN unslip_odr ELSE null END)
+     , part_all_clsf = 'P'
+     , trans_unslip_no = ''
+     , trans_unslip_odr = null
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = current
+ WHERE req_no = #{ctrl_req_no}
+   AND req_seq = #{ctrl_req_seq}
+</update>
+
+<!-- 결의취소시 결의번호로 지급내역 조회 -->
+<select id="selectPurPayReqVendDel" resultType="kr.re.kitech.biz.epu.giv.vo.PurPayReqVendVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.spa.selectPurPayReqVendDel */
+       bill_no,
+       card_no,
+       pay_amt,
+       fin_pay_amt,     
+       use_ymd,
+       apprvl_no,
+       card_clsf,
+       card_knd
+FROM purpayreqvend 
+WHERE req_no = #{req_no}
+</select>
+
+<!-- 구매지급결의시 결의번호, 누적금액 업데이트 -->
+<update id="updatePurPayReqMastrForSlip" parameterType="kr.re.kitech.biz.fin.com.vo.ComReqVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updatePurPayReqMastrForSlip */
+      purpayreqmastr
+   SET accr_pay_amt = NVL(accr_pay_amt, 0) + #{req_amt} 
+     , unslip_no = #{unslip_no}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+ WHERE req_no = #{req_no}
+</update>
+
+<!-- 가지급금신청 반려시 결의번호 초기화 -->
+<update id="updateFspPayAdvcReqDel" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateFspPayAdvcReqDel */
+      fsppayadvcreq
+   SET unslip_no = null,
+       unslip_odr = null
+ WHERE  req_no = #{req_no}
+</update>
+
+<!-- 가지급금정산 집행내역 초기화를 위한 조회 -->
+<select id="selectFspPayAdvcAdjstAccntDel" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.com.vo.ComReqVo">
+SELECT /* kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjstAccntDel */
+       req_no,
+       req_seq,
+       NVL(adjst_amt, 0) AS req_amt
+  FROM fsppayadvcadjstaccnt
+ WHERE adjst_req_no = #{adjst_req_no}
+ UNION 
+SELECT adjst_req_no AS req_no
+     , adjst_req_odr AS req_seq
+     , req_amt
+  FROM fsppayadvcadjstaddaccnt 
+ WHERE adjst_req_no = #{adjst_req_no}
+   AND accnt_no <![CDATA[ <> ]]> 'FF030001'
+</select>
+
+<!-- 가지급금정산 결의생성 또는 취소시 집행내역 업데이트 -->
+<update id="updateBblenFrcForSlip" parameterType="kr.re.kitech.biz.fin.spa.vo.BblenfrcSlipVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateBblenFrcForSlip */
+      bblenfrc
+   SET unslip_amt = NVL(unslip_amt, 0) + #{unslip_amt}  
+     , trans_amt = NVL(trans_amt, 0) + #{unslip_amt}   
+     , unslip_no  = #{unslip_no}
+     , unslip_odr = #{unslip_odr}
+     , part_all_clsf = #{part_all_clsf}
+     , trans_unslip_no = #{unslip_no}
+     , trans_unslip_odr = #{unslip_odr}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+ WHERE req_no = #{req_no}
+   AND req_seq = #{req_seq}
+</update>
+
+<!-- 가지급금정산 결의취소시 가지급정산, 정산예정계정내역, 잔액입금내역, 추가계정 결의번호 초기화 -->
+<update id="updateFspPayAdvcAdjstDel" parameterType="kr.re.kitech.biz.fin.spa.vo.FinSpaSlipUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateFspPayAdvcAdjstDel */
+      fsppayadvcadjst
+SET  unslip_no = NULL,
+       unslip_odr = NULL,
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = current
+WHERE  adjst_req_no = #{req_no};
+
+UPDATE fsppayadvcadjstaccnt
+SET  unslip_no = NULL,
+       unslip_odr = NULL,
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = CURRENT
+WHERE  adjst_req_no = #{req_no};
+
+UPDATE fcpdepstdetls
+SET unslip_no = null,
+    unslip_odr = null,
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = CURRENT
+WHERE  adjst_req_no = #{req_no};
+
+UPDATE fsppayadvcadjstaddaccnt
+SET    unslip_no = NULL,
+       unslip_odr = NULL,
+       adjst_amt = 0,
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = CURRENT
+WHERE  adjst_req_no = #{req_no};
+</update>
+
+<!-- 내부기술지원신청헤드, 집행내역 초기화 -->
+<update id="updateFspTechSuphDel" parameterType="kr.re.kitech.biz.fin.com.vo.ComReqVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateFspTechSuphDel */
+       fsptechsuph
+SET    unslip_no = null
+WHERE  req_no = #{req_no};
+
+UPDATE bblenfrc
+SET  unslip_amt = 0,
+       unslip_no  = '',
+       unslip_odr = null,
+       journ_cd = '',
+       journ_odr = null,
+       part_all_clsf = '',
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = sysdate
+WHERE  req_no = #{req_no} ;
+</update>
+
+<!-- 출장비정산결의생성취소(국내출장정산가결의번호UPDATE) -->
+<update id="updateCtrDomAdDel" parameterType="kr.re.kitech.biz.fin.com.vo.ComReqVo">
+UPDATE  /* kr.re.kitech.biz.fin.spa.updateCtrDomAdDel */
+         ctrdomad
+SET    unslip_no = null
+       , updt_psn_syspayno = #{updt_syspayno}
+       , updt_daytm = SYSDATE
+WHERE   req_no = #{req_no}
+</update>
+
+<!-- 출장비정산결의생성취소(해외출장정산가결의번호UPDATE) -->
+<update id="updateCtrOverAdDel" parameterType="kr.re.kitech.biz.fin.com.vo.ComReqVo">
+UPDATE  /* kr.re.kitech.biz.fin.spa.updateCtrOverAdDel */
+         ctroverad
+SET    unslip_no = null
+       , updt_psn_syspayno = #{updt_syspayno}
+       , updt_daytm = SYSDATE
+WHERE   req_no = #{req_no}
+</update>
+
+<!-- 자동결의시 통제내역 수정 -->
+<update id="updateBblenfrcAutoSlip" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE /* kr.re.kitech.biz.fin.spa.updateBblenfrcAutoSlip */
+       bblenfrc
+   SET unslip_amt = #{unslip_amt}
+     , unslip_no  = #{unslip_no}
+     , unslip_odr = #{unslip_odr}
+     , journ_cd = #{journ_cd}
+     , journ_odr = #{journ_odr}
+   <if test='part_all_clsf != null and part_all_clsf != ""'> , part_all_clsf = #{part_all_clsf} </if>
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+<if test='req_seq != null and req_seq !=0'> req_seq = #{req_seq} </if>
+</update>
+</mapper>
+

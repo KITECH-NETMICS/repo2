@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+
+<select id="selectHumApyPizList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPizSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPizInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyPizList */ 
+		 a.req_no  --신청번호
+        ,a.req_ymd--신청일
+        ,a.syspayno
+        ,b.empno     --개인번호
+        ,b.nm        --성명
+        ,b.dept_cd   --부서코드
+        ,b.dept_nm   --부서명
+        ,b.posi_cd   --직급코드
+        ,b.posi_nm   --직급명
+        ,a.impl_agncy  --포상기관
+        ,a.reward_ymd  --포상일
+        ,a.reward_knd  --포상종류
+        ,d.cd_nm as reward_knd_nm --포상종류 이름
+        ,a.reward_contnt --포상내용          
+        ,c.apr_state    --결제상태
+        ,e.cd_nm as apr_state_nm  --결제상태 이름
+        ,fun_humbasicinfo_cd_nm(a.subtitu_syspayno,0) as subtitu_nm --신청서등록자(대리신청)
+FROM humapypiz a     --포상경력 신청
+     ,v_humbasicinfo b
+     ,xomxintfatab c
+     ,xodxcommst d
+     ,xodxcommst e
+WHERE
+     a.syspayno = b.syspayno
+     AND a.req_no = c.req_no
+     AND a.reward_knd = d.cd
+     AND c.apr_state = e.cd
+     AND c.state_inform_flag = '1'
+        <if test="syspayno != null and syspayno != ''">
+	 and (a.syspayno  = #{syspayno} or a.subtitu_syspayno = #{subtitu_syspayno})
+</if>
+        <if test="req_no != null and req_no != ''">
+	 and a.req_no LIKE #{req_no}
+</if>
+        <if test="dept_cd != null and dept_cd != ''">
+	 and b.dept_cd = #{dept_cd}
+</if>
+        <if test="apr_state != null and apr_state != ''">
+	 and c.apr_state  = #{apr_state}
+</if>
+        <if test="req_ymd_from != null and req_ymd_from != ''">
+	 and a.req_ymd  <![CDATA[>=]]>  #{req_ymd_from}
+</if>
+        <if test="req_ymd_to != null and req_ymd_to != ''">
+	 and a.req_ymd   <![CDATA[<=]]>   #{req_ymd_to}
+</if>
+ORDER BY a.req_no DESC
+</select>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<select id="selectHumApyPizInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPizSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyPizInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyPizInfo */ 
+ a.req_no    
+,a.req_ymd 
+,a.syspayno 
+,c.empno
+,c.nm
+,a.dept_cd
+,fun_dept_nm(a.dept_cd) as dept_nm
+,a.dept_new_ymd  
+,a.outsd_yn   
+,a.reward_ymd 
+,a.reward_knd 
+,a.reward_no 
+,a.impl_agncy 
+,a.reward_contnt 
+,a.issu_charg        
+,a.issu_head        
+,a.rmk             
+,a.attach_file_no 
+,a.regst_syspayno 
+,a.regst_daytm   
+,a.updt_syspayno 
+,a.updt_daytm  
+,fun_xodxcommst_cd_nm(b.apr_state,0 ) apr_state_nm
+,b.apr_state
+,a.subtitu_syspayno
+,a.addpiz_yn
+,TRUNC(a.addpiz_amt) as addpiz_amt
+FROM humapypiz a      
+    ,xomxintfatab b 
+   ,humbasicinfo c
+WHERE a.req_no = b.req_no      
+  AND    a.syspayno = c.syspayno
+  AND    a.req_no = #{req_no}
+</select>
+<insert id="insertHumApyPiz" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPizInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyPiz */ 
+		 INTO humapypiz
+(
+  req_no
+, req_ymd
+, syspayno
+, dept_cd
+, dept_new_ymd
+, outsd_yn
+, reward_ymd
+, reward_knd
+, reward_no
+, impl_agncy
+, reward_contnt
+, issu_charg
+, issu_head
+, rmk
+, attach_file_no
+, regst_syspayno
+, regst_daytm
+, subtitu_syspayno
+, addpiz_yn
+, addpiz_amt
+, nm
+, posi_cd
+, reward_clsf
+, reward_typ
+, empno
+) 
+VALUES
+(
+  #{req_no}
+, #{req_ymd}
+, #{syspayno}
+, #{dept_cd}
+, #{dept_new_ymd}
+, #{outsd_yn}
+, #{reward_ymd}
+, #{reward_knd}
+, #{reward_no}
+, #{impl_agncy}
+, #{reward_contnt}
+, #{issu_charg}
+, #{issu_head}
+, #{rmk}
+, #{attach_file_no}
+, #{regst_syspayno}
+, current
+, #{subtitu_syspayno}
+, #{addpiz_yn}
+, #{addpiz_amt}
+, #{nm}
+, #{posi_cd}
+, #{reward_clsf}
+, #{reward_typ}
+, #{empno}
+)
+</insert>
+
+<update id="updateHumApyPiz" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPizInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyPiz */ 
+		 humapypiz
+SET 
+syspayno = #{syspayno},                              -- 개인번호
+dept_cd = #{dept_cd},                              -- 부서코드
+dept_new_ymd = #{dept_new_ymd},                              -- 부서생성일
+req_ymd = #{req_ymd},                              -- 신청일             
+outsd_yn = #{outsd_yn},                          -- 원외여부          
+reward_ymd = #{reward_ymd},                       -- 포상일            
+reward_knd = #{reward_knd},                       -- 포상종류          
+reward_no = #{reward_no},                         -- 상장번호          
+impl_agncy = #{impl_agncy},                       -- 시행기관          
+reward_contnt = #{reward_contnt},                 -- 포상내용          
+issu_charg = #{issu_charg},                        -- 발급담당          
+issu_head = #{issu_head},                        -- 발급과장          
+rmk = #{rmk},                               -- 비고              
+attach_file_no = #{attach_file_no},                     -- 첨부파일번호      
+updt_syspayno = #{updt_syspayno},                      -- 수정시스템개인번호  
+updt_daytm = current,               -- 수정일시
+subtitu_syspayno = #{subtitu_syspayno},               -- 대리신청자
+addpiz_yn = #{addpiz_yn},                           -- 부상여부
+addpiz_amt = #{addpiz_amt},                         -- 부상금액정보
+reward_typ = #{reward_typ},                         -- 유형
+nm = #{nm}
+WHERE
+req_no = #{req_no}
+
+</update>
+<delete id="deleteHumApyPiz" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyPizInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyPiz */ 
+  FROM humapypiz
+ WHERE req_no = #{req_no}
+
+</delete>
+</mapper>

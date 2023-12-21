@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.par">
+  <select id="selectSptBaseDetail" parameterType="kr.re.kitech.biz.sup.par.vo.SptParBaseVo" resultType="kr.re.kitech.biz.sup.par.vo.SptParBaseVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSptBaseDetail */ 
+		first 1 t1.appont_ymd         /* 파트너기업 지정일 */
+       , t2.syspayno         /* 파트너기업 멘토 사번 */
+       , t3.nm               /* 파트너기업 멘토 */
+       , t1.join_ex          /* 파트너기업 가입여부 */
+       , t4.eval_daytm       /* 파트너기업 유지심사일 */
+       , t5.nm AS eval_nm    /* 파트너기업 최종 유지심사자 */
+FROM sptparbaseinfo t1
+JOIN sptcustmentrinfo t2 ON t1.cust_no = t2.cust_no
+LEFT JOIN humbasicinfo t3 ON t2.syspayno = t3.syspayno AND t3.retire_ymd = ''
+LEFT JOIN sptparevalinfo t4 ON t1.appont_no = t4.appont_no
+LEFT JOIN humbasicinfo t5 ON t4.updt_syspayno = t5.syspayno AND t5.retire_ymd = ''
+WHERE t1.appont_no = #{appont_no}
+ORDER BY eval_daytm DESC
+  </select>
+</mapper>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+  <select id="selectCgsCondoMaster" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoMasterVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoMasterVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgsCondoMaster */ 
+	    condo_no
+	    ,condo_nm
+	    ,region_nm
+	    ,condo_homepg
+	    ,condo_desc
+	    ,condo_use_yn
+	    ,contrct_start_ymd
+	    ,contrct_cls_ymd
+	    ,regst_psn_syspayno
+	    ,regst_daytm
+	    ,updt_psn_syspayno
+	    ,updt_daytm
+	FROM    cgscondo
+	WHERE   condo_nm LIKE DECODE(#{condo_nm},'','%',#{condo_nm})
+	AND    region_nm LIKE DECODE(#{region_nm},'','%',#{region_nm})
+	ORDER BY condo_nm, region_nm, condo_use_yn
+  </select>
+  
+  <insert id="insertCgsCondoMaster" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoMasterVo">
+	INSERT /* QueryID : kr.re.kitech.biz.ccs.cgs.insertCgsCondoMaster */ 
+			 INTO  cgscondo
+	(            condo_no
+	            ,condo_nm
+	            ,region_nm
+	            ,condo_homepg
+	            ,condo_desc
+	            ,condo_use_yn
+	            ,contrct_start_ymd
+	            ,contrct_cls_ymd
+	            ,regst_psn_syspayno
+	            ,regst_daytm
+	)
+	VALUES(#{condo_no}
+		  ,#{condo_nm}
+		  ,#{region_nm}
+		  ,#{condo_homepg}
+		  ,#{condo_desc}
+		  ,#{condo_use_yn}
+		  ,#{contrct_start_ymd}
+		  ,#{contrct_cls_ymd}
+		  ,#{regst_syspayno}
+		  ,sysdate)
+  </insert>
+  
+  <update id="updateCgsCondoMaster" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoMasterVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCgsCondoMaster */ 
+			 cgscondo SET
+	    condo_nm = #{condo_nm}
+	    , region_nm = #{region_nm}
+	    , condo_homepg = #{condo_homepg}
+	    , condo_desc = #{condo_desc}
+	    , condo_use_yn = #{condo_use_yn}
+	    , contrct_start_ymd = #{contrct_start_ymd}
+	    , contrct_cls_ymd = #{contrct_cls_ymd}
+	    , updt_psn_syspayno = #{updt_syspayno}
+	    , updt_daytm = sysdate
+	WHERE condo_no = #{condo_no}
+  </update>
+  
+  <delete id="deleteCgsCondoMaster" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoMasterVo">
+	DELETE /* QueryID : kr.re.kitech.biz.ccs.cgs.deleteCgsCondoMaster */ 
+			      cgscondo
+	WHERE       1=1
+	AND         condo_no = #{condo_no}
+  </delete>
+  
+  <select id="selectCondoList" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoMasterVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoMasterVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCondoList */ 
+			     trim(condo_nm) as condo_nm
+	FROM       cgscondo
+	WHERE      1=1
+	AND        region_nm LIKE DECODE(#{region_nm},'','%',#{region_nm})
+	AND        condo_use_yn LIKE DECODE(#{condo_use_yn},'','%',#{condo_use_yn})
+	GROUP BY condo_nm
+  </select>
+  
+  <select id="selectRegionList" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoMasterVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsCondoMasterVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectRegionList */ 
+			     distinct trim(region_nm) as region_nm
+	FROM       cgscondo
+	WHERE      1=1
+	AND        condo_nm LIKE DECODE(#{condo_nm},'','%',#{condo_nm})
+  </select>
+</mapper>

@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.apr">
+<!-- 예산통제자 결재목록 조회 -->
+<select id="selectBblEnfrcCtrlList" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlSrcVo" resultType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+SELECT /* kr.re.kitech.biz.apr.selectBblEnfrcCtrlList */
+       a.last_execute_tim
+     , a.req_no 
+     , a.req_seq 
+     , a.req_clsf
+     , a.req_psn 
+     , a.relat_no
+     , a.req_ymd
+     , a.req_amt
+     , a.req_amt AS old_req_amt
+     , a.accnt_no
+     , a.accnt_cd
+     , a.expns_cd
+     , TRIM(a.ctrl_no) AS ctrl_no
+     , a.bugt_ctrl_way
+     , a.ctrl_psn
+     , a.rmk_3
+     , a.trans_unslip_no
+     , a.req_amt_sum
+     , a.old_enfrc_amt_cause
+     , b.start_ymd
+     , b.cls_ymd
+     , b.itm_solve_base
+     , b.mngmt_clsf
+     , NVL(c.slip_typ_nm, d.appname) AS doc_clsf
+     , h.nm AS req_psn_nm
+     , DECODE(a.accnt_no, 'FF210001', r.syspayno, b.bugt_ctrl_psn) AS bugt_ctrl_psn
+     , fun_emp_nm(DECODE(a.accnt_no, 'FF210001', r.syspayno, b.bugt_ctrl_psn)) AS ctrl_psn_nm
+ FROM (
+       SELECT a.req_no 
+            , a.req_seq 
+            , a.req_clsf
+            , a.req_psn 
+            , a.req_ymd
+            , a.req_amt
+            , a.accnt_no
+            , a.accnt_cd
+            , a.expns_cd
+            , a.ctrl_no
+            , a.bugt_ctrl_way
+            , a.ctrl_psn
+            , a.rmk_3
+            , a.relat_no
+            , a.enfrc_amt_cause AS old_enfrc_amt_cause
+            , CASE WHEN nvl(a.trans_unslip_no, '') = '' THEN a.unslip_no ELSE a.trans_unslip_no END AS trans_unslip_no
+            , (SELECT SUM(req_amt) FROM bblenfrc WHERE req_no = a.req_no) AS req_amt_sum
+            , b.last_execute_tim
+       FROM xomxintfatab b 
+       JOIN bblenfrc a ON b.req_no = a.req_no
+      WHERE b.apr_state = 'XAD040' 
+        AND b.endpoints LIKE '%'||#{endpoints} ||'%'
+      <if test='req_no != null and req_no != ""'> AND b.req_no = #{req_no} </if>
+       UNION 
+       SELECT a.trans_unslip_no AS req_no 
+            , a.req_seq 
+            , a.req_clsf
+            , a.req_psn 
+            , a.req_ymd
+            , a.req_amt
+            , a.accnt_no
+            , a.accnt_cd
+            , a.expns_cd
+            , a.ctrl_no
+            , a.bugt_ctrl_way
+            , a.ctrl_psn
+            , a.rmk_3
+            , a.relat_no
+            , a.enfrc_amt_cause AS old_enfrc_amt_cause
+            , CASE WHEN nvl(a.trans_unslip_no, '') = '' THEN a.unslip_no ELSE a.trans_unslip_no END AS trans_unslip_no
+            , (SELECT SUM(req_amt) FROM bblenfrc WHERE req_no = a.req_no) AS req_amt_sum
+            , b.last_execute_tim
+       FROM xomxintfatab b 
+       JOIN bblenfrc a ON b.req_no = a.trans_unslip_no
+      WHERE b.apr_state = 'XAD040' 
+        AND a.req_no != a.trans_unslip_no
+        AND a.req_clsf IN ('FBJ091', 'FBJ051', 'FBJ101', 'FBJ052') --  --FBJ091 일반신청, FBJ051 구매요청신청, FBJ052 계정변경신청, FBJ101 가집급금신청
+        AND a.trans_unslip_no[1,3] IN ('110', '235')
+        AND b.endpoints LIKE '%'||#{endpoints} ||'%'
+      <if test='req_no != null and req_no != ""'> AND a.trans_unslip_no = #{req_no} </if>
+       UNION
+       SELECT b.req_no 
+            , d.adjst_req_odr AS req_seq 
+            , a.req_clsf
+            , c.adjst_psn AS req_psn 
+            , c.adjst_ymd AS req_ymd
+            , a.req_amt
+            , a.accnt_no
+            , a.accnt_cd
+            , a.expns_cd
+            , a.ctrl_no
+            , a.bugt_ctrl_way
+            , a.ctrl_psn
+            , a.rmk_3
+            , a.relat_no
+            , a.enfrc_amt_cause AS old_enfrc_amt_cause
+            , CASE WHEN nvl(a.trans_unslip_no, '') = '' THEN a.unslip_no ELSE a.trans_unslip_no END AS trans_unslip_no
+            , (SELECT SUM(req_amt) FROM bblenfrc WHERE req_no = a.req_no) AS req_amt_sum
+            , b.last_execute_tim
+       FROM xomxintfatab b 
+       JOIN fsppayadvcadjst c ON b.req_no = c.adjst_req_no
+       JOIN fsppayadvcadjstaccnt d ON c.adjst_req_no = d.adjst_req_no
+       JOIN bblenfrc a ON d.req_no = a.req_no AND d.req_seq = a.req_seq
+      WHERE b.apr_state = 'XAD040' 
+        AND b.endpoints LIKE '%'||#{endpoints} ||'%'
+      <if test='req_no != null and req_no != ""'> AND b.req_no = #{req_no} </if>
+    ) a
+JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+JOIN humbasicinfo h ON a.req_psn = h.syspayno 
+LEFT JOIN fbasliptyph c ON SUBSTR(a.req_no, 1, 3) = c.slip_typ_cd 
+LEFT JOIN appv_applicationmap d ON SUBSTR(a.req_no, 1, 3) = d.reqnum
+LEFT JOIN humbasicinfo h2 ON a.relat_no = h2.empno
+LEFT JOIN xodrresman r ON h2.dept_cd = r.dept_cd AND h2.dept_new_ymd = r.dept_new_ymd
+LEFT JOIN appv_delegator f ON DECODE(a.accnt_no, 'FF210001', r.syspayno, b.bugt_ctrl_psn) = f.syspayno
+       and (f.ischkdate = '0' or to_char(sysdate, '%Y%m%d') between f.start_ymd and nvl(f.cls_ymd, '29991231'))
+WHERE 1=1
+<if test='bugt_ctrl_psn != null and bugt_ctrl_psn != ""'>
+   AND ( DECODE(a.accnt_no, 'FF210001', r.syspayno, b.bugt_ctrl_psn) = #{bugt_ctrl_psn} 
+             OR f.main_syspayno =  #{bugt_ctrl_psn} 
+             OR a.req_no LIKE '115%'
+           )
+</if>
+<if test='req_clsf != null and req_clsf == "1" and src_nm != null and src_nm != ""'> AND h.nm LIKE #{src_nm}||'%' </if>
+<if test='req_clsf != null and req_clsf == "2" and src_nm != null and src_nm != ""'> AND a.accnt_no LIKE #{src_nm}||'%' </if>
+<if test='req_clsf != null and req_clsf == "3" and src_nm != null and src_nm != ""'> AND NVL(c.slip_typ_nm, d.appname) LIKE '%'|| #{src_nm} ||'%' </if>
+<if test='req_clsf != null and req_clsf == "4" and src_nm != null and src_nm != ""'> AND a.req_no LIKE #{src_nm}||'%' </if>
+ORDER BY 1 ASC
+</select>
+
+<!-- 예산통제 로그 저장 -->
+<insert id="insertLogBugtCtrlPsn" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+INSERT /* kr.re.kitech.biz.apr.insertLogBugtCtrlPsn */
+  INTO logbugctrlpsn(
+        req_no
+      , req_seq
+      , accnt_no
+      , accnt_cd
+      <if test='fomat_unit != null'> , fomat_unit </if>
+      <if test='old_expns_cd != null'> , old_expns_cd </if>
+      <if test='expns_cd != null'> , expns_cd </if>
+      <if test='expns_cd_nm != null'> , expns_cd_nm </if>
+      <if test='doc_clsf != null'> , doc_clsf </if>
+      <if test='old_req_amt != null'> , old_req_amt </if>
+      <if test='req_amt != null'> , req_amt </if>
+      <if test='old_enfrc_amt_cause != null'> , old_enfrc_amt_cause </if>
+      <if test='req_psn != null'> , req_psn </if>
+      <if test='req_psn_nm != null'> , req_psn_nm </if>
+      <if test='req_ymd != null'> , req_ymd </if>
+      <if test='req_dept != null'> , req_dept </if>
+      <if test='rep_dept_nm != null'> , rep_dept_nm </if>
+      <if test='rmk != null'> , rmk </if>
+      <if test='rmk_3 != null'> , rmk_3 </if>
+      <if test='syspayno != null'> , syspayno </if>
+      <if test='bugt_ctrl_way != null'> , bugt_ctrl_way </if>
+      <if test='bugt_ctrl_psn != null'> , ctrl_psn </if>
+      <if test='ctrl_ymd != null'> , ctrl_ymd </if>
+      <if test='ctrl_no != null'> , ctrl_no </if>
+      <if test='trans_unslip_no != null'> , trans_unslip_no </if>
+      , req_clsf
+      , fun_nm
+      , creat_daytm
+) VALUES(
+      #{req_no}
+    , #{req_seq}
+    , #{accnt_no}
+    , #{accnt_cd}
+   <if test='fomat_unit != null'> , #{fomat_unit} </if>
+   <if test='old_expns_cd != null'> , #{old_expns_cd} </if>
+   <if test='expns_cd != null'> , #{expns_cd} </if>
+   <if test='expns_cd_nm != null'> , #{expns_cd_nm} </if>
+   <if test='doc_clsf != null'> , #{doc_clsf} </if>
+   <if test='old_req_amt != null'> , #{old_req_amt} </if>
+   <if test='req_amt != null'> , #{req_amt} </if>
+   <if test='old_enfrc_amt_cause != null'> , #{old_enfrc_amt_cause} </if>
+   <if test='req_psn != null'> , #{req_psn} </if>
+   <if test='req_psn_nm != null'> , #{req_psn_nm} </if>
+   <if test='req_ymd != null'> , #{req_ymd} </if>
+   <if test='req_dept != null'> , #{req_dept} </if>
+   <if test='rep_dept_nm != null'> , #{rep_dept_nm} </if>
+   <if test='rmk != null'> , #{rmk} </if>
+   <if test='rmk_3 != null'> , #{rmk_3} </if>
+   <if test='syspayno != null'> , #{syspayno} </if>
+   <if test='bugt_ctrl_way != null'> , #{bugt_ctrl_way} </if>
+   <if test='bugt_ctrl_psn != null'> , #{bugt_ctrl_psn} </if>
+   <if test='ctrl_ymd != null'> , #{ctrl_ymd} </if>
+   <if test='ctrl_no != null'> , #{ctrl_no} </if>
+   <if test='trans_unslip_no != null'> , #{trans_unslip_no} </if>
+    , #{req_clsf}
+    , #{fun_nm}
+    , CURRENT
+   )
+</insert>
+
+<!-- 해외출장 통제번호 업데이트 -->
+<update id="updateCtrOverAccntCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updateCtrOverAccntCtrlNo */
+       ctroveraccnt
+SET   bugt_ctrl_no = #{ctrl_no},
+      updt_psn_syspayno = #{updt_syspayno},
+      updt_daytm = current
+WHERE  req_no = #{req_no}
+AND    req_seq = #{req_seq}
+</update>
+
+<!-- 근거리출장 통제번호 업데이트 -->
+<update id="updateCtrLocalCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updateCtrLocalCtrlNo */
+      ctrlocal
+SET  bugt_ctrl_no = #{ctrl_no},
+     updt_psn_syspayno = #{updt_syspayno},
+     updt_daytm = current
+WHERE req_no = #{req_no}
+</update>
+
+<!-- 구매요구 통제번호 업데이트 -->
+<update id="updatePurReqAccntCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updatePurReqAccntCtrlNo */
+       purreqaccnt
+   SET ctrl_no  = #{ctrl_no}
+     , ctrl_ymd = TO_CHAR(CURRENT, '%Y%m%d')
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = current
+WHERE pur_req_no = #{req_no}
+AND   accnt_odr = #{req_seq}
+</update>
+
+<!-- 구매계정변경 통제번호 업데이트 -->
+<update id="updatePurAccntChngdCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updatePurAccntChngdCtrlNo */
+      puraccntchngd
+SET   chng_aftr_ctrl_no = #{ctrl_no}
+    , chng_aftr_ctrl_ymd = TO_CHAR(CURRENT, '%Y%m%d')
+    , chng_aftr_ctrl_way = #{bugt_ctrl_way}
+    , chng_aftr_ctrl_psn = #{bugt_ctrl_psn}
+    , chng_aftr_ctrl_amt = #{req_amt}
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = CURRENT
+WHERE req_no = #{req_no}
+  AND req_seq = #{req_seq}
+</update>
+
+<!-- 가지급신청 통제번호 업데이트 -->
+<update id="updateFspPayAdvcReqAccntCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updateFspPayAdvcReqAccntCtrlNo */
+     fsppayadvcreqaccnt 
+   SET ctrl_no = #{ctrl_no}
+     , bugt_ctrl_way = #{bugt_ctrl_way}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+    AND req_seq = #{req_seq}
+</update>
+
+<!-- 내부기술지원의뢰 통제번호 업데이트 -->
+<update id="updateFspTechSuphCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updateFspTechSuphCtrlNo */
+      fsptechsuph
+SET    ctrl_amt = #{req_amt},
+       ctrl_no = #{ctrl_no},
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = current
+WHERE  req_no = #{req_no}
+</update>
+
+<!-- 가지급금전도금정산 통제번호 업데이트 -->
+<update id="updateFapPayAdvcAdjstAddAccnt" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updateFapPayAdvcAdjstAddAccnt */
+     fsppayadvcadjstaddaccnt
+SET bugt_ctrl_way = #{bugt_ctrl_way},
+    ctrl_no = #{ctrl_no},
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = current
+WHERE adjst_req_no = #{req_no}
+AND adjst_req_odr = #{req_seq}
+</update>
+
+<!-- 전화요금신청 통제번호 업데이트 -->
+<update id="updateCgsTelFeeReqDetlsCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+update /* kr.re.kitech.biz.apr.updateCgsTelFeeReqDetlsCtrlNo */
+      cgstelfeereqdetls
+set bugt_ctrl_no = #{ctrl_no}
+   ,updt_psn_syspayno = #{updt_syspayno}
+   ,updt_daytm = current
+where req_no = #{req_no}
+and req_seq = #{req_seq}
+</update>
+
+<!-- 연구비송금 통제번호 업데이트 -->
+<update id="updateResBgRemtlCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updateResBgRemtlCtrlNo */
+       resbgremtl  -- 송금관리상세
+  SET ctrl_no = #{ctrl_no}       -- 통제번호
+    , bugt_ctrl_way = #{bugt_ctrl_way}   -- 통제방법
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm    = current  
+  WHERE req_no = #{req_no}
+    AND odr = #{req_seq}
+</update>
+
+<!-- 연구수당 통제번호 업데이트 -->
+<update id="updateResBgAllowCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updateResBgAllowCtrlNo */
+        resbgallow  -- 연구수당
+  SET ctrl_no = #{ctrl_no}
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm    = current  -- 수정일시
+  WHERE req_no  = #{req_no}
+    AND pay_seq = #{req_seq}
+</update>
+
+<!-- 결의서 통제번호 업데이트 -->
+<update id="updateFspSlipdCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE /* kr.re.kitech.biz.apr.updateFspSlipdCtrlNo */
+       fspslipd 
+SET    ctrl_no = #{ctrl_no},
+       bugt_ctrl_way = #{bugt_ctrl_way},
+       ctrl_ex = 'Y',
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = current
+WHERE  unslip_no = #{req_no}
+AND    unslip_odr = #{req_seq}
+</update>
+<update id="updateCtrOverAdAccntCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE  /* kr.re.kitech.biz.apr.updateCtrOverAdAccntCtrlNo */
+       ctroveradaccnt
+   SET bugt_ctrl_no = #{ctrl_no},
+       updt_psn_syspayno = #{updt_syspayno},
+       updt_daytm = current
+ WHERE req_no = #{req_no}
+   AND req_seq = #{req_seq}
+</update>
+
+<!-- 국내출장 정산  통제번호 업데이트 -->
+<update id="updateCtrDomAdAccntCtrlNo" parameterType="kr.re.kitech.biz.apr.vo.BugtCtrlInfoVo">
+UPDATE ctrdomadaccnt /* kr.re.kitech.biz.apr.updateCtrDomAdAccntCtrlNo */
+   SET bugt_ctrl_way = #{bugt_ctrl_way},
+       bugt_ctrl_no  = #{ctrl_no}, 
+       updt_psn_syspayno = #{updt_syspayno},
+       updt_daytm = sysdate
+ WHERE req_no = #{req_no}
+   AND req_seq = #{req_seq}
+</update>
+</mapper>

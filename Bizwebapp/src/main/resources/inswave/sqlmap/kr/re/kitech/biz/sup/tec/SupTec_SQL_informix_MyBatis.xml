@@ -1,0 +1,1303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.sup.tec">
+<!-- 실험실 담당자 확인 -->
+<select id="selectSptLabHedcnt" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecChkVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptLabHedcnt */
+       COUNT(a.reschr_syspayno) AS cnt 
+FROM sptlabhedcntinfo a
+JOIN humbasicinfo b ON a.reschr_syspayno = b.syspayno
+WHERE a.reschr_syspayno = #{syspayno}
+  AND b.retire_ymd = ''
+</select>
+
+<!-- 기술지원 접수 목록 조회 -->
+<select id="selectSptTecRcptInfoList" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecRcptInfoList */
+       t1.cunsl_rcpt_no      /* 상담 접수 번호    */
+     , t1.tech_supt_req_no   /* 기술 지원 의뢰 번호*/
+     , t1.kolas_no  /* KOLAS 번호   */
+     , t3.cust_no   /* 고객번호     */
+     , t3.cmpy_nm_krchar /* 고객명(한글)  */
+     , t1.region_centr  /* 지역 구분 코드  */
+     , t1.prcs_state    /* 기술지원 상태   */  
+     , t1.rcpt_ymd      /* 접수 일자   */
+     , t1.rcpt_psn_syspayno /* 담당자 시스템 개인번호   */
+     , t12.empno AS rcpt_psn_empno /* 담당자 개인 번호  */
+     , t12.nm AS rcpt_psn_nm    /* 담당자 이름  */
+     , t1.supt_respn_syspayno   /* 책임자 시스템 개인 번호  */
+     , t4.empno AS supt_respn_empno  /* 책임자 개인 번호  */
+     , t4.nm AS supt_respn_nm        /* 책임자 이름 */
+     , t1.supt_clsf       /* 지원 분류 코드  */
+     , t1.supt_team
+     , t1.rst_book_issu  /* 성적서 발행 분류(STC) */ 
+     , t1.accnt_no                   /* 계정 번호 */
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.treat_qty) AS treat_qty   /* 지원 건수 */
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.req_amt) AS req_amt       /* 신청 금액 */
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.decsn_amt) AS decsn_amt   /* 확정 금액 */
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.decsn_suply_value) AS decsn_suply_value    /*  공급가    */
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.decsn_tax_amt) AS decsn_tax_amt     /*  공급가  */
+     , t1.bill_no    /* 계산서 번호   */
+     , t1.unslip_no   /* 가결의번호 */
+     , t1.discnt_rt   -- 할인율
+     , t1.supt_work_clsf
+     , a.demnd_recv_clsf
+     , '' AS chk
+     , t1.rpa_result_yn
+  FROM spttecrcptinfo t1
+  JOIN sptcustbaseinfo t3 ON t1.cust_no = t3.cust_no
+  JOIN humbasicinfo t4 ON t1.supt_respn_syspayno = t4.syspayno
+  JOIN humbasicinfo t12 ON t1.rcpt_psn_syspayno = t12.syspayno  
+  LEFT JOIN ftxbillh a ON t1.bill_no = a.tax_bill_no
+ WHERE 1=1
+ <if test='prcs_state != null and prcs_state != ""'>  
+  <choose>
+   <when test='prcs_state == "STE099"'> AND t1.prcs_state IN ('STE070','STE080','STE090') </when>
+   <otherwise> AND t1.prcs_state = #{prcs_state} </otherwise>
+  </choose>
+ </if>
+ <choose>
+  <when test='kolas_no != null and kolas_no != ""'> AND t1.kolas_no = #{kolas_no} </when>
+  <otherwise>
+   <if test='region_centr != null and region_centr != ""'> AND t1.region_centr = #{region_centr} </if>
+   <if test='accnt_no != null and accnt_no != ""'> AND t1.accnt_no = #{accnt_no} </if>
+   <if test='supt_clsf != null and supt_clsf != ""'> AND t1.supt_clsf = #{supt_clsf} </if>
+   <if test='supt_team != null and supt_team != ""'> AND t1.supt_team = #{supt_team} </if>
+   <if test='from_ymd != null and from_ymd != ""'> AND t1.rcpt_ymd >= #{from_ymd} </if>
+   <if test='to_ymd != null and to_ymd != ""'> AND t1.rcpt_ymd <![CDATA[ <= ]]>  #{to_ymd} </if>
+   <if test='cmpy_nm_krchar != null and cmpy_nm_krchar != ""'> AND UPPER(t3.cmpy_nm_krchar) LIKE '%'|| UPPER(#{cmpy_nm_krchar}) ||'%' </if>
+   <if test='supt_respn_syspayno != null and supt_respn_syspayno != ""'> AND t1.supt_respn_syspayno = #{supt_respn_syspayno} </if>
+   <if test='rcpt_psn_syspayno != null and rcpt_psn_syspayno != ""'> AND t1.rcpt_psn_syspayno = #{rcpt_psn_syspayno} </if>
+   <if test='supt_work_clsf != null and supt_work_clsf != ""'> AND t1.supt_work_clsf = #{supt_work_clsf} </if>
+   <if test='proof_yn != null and proof_yn != ""'> AND t1.proof_yn = #{proof_yn} </if>
+  </otherwise>
+ </choose> 
+ORDER BY t1.kolas_no DESC
+</select>
+
+<!-- 외부기술지원(유상) 내역등록 조회 -->
+<select id="selectSptTecRcptInfo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptDetlVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecRcptInfo */
+       t1.kolas_no      /* KOLAS 번호  */
+     , t1.prcs_state    /* 기술지원처리상태  */
+     , t1.region_centr  /* 지역 센터     */
+     , t1.accnt_no      /* 계정 번호     */
+     , t1.accnt_respn_psn   /* 계정 책임자 시스템 개인 번호  */
+     , h3.nm AS accnt_respn_nm      /* 계정 책임자 성명  */
+     , t1.tech_supt_req_no   /* 기술지원 접수 번호  */
+     , NVL(t4.cunsl_rcpt_ymd, t1.rcpt_ymd) AS cunsl_rcpt_ymd  /* 상담 접수 일자  */
+     , t1.cunsl_rcpt_no    /* 상담 접수 번호    */
+     , t1.rcpt_ymd            /* 기술지원 접수 일자 */
+     , t1.supt_clsf           /* 기술지원 구분 */
+     , t1.supt_team           /* 기술지원 팀 */
+     , t1.regst_syspayno  /* 기술지원 접수자   */
+     , h2.empno AS regst_empno
+     , h2.nm    AS regst_nm
+     , t1.rcpt_psn_syspayno  /* 기술지원 담당자 */
+     , h.empno AS rcpt_psn_empno
+     , h.nm AS rcpt_psn_nm
+     , t1.supt_respn_syspayno /* 기술지원 책임자  */
+     , h4.empno  AS supt_respn_empno
+     , h4.nm     AS supt_respn_nm
+     , t1.cust_no            /* 고객 번호 */
+     , t1.revsn_cycle       /* 교정주기   */
+     , t1.revsn_plc         /* 교정장소   */
+     , t1.complt_ymd        /* 완료일자   */
+     , t1.rst_book_issu     /* 성적서발행분류   */
+     , t1.rst_book_issu_info/* 성적서발행정보(발행고객동일여부)     */
+     , t1.rst_book_issu_cust_no  /* 성적서발행고객(발행고객과 기술지원고객이 다른경우만 기재) */
+     , c2.cmpy_nm_krchar AS rst_book_issu_cust_nm   
+     , TRIM(t1.treat_prcs) AS treat_prcs   /* 시료처리분류      */
+     , t1.req_amt            /* 신청금액          */
+     , t1.decsn_amt          /* 확정총금액        */
+     , t1.decsn_tax_amt      /* 확정세액          */
+     , t1.decsn_suply_value  /* 확정공급가액  */
+     , t1.discnt_rt          /* 할인율            */
+     , t1.treat_qty          /* 시료건수          */
+     , t1.equip_use_yn       /* 장비사용여부      */
+     , t1.rmk                /* 비고              */
+     , TRIM(t1.complt_req_ymd) AS  complt_req_ymd    /* 완료 요청일자     */
+     , TRIM(t1.complt_schdl_ymd) AS complt_schdl_ymd  /* 완료 예정일자     */
+     , TRIM(t1.depst_schdl_ymd) AS  depst_schdl_ymd  /* 입금 예정 일자    */
+     , t1.depst_bankaccnt_no /* 입금 계좌         */
+     , t1.depst_bank_cd      /* 입금 은행 코드    */
+     , t1.depst_psn /* 입금자 명  */
+     , t1.use_usg   /* 사용 용도  */
+     , t1.test_way_and_unusual_item     /* 시험방법및특이항목 */
+     , t4.cunsl_req_psn                 /* 의뢰자        */
+     , t4.cunsl_req_psn_mobile_no       /* 의뢰자 연락처   */
+     , t4.cunsl_req_psn_tel             /* 의뢰자 연락처   */
+     , t4.cunsl_req_psn_email           /* 의뢰자 이메일   */
+     , t4.techsup_req_clsf              /* 기술지원 요청 구분 */
+     , t4.cunsl_contnt                  /* 상담 내용  */
+     , t4.techsup_contnt                /* 기술지원 요청 내용 */
+     , t1.bill_no  /* 계산서 번호      */
+     , t1.bill_issu_ymd  /* 계산서 발행 일자 */
+     , t1.unslip_no      /* 가결의 번호   */
+     , t1.supt_work_clsf
+     , DECODE(NVL(t1.attach_file_no,''),'','N','Y') AS rst_book_yn -- 성적서발행여부
+     , t1.card_appl_no  -- 카드승인번호
+     , t1.card_issu_ymd
+     , t1.proof_yn -- 결제증빙구분
+     , t1.rece_states_cd
+     , t1.rst_book_rmk -- 성적서발행사유
+     , t1.decide_yn
+     , TRIM(t1.req_no) AS req_no
+     , r.cls_ymd
+     , CASE WHEN TRIM(f.decsn_no) != '' THEN 'Y' ELSE 'N' END AS recp_yn -- 역전자발행여부
+     , f.demnd_recv_clsf
+     , x.apr_state
+     , 'U' AS cud_type
+     , rpa_yn
+     , rpa_result_yn
+     , rpa_evid_clsf
+  FROM spttecrcptinfo t1
+  JOIN humbasicinfo h ON t1.rcpt_psn_syspayno = h.syspayno
+  JOIN humbasicinfo h2 ON t1.regst_syspayno = h2.syspayno
+  JOIN resbgacctm r ON t1.accnt_no = r.accnt_no
+  LEFT JOIN sptcticunslcontnt t4 ON t1.cunsl_rcpt_no = t4.cunsl_rcpt_no
+  JOIN humbasicinfo h3 ON t1.accnt_respn_psn = h3.syspayno
+  JOIN humbasicinfo h4 ON t1.supt_respn_syspayno = h4.syspayno
+  LEFT JOIN sptcustbaseinfo c2 ON t1.rst_book_issu_cust_no = c2.cust_no
+  LEFT JOIN ftxbillh f ON t1.bill_no = f.tax_bill_no
+  LEFT JOIN xomxintfatab x ON t1.tech_supt_req_no = x.req_no
+ WHERE t1.tech_supt_req_no = #{tech_supt_req_no}
+</select>
+
+<!-- 기술지원 접수 실적 조회 -->
+<select id="selectSptTecActRslt" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecActRsltVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecActRslt */
+       t1.cust_no
+     , t1.cunsl_rcpt_no
+     , t1.tech_supt_req_no
+     , t1.seq                /* 순번     */
+     , t1.job_ymd            /* 작업 일자  */
+     , t1.test_req_nm        /* 시험 요청 명 */
+     , t1.test               /* 시험 품목  */
+     , t1.unit_price         /* 단가     */
+     , t1.qty                /* 수량     */
+     , t1.treat_qty          -- 지원건수
+     , t1.req_amt            /* 신청 금액  */
+     , t1.decsn_amt          /* 확정 금액  */
+     , t1.decsn_tax_amt      /* 확정 세액  */
+     , t1.decsn_suply_value  /* 확정 공급가액 */        
+     , t1.job_hedcnt_no      /* 작업 인원 수 */
+     , t1.rmk
+     , t1.rst_book_issu    -- 시험성적서발행구분
+     , t1.rst_book_treat_nm -- 품목/시료명(성적서발행용)
+     , 'U' AS cud_type       
+     , COUNT(t3.req_no) AS rst_req_cnt  
+  FROM spttecactrslt t1
+  JOIN spttecrcptinfo t2 ON t1.cust_no = t2.cust_no AND t1.tech_supt_req_no = t2.tech_supt_req_no AND t1.cunsl_rcpt_no = t2.cunsl_rcpt_no
+  LEFT JOIN sptrstbook t3 ON t1.tech_supt_req_no = t3.tech_supt_req_no AND t1.seq = t3.seq
+ WHERE t1.tech_supt_req_no = #{tech_supt_req_no}
+ GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
+ ORDER BY t1.seq
+</select>
+
+<!-- 기술지원 접수(교정) 실적조회 -->
+<select id="selectSptTecRevsnRslt" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecActRsltVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecRevsnRslt */
+       t1.cust_no
+     , t1.cunsl_rcpt_no
+     , t1.tech_supt_req_no
+     , t1.job_ymd            /* 작업일자  */
+     , t1.seq                
+     , t1.gdnm               /* 품명  */
+     , t1.retro_fee          /* 소급료  */
+     , t1.std                /* 규격   */
+     , t1.renwl_no           /* 기기번호  */
+     , t1.mfg_vend           /* 제작업체  */
+     , t1.qty                /* 수량    */
+     , t1.unit_price         /* 단가    */
+     , t1.req_amt            /* 신청금액  */
+     , t1.decsn_amt          /* 확정금액  */
+     , t1.decsn_tax_amt      /* 확정세액  */
+     , t1.decsn_suply_value  /* 확정공급가액 */
+     , t1.rmk                 /* 비고  */
+     , t1.treat_qty  /* 지원건수 */
+     , 'U' AS cud_type
+  FROM spttecrevsnrslt t1
+  JOIN spttecrcptinfo t2 ON t1.cust_no = t2.cust_no AND t1.tech_supt_req_no = t2.tech_supt_req_no AND t1.cunsl_rcpt_no = t2.cunsl_rcpt_no
+ WHERE t1.tech_supt_req_no = #{tech_supt_req_no}
+ORDER BY t1.seq
+</select>
+
+<!-- 기술지원 장비실적(시험) 상세조회 -->
+<select id="selectSptTecSupEquipRslt" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecEquipRsltVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecSupEquipRslt */
+      t1.tech_supt_req_no
+     , t1.seq
+     , t1.cust_no
+     , TRIM(t1.equip_cd) AS equip_cd
+     , t3.aset_nm
+     , TRIM(t1.equip_use_start_daytm) AS equip_use_start_daytm
+     , TRIM(t1.equip_use_cls_daytm) AS equip_use_cls_daytm
+     , t1.job_time
+     , t1.rmk
+     , t1.treat_qty              /* 시료수        */
+     , t1.equip_use_start_hour   /* 작업 시작 시간  */ 
+     , t1.equip_use_start_minute /* 작업 시작 분   */
+     , t1.equip_use_cls_hour     /* 작업 종료 시간  */
+     , t1.equip_use_cls_minute   /* 작업 종료 분   */     
+     , t2.aset_state
+     , t1.big_item_clsf -- 업종
+     , t1.middle_item_clsf  -- 품목
+     , t1.small_item_clsf -- 세부품목
+     , a.req_no
+     , 'U' AS cud_type
+  FROM spttecsupequiprslt t1
+  LEFT JOIN (SELECT tech_sup_req_no
+             , tech_sup_seq
+             , MAX(req_no) AS req_no 
+          FROM sptequipuserslt
+         WHERE tech_sup_req_no = #{tech_supt_req_no}
+         GROUP BY tech_sup_req_no, tech_sup_seq
+         ) a ON t1.tech_supt_req_no = a.tech_sup_req_no AND t1.seq = a.tech_sup_seq
+  LEFT JOIN assmastrb t3 ON t1.equip_cd = t3.aset_no
+  LEFT JOIN assmastrh t2 ON t1.equip_cd = t2.aset_no
+ WHERE t1.tech_supt_req_no = #{tech_supt_req_no}
+ORDER BY t1.seq
+</select>
+<select id="selectSptZeusResvMst" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptDetlVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptZeusResvMst */
+       b.carrierno AS bsns_psn_regst_no
+     , b.yongdo AS use_usg
+     , b.otherintro AS test_way_and_unusual_item
+     , b.resvprice AS req_amt
+     , e.lab_cd AS supt_team
+     , e.region_centr
+     , DECODE(b.aftertype, '1', 'Y', '2', 'N', '') AS treat_prcs
+     , 'N' AS rst_book_yn
+     , h.aset_no AS equip_cd
+     , h.aset_nm AS aset_nm
+     , b.resvstartdt AS equip_use_start_daytm
+     , b.RESVENDDT AS equip_use_cls_daytm
+     , ROUND(((b.resvendhour*60 + b.resvendmin)-(b.resvstarthour*60 + b.resvstartmin)) / 60,2) AS job_time
+     , b.usegoal AS rmk
+     , a.resvno
+     , b.resvnm AS cunsl_req_psn -- 의뢰자성명
+     , b.resvemail AS cunsl_req_psn_email
+     , b.resvmobile AS cunsl_req_psn_mobile_no
+  FROM sptzeusresvmst a 
+  JOIN sptzeusresvdtl b ON a.resvno = b.resvno
+  JOIN assmastrtech c ON b.equipno = c.ntis_reg_no
+  LEFT JOIN sptlabequipinfo d ON c.aset_no = d.aset_no
+  JOIN sptlabbaseinfo e ON d.region_centr = e.region_centr AND d.lab_cd = e.lab_cd
+  JOIN assmastrb h ON d.aset_no = h.aset_no
+ WHERE a.resvno = #{resvno}
+</select>
+
+<!-- 청구세금계산서 발행내역  -->
+<select id="selectSptTecChrgBillInfo" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptBillVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecChrgBillInfo */
+    a.bill_issu_ymd,
+    a.bill_no,
+    a.decsn_amt,
+    a.req_amt,
+    a.cust_no
+  FROM spttecrcptinfo a
+  JOIN fspsliph b ON a.unslip_no = b.unslip_no
+  LEFT JOIN ( SELECT DISTINCT
+                     a.chrg_unslip_no,
+                     a.chrg_unslip_odr,
+                     a.adjst_unslip_no 
+                FROM finunpaidadjst a
+                LEFT JOIN fspslipdecsnd b ON a.chrg_unslip_no = b.unslip_no AND a.chrg_unslip_odr = b.unslip_odr
+           ) c ON  a.unslip_no = c.chrg_unslip_no AND a.unslip_odr = c.chrg_unslip_odr
+ WHERE a.prcs_state NOT IN ('STE020','STE040','STE070')
+   AND b.decsn_ex = 'Y'                       
+   AND SUBSTR(a.bill_issu_ymd,1,4) = TO_CHAR(SYSDATE,'%Y')
+   AND TRIM(NVL(c.adjst_unslip_no, '')) = '' 
+   AND a.cust_no = #{vend_cd}
+ORDER BY a.bill_issu_ymd DESC
+</select>
+
+<!-- 기술지원내역등록-장비검색팝업 조회 -->
+<select id="selectSptLabEquipInfoAsetPop" parameterType="kr.re.kitech.biz.ass.pop.vo.AssMastrHPopVo" resultType="kr.re.kitech.biz.ass.pop.vo.AssMastrHPopVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptLabEquipInfoAsetPop */
+       t1.aset_no
+     , t1.aset_nm
+     , t1.equip_use_fee
+     , t3.intro_ymd
+     , t3.intro_amt
+     , t3.aset_clsf
+     , t3.aset_typ
+     , t4.usg_desc  -- 사용용도
+     , t4.user_syspayno
+     , t4.couse_clsf
+     , t4.old_aset_no 
+     , t4.posi_region -- 위치지역
+     , t4.posi_build
+     , x.cd_nm AS posi_build_nm
+     , t4.posi_floor
+     , t4.posi_detls
+     , h.nm AS user_nm
+     , h.empno As user_empno
+     , t5.ntis_reg_no
+  FROM sptlabequipinfo t1
+  JOIN sptlabbaseinfo t2 ON t1.region_centr = t2.region_centr AND t1.lab_cd = t2.lab_cd
+  JOIN assmastrh t3 ON t1.aset_no = t3.aset_no
+  JOIN assmastrb t4 ON t1.aset_no = t4.aset_no
+  JOIN humbasicinfo h ON t4.user_syspayno = h.syspayno
+  LEFT JOIN assmastrtech t5 ON t1.aset_no = t5.aset_no
+  LEFT JOIN xodxcommst x ON x.cd_clsf = 'APA' AND t4.posi_build = x.cd
+ WHERE t1.aset_no NOT IN (SELECT aset_no FROM assunuse WHERE prcs_clsf != 'AHB040' AND aset_no NOT IN  ('A2016070091','A2015050073','A2015030087'))
+ <if test='region_centr != null and region_centr != ""'> AND t2.region_centr = #{region_centr} </if>
+ <if test='lab_cd != null and lab_cd != ""'> AND t2.lab_cd = #{lab_cd} </if>
+ <if test='aset_no != null and aset_no != ""'> AND t1.aset_no = #{aset_no} </if>
+ <if test='aset_clsf != null and aset_clsf != ""'> AND (t3.aset_clsf = #{aset_clsf} OR t3.aset_clsf = 'ABA080')</if>
+ <if test='aset_typ != null and aset_typ != ""'> AND t3.aset_typ = #{aset_typ} </if>
+ <if test='aset_typ != null or aset_typ == ""'> AND t3.aset_typ IN ('AAA010','AAA020','AAA030') </if>
+ <if test='user_syspayno != null and user_syspayno != ""'> 
+   AND (t2.user_syspayno = #{user_syspayno} OR t1.use_rspns_syspayno = #{user_syspayno})
+ </if>
+</select>
+
+<!-- 상담노트저장 -->
+<insert id="insertSptCtiCunslContnt" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptDetlVo">
+INSERT /* kr.re.kitech.biz.sup.tec.insertSptCtiCunslContnt */
+  INTO sptcticunslcontnt (
+             cust_no                 /* 고객번호 */
+           , region_centr            /* 지역센터 */
+           , cunsl_rcpt_no           /* 상담접수번호 */
+           , cunsl_rcpt_ymd          /* 상담접수일자 */
+           , cunsl_psn_syspayno      /* 상담자시스템개인번호 */
+           , cunsl_psn_dept_cd       /* 상담자부서코드 */
+           , cunsl_psn_dept_new_ymd  /* 상담자부서신설일자 */
+           , cunsl_rcpt_path         /* 상담접수경로 */
+           , cunsl_req_psn           /* 상담의뢰자 */
+           , cunsl_req_psn_tel       /* 상담의뢰자전화번호 */
+           , cunsl_req_psn_mobile_no /* 상담의뢰자휴대폰번호 */
+           , cunsl_req_psn_email     /* 상담의뢰자이메일 */
+           , cunsl_rcpt_loc_clsf     /* 상담접수처구분 */
+           , cunsl_contnt_clsf       /* 상담내용구분 */
+           , cunsl_contnt            /* 상담내용 */
+           , cunsl_complt_clsf       /* 상담완료구분 */
+           , techsup_req_clsf        /* 기술지원의뢰구분 */
+           , techsup_contnt          /* 기술지원의뢰내용 */
+           , qstn_invgt_ex           /* 설문조사유무 */
+           , regst_syspayno          /* 등록시스템개인번호 */
+           , regst_daytm             )  /* 등록일시 */
+VALUES (#{cust_no}
+      , #{region_centr}
+      , #{cunsl_rcpt_no}
+      , #{cunsl_rcpt_ymd}
+      , #{cunsl_psn_syspayno}
+      , ''
+      , ''
+      , #{cunsl_rcpt_path}
+      , #{cunsl_req_psn}
+      , #{cunsl_req_psn_tel}
+      , #{cunsl_req_psn_mobile_no}
+      , #{cunsl_req_psn_email}
+      , #{cunsl_rcpt_loc_clsf}
+      , ''
+      , #{cunsl_contnt}
+      , #{cunsl_complt_clsf}
+      , ''
+      , #{techsup_contnt}
+      , ''
+      , #{regst_syspayno}
+      , SYSDATE
+     )
+</insert>
+
+<!-- 상담노트 수정 -->
+<update id="updateSptCtiCunslContnt" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptDetlVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptCtiCunslContnt */
+       sptcticunslcontnt
+   SET <if test='region_centr != null'> region_centr = #{region_centr}, /* 지역센터 */ </if>
+       <if test='cunsl_rcpt_ymd != null'>  cunsl_rcpt_ymd = #{cunsl_rcpt_ymd}, /* 상담접수일자  */ </if> 
+       <if test='cunsl_req_psn != null'> cunsl_req_psn = #{cunsl_req_psn}, /* 상담의뢰자 */</if>  
+       <if test='cunsl_req_psn_tel != null'>  cunsl_req_psn_tel = #{cunsl_req_psn_tel}, /* 상담의뢰자전화번호   */ </if>    
+       <if test='cunsl_req_psn_mobile_no != null'> cunsl_req_psn_mobile_no = #{cunsl_req_psn_mobile_no}, </if> 
+       <if test='cunsl_req_psn_tel != null'> cunsl_req_psn_tel= #{cunsl_req_psn_tel}, </if> 
+       <if test='cunsl_req_psn_email != null'> cunsl_req_psn_email = #{cunsl_req_psn_email}, </if>        
+       <if test='cunsl_contnt != null'> cunsl_contnt = #{cunsl_contnt}, /* 상담내용 */ </if>    
+       <if test='cunsl_complt_clsf != null'>  cunsl_complt_clsf = #{cunsl_complt_clsf}, /* 상담완료구분 */ </if>  
+       <if test='techsup_contnt != null'>  techsup_contnt = #{techsup_contnt}, /* 기술지원의뢰내용  */ </if>  
+       updt_syspayno = #{updt_syspayno},                                                                        
+       updt_daytm = CURRENT                                                                   
+ WHERE cunsl_rcpt_no = #{cunsl_rcpt_no}
+</update>
+
+<!-- 기술지원접수 저장 -->
+<insert id="insertSptTecRcptInfo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+INSERT /* kr.re.kitech.biz.sup.tec.insertSptTecRcptInfo */
+  INTO spttecrcptinfo (
+       cust_no               /* 고객번호       */    
+     , cunsl_rcpt_no         /* 상담접수번호    */      
+     , tech_supt_req_no      /* 기술지원의뢰번호   */        
+     , region_centr          /* 지역센터      */    
+     , rcpt_ymd              /* 접수일자      */    
+     , rcpt_psn_syspayno     /* 접수자시스템개인번호 */          
+     , supt_respn_syspayno   /* 기술지원 책임자  */       
+     , prcs_state            /* 처리 상태(STE) */    
+     , supt_clsf             /* 지원분류       */    
+     , supt_team             /* 지원팀        */   
+<if test='kolas_no != null'> , kolas_no /* kolas 번호   */ </if> 
+<if test='revsn_cycle != null'> , revsn_cycle   /* 교정주기  */ </if>    
+<if test='revsn_plc != null'> , revsn_plc  /* 교정장소*/ </if>    
+<if test='complt_req_ymd != null'> , complt_req_ymd  /* 완료요청일자   */ </if>      
+<if test='complt_schdl_ymd != null'> , complt_schdl_ymd  /* 완료예정일자 */      
+ , complt_ymd   /* 완료일자 */ </if>    
+<if test='use_usg != null'> , use_usg   /* 사용용도  */ </if>    
+<if test='test_way_and_unusual_item != null'> , test_way_and_unusual_item /* 시험방법및특이항목 */ </if> 
+<if test='supt_work_clsf != null'> , supt_work_clsf /* 지원사업구분 */ </if>        
+<if test='rst_book_issu != null'> , rst_book_issu  /* 성적서발행분류 */ </if>
+<if test='rst_book_issu_info != null'> , rst_book_issu_info /* 성적서발행정보 */ </if>
+<if test='rst_book_issu_cust_no != null'> , rst_book_issu_cust_no /* 성적서발행고객  */ </if>       
+<if test='treat_prcs != null'> , treat_prcs /* 시료처리분류 */ </if>      
+<if test='req_amt != null'> , req_amt   /* 신청금액 */ </if>    
+<if test='decsn_amt != null'> , decsn_amt  /* 확정총액 */ </if>    
+<if test='decsn_tax_amt != null'> , decsn_tax_amt   /* 확정세액 */ </if>    
+<if test='decsn_suply_value != null'> , decsn_suply_value  /* 확정공급세액  */ </if>    
+<if test='discnt_rt != null'> , discnt_rt /* 할인율  */ </if>   
+<if test='treat_qty != null'> , treat_qty /* 시료건수  */ </if> 
+<if test='equip_use_yn != null'> , equip_use_yn  /* 장비사용유무  */ </if>   
+<if test='rmk != null'> , rmk   /* 비고  */ </if>  
+<if test='accnt_no != null'> , accnt_no  /* 계정번호 */ </if>    
+<if test='accnt_respn_psn != null'> , accnt_respn_psn  /* 계정책임자 */ </if>     
+<if test='techsup_req_clsf != null'> , req_clsf   /* 요청구분 */ </if>    
+<if test='techsup_contnt != null'> , req_contnt   /* 요청내용 */ </if>    
+<if test='cunsl_contnt != null'> , cunsl_contnt  /* 상담내용  */ </if>    
+     , comsn_pay_clsf  /* 수수료지급구분 */
+<if test='depst_schdl_ymd != null'> , depst_schdl_ymd  /* 입금예정일자 */ </if>      
+<if test='depst_ymd != null'> , depst_ymd    /* 입금일자 */ </if>    
+<if test='depst_bankaccnt_no != null'> , depst_bankaccnt_no  /* 입금계좌번호 */ </if>      
+<if test='depst_bank_cd != null'> , depst_bank_cd  /* 입금은행코드 */ </if>      
+<if test='depst_psn != null'> , depst_psn /* 입금자  */ </if> 
+<if test='rece_states_cd != null'> , rece_states_cd  /* 접수방법 표기 */  </if>
+<if test='rst_book_rmk != null'> , rst_book_rmk /* 성적서 발행 사유 */ </if>
+<if test='rpa_yn != null'> , rpa_yn /* RPA수행여부 */ </if>
+<if test='rpa_result_yn != null'> , rpa_result_yn /* RPA수행결과 */ </if>
+<if test='rpa_evid_clsf != null'> , rpa_evid_clsf /* RPA종류 */ </if>
+     , regst_syspayno   
+     , regst_daytm
+ ) VALUES (                                                      
+       #{cust_no}               
+     , #{cunsl_rcpt_no}         
+     , #{tech_supt_req_no}       
+     , #{region_centr}          
+     , #{rcpt_ymd}              
+     , #{rcpt_psn_syspayno}      
+     , #{supt_respn_syspayno}    
+     , #{prcs_state}            
+     , #{supt_clsf}             
+     , #{supt_team}             
+    <if test='kolas_no != null'> , #{kolas_no} </if>      
+    <if test='revsn_cycle != null'> , #{revsn_cycle} </if>           
+    <if test='revsn_plc != null'> , #{revsn_plc} </if>             
+    <if test='complt_req_ymd != null'> , #{complt_req_ymd} </if>        
+    <if test='complt_schdl_ymd != null'> , #{complt_schdl_ymd}       
+     , #{complt_schdl_ymd} </if>            
+    <if test='use_usg != null'> , #{use_usg} </if>               
+    <if test='test_way_and_unusual_item != null'> , #{test_way_and_unusual_item} </if> 
+    <if test='supt_work_clsf != null'> , #{supt_work_clsf} </if>          
+    <if test='rst_book_issu != null'> , #{rst_book_issu} </if>         
+    <if test='rst_book_issu_info != null'> , #{rst_book_issu_info} </if>    
+    <if test='rst_book_issu_cust_no != null'> , #{rst_book_issu_cust_no} </if>  
+    <if test='treat_prcs != null'> , #{treat_prcs} </if>            
+    <if test='req_amt != null'> , #{req_amt} </if>               
+    <if test='decsn_amt != null'> , #{decsn_amt} </if>             
+    <if test='decsn_tax_amt != null'> , #{decsn_tax_amt} </if>         
+    <if test='decsn_suply_value != null'> , #{decsn_suply_value} </if>     
+    <if test='discnt_rt != null'> , #{discnt_rt} </if>             
+    <if test='treat_qty != null'> , #{treat_qty} </if>             
+    <if test='equip_use_yn != null'> , #{equip_use_yn} </if>          
+    <if test='rmk != null'> , #{rmk} </if>                   
+    <if test='accnt_no != null'> , #{accnt_no} </if>              
+    <if test='accnt_respn_psn != null'> , #{accnt_respn_psn} </if>       
+    <if test='techsup_req_clsf != null'> , #{techsup_req_clsf} </if>              
+    <if test='techsup_contnt != null'> , #{techsup_contnt} </if>            
+    <if test='cunsl_contnt != null'> , #{cunsl_contnt} </if>          
+     , 'N'      
+    <if test='depst_schdl_ymd != null'> , #{depst_schdl_ymd} </if>       
+    <if test='depst_ymd != null'> , #{depst_ymd} </if>             
+    <if test='depst_bankaccnt_no != null'> , #{depst_bankaccnt_no} </if>    
+    <if test='depst_bank_cd != null'> , #{depst_bank_cd} </if>         
+    <if test='depst_psn != null'> , #{depst_psn} </if>          
+    <if test='rece_states_cd != null'> , #{rece_states_cd} </if>        
+    <if test='rst_book_rmk != null'> , #{rst_book_rmk} </if>          
+    <if test='rpa_yn != null'> , #{rpa_yn} </if>
+    <if test='rpa_result_yn != null'> , #{rpa_result_yn} </if>
+    <if test='rpa_evid_clsf != null'> , #{rpa_evid_clsf} </if>
+     , #{regst_syspayno}
+     , SYSDATE)
+</insert>
+
+<!-- 기술지원접수 수정 -->
+<update id="updateSptTecRcptInfo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTecRcptInfo */
+         spttecrcptinfo
+   SET  region_centr = #{region_centr},    
+        rcpt_ymd = #{rcpt_ymd},    
+        rcpt_psn_syspayno = #{rcpt_psn_syspayno},    
+        supt_respn_syspayno = #{supt_respn_syspayno},    
+        prcs_state = #{prcs_state},    
+        supt_clsf = #{supt_clsf},    
+        supt_team = #{supt_team},  
+       <if test='kolas_no != null'> kolas_no = #{kolas_no}, </if>   
+       <if test='revsn_cycle != null'> revsn_cycle = #{revsn_cycle}, </if>                     
+       <if test='revsn_plc != null'> revsn_plc = #{revsn_plc}, </if>                       
+       <if test='complt_req_ymd != null'> complt_req_ymd = #{complt_req_ymd}, </if>                  
+       <if test='complt_schdl_ymd != null'> complt_schdl_ymd = #{complt_schdl_ymd},                  
+         complt_ymd = #{complt_ymd}, </if>                        
+       <if test='use_usg != null'> use_usg = #{use_usg}, </if>                           
+       <if test='test_way_and_unusual_item != null'> test_way_and_unusual_item = #{test_way_and_unusual_item}, </if>         
+       <if test='supt_work_clsf != null'> supt_work_clsf = #{supt_work_clsf}, </if>                    
+       <if test='rst_book_issu != null'> rst_book_issu = #{rst_book_issu}, </if>                     
+       <if test='rst_book_issu_info != null'> rst_book_issu_info = #{rst_book_issu_info}, </if>                
+       <if test='rst_book_issu_cust_no != null'> rst_book_issu_cust_no = #{rst_book_issu_cust_no}, </if>             
+       <if test='treat_prcs != null'> treat_prcs = #{treat_prcs}, </if>                        
+       <if test='req_amt != null'> req_amt = #{req_amt}, </if>                           
+       <if test='decsn_amt != null'> decsn_amt = #{decsn_amt}, </if>                         
+       <if test='decsn_tax_amt != null'> decsn_tax_amt = #{decsn_tax_amt}, </if>                 
+       <if test='decsn_suply_value != null'> decsn_suply_value = #{decsn_suply_value}, </if>                    
+       <if test='discnt_rt != null'> discnt_rt = #{discnt_rt}, </if>                         
+       <if test='treat_qty != null'> treat_qty = #{treat_qty}, </if>                         
+       <if test='accnt_no != null'> accnt_no = #{accnt_no}, </if>                          
+       <if test='accnt_respn_psn != null'> accnt_respn_psn = #{accnt_respn_psn}, </if>                   
+       <if test='techsup_req_clsf != null'> req_clsf = #{techsup_req_clsf}, </if>                          
+       <if test='techsup_contnt != null'> req_contnt = #{techsup_contnt}, </if>                        
+       <if test='cunsl_contnt != null'> cunsl_contnt = #{cunsl_contnt}, </if>  
+       <if test='depst_schdl_ymd != null'> depst_schdl_ymd = #{depst_schdl_ymd}, </if>                   
+       <if test='depst_ymd != null'> depst_ymd = #{depst_ymd}, </if>                         
+       <if test='depst_bankaccnt_no != null'> depst_bankaccnt_no = #{depst_bankaccnt_no}, </if>                
+       <if test='depst_bank_cd != null'> depst_bank_cd = #{depst_bank_cd}, </if>                     
+       <if test='depst_psn != null'> depst_psn = #{depst_psn}, </if>                         
+       <if test='bill_no != null'> bill_no = #{bill_no}, </if>                           
+       <if test='bill_issu_ymd != null'> bill_issu_ymd = #{bill_issu_ymd}, </if>                     
+       <if test='cust_no != null'> cust_no = #{cust_no}, </if>                           
+       <if test='equip_use_yn != null'> equip_use_yn = #{equip_use_yn}, </if>
+       <if test='rmk != null'> rmk = #{rmk}, </if>                      
+       <if test='rpa_yn != null'> rpa_yn = #{rpa_yn}, </if>                              
+       <if test='rpa_result_yn != null'> rpa_result_yn = #{rpa_result_yn}, </if>
+       <if test='rpa_evid_clsf != null'> rpa_evid_clsf = #{rpa_evid_clsf}, </if>
+       
+        updt_syspayno = #{updt_syspayno},     
+        updt_daytm = CURRENT                                 
+ WHERE tech_supt_req_no = #{tech_supt_req_no}
+</update>
+
+<!-- 기술지원 결재신청금액 체크 -->
+<select id="selectSptTecRcptInfoAmtChk" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo" resultType="int">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecRcptInfoAmtChk */
+       SUM(a.decsn_amt) - (NVL(b.cash_depst,0) + NVL(c.amount,0)) AS decsn_amt
+  FROM spttecrcptinfo a
+  LEFT JOIN ftxbillh b ON a.bill_no = b.tax_bill_no
+  LEFT JOIN easypay_noti_info c ON a.kolas_no = c.order_no
+ WHERE 1=1
+ <choose>
+  <when test='bill_no != null and bill_no !=""'> AND a.bill_no = #{bill_no} </when>
+  <otherwise> AND tech_supt_req_no = #{tech_supt_req_no} </otherwise>
+ </choose> 
+ GROUP BY b.cash_depst,c.amount
+</select>
+
+<!-- 기술지원 실적등록 삭제 -->
+<delete id="deleteSptTecActRslt" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.sup.tec.deleteSptTecActRslt */
+  FROM spttecactrslt
+ WHERE tech_supt_req_no = #{tech_supt_req_no}
+   ;
+DELETE FROM spttecrevsnrslt
+ WHERE tech_supt_req_no = #{tech_supt_req_no}
+   ;
+</delete>
+
+<!-- 기술지원 실적 저장 -->
+<insert id="insertSptTecActRslt" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecActRsltVo">
+INSERT /* kr.re.kitech.biz.sup.tec.insertSptTecActRslt */
+  INTO spttecactrslt(cust_no            /* 고객번호     */
+                   , cunsl_rcpt_no      /* 상담접수번호  */
+                   , tech_supt_req_no   /* 기술지원의뢰번호 */
+                   , seq                /* 일련번호 */
+                   , job_ymd            /* 작업일자 */
+                   , test_req_nm        /* 시험요청명 */
+                   , test               /* 시험품목  */
+                   , job_psn_syspayno   /* 작업자시스템개인번호 */
+                   , job_hedcnt_no      /* 작업인원수 */
+                   , unit_price         /* 단가 */
+                   , qty                /* 수량 */
+                   , req_amt            /* 신청 금액  */
+                   , decsn_amt          /* 확정금액   */
+                   , decsn_tax_amt      /* 확정세액   */
+                   , decsn_suply_value  /* 확정공급가액 */
+                   , treat_qty          -- 건수
+                <if test='rmk != null'> , rmk  /* 비고*/ </if>
+                <if test='rst_book_issu != null'> , rst_book_issu /* 성적서 발행여부 */ </if>
+                <if test='rst_book_issu != null'> , rst_book_treat_nm  /* 성적서 발행용 시료명 */ </if>
+                   , regst_syspayno
+                   , regst_daytm
+  ) VALUES (
+       #{cust_no}
+     , #{cunsl_rcpt_no}
+     , #{tech_supt_req_no}
+     , #{seq}
+     , #{job_ymd}
+     , #{test_req_nm}
+     , #{test}
+     , #{job_psn_syspayno}
+     , 0
+     , #{unit_price}
+     , #{qty}
+     , #{req_amt}
+     , #{decsn_amt}
+     , #{decsn_tax_amt}
+     , #{decsn_suply_value}
+     , #{treat_qty}
+    <if test='rmk != null'> , #{rmk} </if>
+    <if test='rst_book_issu != null'> , #{rst_book_issu} </if>
+    <if test='rst_book_treat_nm != null'> , #{rst_book_treat_nm} </if>
+     , #{regst_syspayno}
+     , SYSDATE
+  )
+</insert>
+
+<!-- 기술지원 실적(교정) 저장 -->
+<insert id="insertSptTecRevsnRslt" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecActRsltVo">
+INSERT /* kr.re.kitech.biz.sup.tec.insertSptTecRevsnRslt */
+  INTO spttecrevsnrslt ( cust_no          /* 고객번호   */
+                       , cunsl_rcpt_no    /* 상담접수번호 */
+                       , tech_supt_req_no /* 기술지원의뢰번호 */
+                       , seq              /* 일련번호 */
+                       , job_ymd          /* 작업일자 */
+                       , gdnm             /* 품명  */
+                       , std              /* 규격  */
+                       , renwl_no         /* 기기번호 */
+                       , mfg_vend         /* 제작업체 */
+                       , qty              /* 수량 */
+                       , unit_price       /* 단가 */
+                       , retro_fee        /* 소급료  */
+                       , req_amt          /* 신청금액 */
+                       , decsn_amt        /* 확정금액 */
+                       , decsn_tax_amt    /* 확정세액 */
+                       , decsn_suply_value /* 확정공급가액 */
+                       , rmk              /* 비고  */
+                       , regst_syspayno
+                       , regst_daytm
+  ) VALUES (
+        #{cust_no}
+      , #{cunsl_rcpt_no}
+      , #{tech_supt_req_no}
+      , #{seq}
+      , #{job_ymd}
+      , #{gdnm}
+      , #{std}
+      , #{renwl_no}
+      , #{mfg_vend}
+      , #{qty}
+      , #{unit_price}
+      , #{retro_fee}
+      , #{req_amt}
+      , #{decsn_amt}
+      , #{decsn_tax_amt}
+      , #{decsn_suply_value}
+      , #{rmk}
+      , #{regst_syspayno}
+      , SYSDATE
+    )
+</insert>
+
+<!-- 장비실적내역 및 장비일지 삭제 -->
+<delete id="deleteSptTecSupEquipRslt" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecEquipRsltVo">
+DELETE /* kr.re.kitech.biz.sup.tec.deleteSptTecSupEquipRslt */
+  FROM spttecsupequiprslt
+ WHERE tech_supt_req_no = #{tech_supt_req_no}
+   AND cunsl_rcpt_no = #{cunsl_rcpt_no}
+ <if test='seq != null and seq != 0'> AND seq = #{seq} </if>
+   ;
+DELETE FROM sptequipuserslt
+WHERE tech_sup_req_no = #{tech_supt_req_no}
+    AND tech_sup_req_no != ''  -- 장비사용일지등록시 tech_sup_req_no이 존재하지 않음
+<if test='seq != null and seq != 0'> AND tech_sup_seq = #{seq} </if>
+;
+</delete>
+
+<!-- 기술지원 장비실적 저장 -->
+<insert id="insertSptTecSupEquipRslt" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecEquipRsltVo">
+<selectKey keyProperty="seq" resultType="int" order="BEFORE">
+        SELECT NVL(MAX(seq), 0) + 1 FROM spttecsupequiprslt WHERE cunsl_rcpt_no = #{cunsl_rcpt_no} AND tech_supt_req_no = #{tech_supt_req_no}
+</selectKey>
+
+INSERT /* kr.re.kitech.biz.sup.tec.insertSptTecSupEquipRslt */
+  INTO spttecsupequiprslt ( cust_no        /* R고객 번호 */
+                          , cunsl_rcpt_no          /* 상담 접수 번호 */
+                          , tech_supt_req_no       /* 기술지원 접수 번호 */
+                          , seq                    /* 일련 번호 */
+                          , equip_cd               /* 사용 장비 */
+                          , equip_use_start_daytm  /* 작업 시작 일자 */
+                          , equip_use_cls_daytm    /* 작업종료 일자  */
+                          , job_time               /* 작업 시간  */
+                        <if test='rmk != null'> , rmk  /* 비고  */ </if>
+                        <if test='treat_qty != null'> , treat_qty /* 시료수 */ </if>
+                        <if test='equip_use_start_hour != null'> , equip_use_start_hour   /* 작업 시작 시간 */ </if>
+                        <if test='equip_use_start_minute != null'> , equip_use_start_minute /* 작업 시작 분  */ </if>
+                        <if test='equip_use_cls_hour != null'> , equip_use_cls_hour     /* 작업 종료 시간 */ </if>
+                        <if test='equip_use_cls_minute != null'> , equip_use_cls_minute   /* 작업 종료 분  */ </if>
+                          , big_item_clsf
+                          , middle_item_clsf
+                          , small_item_clsf
+                          , regst_syspayno
+                          , regst_daytm
+ ) VALUES (
+       #{cust_no}
+     , #{cunsl_rcpt_no}
+     , #{tech_supt_req_no}
+     , #{seq}
+     , #{equip_cd}
+     , #{equip_use_start_daytm}
+     , #{equip_use_cls_daytm}
+     , #{job_time}
+    <if test='rmk != null'> , #{rmk} </if>
+    <if test='treat_qty != null'> , #{treat_qty} </if>
+    <if test='equip_use_start_hour != null'> , #{equip_use_start_hour} </if>
+    <if test='equip_use_start_minute != null'> , #{equip_use_start_minute} </if>
+    <if test='equip_use_cls_hour != null'> , #{equip_use_cls_hour} </if>
+    <if test='equip_use_cls_minute != null'> , #{equip_use_cls_minute} </if>
+     , #{big_item_clsf}
+     , #{middle_item_clsf}
+     , #{small_item_clsf}
+     , #{regst_syspayno}
+     , SYSDATE
+   )
+</insert>
+
+<!-- 기술지원 장비실적 수정 -->
+<update id="updateSptTecSupEquipRslt" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecEquipRsltVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTecSupEquipRslt */
+      spttecsupequiprslt 
+   SET equip_cd = #{equip_cd}     
+     , equip_use_start_daytm = #{equip_use_start_daytm} /* 작업 시작 일자 */
+     , equip_use_cls_daytm = #{equip_use_cls_daytm}   /* 작업종료 일자  */
+     , cust_no = #{cust_no}
+     , job_time = #{job_time}             /* 작업 시간  */
+   <if test='rmk != null'> , rmk = #{rmk} /* 비고  */ </if>
+   <if test='treat_qty != null'> , treat_qty = #{treat_qty}/* 시료수 */ </if>
+   <if test='equip_use_start_hour != null'> , equip_use_start_hour = #{equip_use_start_hour}  /* 작업 시작 시간 */ </if>
+   <if test='equip_use_start_minute != null'> , equip_use_start_minute = #{equip_use_start_minute} /* 작업 시작 분  */ </if>
+   <if test='equip_use_cls_hour != null'> , equip_use_cls_hour = #{equip_use_cls_hour}    /* 작업 종료 시간 */ </if>
+   <if test='equip_use_cls_minute != null'> , equip_use_cls_minute = #{equip_use_cls_minute}  /* 작업 종료 분  */ </if>
+     , big_item_clsf = #{big_item_clsf}
+     , middle_item_clsf = #{middle_item_clsf}
+     , small_item_clsf = #{small_item_clsf}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE cunsl_rcpt_no = #{cunsl_rcpt_no}
+   AND tech_supt_req_no = #{tech_supt_req_no}
+   AND seq = #{seq}
+</update>
+
+<!-- 기술지원장비사용일지 저장 -->
+<insert id="mergeSptEquipUseRslt" parameterType="kr.re.kitech.biz.sup.tec.vo.SptEquipUseRsltVo">
+MERGE /* kr.re.kitech.biz.sup.tec.mergeSptEquipUseRslt */
+ INTO sptequipuserslt AS a
+USING dual AS b ON 1=1 AND req_no = #{req_no}
+WHEN MATCHED THEN 
+  UPDATE
+     SET cust_no = #{cust_no} 
+       , a.equip_cd = #{equip_cd}
+       , a.equip_use_start_day = #{equip_use_start_day}
+       , a.equip_use_start_hour = #{equip_use_start_hour}
+       , a.equip_use_start_minute = #{equip_use_start_minute}
+       , a.equip_use_cls_day = #{equip_use_cls_day}
+       , a.equip_use_cls_hour = #{equip_use_cls_hour}
+       , a.equip_use_cls_minute = #{equip_use_cls_minute}
+       , a.job_time = #{job_time}
+       , a.use_clsf = #{use_clsf}
+       , a.user_clsf = #{user_clsf}
+       , a.accnt_no = #{accnt_no}
+       , a.use_type = #{use_type}
+       , a.treat_qty = #{treat_qty} 
+     <if test='job_rmk != null'> , a.job_rmk = #{job_rmk} </if>
+     <if test='equip_status != null'> , a.equip_status = #{equip_status} </if>
+     <if test='attach_file_no != null'> , a.attach_file_no = #{attach_file_no} </if>
+       , a.updt_syspayno = #{updt_syspayno}
+       , a.updt_daytm = SYSDATE
+   
+WHEN NOT MATCHED THEN
+INSERT (
+       a.req_no
+     , a.job_clsf
+     , a.equip_cd
+     , a.cust_no
+     , a.tech_sup_req_no
+     , a.tech_sup_seq
+     , a.equip_use_syspayno
+     , a.equip_use_start_day
+     , a.equip_use_start_hour
+     , a.equip_use_start_minute
+     , a.equip_use_cls_day
+     , a.equip_use_cls_hour
+     , a.equip_use_cls_minute
+     , a.job_time
+     , a.use_clsf
+     , a.user_clsf
+     , a.accnt_no
+     , a.use_type
+     , a.treat_qty 
+    <if test='job_rmk != null'> , a.job_rmk </if>
+    <if test='equip_status != null'> , a.equip_status </if>
+    <if test='attach_file_no != null'> , attach_file_no </if>
+     , a.regst_syspayno
+     , a.regst_daytm
+  ) VALUES(
+       #{req_no}
+     , #{job_clsf}
+     , #{equip_cd}
+     , #{cust_no}
+     , #{tech_sup_req_no}
+     , #{tech_sup_seq}
+     , #{equip_use_syspayno}
+     , #{equip_use_start_day}
+     , #{equip_use_start_hour}
+     , #{equip_use_start_minute}
+     , #{equip_use_cls_day}
+     , #{equip_use_cls_hour}
+     , #{equip_use_cls_minute}
+     , #{job_time}
+     , #{use_clsf}
+     , #{user_clsf}
+     , #{accnt_no}
+     , #{use_type}
+    <if test='treat_qty != null'> , #{treat_qty} </if>
+    <if test='job_rmk != null'> , #{job_rmk} </if>
+    <if test='equip_status != null'> , #{equip_status} </if>
+    <if test='attach_file_no != null'> , #{attach_file_no} </if>
+     , #{regst_syspayno}
+     , SYSDATE
+   )
+</insert>
+<!-- 제우스 장비 예약 기술지원의뢰번호 업데이트 -->
+<update id="updateSptZeusResvDtlSuptNo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptDetlVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptZeusResvDtlSuptNo */
+       sptzeusresvdtl 
+   SET tech_supt_req_no= #{tech_supt_req_no}
+ WHERE resvno = #{resvno}
+</update>
+
+<!-- 케이-바우처일 경우 확정 저장 -->
+<update id="updateSptTecRcptInfoDecideYn" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTecRcptInfoDecideYn */
+      spttecrcptinfo
+   SET decide_yn = 'Y'
+     , prcs_state = #{prcs_state}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE tech_supt_req_no = #{tech_supt_req_no}
+   AND cust_no = #{cust_no}
+   AND cunsl_rcpt_no = #{cunsl_rcpt_no}
+</update>
+
+<!-- 바우처가입여부 조회 -->
+<select id="selectSptParBaseInfoVoucher" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecChkVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptParBaseInfoVoucher */
+       NVL(voucher_yn,'N') AS voucher_yn /*바우처가입여부 */
+  FROM sptparbaseinfo
+ WHERE cust_no = #{cust_no}
+</select>
+
+<!-- 기술지원 내역등록 삭제 -->
+<delete id="deleteSptTecRcptInfo" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+DELETE /* kr.re.kitech.biz.sup.tec.deleteSptTecRcptInfo */
+  FROM sptcticunslcontnt
+ WHERE cunsl_rcpt_no = #{cunsl_rcpt_no}
+ ;
+ DELETE FROM spttecrcptinfo
+ WHERE cust_no = #{cust_no}
+   AND cunsl_rcpt_no = #{cunsl_rcpt_no}
+   AND tech_supt_req_no = #{tech_supt_req_no}
+ ;
+</delete>
+
+<!-- 기술지원 취소 업데이트 -->
+<update id="updateSptTecRcptInfoPrcsState" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSrcVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTecRcptInfoPrcsState */
+       spttecrcptinfo
+   SET prcs_state = #{prcs_state}
+    <if test='proof_yn != null and proof_yn != ""'> , proof_yn = #{proof_yn} </if>
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE 1=1
+ <choose>
+   <when test='kolas_no != null and kolas_no != ""'> AND kolas_no = #{kolas_no} </when>
+   <when test='bill_no != null and bill_no != ""'> AND bill_no = #{bill_no} </when>
+   <otherwise> AND tech_supt_req_no = #{tech_supt_req_no} </otherwise>
+ </choose>
+</update>
+
+<!-- 카드 결재내역 확인 -->
+<select id="selectSptApplTable" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptApplTableVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptApplTable */
+           FIRST 1 kolas_no, appl_no, appl_ymd
+  FROM spt_appl_table 
+ WHERE kolas_no = #{kolas_no}
+   AND del_yn = 'N' 
+   AND gubun_cd = 'D1'
+</select>
+
+<!-- 카드결제 응답 저장 -->
+<insert id="insertSptCardHis" parameterType="kr.re.kitech.biz.sup.tec.vo.SptCardHisVo">
+INSERT /* kr.re.kitech.biz.sup.tec.insertSptCardHis */
+  INTO spt_card_his(
+        rq01
+      <if test='RQ02 != null'> , rq02 </if>
+      <if test='RQ03 != null'> , rq03 </if>
+      <if test='RQ04 != null'> , rq04 </if>
+      <if test='RQ05 != null'> , rq05 </if>
+      <if test='RQ06 != null'> , rq06 </if>
+      <if test='RQ07 != null'> , rq07 </if>
+      <if test='RQ08 != null'> , rq08 </if>
+      <if test='RQ09 != null'> , rq09 </if>
+      <if test='RQ10 != null'> , rq10 </if>
+      <if test='RQ11 != null'> , rq11 </if>
+      <if test='RQ12 != null'> , rq12 </if>
+      <if test='RQ13 != null'> , rq13 </if>
+      <if test='RQ14 != null'> , rq14 </if>
+      <if test='RQ15 != null'> , rq15 </if>
+      <if test='RQ16 != null'> , rq16 </if>
+      <if test='RS01 != null'> , rs01 </if>
+      <if test='RS02 != null'> , rs02 </if>
+      <if test='RS03 != null'> , rs03 </if>
+      <if test='RS04 != null'> , rs04 </if>
+      <if test='RS05 != null'> , rs05 </if>
+      <if test='RS06 != null'> , rs06 </if>
+      <if test='RS07 != null'> , rs07 </if>
+      <if test='RS08 != null'> , rs08 </if>
+      <if test='RS09 != null'> , rs09 </if>
+      <if test='RS10 != null'> , rs10 </if>
+      <if test='RS11 != null'> , rs11 </if>
+      <if test='RS12 != null'> , rs12 </if>
+      <if test='RS13 != null'> , rs13 </if>
+      <if test='RS14 != null'> , rs14 </if>
+      <if test='RS15 != null'> , rs15 </if>
+      <if test='RS16 != null'> , rs16 </if>
+      <if test='RS17 != null'> , rs17 </if>
+      <if test='RS18 != null'> , rs18 </if>
+      <if test='RS19 != null'> , rs19 </if>
+      <if test='RS20 != null'> , rs20 </if>
+   ) VALUES (
+       #{RQ01}
+      <if test='RQ02 != null'> , #{RQ02} </if>
+      <if test='RQ03 != null'> , #{RQ03} </if>
+      <if test='RQ04 != null'> , #{RQ04} </if>
+      <if test='RQ05 != null'> , #{RQ05} </if>
+      <if test='RQ06 != null'> , #{RQ06} </if>
+      <if test='RQ07 != null'> , #{RQ07} </if>
+      <if test='RQ08 != null'> , #{RQ08} </if>
+      <if test='RQ09 != null'> , #{RQ09} </if>
+      <if test='RQ10 != null'> , #{RQ10} </if>
+      <if test='RQ11 != null'> , #{RQ11} </if>
+      <if test='RQ12 != null'> , #{RQ12} </if>
+      <if test='RQ13 != null'> , #{RQ13} </if>
+      <if test='RQ14 != null'> , #{RQ14} </if>
+      <if test='RQ15 != null'> , #{RQ15} </if>
+      <if test='RQ16 != null'> , #{RQ16} </if>
+      <if test='RS01 != null'> , #{RS01} </if>
+      <if test='RS02 != null'> , #{RS02} </if>
+      <if test='RS03 != null'> , #{RS03} </if>
+      <if test='RS04 != null'> , #{RS04} </if>
+      <if test='RS05 != null'> , #{RS05} </if>
+      <if test='RS06 != null'> , #{RS06} </if>
+      <if test='RS07 != null'> , #{RS07} </if>
+      <if test='RS08 != null'> , #{RS08} </if>
+      <if test='RS09 != null'> , #{RS09} </if>
+      <if test='RS10 != null'> , #{RS10} </if>
+      <if test='RS11 != null'> , #{RS11} </if>
+      <if test='RS12 != null'> , #{RS12} </if>
+      <if test='RS13 != null'> , #{RS13} </if>
+      <if test='RS14 != null'> , #{RS14} </if>
+      <if test='RS15 != null'> , #{RS15} </if>
+      <if test='RS16 != null'> , #{RS16} </if>
+      <if test='RS17 != null'> , TRIM(#{RS17}) </if>
+      <if test='RS18 != null'> , #{RS18} </if>
+      <if test='RS19 != null'> , #{RS19} </if>
+      <if test='RS20 != null'> , #{RS20} </if>
+)
+</insert>
+
+<!-- 카드결제 승인 후 기술지원접수 카드승인번호 업데이트 -->
+<update id="updateSptTecRcptInfoCard" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTecRcptInfoCard */
+       spttecrcptinfo 
+   SET card_appl_no = #{card_appl_no}
+     , card_issu_ymd = #{card_issu_ymd}
+     , proof_yn = #{proof_yn}
+     , prcs_state = #{prcs_state}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE tech_supt_req_no = #{tech_supt_req_no}
+   AND kolas_no = #{kolas_no}
+</update>
+
+<!-- 카드결제 취소 업데이트 -->
+<update id="updateSptApplTable" parameterType="kr.re.kitech.biz.sup.tec.vo.SptApplTableVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptApplTable */
+       spt_appl_table
+   SET del_yn = 'Y',
+       update_syspayno = #{update_syspayno},
+       update_daytm = SYSDATE
+ WHERE kolas_no = #{kolas_no}
+   AND appl_no = #{appl_no}
+   AND gubun_cd = 'D1'
+   AND del_yn = 'N'
+</update>
+
+<!-- 카드결제 내역 등록 -->
+<insert id="insertSptApplTable" parameterType="kr.re.kitech.biz.sup.tec.vo.SptApplTableVo">
+INSERT /* kr.re.kitech.biz.sup.tec.insertSptApplTable */
+  INTO spt_appl_table (
+       gubun_cd 
+     , kolas_no
+     , appl_no
+     , appl_ymd 
+     , del_yn 
+     , regst_syspayno
+     , regst_daytm 
+  ) VALUES (
+       #{gubun_cd} 
+     , #{kolas_no}
+     , #{appl_no}
+     , #{appl_ymd} 
+     , #{del_yn} 
+     , #{regst_syspayno}
+     , SYSDATE
+  )
+</insert>
+
+<!-- 외부기술지원(유상) 기술내역저장 버튼 클릭시  -->
+<update id="updateSptTecRcptInfoPost" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateSptTecRcptInfoPost */
+       spttecrcptinfo
+   SET rcpt_psn_syspayno = #{rcpt_psn_syspayno},
+       supt_respn_syspayno = #{supt_respn_syspayno},
+       supt_team = #{supt_team},
+      <if test='use_usg != null'> use_usg = #{use_usg}, </if>
+      <if test='test_way_and_unusual_item != null'> test_way_and_unusual_item = #{test_way_and_unusual_item}, </if>
+      <if test='treat_prcs != null'> treat_prcs = #{treat_prcs}, </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE tech_supt_req_no = #{tech_supt_req_no}
+</update>
+
+<!-- 이지페이 SMS전송 응답결과 저장 -->
+<insert id="insertEasypayRequestInfo" parameterType="kr.re.kitech.biz.api.client.vo.EasyPaySMSVo">
+INSERT /* kr.re.kitech.biz.sup.tec.insertEasypayRequestInfo */
+  INTO easypay_request_info (
+        res_cd
+      , res_msg
+      , cno
+      , user_type
+      , order_no
+      , memb_user_no
+      , user_id
+      , user_nm
+      , user_mail
+      , user_phone1
+      , user_phone2
+      , user_addr
+      , product_type
+      , product_nm
+      , product_amt
+      , reg_txtype
+      , reg_subtype
+      , currency
+      , client_ip
+      , escrow_yn
+      , rcv_mobile_no
+      , pay_type
+      , snd_tel_no
+      , snd_msg
+      , mall_nm
+      , member_no
+      , own_cert_yn
+      , sms_pay_expr
+      , regst_daytm
+   ) VALUES (
+    #{res_cd}
+      , #{res_msg}
+      , #{cno}
+      , #{user_type}
+      , #{order_no}
+      , #{memb_user_no}
+      , #{user_id}
+      , #{user_nm}
+      , #{user_mail}
+      , #{user_phone1}
+      , #{user_phone2}
+      , #{user_addr}
+      , #{product_type}
+      , #{product_nm}
+      , #{product_amt}
+      , #{reg_txtype}
+      , #{reg_subtype}
+      , #{currency}
+      , #{client_ip}
+      , #{escrow_yn}
+      , #{rcv_mobile_no}
+      , #{pay_type}
+      , #{snd_tel_no}
+      , #{snd_msg}
+      , #{mall_nm}
+      , #{member_no}
+      , #{own_cert_yn}
+      , #{sms_pay_expr}
+      , SYSDATE
+   )
+</insert>
+
+<!-- 이지페이 SMS전송 실패 결과 저장 -->
+<insert id="insertXomxPgFailure" parameterType="kr.re.kitech.biz.api.client.vo.EasyPaySMSVo">
+INSERT /* kr.re.kitech.biz.sup.tec.insertXomxPgFailure */
+  INTO xomxpgfailure(
+     res_cd
+   , res_msg
+  <if test='product_amt != null'> , amount </if>
+  <if test='order_no != null'> , order_no </if>
+  <if test='user_type != null'> , user_type </if>
+  <if test='user_nm != null'> , user_nm </if>
+  <if test='mgr_bank_cd != null'> , bank_cd </if>
+  <if test='product_nm != null'> , product_nm </if>
+  <if test='product_amt != null'> , product_amt </if>
+  <if test='expire_date != null'> , expire_date </if>
+  <if test='expire_time != null'> , expire_time </if>
+  <if test='order_no != null'> , biz_key </if>
+   , syspayno 
+  <if test='client_ip != null'> , client_ip </if>
+  <if test='cno != null'> , cno </if>
+  <if test='canc_date != null'> , canc_date </if>
+   , regst_daytm
+) VALUES(
+    #{res_cd}
+   , #{res_msg}
+  <if test='product_amt != null'> , #{product_amt} </if>
+  <if test='order_no != null'> , #{order_no} </if>
+  <if test='user_type != null'> , #{user_type} </if>
+  <if test='user_nm != null'> , #{user_nm} </if>
+  <if test='mgr_bank_cd != null'> , #{mgr_bank_cd} </if>
+  <if test='product_nm != null'> , #{product_nm} </if>
+  <if test='product_amt != null'> , #{product_amt} </if>
+  <if test='expire_date != null'> , #{expire_date} </if>
+  <if test='expire_time != null'> , #{expire_time} </if>
+  <if test='order_no != null'> , #{order_no} </if>
+   , #{syspayno}
+  <if test='client_ip != null'> , #{client_ip} </if>
+  <if test='cno != null'> , #{cno} </if>
+  <if test='canc_date != null'> , #{canc_date} </if>
+   , SYSDATE
+)
+</insert>
+<select id="selectSptTecRcptExcelDown" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSrcVo" resultType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptListVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptTecRcptExcelDown */
+       t1.kolas_no  /* KOLAS 번호   */
+     , t3.cust_no   /* 고객번호     */
+     , t3.bsns_psn_regst_no
+     , t3.cmpy_nm_krchar /* 고객명(한글)  */
+     , TRIM(t3.cmpy_addr || t3.cmpy_addr_detls) AS cmpy_addr
+     , x1.cd_nm AS region_centr  /* 지역 구분 코드  */
+     , t1.rcpt_ymd      /* 접수 일자   */
+     , t12.empno AS rcpt_psn_empno /* 담당자 개인 번호  */
+     , t12.nm AS rcpt_psn_nm    /* 담당자 이름  */
+     , t4.empno AS supt_respn_empno  /* 책임자 개인 번호  */
+     , t4.nm AS supt_respn_nm        /* 책임자 이름 */
+     , c.cunsl_req_psn  -- 요청자
+     , c.cunsl_req_psn_tel
+     , c.cunsl_req_psn_email
+     , x.cd_nm AS supt_clsf       /* 지원 분류 코드  */
+     , x2.cd_nm AS supt_team
+     , x5.cd_nm AS rst_book_issu  /* 성적서 발행 분류(STC) */ 
+     , t1.accnt_no   /* 계정 번호 */
+     , h.empno AS accnt_respn_empno
+     , h.nm AS accnt_respn_nm
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.treat_qty) AS treat_qty   /* 지원 건수 */
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.req_amt) AS req_amt       /* 신청 금액 */
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.decsn_amt) AS decsn_amt   /* 확정 금액 */
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.decsn_suply_value) AS decsn_suply_value    /*  공급가    */
+     , DECODE( t1.prcs_state, 'STE040', 0, t1.decsn_tax_amt) AS decsn_tax_amt     /*  공급가  */
+     , t1.bill_no    /* 계산서 번호   */
+     , t1.discnt_rt   -- 할인율
+     , x3.cd_nm AS supt_work_clsf
+     , t1.complt_ymd
+     , h1.empno AS regst_empno
+     , h1.nm AS regst_nm
+     , x4.cd_nm AS prcs_state    /* 기술지원 상태   */  
+     , t1.unslip_no
+     , fun_xodxcommst_cd_nm(t3.cmpy_typ, 0) AS cmpy_typ
+     , t1.rpa_yn
+     , t1.rpa_result_yn
+     , fun_xodxcommst_cd_nm(t1.rpa_evid_clsf, 0) AS rpa_evid_clsf     
+  <if test='clsf != null and clsf == "EQUIP"'> 
+     , a.equip_cd
+     , a.equip_use_start_daytm
+     , a.equip_use_cls_daytm
+     , a.job_time
+     , b.aset_nm
+  </if>
+  <if test='clsf != null and clsf != "EQUIP"'> 
+     , d1.dept_nm AS rcpt_psn_dept_nm 
+     , d2.dept_nm AS supt_respn_dept_nm
+     , d3.dept_nm AS accnt_respn_dept_nm
+     , d4.dept_nm AS regst_dept_nm
+  </if>
+     , TRIM(NVL(d.test_req_nm, e.gdnm)) AS test_req_nm
+     , d.test -- (시험)항목
+  FROM spttecrcptinfo t1
+  JOIN sptcustbaseinfo t3 ON t1.cust_no = t3.cust_no
+  JOIN humbasicinfo t4 ON t1.supt_respn_syspayno = t4.syspayno 
+  JOIN humbasicinfo t12 ON t1.rcpt_psn_syspayno = t12.syspayno  
+  JOIN sptcticunslcontnt c ON t1.cunsl_rcpt_no = c.cunsl_rcpt_no
+  JOIN resbgacctm r ON t1.accnt_no = r.accnt_no
+  JOIN humbasicinfo h ON r.accnt_rspns = h.syspayno
+  JOIN humbasicinfo h1 ON t1.regst_syspayno = h1.syspayno  
+  <if test='clsf != null and clsf != "EQUIP"'> 
+  JOIN xodhdeptinfo d1 ON t12.dept_cd = d1.dept_cd AND t12.dept_new_ymd = d1.dept_new_ymd
+  JOIN xodhdeptinfo d2 ON t4.dept_cd = d2.dept_cd AND t4.dept_new_ymd = d2.dept_new_ymd
+  JOIN xodhdeptinfo d3 ON h.dept_cd = d3.dept_cd AND h.dept_new_ymd = d3.dept_new_ymd
+  JOIN xodhdeptinfo d4 ON h1.dept_cd = d4.dept_cd AND h1.dept_new_ymd = d4.dept_new_ymd
+ </if>
+  LEFT JOIN spttecactrslt d ON t1.tech_supt_req_no = d.tech_supt_req_no AND d.seq=1
+  LEFT JOIN spttecrevsnrslt e ON t1.tech_supt_req_no = e.tech_supt_req_no AND e.seq =1
+  JOIN xodxcommst x ON t1.supt_clsf = x.cd AND x.cd_clsf = 'STD'
+  JOIN xodxcommst x1 ON t1.region_centr = x1.cd AND x1.cd_clsf = 'HCF'
+  JOIN xodxcommst x2 ON t1.supt_team = x2.cd AND x2.cd_clsf = 'SLC'
+  JOIN xodxcommst x3 ON t1.supt_work_clsf = x3.cd AND x3.cd_clsf = 'STG'
+  LEFT JOIN xodxcommst x4 ON t1.prcs_state = x4.cd AND x4.cd_clsf = 'STE'
+  LEFT JOIN xodxcommst x5 ON t1.rst_book_issu = x5.cd AND x5.cd_clsf = 'STC'
+ <if test='clsf != null and clsf == "EQUIP"'> 
+  LEFT JOIN spttecsupequiprslt a ON t1.cunsl_rcpt_no = a.cunsl_rcpt_no AND t1.tech_supt_req_no = a.tech_supt_req_no AND t1.cust_no = a.cust_no
+  LEFT JOIN assmastrh b ON a.equip_cd = b.aset_no
+ </if>
+ WHERE t1.rcpt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+ <if test='prcs_state != null and prcs_state != ""'> 
+  <choose>
+   <when test='prcs_state == "STE099"'> AND t1.prcs_state IN ('STE070','STE080','STE090') </when>
+   <otherwise> AND t1.prcs_state = #{prcs_state} </otherwise>
+  </choose>
+ </if>
+ <choose>
+  <when test='kolas_no != null and kolas_no != ""'> AND t1.kolas_no = #{kolas_no} </when>
+  <otherwise>
+   <if test='region_centr != null and region_centr != ""'> AND t1.region_centr = #{region_centr} </if>
+   <if test='accnt_no != null and accnt_no != ""'> AND t1.accnt_no = #{accnt_no} </if>
+   <if test='supt_clsf != null and supt_clsf != ""'> AND t1.supt_clsf = #{supt_clsf} </if>
+   <if test='supt_team != null and supt_team != ""'> AND t1.supt_team = #{supt_team} </if>
+   <if test='cmpy_nm_krchar != null and cmpy_nm_krchar != ""'> AND UPPER(t3.cmpy_nm_krchar) LIKE '%'|| UPPER(#{cmpy_nm_krchar}) ||'%' </if>
+   <if test='supt_respn_syspayno != null and supt_respn_syspayno != ""'> AND t1.supt_respn_syspayno = #{supt_respn_syspayno} </if>
+   <if test='rcpt_psn_syspayno != null and rcpt_psn_syspayno != ""'> AND t1.rcpt_psn_syspayno = #{rcpt_psn_syspayno} </if>
+   <if test='supt_work_clsf != null and supt_work_clsf != ""'> AND t1.supt_work_clsf = #{supt_work_clsf} </if>
+  </otherwise>
+ </choose> 
+ORDER BY t1.kolas_no DESC
+</select>
+<!-- RPA수행여부 Update 수정 -->
+<update id="updateRpaYn" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecRcptInfoVo">
+UPDATE /* kr.re.kitech.biz.sup.tec.updateRpaYn */
+         spttecrcptinfo
+   SET  rpa_result_yn = #{rpa_result_yn},
+        updt_syspayno = 'RPA_BOT',     
+        updt_daytm = CURRENT                                 
+ WHERE kolas_no = #{kolas_no}
+</update>
+</mapper>

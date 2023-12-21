@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.pex">
+  <select id="selectPatPexReqInvSS02" parameterType="kr.re.kitech.biz.pat.pex.vo.PatPexReqInvVo" resultType="kr.re.kitech.biz.pat.pex.vo.PatPexReqInvVo">
+  /* XDA : kitech.pat.pex.req.xda.PatPexReqInvSS02 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.pex.selectPatPexReqInvSS02 */ 
+      pdm.demnd_id
+        , pdm.job_state_cd
+        , hum.nm AS ask_psn_syspaynm
+        , TO_CHAR(pdm.ask_daytm, '%Y%m%d') AS ask_daytm
+        , pdm.ask_comment
+        , pdm.ask_attach_file
+        , mst.patofic_cd
+        , pof.patofic_nm
+    FROM patdemnd pdm
+  INNER JOIN patmastr mst ON mst.req_no = pdm.req_no AND mst.mngmt_no = pdm.mngmt_no
+  INNER JOIN patoffice pof ON pof.patofic_cd = mst.patofic_cd
+  INNER JOIN humbasicinfo hum ON hum.syspayno = pdm.ask_psn_syspayno
+  WHERE pdm.demnd_id = #{demnd_id}
+    </select>
+  <update id="updatePatPexReqInvSU01" parameterType="kr.re.kitech.biz.pat.pex.vo.PatPexReqInvVo">
+  /* XDA : kitech.pat.pex.req.xda.PatPexReqInvSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pex.updatePatPexReqInvSU01 */ 
+      patdemnd
+    SET job_state_cd = #{job_state_cd}
+      , req_psn_syspayno = #{req_psn_syspayno}
+      , req_daytm = CURRENT
+      , req_patofic_cd = #{req_patofic_cd}
+      , hope_patofic_charg_id = #{hope_patofic_charg_id}
+      , req_due_date = #{req_due_date}
+      , req_comment = #{req_comment}
+      , req_attach_file_no = #{req_attach_file_no}
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm = CURRENT
+  WHERE demnd_id = #{demnd_id}
+    </update>
+  <update id="updatePatMastrSU01" parameterType="kr.re.kitech.biz.pat.pex.vo.PatPexReqInvVo">
+  /* XDA : kitech.pat.pcm.xda.PatMastrSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pex.updatePatMastrSU01 */ 
+      patmastr
+    SET state         = #{state}
+      , updt_syspayno = #{updt_syspayno}
+      , updt_daytm    = current
+  WHERE req_no        = #{req_no}
+    AND mngmt_no      = #{mngmt_no}
+    </update>
+  <update id="updatePatPexReeInvSU01" parameterType="kr.re.kitech.biz.pat.pex.vo.PatPexReqInvVo">
+  /* XDA : kitech.pat.pex.ree.xda.PatPexReeInvSU01 */
+  UPDATE /* QueryID : kr.re.kitech.biz.pat.pex.updatePatPexReeInvSU01 */ 
+      patdemnd
+    SET job_state_cd      = #{job_state_cd}
+      , eval_psn_syspayno = #{eval_psn_syspayno}
+      , eval_daytm        = CURRENT
+      , eval_service_scr  = #{eval_service_scr}
+      , eval_result_scr   = #{eval_result_scr}
+      , eval_comment      = #{eval_comment}
+      , fnsh_daytm        = CURRENT
+      , updt_syspayno     = #{updt_syspayno}
+      , updt_daytm        = CURRENT
+  WHERE  demnd_id          = #{demnd_id}
+    </update>
+  <select id="selectPatPexReeInvSS01" parameterType="kr.re.kitech.biz.pat.pex.vo.PatPexReqInvVo" resultType="kr.re.kitech.biz.pat.pex.vo.PatPexReqInvVo">
+  /* XDA : kitech.pat.pex.ree.xda.PatPexReeInvSS01 */
+  SELECT /* QueryID : kr.re.kitech.biz.pat.pex.selectPatPexReeInvSS01 */ 
+      pdm.demnd_id ref_id                                                         /*심사청구 의뢰번호*/
+      , pdm.req_no                                                                  /*신청번호*/
+      , pdm.mngmt_no                                                                /*관리번호*/
+      , pdm.job_state_cd                                                            /*업무진행상태코드*/
+      , pst.state_desc AS job_state_nm_detail                                       /*업무진행상태명*/
+      , fn_state_desc(pdm.job_state_cd) job_state_nm                                /*업무명*/
+      , pdm.req_psn_syspayno                                                        /*의뢰자 개인번호*/
+      , fun_emp_nm(pdm.req_psn_syspayno) req_psn_nm                                 /*의뢰자명*/
+      , TO_CHAR(pdm.req_daytm, '%Y%m%d') req_daytm                                  /*의뢰일시*/
+      , pdm.req_patofic_cd                                                          /*의뢰 특허사무소 코드*/
+      , pof.patofic_nm AS patofic_nm                                                /*의뢰 특허사무소명*/
+      , pdm.hope_patofic_charg_id                                                   /*의뢰 사무소 담당자 ID*/
+      , fn_ofic_user_nm(pdm.hope_patofic_charg_id) hope_patofic_charg_nm            /*의뢰 사무소 담당자명*/
+      , pdm.req_due_date                                                            /*의뢰기한일*/
+      , TRIM(pdm.req_comment::CHAR(3000)) req_comment                               /*의뢰 내용*/
+      , pdm.req_attach_file_no                                                      /*의뢰 기타첨부*/
+      , pdm.rcpt_wri_id                                                             /*접수작성자 ID*/
+      , pdm.rcpt_psn_id                                                             /*접수자 ID*/
+      , pdm.rcpt_adm_id                                                             /*접수 행정담당자 ID*/
+      , fn_ofic_user_nm(pdm.rcpt_wri_id) rcpt_wri_nm                                /*접수작성자명*/
+      , fn_ofic_user_nm(pdm.rcpt_psn_id) rcpt_psn_nm                                /*접수자명*/
+      , fn_ofic_user_nm(pdm.rcpt_adm_id) rcpt_adm_nm                                /*접수 행정담당자명*/
+      , TO_CHAR(pdm.rcpt_daytm, '%Y%m%d') rcpt_daytm                                /*접수일시*/
+      , pdm.rcpt_charg_psn_id                                                       /*접수 사무소 담당자 ID*/
+      , fn_ofic_user_nm(pdm.rcpt_charg_psn_id) charg_psn_nm                         /*접수 사무소 담당자명*/
+      , pdm.rcpt_patofic_mng_no                                                     /*사무소 관리번호*/
+      , pdm.rpt_wri_id                                                              /*보고작성자 ID*/
+      , pdm.rpt_psn_id                                                              /*보고자 ID*/
+      , pdm.rpt_adm_id                                                              /*보고 행정담당자 ID*/
+      , fn_ofic_user_nm(pdm.rpt_wri_id) rpt_wri_nm                                  /*보고작성자명*/
+      , fn_ofic_user_nm(pdm.rpt_psn_id) rpt_psn_nm                                  /*보고자명*/
+      , fn_ofic_user_nm(pdm.rpt_adm_id) rpt_adm_nm                                  /*보고 행정담당자명*/
+      , pdm.rpt_charg_psn_id                                                        /*보고 사무소 담당자 ID*/
+      , fn_ofic_user_nm(pdm.rpt_charg_psn_id) rpt_charg_psn_nm                      /*보고 사무소 담당자명*/
+      , TO_CHAR(pdm.rpt_daytm, '%Y%m%d') rpt_daytm                                  /*보고 일시*/
+      , pdm.rpt_prity_date                                                          /*심사청구 일시*/
+      , TRIM(pdm.rpt_comment::CHAR(3000)) rpt_comment                               /*보고 내용*/
+      , pdm.rpt_attach_file                                                         /*보고 기타첨부*/
+      , pdm.rpt_demnd_attach_file                                                   /*보고 심사청구 첨부*/
+      , pdm.eval_psn_syspayno                                                       /*평가 시스템개인번호*/
+      , fun_emp_nm(pdm.eval_psn_syspayno) eval_psn_syspaynm                         /*평가자명*/
+      , TO_CHAR(pdm.eval_daytm, '%Y%m%d') eval_daytm                                /*평가 완료일자*/
+      , pdm.eval_service_scr                                                        /*평가 서비스 점수*/
+      , pdm.eval_result_scr                                                         /*평가 결과물 점수*/
+      , TRIM(pdm.eval_comment::CHAR(3000)) eval_comment                             /*평가 내용*/
+      , mst.eval_expir_ymd
+      , fun_emp_nm(pdm.ask_psn_syspayno) AS ask_psn_syspaynm
+      , TO_CHAR(pdm.ask_daytm, '%Y%m%d') AS ask_daytm
+      , pdm.ask_comment
+      , pdm.ask_attach_file
+    FROM patdemnd pdm
+  INNER JOIN patmastr mst ON mst.mngmt_no = pdm.mngmt_no
+  LEFT JOIN patstatecode pst ON pst.state_cd = pdm.job_state_cd
+  LEFT JOIN patoffice pof ON pof.patofic_cd = pdm.req_patofic_cd
+  WHERE pdm.demnd_id = #{demnd_id}
+    </select>
+</mapper>

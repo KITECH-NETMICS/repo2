@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="별도계좌집행조회">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+					<w2:keyInfo>
+						<w2:key id="accnt_state" name="계정상태" dataType="text"></w2:key>
+						<w2:key id="accnt_no" name="계좌번호" dataType="text"></w2:key>
+						<w2:key id="bankaccnt_no" name="계좌번호" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="accnt_no" name="accnt_no" dataType="text"></w2:column>
+				       <w2:column id="cls_ymd" name="cls_ymd" dataType="text"></w2:column>
+				       <w2:column id="accnt_rspns_nm" name="accnt_rspns_nm" dataType="text"></w2:column>
+				       <w2:column id="bugt_amt" name="bugt_amt" dataType="text"></w2:column>
+				       <w2:column id="sunsu_amt" name="sunsu_amt" dataType="text"></w2:column>
+				       <w2:column id="intrst_amt" name="intrst_amt" dataType="text"></w2:column>
+				       <w2:column id="enfrc_amt" name="enfrc_amt" dataType="text"></w2:column>
+				       <w2:column id="ramt_amt" name="ramt_amt" dataType="text"></w2:column>
+				       <w2:column id="rmk" name="rmk" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>				            
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 조회 -->
+            <xf:submission id="sbm_selectData" ref="data:json,dma_search" target='data:json,[{"id":"dlt_list","key":"finPartAccntVoList"}]' 
+        	    action="SvcFINSTDFINR01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>            
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		// enter key event
+		com.setEnterKeyEvent(grp_accnt, scwin.btn_accnt_no_onclick);
+		radio_accnt_state.setValue("Y");		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	//계정번호 팝업 버튼 클릭	
+	scwin.btn_accnt_no_onclick = function(e) {
+		var data={
+			accnt_no : ibx_accnt_no.getValue(),
+			ref_yn : (ibx_accnt_no.getValue() == "") ? "Y": "N"
+		};
+		com.pop.open(com.pop.TYPE.ACNNO, data, function(ret){
+			ibx_accnt_no.setValue(ret.accnt_no);
+			ibx_accnt_no_nm.setValue(ret.accnt_no_nm);										
+		});			
+	};
+	
+	scwin.ibx_accnt_no_onchange = function(info) {
+		if (info.newValue == "") {
+			ibx_accnt_no.setValue("");
+			ibx_accnt_no_nm.setValue("");
+		}		
+	};
+	
+	//조회
+	scwin.btn_search_onclick = function(e) {
+		com.execute(sbm_selectData, {				
+			successCallback : function(e){
+				tbx_result.setValue(dlt_list.getTotalRow());						
+			}	
+		});		
+	};
+				
+	scwin.btn_excel_onclick = function(e) {
+		if (grd_list.getRowCount() == "0") {
+			alert("데이터가 없습니다");
+			return;
+		}		
+		var option = {fileName : "별도계좌집행현황.xlsx", hiddenVisible : "true"};
+		com.downloadGridExcel(grd_list, option);		
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group class="pageWrap" id="" style="">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:534px;" tagname="col"></xf:group>
+    						<xf:group style="width:88px;" tagname="col"></xf:group>
+    						<xf:group style="width:229px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="계정번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td" id="grp_accnt"><xf:group class="inpSch" id="" style="width: 120px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="ibx_accnt_no" style="" title="사용자명" ev:onchange="scwin.ibx_accnt_no_onchange" ref="data:dma_search.accnt_no"></xf:input>
+    								<xf:trigger class="btn" id="btn_accnt_no" style="" title="사용자 조회" type="button" ev:onclick="scwin.btn_accnt_no_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group><xf:input adjustMaxLength="false" class="inp" id="ibx_accnt_no_nm" style="width:382px;" title="사용자 정보" readOnly="true"></xf:input></xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="계좌상태" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 appearance="full" class="radioGroup" cols="" id="radio_accnt_state" ref="data:dma_search.accnt_state" renderType="radiogroup" rows=""
+    								selectedIndex="-1" style="">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[유지]]></xf:label>
+    										<xf:value><![CDATA[Y]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[해지]]></xf:label>
+    										<xf:value><![CDATA[N]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[전체]]></xf:label>
+    										<xf:value><![CDATA[A]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="계좌번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_bank_accnt_no" style="width:212px;" title="사용자 정보" ref="data:dma_search.bankaccnt_no"></xf:input>
+    						</xf:group>
+    					</xf:group>
+	    			</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="left" id="">
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:group class="btnarea" id="" style="">
+    					<xf:trigger class="btn icon down" id="btn_excel" style="" type="button" ev:onclick="scwin.btn_excel_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_list" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="20" readOnly="true" sortable="true">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column1" inputType="text" style="height:28px;" value="계정번호" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="계정책임자" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column14" inputType="text" style="height:28px;" value="종료일자" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column4" inputType="text" style="height:28px;" value="계약금" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="연구비입금액&lt;br/&gt;(A)" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column6" inputType="text" style="height:28px;" value="이 자&lt;br/&gt;(B)" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="집행액&lt;br/&gt;(C)" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column15" inputType="text" style="height:28px" value="잔 액&lt;br/&gt;(D=A+B-C)" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column8" inputType="text" style="height:28px;" value="비고" width="313"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column class="" displayMode="label" id="accnt_no" inputType="text" readOnly="true" style="height:28px;"
+    						width="120">
+    					</w2:column>
+    					<w2:column displayMode="label" id="accnt_rspns_nm" inputType="text" readOnly="true" style="height:28px;" width="100"></w2:column>
+    					<w2:column displayMode="label" id="cls_ymd" inputType="text" readOnly="true" style="height:28px;" width="100" displayFormat="yyyy-MM-dd" dataType="date"></w2:column>
+    					<w2:column displayMode="label" id="bugt_amt" inputType="text" readOnly="true" style="height:28px;" width="119" dataType="number" displayFormat="#,###" textAlign="right"></w2:column>
+    					<w2:column displayMode="label" id="sunsu_amt" inputType="text" readOnly="true" style="height:28px;" width="108" textAlign="right" dataType="number" displayFormat="#,###"></w2:column>
+    					<w2:column displayMode="label" id="intrst_amt" inputType="text" readOnly="true" style="height:28px;" width="100" class="ri" textAlign="right" dataType="number" displayFormat="#,###"></w2:column>
+    					<w2:column displayMode="label" id="enfrc_amt" inputType="text" readOnly="true" style="height:28px;" width="100" class="ri" textAlign="right" dataType="number" displayFormat="#,###"></w2:column>
+    					<w2:column displayMode="label" id="ramt_amt" inputType="text" style="height:28px" value="" width="100" class="ri" textAlign="right" dataType="number" displayFormat="#,###"></w2:column>
+    					<w2:column displayMode="label" id="rmk" inputType="text" readOnly="true" style="height:28px;" width="313" textAlign="left"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

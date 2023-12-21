@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.api.bpm">
+<!-- 아르바이트 활용신청내역 조회 -->
+<select id="selectCgsLappApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.api.server.vo.biz.CgsAnnlHoliVo">
+SELECT /* kr.re.kitech.biz.api.bpm.selectCgsLappApr */
+       req_no
+     , req_psn_syspayno AS syspayno
+     , TRIM(SUBSTR(holiday_start_ymd, 1, 4)) AS anal_yr
+FROM cgslapp 
+WHERE req_no = #{reqNo}
+</select>
+
+<!-- 자가점검 부실학회 카운트 조회 -->
+<select id="selectCtrOverRepCompnCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* kr.re.kitech.biz.api.bpm.selectCtrOverRepCompnCnt */
+     COUNT(x0.req_no) AS cnt
+  FROM ctroverrepcompn AS x0
+  JOIN ctroverrep AS x1 ON x1.rep_req_no = x0.req_no
+ WHERE x0.biztrip_psn_clsf = 'FBH010' --출장
+   AND (NVL(x1.chk_1,'') <![CDATA[ <>]]> '' AND NVL(x1.chk_2,'') <![CDATA[ <> ]]> '' AND NVL(x1.chk_3,'') <![CDATA[ <>]]> '' AND NVL(x1.chk_4,'') <![CDATA[ <> ]]> '') --자가점검 체크리스트 선택된 복명서
+   AND (x1.chk_1 = 'N' OR x1.chk_2 = 'N' OR x1.chk_3 = 'N' OR x1.chk_4 = 'N') --부실학회추정
+   AND x1.rep_req_no = #{reqNo}
+</select>
+
+</mapper>

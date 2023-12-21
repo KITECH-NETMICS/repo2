@@ -1,0 +1,894 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.spa">
+ <select id="selectFspPayAdvcAdjstList" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjstList */ 
+         req_no,
+         req_clsf,
+         req_ymd,
+         req_psn,
+         nm,
+         req_dept,
+         dept_nm,
+         accnt_no,
+         accnt_no_nm,
+         accnt_rspns,
+         accnt_cd,
+         accnt_cd_abbr,
+         expns_cd,
+         expns_cd_nm,
+         req_amt,
+         req_cause,
+         rmk,
+         adjst_ymd,
+         pay_demnd_ymd,
+         unslip_no,
+         unslip_odr, 
+         adjst_psn, 
+         ctrl_no, 
+         adjst_req_no       
+FROM ( SELECT a.req_no,
+              a.req_clsf,
+              a.req_ymd,
+              a.req_psn,
+              b.nm,
+              a.req_dept,
+              c.dept_nm,
+              a.accnt_no,
+              (select z.accnt_no_nm from resbgacctm  z where a.accnt_no = z.accnt_no) as accnt_no_nm,
+              a.accnt_rspns,
+              a.accnt_cd,
+              (select z.accnt_cd_abbr from xodfaccnt z where a.accnt_cd = z.accnt_cd) as accnt_cd_abbr,
+              a.expns_cd,
+              (select z.expns_cd_nm from xodfexpns z where a.expns_cd = z.expns_cd) as expns_cd_nm,
+              a.req_amt,
+              a.req_cause,
+              a.rmk,
+              d.adjst_ymd,
+              a.pay_demnd_ymd,
+              a.unslip_no,
+              a.unslip_odr, 
+              d.adjst_psn, 
+              a.ctrl_no, 
+              d.adjst_req_no                     
+       FROM   fsppayadvcreq a
+              INNER JOIN humbasicinfo b ON a.req_psn = b.syspayno
+              INNER JOIN xodhdeptinfo c ON b.dept_cd = c.dept_cd AND b.dept_new_ymd = c.dept_new_ymd
+              LEFT OUTER JOIN fsppayadvcadjst d ON a.req_no = d.req_no
+              INNER JOIN fspsliph e ON a.unslip_no = e.unslip_no
+       WHERE   NVL(a.unslip_no, '') <![CDATA[ <> ]]> '' 
+              AND a.req_ymd BETWEEN #{req_from_ymd} AND #{req_to_ymd}           
+              AND e.slip_no IS NOT NULL
+       <if test="req_psn != null and req_psn != ''">
+           AND a.req_psn = #{req_psn}
+       </if>
+       <if test="adjst_psn != null and adjst_psn != ''">
+           AND d.adjst_psn = #{adjst_psn}
+       </if>
+       <if test="req_no != null and req_no != ''">
+           AND a.req_no = #{req_no}
+       </if>
+       <if test="adjst_no != null and adjst_no != ''">
+           AND d.adjst_req_no = #{adjst_no}
+       </if>
+       <if test="adjst_from_ymd != null and adjst_from_ymd != ''">
+           AND d.adjst_ymd <![CDATA[ >= ]]> #{adjst_from_ymd}
+       </if>
+       <if test="adjst_to_ymd != null and adjst_to_ymd != ''">
+           AND d.adjst_ymd <![CDATA[ <= ]]> #{adjst_to_ymd}
+       </if>
+) AS result;
+  </select>
+
+
+
+  <select id="selectFspPayAdvcAdjst" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjst */ 
+		 req_no,                      -- 신청번호
+           req_psn,                     -- 신청자 시스템번호
+           req_psn_nm,                  -- 신청자 이름              
+           req_amt,                     -- 신청금액 
+           req_cause,                   -- 신청사유
+           req_dept_nm,                 -- 신청부서      
+           recv_ymd,     
+           recv_amt,                    -- 가지급신청당시 수령금액     
+           adjst_ymd,                   -- 정산일자           
+           adjst_psn,                   -- 정산자 시스템번호
+           adjst_emp_no,                -- 정산자 사번
+           adjst_psn_nm,                -- 정산자 이름
+           adjst_dept_nm,               -- 정산부서이름
+           adjst_dept,                  -- 정산부서 코드              
+           adjst_detls,                 -- 정산내역 
+           adjst_amt,                   -- 정산금액           
+           adjst_req_no,                -- 정산신청번호
+           adjst_req_odr,               -- 정산신청순번
+           unslip_no,
+           org_req_amt,                 -- 정산신청서상 recv_amt
+           bank,                            -- 은행코드
+           bank_nm,                     -- 은행명
+           bankaccnt_no,                -- 계좌번호
+           depstr_nm,                     -- 예금주
+           vend_cd,                          --거래처 또는 개인번호
+           attach_file_no1,                -- 증빙첨부
+           attach_file_no2,                  -- 첨부파일
+           apr_state                          -- 결재상태
+    FROM ( SELECT a.req_no,
+                                a.req_psn,
+                                (select z.nm from humbasicinfo z where a.req_psn = z.syspayno) as req_psn_nm,                     
+                                a.req_amt,
+                                a.req_cause,                      
+                                c.adjst_ymd,
+                                a.pay_demnd_ymd,
+                                a.adjst_req_no,
+                                c.adjst_req_odr,
+                                fun_dept_nm(a.req_dept) AS req_dept_nm,
+                                b.slip_ymd   AS recv_ymd,
+                                d.unslip_amt AS recv_amt,
+                                c.adjst_psn,    
+                                (select x.empno from humbasicinfo x where c.adjst_psn = x.syspayno) as adjst_emp_no,
+                                (select z.nm from humbasicinfo z where c.adjst_psn = z.syspayno) as adjst_psn_nm,
+                                c.adjst_dept,  
+                                fun_dept_nm(c.adjst_dept) AS adjst_dept_nm,                   
+                                c.adjst_detls,                          
+                                c.adjst_amt,
+                                c.recv_amt AS org_req_amt,
+                                c.unslip_no,
+                                a.bank,
+                                (SELECT y.cd_nm FROM xodxcommst y WHERE a.bank = y.cd) AS bank_nm,
+                                a.bankaccnt_no,
+                                a.depstr_nm,
+                                a.vend_cd,
+                                c.attach_file_no1,
+                                c.attach_file_no2,
+                                e.apr_state
+            FROM  fsppayadvcreq a
+                  LEFT JOIN fspsliph b ON b.unslip_no = a.unslip_no
+                  LEFT JOIN fspslipd d ON d.unslip_no = a.unslip_no AND d.unslip_odr = a.unslip_odr
+                  LEFT JOIN fsppayadvcadjst c ON c.req_no = a.req_no
+                  LEFT JOIN xomxintfatab e ON e.req_no = c.adjst_req_no
+            WHERE a.req_no = #{req_no}      
+         )
+  </select>
+  
+  <select id="selectFspPayAdvcAdjstGrid" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstGridVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjstGrid */ 
+		 adjst_req_no,
+               adjst_req_odr,
+               req_no,
+               req_seq,
+               accnt_no,
+               accnt_cd,
+               accnt_cd_nm,
+               expns_cd,
+               expns_cd_nm,
+               req_amt,
+               adjst_amt,
+               ctrl_no,
+               rmk
+        FROM  ( SELECT b.adjst_req_no,
+                       b.adjst_req_odr,
+                       a.req_no,
+                       a.req_seq,
+                       a.accnt_no,
+                       a.accnt_cd,
+                       fun_fin_accnt_nm(a.accnt_cd, 0) AS accnt_cd_nm,
+                       a.expns_cd,
+                      (SELECT expns_cd_nm FROM xodfexpns x WHERE a.expns_cd = x.expns_cd) AS expns_cd_nm,
+                       a.req_amt,
+                       NVL(b.adjst_amt, 0) AS adjst_amt,
+                       a.ctrl_no,
+                       b.rmk
+                FROM   fsppayadvcreqaccnt a,
+                       outer fsppayadvcadjstaccnt b
+                WHERE  a.req_no  = b.req_no
+                AND    a.req_seq = b.req_seq
+                AND    a.req_no= #{req_no} )
+        ORDER BY adjst_req_no, adjst_req_odr, req_seq
+  </select>
+  
+  <select id="selectFcpDepstDetls" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.spa.vo.FcpDepstDetlsVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFcpDepstDetls */ 
+        b.adjst_req_no,
+        b.depst_odr,
+        a.unslip_no,
+        b.syspayno,
+        c.empno,
+        c.nm,
+        b.depst_ymd,
+        b.bankaccnt_no,
+        b.depst_amt,
+        b.depst_amt AS bf_depst_amt,
+        b.detls,
+        b.rmk,
+        b.depst_unslip_no,
+        b.depst_unslip_odr,
+        b.depst_req_no,
+        d.slip_no,
+        d.slip_no
+  FROM fsppayadvcadjst a 
+  JOIN fcpdepstdetls b ON a.adjst_req_no  = b.adjst_req_no
+  JOIN humbasicinfo c ON b.syspayno = c.syspayno
+  LEFT JOIN fspslipdecsnd d ON b.depst_unslip_no = d.unslip_no AND b.depst_unslip_odr = d.unslip_odr
+ WHERE a.req_no = #{req_no}
+ORDER BY b.adjst_req_no, b.depst_odr
+</select>
+  
+  <select id="selectFspPayAdvcAdjstAdd" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstAddVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjstAdd */ 
+    a.adjst_req_no,      -- 신청번호
+    a.adjst_req_odr,     -- 신청순번
+    a.req_clsf,
+    e.cd_nm,
+    a.accnt_no,                    
+    g.accnt_no_nm,
+    a.accnt_rspns,
+    d.empno  AS accnt_rspns_empno,
+    d.nm     AS accnt_rspns_nm,
+    a.accnt_cd,
+    b.accnt_cd_abbr,
+    a.expns_cd,
+    c.expns_cd_nm,
+    a.req_amt,
+    a.adjst_amt,
+    a.ctrl_no,
+    a.bugt_ctrl_way,
+    a.rmk,
+    f.depstr_nm
+FROM fsppayadvcadjstaddaccnt a
+JOIN xodfaccnt b ON b.accnt_cd = a.accnt_cd
+JOIN xodfexpns c ON c.expns_cd = a.expns_cd
+JOIN humbasicinfo d ON d.syspayno = a.accnt_rspns
+JOIN xodxcommst e ON a.req_clsf = e.cd
+JOIN fsppayadvcadjst f ON f.adjst_req_no = a.adjst_req_no
+JOIN resbgacctm g ON g.accnt_no = a.accnt_no
+WHERE a.adjst_req_no = #{adjst_req_no}
+  </select>
+  
+  <select id="selectFspPayAdvcAdjstAppr" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjstAppr */ 
+    req_no,                      -- 신청번호
+    req_psn,                     -- 신청자 시스템번호
+    req_psn_nm,                  -- 신청자 이름              
+    req_amt,                     -- 신청금액 
+    req_cause,                   -- 신청사유
+    req_dept,
+    req_dept_nm,                 -- 신청부서      
+    recv_ymd,     
+    recv_amt,                    -- 가지급신청당시 수령금액     
+    adjst_ymd,                   -- 정산일자           
+    adjst_psn,                   -- 정산자 시스템번호
+    adjst_emp_no,                -- 정산자 사번
+    adjst_psn_nm,                -- 정산자 이름
+    adjst_dept,                     -- 정산부서 코드
+    adjst_dept_nm,               -- 정산부서이름
+    adjst_detls,                 -- 정산내역 
+    adjst_amt,                   -- 정산금액           
+    adjst_req_no,                -- 정산신청번호
+    adjst_req_odr,               -- 정산신청순번
+    unslip_no,
+    org_req_amt,                 -- 정산신청서상 recv_amt
+    bank,                            -- 은행코드
+    bank_nm,                     -- 은행명
+    bankaccnt_no,                -- 계좌번호
+    depstr_nm,                     -- 예금주
+    vend_cd,                          --거래처 또는 개인번호
+    attach_file_no1,                -- 증빙첨부
+    attach_file_no2,                 -- 첨부파일
+    accnt_no,
+    accnt_rspns,
+    accnt_cd,
+    expns_cd,
+    req_slip_no,
+    apr_state
+FROM
+    (SELECT
+        b.req_no,
+        b.req_psn,
+        (select z.nm from humbasicinfo z where z.syspayno = b.req_psn) as req_psn_nm,
+        b.req_amt,
+        b.req_cause,
+        b.req_dept,
+        fun_dept_nm(b.req_dept) AS req_dept_nm,
+        c.slip_ymd AS recv_ymd, 
+        d.unslip_amt AS recv_amt,
+        a.adjst_ymd,
+        a.adjst_psn,
+        (select x.empno from humbasicinfo x where x.syspayno = a.adjst_psn) as adjst_emp_no,
+        (select y.nm from humbasicinfo y where y.syspayno = a.adjst_psn) as adjst_psn_nm,
+        a.adjst_dept,  
+        fun_dept_nm(a.adjst_dept) AS adjst_dept_nm, 
+        a.adjst_detls,
+        a.adjst_amt,
+        a.adjst_req_no,
+        a.adjst_req_odr,
+        a.unslip_no,
+        a.recv_amt AS org_req_amt,
+        a.bank,
+        (SELECT t.cd_nm FROM xodxcommst t WHERE t.cd = a.bank) AS bank_nm,
+        a.bankaccnt_no,
+        a.depstr_nm,
+        a.vend_cd,
+        a.attach_file_no1,
+        a.attach_file_no2,
+        a.accnt_no,
+        a.accnt_rspns,
+        a.accnt_cd,
+        a.expns_cd,
+        c.slip_no as req_slip_no,
+        x.apr_state as apr_state
+    FROM fsppayadvcadjst a
+    JOIN fsppayadvcreq b ON b.req_no = a.req_no
+    JOIN fspsliph c ON c.unslip_no = b.unslip_no
+    JOIN fspslipd d ON d.unslip_no = b.unslip_no AND d.unslip_odr = b.unslip_odr
+    JOIN xomxintfatab x ON x.req_no = a.adjst_req_no
+    WHERE a.adjst_req_no = #{adjst_req_no}
+    )
+  </select>
+  
+  <select id="selectFspPayAdvcAdjstGridAppr" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstGridVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjstGridAppr */ 
+    adjst_req_no,
+    adjst_req_odr,
+    req_no,
+    req_seq,
+    accnt_no,
+    accnt_cd,
+    accnt_cd_nm,
+    expns_cd,
+    expns_cd_nm,
+    req_amt,
+    adjst_amt,
+    ctrl_no,
+    rmk,
+    depstr_nm
+FROM
+    (SELECT
+        a.adjst_req_no,
+        a.adjst_req_odr,
+        b.req_no,
+        b.req_seq,
+        b.accnt_no,
+        b.accnt_cd,
+        fun_fin_accnt_nm(b.accnt_cd, 0) AS accnt_cd_nm,
+        b.expns_cd,
+        (SELECT x.expns_cd_nm FROM xodfexpns x WHERE x.expns_cd = b.expns_cd) AS expns_cd_nm,
+        b.req_amt,
+        NVL(a.adjst_amt, 0) AS adjst_amt,
+        b.ctrl_no,
+        a.rmk,
+        c.depstr_nm
+    FROM fsppayadvcadjstaccnt a
+    JOIN fsppayadvcreqaccnt b ON b.req_no = a.req_no AND b.req_seq = a.req_seq
+    JOIN fsppayadvcadjst c ON c.adjst_req_no = a.adjst_req_no
+    WHERE   
+        a.adjst_req_no = #{adjst_req_no}
+    )
+  </select>
+  
+  <select id="selectFcpDepstDetlsAppr" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.spa.vo.FcpDepstDetlsVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFcpDepstDetlsAppr */ 
+    a.adjst_req_no
+    ,a.depst_odr
+    ,a.syspayno
+    ,b.empno
+    ,b.nm
+    ,a.depst_ymd
+    ,a.bankaccnt_no
+    ,a.depst_amt
+    ,a.depst_amt AS bf_depst_amt
+    ,a.detls
+    ,a.rmk
+    ,a.depst_unslip_no
+    ,a.depst_unslip_odr
+    ,a.depst_req_no
+    ,c.depstr_nm
+    ,a.unslip_no
+    ,a.unslip_odr
+FROM      fcpdepstdetls a
+LEFT JOIN humbasicinfo b ON b.syspayno = a.syspayno
+JOIN fsppayadvcadjst c ON c.adjst_req_no = a.adjst_req_no
+WHERE
+    a.adjst_req_no = #{adjst_req_no}
+  </select>
+  
+  <insert id="insertFspPayAdvcAdjst" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.spa.insertFspPayAdvcAdjst */ 
+		 INTO fsppayadvcadjst ( adjst_req_no, 
+                                  adjst_req_odr,
+                                  adjst_ymd,
+                                  adjst_psn,
+                                  adjst_dept,                                  
+                                  recv_amt,  
+                                  recv_ymd,
+                                  accnt_no,
+                                  accnt_rspns,
+                                  accnt_cd,
+                                  expns_cd,
+                                  adjst_amt,
+                                  adjst_detls,
+                                  req_no,                                 
+                                  syspayno,
+                                  vend_cd,
+                                  bankaccnt_no,
+                                  bank,
+                                  depstr_nm,
+                                  attach_file_no1,
+                                  attach_file_no2,               
+                                  regst_syspayno,
+                                  regst_daytm)
+    VALUES ( #{adjst_req_no}, 
+             #{adjst_req_odr},
+             #{adjst_ymd},
+             #{adjst_psn},
+             #{adjst_dept},                                  
+             #{recv_amt},
+             #{recv_ymd},
+             #{accnt_no},
+             #{accnt_rspns},                                  
+             #{accnt_cd},  
+             #{expns_cd},
+             #{adjst_amt},
+             #{adjst_detls},                                  
+             #{req_no},  
+             #{syspayno},
+             #{vend_cd},
+             #{bankaccnt_no},
+             #{bank},
+             #{depstr_nm},
+             #{attach_file_no1},                             
+             #{attach_file_no2},                                  
+             #{regst_syspayno},
+             current)
+  </insert>
+  
+  <update id="updateFspPayAdvcAdjst" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spa.updateFspPayAdvcAdjst */ 
+		   fsppayadvcadjst 
+       SET   adjst_ymd = #{adjst_ymd},
+             adjst_psn = #{adjst_psn}, 
+             adjst_dept = #{adjst_dept},             
+             recv_amt = #{recv_amt},              
+             adjst_amt = #{adjst_amt},
+             adjst_detls  = #{adjst_detls},
+             rmk = #{rmk},
+             syspayno = #{syspayno},
+             attach_file_no1 = #{attach_file_no1},
+             attach_file_no2 = #{attach_file_no2},
+             updt_syspayno  = #{updt_syspayno},
+             updt_daytm = current
+     WHERE   adjst_req_no = #{adjst_req_no}
+  </update>
+  
+  <insert id="insertFspPayAdvcAdjstAccnt" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstGridVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.spa.insertFspPayAdvcAdjstAccnt */ 
+		 INTO fsppayadvcadjstaccnt (adjst_req_no,
+                                     adjst_req_odr,
+                                     accnt_no,
+                                     accnt_cd,
+                                     expns_cd,
+                                     ctrl_no,
+                                     req_amt,
+                                     adjst_amt,
+                                     rmk,
+                                     req_no, 
+                                     req_seq,
+                                     regst_syspayno,
+                                     regst_daytm)
+   VALUES( #{adjst_req_no},
+           #{adjst_req_odr},
+           #{accnt_no},
+           #{accnt_cd},
+           #{expns_cd},
+           #{ctrl_no},
+           #{req_amt},
+           #{adjst_amt},
+           #{rmk},
+           #{req_no}, 
+           #{req_seq},
+           #{regst_syspayno},
+           CURRENT)
+  </insert>
+  
+  <update id="updateFspPayAdvcAdjstAccnt" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstGridVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spa.updateFspPayAdvcAdjstAccnt */ 
+		 fsppayadvcadjstaccnt
+SET 
+        <if test="unslip_no != null and unslip_no != ''">
+	  unslip_no = #{unslip_no},
+</if>
+        <if test="unslip_odr != null and unslip_odr != ''">
+	  unslip_odr = #{unslip_odr},
+</if>
+        <if test="adjst_amt != null and adjst_amt != ''">
+	  adjst_amt = #{adjst_amt},
+</if>
+        <if test="rmk != null and rmk != ''">
+	  rmk = #{rmk},
+</if>
+        <if test="updt_syspayno != null and updt_syspayno != ''">
+	  updt_syspayno = #{updt_syspayno},
+</if>
+        updt_daytm = current
+WHERE  adjst_req_no = #{adjst_req_no}
+AND    adjst_req_odr = #{adjst_req_odr}
+  </update>
+  
+  <insert id="insertFcpDepstDetls" parameterType="kr.re.kitech.biz.fin.spa.vo.FcpDepstDetlsVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.spa.insertFcpDepstDetls */ 
+		 INTO fcpdepstdetls ( adjst_req_no,
+                                depst_odr, 
+                                syspayno, 
+                                depst_ymd, 
+                                bankaccnt_no, 
+                                depst_amt, 
+                                detls, 
+                                rmk, 
+                                depst_unslip_no, 
+                                depst_unslip_odr, 
+                                regst_syspayno, 
+                                regst_daytm )
+    VALUES( #{adjst_req_no},
+            #{depst_odr}, 
+            #{syspayno}, 
+            #{depst_ymd}, 
+            #{bankaccnt_no}, 
+            #{depst_amt}, 
+            #{detls}, 
+            #{rmk}, 
+            #{depst_unslip_no}, 
+            #{depst_unslip_odr}, 
+            #{regst_syspayno},
+            CURRENT )
+  </insert>
+  
+  <select id="selectFibkAcctHisAdjst" parameterType="kr.re.kitech.biz.fin.spa.vo.FibkAcctHisAdjustVo" resultType="kr.re.kitech.biz.fin.spa.vo.FibkAcctHisAdjustVo">
+select /* QueryID : kr.re.kitech.biz.fin.spa.selectFibkAcctHis */ 
+    max(acct_txday) as acct_txday, max(acct_txday_seq) as acct_txday_seq,
+    max(bankaccnt_no) as bankaccnt_no, max(bank_cd) as bank_cd,
+    max(depst_ymd) as depst_ymd, sum(depst_liq) as depst_liq,
+    max(depst_unslip_no) as depst_unslip_no, max(depst_unslip_odr) as depst_unslip_odr,
+    max(dept_cd) as req_dept, max(dept_new_ymd) as req_dept_new_ymd, max(syspayno) as regst_syspayno
+from
+    (
+    select
+        a.acct_txday, a.acct_txday_seq, b.bankaccnt_no, b.bank as bank_cd,
+        a.acct_txday as depst_ymd, a.tx_amt as depst_liq,
+        a.unslip_no as depst_unslip_no, a.unslip_seq as depst_unslip_odr,
+        '' as dept_cd,
+        '' as dept_new_ymd,
+        '' as syspayno
+    from fibk_acct_his a, fcpdepst b
+    where a.acct_no = replace(b.bankaccnt_no, '-', '')
+    and a.inout_gubun = '2'
+    and a.unslip_no = #{unslip_no} 
+    and a.unslip_seq = #{unslip_odr}
+    union all
+    select 
+        '' as acct_txday, -1 as acct_txday_seq, '' as bankaccnt_no, '' as bank_cd, '' as depst_ymd, 0 as depst_liq,
+        '' as depst_unslip_no, -100 as depst_unslip_odr,
+        nvl(dept_cd, '') as dept_cd, nvl(dept_new_ymd, '') as dept_new_ymd,
+        nvl(syspayno, '') as syspayno
+    from humbasicinfo
+    where syspayno = #{regst_syspayno}
+    and (trim(retire_ymd) = '' or retire_ymd is null)
+    )
+  </select>
+  
+  <update id="updateFcpDepstDetls" parameterType="kr.re.kitech.biz.fin.spa.vo.FcpDepstDetlsVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.fin.updateFcpDepstDetls */ 
+		 fcpdepstdetls 
+SET 
+       <if test="unslip_no != null and unslip_no != ''">
+	  unslip_no = #{unslip_no},
+</if>
+       <if test="unslip_odr != null and unslip_odr != ''">
+	  unslip_odr = #{unslip_odr},
+</if> 
+       <if test="depst_amt != null and depst_amt != ''">
+	  depst_amt = #{depst_amt},
+</if>
+       <if test="rmk != null and rmk != ''">
+	  rmk = #{rmk},
+</if>
+       <if test="depst_req_no != null and depst_req_no != ''">
+	  depst_req_no = #{depst_req_no},
+</if>  
+       updt_syspayno   = #{updt_syspayno},
+       updt_daytm = CURRENT
+WHERE  adjst_req_no = #{adjst_req_no}
+    <if test="depst_odr != null and depst_odr != ''">
+	 and depst_odr = #{depst_odr}
+</if>
+  </update>
+  
+  <delete id="deleteFcpDepstDetls" parameterType="kr.re.kitech.biz.fin.spa.vo.FcpDepstDetlsVo">
+DELETE /* QueryID : kr.re.kitech.biz.fin.spa.deleteFcpDepstDetls */ 
+		 FROM fcpdepstdetls WHERE adjst_req_no =#{adjst_req_no} AND depst_odr = #{depst_odr}
+  </delete>
+  
+  <delete id="deleteFspPayAdvcAdjst" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+DELETE /* QueryID : kr.re.kitech.biz.fin.spa.deleteFspPayAdvcAdjst */ 
+		FROM fsppayadvcadjst WHERE adjst_req_no = #{adjst_req_no}
+  </delete>  
+  
+  <insert id="insertFspPayAdvcAdjstAddAccnt" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstAddVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.spa.insertFspPayAdvcAdjstAddAccnt */ 
+		 INTO fsppayadvcadjstaddaccnt(adjst_req_no,
+                                    adjst_req_odr,
+                                    req_clsf,
+                                    req_ymd,
+                                    accnt_no,
+                                    accnt_rspns,
+                                    accnt_cd,
+                                    expns_cd,
+                                    bugt_item_cd,
+                                    bugt_ctrl_way,
+                                    ctrl_no,
+                                    req_amt,
+                                    adjst_amt,
+                                    rmk,
+                                    req_no,
+                                    unslip_no,
+                                    unslip_odr,
+                                    regst_syspayno,
+                                    regst_daytm) 
+VALUES(#{adjst_req_no},
+ #{adjst_req_odr},
+ #{req_clsf},
+ #{req_ymd},
+ #{accnt_no},
+ #{accnt_rspns},
+ #{accnt_cd},
+ #{expns_cd},
+ #{bugt_item_cd},
+ #{bugt_ctrl_way},
+ #{ctrl_no},
+ #{req_amt},
+ #{adjst_amt},
+ #{rmk},
+ #{req_no},
+ #{unslip_no},
+ #{unslip_odr},
+ #{regst_syspayno},
+ current)
+  </insert>  
+
+  <select id="selectFspPayAdvcAdjstAddAccnt" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstAddVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstAddVo">
+select /* QueryID : kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjstAddAccnt */ 
+		 nvl(max(adjst_req_odr), 0) + 1 AS cnt
+from   fsppayadvcadjstaddaccnt
+where adjst_req_no = #{adjst_req_no}
+  </select>
+  
+  <update id="updateFspPayAdvcAdjstAdd" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstAddVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spa.updateFspPayAdvcAdjstAdd */ 
+		 fsppayadvcadjstaddaccnt 
+SET 
+ <if test="unslip_no != null and unslip_no != ''">
+	  unslip_no = #{unslip_no},
+</if>
+ <if test="unslip_odr != null and unslip_odr != ''">
+	  unslip_odr = #{unslip_odr},
+</if> 
+ <if test="req_clsf != null and req_clsf != ''">
+	  req_clsf = #{req_clsf},
+</if>  
+<if test="accnt_no != null and accnt_no != ''">
+	  accnt_no = #{accnt_no},
+</if>  
+ <if test="accnt_cd != null and accnt_cd != ''">
+	  accnt_cd = #{accnt_cd},
+</if>  
+ <if test="expns_cd != null and expns_cd != ''">
+	  expns_cd = #{expns_cd},
+</if>  
+ <if test="bugt_ctrl_way != null and bugt_ctrl_way != ''">
+	  bugt_ctrl_way = #{bugt_ctrl_way},
+</if>  
+ <if test="ctrl_no != null and ctrl_no != ''">
+	  ctrl_no = #{ctrl_no},
+</if>  
+ <if test="req_amt != null and req_amt != ''">
+	  req_amt = #{req_amt},
+</if>  
+ <if test="adjst_amt != null and adjst_amt != ''">
+	  adjst_amt = #{adjst_amt},
+</if>  
+ <if test="rmk != null and rmk != ''">
+	  rmk = #{rmk},
+</if>  
+ <if test="updt_syspayno != null and updt_syspayno != ''">
+	  updt_syspayno = #{updt_syspayno},
+</if>  
+ updt_daytm = current
+WHERE  adjst_req_no = #{adjst_req_no}
+    <if test="adjst_req_odr != null and adjst_req_odr != ''">
+	 and adjst_req_odr = #{adjst_req_odr}
+</if>
+  </update>
+    
+  <select id="selectFspPayAdvcAdjstAddCheck" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstAddVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstAddVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjstAddCheck */ 
+		 adjst_req_no,
+       adjst_req_odr,
+       accnt_no,
+       accnt_cd,
+       expns_cd
+FROM   fsppayadvcadjstaddaccnt
+WHERE  adjst_req_no  = #{adjst_req_no}
+<if test="adjst_req_odr != null and adjst_req_odr != ''">
+	  AND    adjst_req_odr = #{adjst_req_odr}
+</if>
+  </select>
+  
+  <delete id="deleteFspPayAdvcAdjstAdd" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstAddVo">
+delete /* QueryID : kr.re.kitech.biz.fin.spa.deleteFspPayAdvcAdjstAdd */ 
+		 from fsppayadvcadjstaddaccnt
+where adjst_req_no = #{adjst_req_no}
+and   adjst_req_odr = #{adjst_req_odr}
+  </delete> 
+  
+  <delete id="deleteFspPayAdvcAdjstAccnt" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+delete /* QueryID : kr.re.kitech.biz.fin.spa.deleteFspPayAdvcAdjstAccnt */ 
+		from fsppayadvcadjstaccnt
+where  adjst_req_no = #{adjst_req_no}
+  </delete>  
+  
+  <update id="updateFspPayAdvcReqNo" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spa.updateFspPayAdvcReqNo */ 
+		    fsppayadvcreq
+SET       adjst_req_no = #{adjst_req_no}
+WHERE     req_no = #{req_no}
+  </update>
+  
+  <update id="updateFspPayAdvcReqReset" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spa.updateFspPayAdvcReqReset */ 
+		    fsppayadvcreq
+SET       adjst_req_no = null
+WHERE     req_no = #{req_no}
+  </update>
+  
+  <select id="selectFspPayAdvcAdjstApr" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspPayAdvcAdjstApr */ 
+		 adjst_req_no,
+    adjst_req_odr,
+    trim(case when substr(adjst_ymd,5,2) = '10' then '165'||substr(adjst_ymd,3,2)||'A'
+    when substr(adjst_ymd,5,2) = '11' then '165'||substr(adjst_ymd,3,2)||'B'
+    when substr(adjst_ymd,5,2) = '12' then '165'||substr(adjst_ymd,3,2)||'C'
+    else '165'||substr(adjst_ymd,3,2)||substr(adjst_ymd,6,1) end) as unslip_no_seq,
+    adjst_ymd,
+    adjst_psn,
+    adjst_psn_nm,
+    adjst_detls,
+    recv_amt,
+    adjst_amt,
+    slip_ymd,
+    unslip_no,
+    unslip_odr,
+    decsn_ex,
+    regst_syspayno,
+    wrte_dept,
+    dept_cd,
+    dept_new_ymd,
+    rmk,
+    req_wrte_dept,
+    req_dept_cd,
+    accntcount + addaccntcount + ramtcount AS chacount,
+    dae_accntcount + dae_addaccntcount AS daecount,
+    accntcount + ramtcount AS rmk_daecount
+FROM (
+    SELECT a.adjst_req_no,
+        a.adjst_req_odr,
+        a.adjst_ymd,
+        a.adjst_psn,
+        d.nm AS adjst_psn_nm,
+        a.adjst_detls,
+        a.recv_amt,
+        a.adjst_amt,
+        f.slip_ymd,
+        a.unslip_no,
+        a.unslip_odr,
+        f.decsn_ex,
+        f.regst_syspayno,
+        v.dept_nm AS wrte_dept,
+        v.dept_cd,
+        v.dept_new_ymd,
+        aa.rmk,
+        x.dept_nm AS req_wrte_dept,
+        x.dept_cd AS req_dept_cd,
+        g.accntcount,
+        gg.addaccntcount,
+        ggg.ramtcount,
+        t.dae_accntcount,
+        tt.dae_addaccntcount
+    FROM fsppayadvcadjst a
+    JOIN fsppayadvcadjstaccnt aa ON aa.adjst_req_no = a.adjst_req_no AND aa.adjst_req_odr = '1'
+    LEFT JOIN (humbasicinfo d JOIN xodhdeptinfo v ON v.dept_cd = d.dept_cd AND v.dept_new_ymd = d.dept_new_ymd) ON d.syspayno = a.adjst_psn
+    -- JOIN xomxintfatab e ON e.req_no = a.adjst_req_no AND e.apr_state = 'XAD100'
+    JOIN fsppayadvcreq b ON b.adjst_req_no = a.adjst_req_no
+    LEFT JOIN (humbasicinfo c JOIN xodhdeptinfo x ON x.dept_cd = c.dept_cd AND x.dept_new_ymd = c.dept_new_ymd) ON c.syspayno = b.req_psn
+    LEFT JOIN fspsliph f ON f.unslip_no = a.unslip_no
+    -- 정산계정 차변개수
+    JOIN (
+        SELECT count(*) as accntcount,
+            adjst_req_no
+        FROM fsppayadvcadjstaccnt
+        GROUP BY 2) g ON g.adjst_req_no = a.adjst_req_no
+    -- 추가계정 차변개수
+    LEFT JOIN (
+        SELECT count(*) as addaccntcount,
+            adjst_req_no
+        FROM fsppayadvcadjstaddaccnt
+        WHERE req_clsf IN ('FEG001','FEG002','FEG003')
+        GROUP BY 2) gg ON gg.adjst_req_no = a.adjst_req_no
+    -- 잔액 차변개수
+    LEFT JOIN (
+        SELECT count(*) as ramtcount,
+            adjst_req_no
+        FROM fcpdepstdetls
+        GROUP BY 2) ggg ON ggg.adjst_req_no = a.adjst_req_no
+    -- 정산 대변개수
+    JOIN (
+        SELECT count(*) as dae_accntcount,
+            adjst_req_no
+        FROM fsppayadvcadjst
+        GROUP BY 2) t ON t.adjst_req_no = a.adjst_req_no
+    -- 추가계정 대변개수
+    LEFT JOIN (
+        SELECT count(*) as dae_addaccntcount,
+            adjst_req_no
+        FROM fsppayadvcadjstaddaccnt
+        GROUP BY 2) tt ON tt.adjst_req_no = a.adjst_req_no
+    <if test="adjst_req_no != null and adjst_req_no != ''"> WHERE a.adjst_req_no = #{adjst_req_no} </if>
+    <if test="adjst_req_no == null or adjst_req_no == ''"> AND a.adjst_ymd BETWEEN #{adjst_ymd_from} AND #{adjst_ymd_to} </if>
+    <if test="adjst_psn != null and adjst_psn != ''"> AND a.adjst_psn = #{adjst_psn} </if>
+)
+  </select>
+  
+  <update id="updateFspPayAdvcAdjstApr" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spa.updateFspPayAdvcAdjstApr */ 
+		 fsppayadvcadjst
+SET unslip_no = #{unslip_no},
+    unslip_odr='0',
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = current
+WHERE adjst_req_no = #{adjst_req_no}
+  </update>
+  
+  <select id="selectFspSendReqS" parameterType="kr.re.kitech.biz.fin.spa.vo.FspPayAdvcAdjstVo" resultType="kr.re.kitech.biz.fin.com.vo.FspSendReqVo">
+select /* QueryID : kr.re.kitech.biz.fin.spa.selectFspSendReqS */ 
+    a.unslip_no,
+    a.unslip_odr,
+    a.send_odr,
+    a.pay_clsf,
+    a.send_req_amt,
+    a.send_amt,
+    a.vend_cd,
+    a.vend_nm,
+    a.syspayno,
+    a.bankaccnt_no,
+    a.bank,
+    a.depstr_nm,
+    a.card_no,
+    a.use_ymd,
+    a.apprvl_no,
+    a.bsns_psn_regst_no,
+    a.joinsto_nm,
+    a.focurr_send_req_amt,  
+    a.focurr_send_amt,
+    a.exchgr,
+    a.giro_cash_clsf,
+    a.pay_unslip_no,
+    a.pay_unslip_odr,
+    a.occr_slip_no,
+    a.occr_slip_odr,
+    a.rmk
+from fspsendreq a
+join fsppayadvcreq b on b.unslip_no = a.unslip_no and b.unslip_odr = a.unslip_odr
+join fsppayadvcadjst c on c.req_no = b.req_no
+where c.adjst_req_no = #{adjst_req_no}
+  </select>              
+                              
+</mapper>

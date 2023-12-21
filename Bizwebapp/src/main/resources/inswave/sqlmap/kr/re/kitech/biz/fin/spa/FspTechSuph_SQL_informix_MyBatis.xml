@@ -1,0 +1,893 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.spa">
+
+  <select id="selectFspTechSuphList" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspTechSuphList */ 
+		  t1.req_no,
+        t1.req_ymd,
+        t1.accnt_no,
+        FUN_HUMBASICINFO_CD_NM(t1.accnt_rspns,0) AS accnt_rspns,
+        FUN_DEPT_NM(t7.dept_cd) AS accnt_rspns_dept_nm,
+        t1.req_psn,
+        t2.nm  as req_psn_nm,
+        t1.req_amt,
+        t1.ctrl_amt,
+        t1.rcpt_psn,
+        t3.nm as rcpt_psn_nm,
+        t1.rcpt_no,
+        t1.impt_accnt_no,
+        FUN_HUMBASICINFO_CD_NM(t1.impt_accnt_rspns,0) AS impt_accnt_rspns,
+        FUN_DEPT_NM(t8.dept_cd) AS impt_accnt_rspns_dept_nm,
+        t1.ctrl_no,
+        t1.rmk,
+        t1.unslip_no,
+        t5.accnt_ymd,
+        t4.unslip_odr,
+        t1.req_state,
+        t1.req_treat_qty,
+        NVL(t5.trans_amt, 0) AS trans_amt,
+        DECODE(t6.tax_cd , 'FTX001', '과세' ,'FTX002', '비과세', '') impt_tax_nm ,
+        decode(nvl(t1.rst_book_issu,''),'STC030','N','Y') AS rst_book_issu_yn,
+        dt2.dept_nm AS req_dept_nm,
+        dt3.dept_nm AS rcpt_dept_nm,
+        t2.empno AS req_psn_empno,
+        t3.empno AS rcpt_psn_empno,
+        t6.accnt_no_nm,
+        dt4.cd_nm AS rcpt_dept_cd_nm
+FROM    fsptechsuph         t1
+            JOIN humbasicinfo        t2
+            ON   t1.req_psn          = t2.syspayno
+            JOIN xodhdeptinfo dt2 
+            ON t2.dept_cd = dt2.dept_cd AND t2.dept_new_ymd = dt2.dept_new_ymd
+            JOIN humbasicinfo        t3
+            ON t1.rcpt_psn         = t3.syspayno
+            JOIN xodhdeptinfo dt3 
+            ON t3.dept_cd = dt3.dept_cd AND t3.dept_new_ymd = dt3.dept_new_ymd
+            LEFT JOIN xodxcommst dt4
+            ON dt4.cd = dt3.dept_typ
+            LEFT OUTER JOIN fspslipd      t4
+            ON    t1.unslip_no        = t4.unslip_no
+            AND     t1.req_no           = t4.req_no
+            AND     t4.base_debit_cr    = 1
+            LEFT OUTER JOIN  fspslipdecsnd       t5
+            ON     t4.unslip_no        = t5.unslip_no
+            AND     t4.unslip_odr       = t5.unslip_odr
+            AND     t5.base_debit_cr    = 1
+            LEFT OUTER JOIN resbgacctm t6
+            ON  t1.impt_accnt_no =  t6.accnt_no
+            LEFT OUTER JOIN humbasicinfo t7
+            ON t1.accnt_rspns = t7.syspayno
+            LEFT OUTER JOIN humbasicinfo t8
+            ON t1.impt_accnt_rspns = t8.syspayno
+WHERE   ('' = #{req_ymd_st} OR t1.req_ymd <![CDATA[ >= ]]> #{req_ymd_st})
+AND ('' = #{req_ymd_ed} OR t1.req_ymd <![CDATA[ <= ]]> #{req_ymd_ed})
+AND ('' = #{complt_demnd_ymd_st} OR t1.complt_demnd_ymd <![CDATA[ >= ]]> #{complt_demnd_ymd_st})
+AND ('' = #{complt_demnd_ymd_ed} OR t1.complt_demnd_ymd <![CDATA[ <= ]]> #{complt_demnd_ymd_ed})
+AND ('' = #{req_clsf} OR t1.req_clsf = #{req_clsf})
+AND ('' = #{req_psn_syspayno} OR t1.req_psn = #{req_psn_syspayno})
+AND (('' = #{req_psn_nm_like} OR t2.nm LIKE #{req_psn_nm_like}) OR ('' = #{req_psn_empno_like} OR t2.empno LIKE #{req_psn_empno_like}))
+AND ('' = #{rcpt_psn_syspayno} OR t1.rcpt_psn = #{rcpt_psn_syspayno})
+AND (('' = #{rcpt_psn_nm_like} OR t3.nm LIKE #{rcpt_psn_nm_like}) OR ('' = #{rcpt_psn_empno_like} OR t3.empno LIKE #{rcpt_psn_empno_like}))
+AND ('' = #{accnt_no} OR t1.accnt_no = #{accnt_no})
+AND ('' = #{accnt_no_like} OR t1.accnt_no LIKE #{accnt_no_like})
+AND ('' = #{impt_accnt_no} OR t1.impt_accnt_no = #{impt_accnt_no})
+AND ('' = #{impt_accnt_no_like} OR t1.impt_accnt_no LIKE #{impt_accnt_no_like})
+AND ('' = #{unslip_no} OR t1.unslip_no = #{unslip_no})
+AND ('' = #{tax_cd} OR t6.tax_cd = #{tax_cd})
+AND ('' = #{rcpt_no} OR t1.rcpt_no = #{rcpt_no})
+AND ('' = #{supt_clsf} OR t1.supt_clsf = #{supt_clsf})
+AND ('' = #{charg_syspayno} OR t1.charg = #{charg_syspayno})
+AND ('' = #{supt_respn_syspayno} OR t1.supt_respn_syspayno = #{supt_respn_syspayno})
+AND 
+(
+    ( 'XAD010' = #{req_state}    AND t1.req_state <![CDATA[ <= ]]> 'XAD020'  )
+OR 
+    ( 'XAD070' = #{req_state}   AND t1.req_state IN('XAD070', 'XAD100') )
+)
+  </select>
+  
+  <select id="selectFspTechSuphExcel" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphExcelVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphExcelVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspTechSuphExcel */ 
+		  t1.req_no,
+        t1.req_ymd,
+        t1.accnt_no,
+        FUN_HUMBASICINFO_CD_NM(t1.accnt_rspns,0) AS accnt_rspns,
+        FUN_DEPT_NM(t9.dept_cd) AS accnt_rspns_dept_nm,
+        t1.req_psn,
+        t2.nm  as req_psn_nm,
+        t8.dept_nm AS req_psn_dept_nm,
+        t1.req_amt,
+        t1.ctrl_amt,
+        t1.rcpt_psn,
+        t3.nm as rcpt_psn_nm,
+        t1.rcpt_no,
+        t1.impt_accnt_no,
+        FUN_HUMBASICINFO_CD_NM(t1.impt_accnt_rspns,0) AS impt_accnt_rspns,
+        FUN_DEPT_NM(t10.dept_cd) AS impt_accnt_rspns_dept_nm,
+        t1.ctrl_no,
+        t1.rmk,
+        t1.unslip_no,
+        t5.accnt_ymd,
+        t4.unslip_odr,
+        t1.req_state,
+        t1.req_treat_qty,
+        NVL(t5.trans_amt, 0) AS trans_amt,
+        t6.use_start_ymd,
+        t6.use_start_time,
+        t6.use_cls_ymd,
+        t6.use_cls_time,
+        t6.use_time,
+        t7.aset_nm      AS aset_name,
+        t7.aset_no
+FROM    fsptechsuph         t1
+    JOIN humbasicinfo        t2
+    ON    t1.req_psn          = t2.syspayno
+    JOIN humbasicinfo        t3
+    ON    t1.rcpt_psn         = t3.syspayno
+    JOIN xodhdeptinfo t8
+    ON t8.dept_cd = t2.dept_cd AND t8.dept_new_ymd = t2.dept_new_ymd
+    LEFT OUTER JOIN fspslipd      t4
+    ON    t1.unslip_no        = t4.unslip_no
+    AND   t1.req_no           = t4.req_no
+    AND   t1.accnt_no = t4.accnt_no
+    LEFT OUTER JOIN fspslipdecsnd t5
+    ON    t4.unslip_no        = t5.unslip_no
+    AND   t4.unslip_odr       = t5.unslip_odr
+    LEFT OUTER JOIN fspequipuse t6
+    ON t1.req_no = t6.req_no
+    LEFT OUTER JOIN assmastrb   t7
+    ON t6.equip_no = t7.aset_no
+    LEFT OUTER JOIN humbasicinfo t9
+    ON t1.accnt_rspns = t9.syspayno
+    LEFT OUTER JOIN humbasicinfo t10
+    ON t1.impt_accnt_rspns = t10.syspayno
+WHERE   1 = 1
+AND   t5.base_debit_cr    = 1
+AND ('' = #{req_ymd_st} OR t1.req_ymd <![CDATA[ >= ]]> #{req_ymd_st})
+AND ('' = #{req_ymd_ed} OR t1.req_ymd <![CDATA[ <= ]]> #{req_ymd_ed})
+AND ('' = #{complt_demnd_ymd_st} OR t1.complt_demnd_ymd <![CDATA[ >= ]]> #{complt_demnd_ymd_st})
+AND ('' = #{complt_demnd_ymd_ed} OR t1.complt_demnd_ymd <![CDATA[ <= ]]> #{complt_demnd_ymd_ed})
+AND ('' = #{req_clsf} OR t1.req_clsf = #{req_clsf})
+AND ('' = #{req_psn_syspayno} OR t1.req_psn = #{req_psn_syspayno})
+AND (('' = #{req_psn_nm_like} OR t2.nm LIKE #{req_psn_nm_like}) OR ('' = #{req_psn_empno_like} OR t2.empno LIKE #{req_psn_empno_like}))
+AND ('' = #{rcpt_psn_syspayno} OR t1.rcpt_psn = #{rcpt_psn_syspayno})
+AND (('' = #{rcpt_psn_nm_like} OR t3.nm LIKE #{rcpt_psn_nm_like}) OR ('' = #{rcpt_psn_empno_like} OR t3.empno LIKE #{rcpt_psn_empno_like}))
+AND ('' = #{accnt_no} OR t1.accnt_no = #{accnt_no})
+AND ('' = #{accnt_no_like} OR t1.accnt_no LIKE #{accnt_no_like})
+AND ('' = #{impt_accnt_no} OR t1.impt_accnt_no = #{impt_accnt_no})
+AND ('' = #{impt_accnt_no_like} OR t1.impt_accnt_no LIKE #{impt_accnt_no_like})
+AND t1.req_state IN (#{req_state_in1}, #{req_state_in2}, #{req_state_in3}, #{req_state_in4})
+  </select>  
+
+  <select id="selectFspTechSuph" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspTechSuph */ 
+		  req_no
+       ,req_clsf
+       ,supt_clsf
+       ,accnt_no
+       ,accnt_no_nm
+       ,accnt_rspns
+       ,accnt_rspns_nm
+       ,fun_humbasicinfo_cd_nm(req_psn, 1) as req_psn_no
+       ,req_psn
+       ,req_psn_nm
+       ,req_dept
+       ,req_dept_nm
+       ,req_ymd
+       ,complt_demnd_ymd
+       ,fun_humbasicinfo_cd_nm(rcpt_psn, 1) as rcpt_psn_no
+       ,rcpt_no
+       ,rcpt_psn
+       ,rcpt_psn_nm
+       ,rcpt_dept
+       ,rcpt_dept_nm
+       ,impt_accnt_no
+       ,impt_accnt_no_nm
+       ,impt_accnt_rspns
+       ,impt_accnt_rspns_nm
+       ,charg
+       ,charg_nm
+       ,supt_respn_syspayno
+       ,supt_respn_nm
+       ,bugt_ctrl_way
+       ,bugt_item_cd
+       ,rcpt_ymd
+       ,complt_ymd
+       ,req_amt
+       ,ctrl_amt
+       ,accnt_cd
+       ,expns_cd
+       ,trim(unslip_no) unslip_no
+       ,req_state
+       ,attach_file_no
+       ,rmk
+       ,use_usg
+       ,supt_detls_item
+       ,req_treat_qty
+       ,ctrl_no
+       ,apr_state
+       ,rst_book_issu
+       ,NVL(slip_ymd,TO_CHAR(current,'%Y%m%d') )  slip_ymd
+FROM ( SELECT  a.req_no
+              ,a.req_clsf
+              ,a.supt_clsf
+              ,a.accnt_no
+              ,(select b.accnt_no_nm from resbgacctm b where a.accnt_no = b.accnt_no) as accnt_no_nm
+              ,a.accnt_rspns
+              ,(select z.nm from humbasicinfo z where a.accnt_rspns = z.syspayno) as accnt_rspns_nm
+              ,a.req_psn
+              ,(select y.nm from humbasicinfo y where a.req_psn = y.syspayno) as req_psn_nm
+              ,a.req_dept
+              ,c.dept_nm as req_dept_nm
+              ,a.req_ymd
+              ,a.complt_demnd_ymd
+              ,a.rcpt_no
+              ,a.rcpt_psn
+              ,a.ctrl_no
+              ,(select x.nm from humbasicinfo x where a.rcpt_psn = x.syspayno) as rcpt_psn_nm
+              ,a.rcpt_dept
+              ,d.dept_nm as rcpt_dept_nm
+              ,a.impt_accnt_no
+              ,(select z.accnt_no_nm from resbgacctm z where a.impt_accnt_no = z.accnt_no) as impt_accnt_no_nm
+              ,a.impt_accnt_rspns
+              ,(select z.nm from humbasicinfo z where a.impt_accnt_rspns = z.syspayno) as impt_accnt_rspns_nm
+              ,a.charg
+              ,(select z.nm from humbasicinfo z where a.charg = z.syspayno) as charg_nm
+              ,a.supt_respn_syspayno
+              ,(select z.nm from humbasicinfo z where a.supt_respn_syspayno = z.syspayno) as supt_respn_nm
+              ,a.bugt_ctrl_way
+              ,a.bugt_item_cd
+              ,a.rcpt_ymd
+              ,a.complt_ymd
+              ,a.req_amt
+              ,a.ctrl_amt
+              ,a.accnt_cd
+              ,a.expns_cd
+              ,a.unslip_no
+              ,a.req_state
+              ,a.attach_file_no
+              ,a.rmk
+              ,a.use_usg
+              ,a.supt_detls_item
+              ,a.req_treat_qty
+              ,e.apr_state
+              ,a.rst_book_issu
+              ,f.slip_ymd
+       FROM    fsptechsuph a,
+               outer xodhdeptinfo c, outer xodhdeptinfo d,
+               xomxintfatab e,
+               outer fspsliph f
+       WHERE   a.req_dept = c.dept_cd
+       AND     c.dept_new_ymd = (select max(z.dept_new_ymd) from xodhdeptinfo z where c.dept_cd = z.dept_cd)
+       AND     a.rcpt_dept = d.dept_cd
+       AND     d.dept_new_ymd = (select max(z.dept_new_ymd) from xodhdeptinfo z where d.dept_cd = z.dept_cd)
+       AND     a.req_no = e.req_no
+       AND     a.unslip_no = f.unslip_no
+       AND     a.req_no = #{req_no}
+      )
+  </select>
+  
+  <select id="selectFspTechSupd" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSupdVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspTechSupdVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspTechSupd */ 
+		  req_no,
+        req_odr,
+        supt_detls,
+        qty,
+        time,
+        unit_price,
+        amt,
+        rmk,
+        syspayno,
+        rst_book_issu,
+        rst_book_treat_nm,
+        test,
+        posi_cd
+FROM    fsptechsupd
+WHERE   req_no  = #{req_no}
+ORDER BY req_odr
+  </select>
+
+  <select id="selectFspEquipUse" parameterType="kr.re.kitech.biz.fin.spa.vo.FspEquipUseVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspEquipUseVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspEquipUse */ 
+		  t1.req_no,
+        t1.use_odr,
+        t1.equip_no,
+        t2.aset_nm      AS asset_name,
+        t1.use_start_ymd,
+        t1.use_cls_ymd,
+        t1.use_start_time,
+        t1.use_cls_time,
+        t1.use_time,
+        t1.use_unit_price,
+        t1.use_amt,
+        t1.treat_qty,
+        t1.use_start_minute,
+        t1.use_cls_minute
+FROM    fspequipuse t1, 
+        assmastrb   t2
+WHERE   t1.equip_no = t2.aset_no
+AND     t1.req_no   = #{req_no}
+ORDER BY t1.use_odr
+  </select>
+  
+  <select id="selectFspTechSupMatrl" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSupMatrlVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspTechSupMatrlVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspTechSupMatrl */ 
+		  req_no,
+        req_odr,
+        matrl_nm,
+        matrl_std,
+        unit_price,
+        qty,
+        amt,
+        rmk
+FROM    fsptechsupmatrl
+WHERE   req_no = #{req_no}
+ORDER BY req_odr
+  </select>
+  
+  <select id="selectFspTechSupPsn" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSupPsnVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspTechSupPsnVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspTechSupPsn */ 
+		  t1.req_no,
+        t1.req_odr,
+        t1.supt_psn,
+        t2.nm,
+        t2.empno,
+        t1.tech_grd,
+        t1.posi_cd,
+        t1.unit_price,
+        t1.time,
+        t1.amt,
+        t1.rmk
+FROM    fsptechsuppsn   t1, 
+        humbasicinfo    t2
+WHERE   t1.supt_psn     = t2.syspayno
+AND     t1.req_no       = #{req_no}
+ORDER BY    t1.req_odr
+  </select>
+  
+<select id="selectFspTechSuphCnt" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspTechSuphCnt */ 
+		  COUNT(req_no) AS cnt
+FROM    fsptechsuph
+WHERE   req_no = #{req_no}
+  </select>
+
+  <select id="selectFspSlipD" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo">
+select /* QueryID : kr.re.kitech.biz.fin.spa.selectFspSlipD */ 
+		 decsn_ex
+from fspsliph
+where unslip_no = #{unslip_no}
+  </select>
+
+<insert id="insertFspTechSuph" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.spa.insertFspTechSuph */ 
+		 INTO fsptechsuph
+           (req_no
+           , req_clsf
+           , accnt_no
+           , accnt_rspns
+           , req_psn
+           , req_dept
+           , req_ymd
+           , complt_demnd_ymd
+           , impt_accnt_no
+           , impt_accnt_rspns
+           , rcpt_no
+           , rcpt_psn
+           , charg
+           , supt_respn_syspayno
+           , rcpt_dept
+           , rcpt_ymd
+           , complt_ymd
+           , req_amt
+           , ctrl_amt
+           , bugt_item_cd
+           , bugt_ctrl_way
+           , ctrl_no
+           , accnt_cd
+           , expns_cd
+           , unslip_no
+           , req_state
+           , attach_file_no
+           , rmk
+           , use_usg
+           , supt_clsf
+           , supt_detls
+           , supt_detls_item
+           , req_treat_qty
+           , rst_book_issu
+           , regst_syspayno
+           , regst_daytm
+           ) 
+ VALUES (
+             #{req_no} 
+            ,#{req_clsf} 
+            ,#{accnt_no} 
+            ,#{accnt_rspns} 
+            ,#{req_psn} 
+            ,#{req_dept} 
+            ,#{req_ymd} 
+            ,#{complt_demnd_ymd} 
+            ,#{impt_accnt_no}
+            ,#{impt_accnt_rspns}
+            ,#{rcpt_no} 
+            ,#{rcpt_psn} 
+            ,#{charg} 
+            ,#{supt_respn_syspayno} 
+            ,#{rcpt_dept} 
+            ,#{rcpt_ymd} 
+            ,#{complt_ymd} 
+            ,#{req_amt} 
+            ,#{ctrl_amt} 
+            ,#{bugt_item_cd} 
+            ,#{bugt_ctrl_way} 
+            ,#{ctrl_no} 
+            ,#{accnt_cd} 
+            ,#{expns_cd} 
+            ,#{unslip_no} 
+            ,#{req_state} 
+            ,#{attach_file_no} 
+            ,#{rmk} 
+            ,#{use_usg} 
+            ,#{supt_clsf} 
+            ,#{supt_detls} 
+            ,#{supt_detls_item} 
+            ,#{req_treat_qty}
+            ,#{rst_book_issu} 
+            ,#{regst_syspayno} 
+            ,CURRENT
+   )
+  </insert>
+  
+<select id="selectXodxComM" parameterType="kr.re.kitech.biz.fin.spa.vo.XodxComMVo" resultType="kr.re.kitech.biz.fin.spa.vo.XodxComMVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectXodxComM */ 
+		 cd
+      ,cd_nm
+      ,cd_desc
+      ,cd_clsf
+      ,sys_clsf
+      ,seq
+      ,use_ex
+      ,mngmt_item_1
+      ,mngmt_item_2
+      ,mngmt_item_3
+      ,mngmt_item_4
+      ,mngmt_item_5
+      ,mngmt_item_6
+      ,mngmt_item_7
+      ,mngmt_no_1
+      ,mngmt_no_2
+      ,mngmt_no_3
+      ,mngmt_no_4
+      ,mngmt_no_5
+      ,mngmt_no_6
+      ,mngmt_no_7
+      ,regst_psn_syspayno
+      ,TO_CHAR(regst_daytm,'%Y%m%d%H%M%S') regst_daytm
+      ,updt_psn_syspayno
+      ,TO_CHAR(updt_daytm,'%Y%m%d%H%M%S') updt_daytm
+FROM  xodxcommst
+WHERE 1=1
+<if test="cd != null and cd != ''">
+	 and cd = #{cd}
+</if>
+<if test="cd_clsf != null and cd_clsf != ''">
+	 and cd_clsf = #{cd_clsf}
+</if>
+<if test="mngmt_item_1 != null and mngmt_item_1 != ''">
+	 and mngmt_item_1 = #{mngmt_item_1}
+</if>
+<if test="mngmt_item_1_none != null and mngmt_item_1_none != ''">
+	 and mngmt_item_1 NOT IN (#{mngmt_item_1_none})
+</if>
+<if test="mngmt_item_1_in != null and mngmt_item_1_in != ''">
+	 and mngmt_item_1 IN (#{mngmt_item_1_in})
+</if>
+<if test="mngmt_item_2 != null and mngmt_item_2 != ''">
+	 AND mngmt_item_2 = #{mngmt_item_2}
+</if>
+<if test="mngmt_item_3 != null and mngmt_item_3 != ''">
+	 AND mngmt_item_3 = #{mngmt_item_3}
+</if>
+<if test="mngmt_item_3 != null and mngmt_item_3 != ''">
+	 AND mngmt_item_3 IS NOT NULL
+</if>
+<if test="mngmt_item_4 != null and mngmt_item_4 != ''">
+	 AND mngmt_item_4 = #{mngmt_item_4}
+</if>
+<if test="mngmt_item_5 != null and mngmt_item_5 != ''">
+	 AND mngmt_item_5 = #{mngmt_item_5}
+</if>
+<if test="mngmt_item_6 != null and mngmt_item_6 != ''">
+	 AND mngmt_item_6 = #{mngmt_item_6}
+</if>
+<if test="mngmt_item_7 != null and mngmt_item_7 != ''">
+	 AND mngmt_item_7 = #{mngmt_item_7}
+</if>
+<if test="mngmt_item_4_5_between != null and mngmt_item_4_5_between != ''">
+	 AND #{mngmt_item_4_5_between} BETWEEN mngmt_item_4 AND mngmt_item_5
+</if>
+	AND seq <![CDATA[ <> ]]> '000'   
+	ORDER BY seq 
+  </select>
+  
+ <select id="selectResBgacCtm" parameterType="kr.re.kitech.biz.fin.spa.vo.ResBgacCtmSpaVo" resultType="kr.re.kitech.biz.fin.spa.vo.ResBgacCtmSpaVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectResBgacCtm */ 
+		 a.accnt_no, a.accnt_no_nm, a.itm_solve_base, b.itm_solve_base_nm
+FROM resbgacctm a
+JOIN fbaitmbase b ON a.itm_solve_base = b.itm_solve_base
+WHERE a.accnt_no = #{accnt_no}
+  </select>
+  
+<select id="selectFbaItmAccnt" parameterType="kr.re.kitech.biz.fin.spa.vo.FbaItmAccntVo" resultType="kr.re.kitech.biz.fin.spa.vo.FbaItmAccntVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFbaItmAccnt */ 
+		 d.expns_cd_nm, 
+       d.expns_cd, 
+       c.accnt_cd_abbr,
+       c.accnt_cd,
+       d.desc ,
+       a.itm_clsf, --FAE
+       a.bugt_ctrl_way,  --FAF
+       c.bugt_ctrl_ex,
+       c.resch_accnt_clsf  -- FBL
+FROM fbaitmaccnt a
+JOIN fbaitmaccntexpns b ON a.accnt_cd = b.accnt_cd AND a.itm_solve_base = b.itm_solve_base AND b.use_ex = 'Y'
+JOIN xodfaccnt c ON a.accnt_cd = c.accnt_cd
+JOIN xodfexpns d ON b.expns_cd = d.expns_cd
+WHERE a.use_ex = 'Y'
+AND   a.itm_solve_base LIKE #{itm_solve_base}
+<if test="itm_clsf != null and itm_clsf != ''">
+	 and a.itm_clsf LIKE #{itm_clsf}
+</if>
+<if test="expns_cd != null and expns_cd != ''">
+	 and d.expns_cd LIKE #{expns_cd}
+</if>
+<if test="expns_list != null and expns_list != ''">
+	 and d.expns_cd IN (#{expns_list})
+</if>
+ORDER BY d.expns_cd, c.accnt_cd
+  </select>
+  
+<select id="selectFspTechNumSuph" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa."selectFspTechNumSuph" */ 
+		  LPAD(ROUND(NVL(MAX(SUBSTR(t2.rcpt_no, 7, 4)) + 1, 1), 0), 4, '0') AS cnt,
+        t1.mngmt_item_4 AS mngmt_item_1        
+FROM    xodxcommst          t1,
+        OUTER fsptechsuph   t2
+WHERE   t1.cd                       = t2.supt_clsf
+AND     t1.cd_clsf                  = 'SLC'
+AND     t1.cd                       = #{cd}
+AND     SUBSTR(t2.rcpt_ymd, 1, 4)   = #{rcpt_ymd}
+GROUP BY 2
+  </select>
+
+<update id="updateFspTechSuph" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spa.updateFspTechSuph */ 
+		  fsptechsuph
+SET     
+        <if test="req_clsf != null and req_clsf != ''">
+	  req_clsf          = #{req_clsf},
+</if>
+        <if test="accnt_no != null and accnt_no != ''">
+	  accnt_no          = #{accnt_no},
+</if>
+        <if test="accnt_rspns != null and accnt_rspns != ''">
+	  accnt_rspns       = #{accnt_rspns},
+</if>
+        <if test="req_psn != null and req_psn != ''">
+	  req_psn           = #{req_psn},
+</if>
+        <if test="req_dept != null and req_dept != ''">
+	  req_dept          = #{req_dept},
+</if>
+        <if test="req_ymd != null and req_ymd != ''">
+	  req_ymd           = #{req_ymd},
+</if>
+        <if test="complt_demnd_ymd != null and complt_demnd_ymd != ''">
+	  complt_demnd_ymd  = #{complt_demnd_ymd},
+</if>
+        <if test="impt_accnt_no != null and impt_accnt_no != ''">
+	  impt_accnt_no     = #{impt_accnt_no},
+</if>
+        <if test="impt_accnt_rspns != null and impt_accnt_rspns != ''">
+	  impt_accnt_rspns  = #{impt_accnt_rspns},
+</if>
+        <if test="rcpt_no != null and rcpt_no != ''">
+	  rcpt_no           = #{rcpt_no},
+</if>
+        <if test="rcpt_psn != null and rcpt_psn != ''">
+	  rcpt_psn          = #{rcpt_psn},
+</if>
+        <if test="charg != null and charg != ''">
+	  charg             = #{charg},
+</if>
+        <if test="supt_respn_syspayno != null and supt_respn_syspayno != ''">
+	  supt_respn_syspayno = #{supt_respn_syspayno},
+</if>
+        <if test="rcpt_dept != null and rcpt_dept != ''">
+	  rcpt_dept         = #{rcpt_dept},
+</if>   
+        <if test="rcpt_ymd != null and rcpt_ymd != ''">
+	  rcpt_ymd          = #{rcpt_ymd},
+</if>                    
+        <if test="complt_ymd != null and complt_ymd != ''">
+	  complt_ymd        = #{complt_ymd},
+</if>
+        <if test="req_amt != null and req_amt != ''">
+	  req_amt           = #{req_amt},
+</if>
+        <if test="ctrl_amt != null and ctrl_amt != ''">
+	  ctrl_amt          = #{ctrl_amt},
+</if>
+        <if test="bugt_item_cd != null and bugt_item_cd != ''">
+	  bugt_item_cd      = #{bugt_item_cd},
+</if>
+        <if test="bugt_ctrl_way != null and bugt_ctrl_way != ''">
+	  bugt_ctrl_way     = #{bugt_ctrl_way},
+</if>
+        <if test="ctrl_no != null and ctrl_no != ''">
+	  ctrl_no           = #{ctrl_no},
+</if>
+        <if test="accnt_cd != null and accnt_cd != ''">
+	  accnt_cd          = #{accnt_cd},
+</if>
+        <if test="expns_cd != null and expns_cd != ''">
+	  expns_cd          = #{expns_cd},
+</if>
+        <if test="unslip_no != null and unslip_no != ''">
+	  unslip_no         = #{unslip_no},
+</if>
+        <if test="req_state != null and req_state != ''">
+	  req_state         = #{req_state},
+</if>
+        <if test="attach_file_no != null and attach_file_no != ''">
+	  attach_file_no    = #{attach_file_no},
+</if>
+        <if test="rmk != null and rmk != ''">
+	  rmk               = #{rmk},
+</if>
+        <if test="use_usg != null and use_usg != ''">
+	  use_usg           = #{use_usg},
+</if>
+        <if test="supt_clsf != null and supt_clsf != ''">
+	  supt_clsf         = #{supt_clsf},
+</if>
+        <if test="supt_detls != null and supt_detls != ''">
+	  supt_detls        = #{supt_detls},
+</if>
+        <if test="supt_detls_item != null and supt_detls_item != ''">
+	  supt_detls_item   = #{supt_detls_item},
+</if>
+        <if test="req_treat_qty != null and req_treat_qty != ''">
+	  req_treat_qty     = #{req_treat_qty},
+</if>
+        <if test="rst_book_issu != null and rst_book_issu != ''">
+	  rst_book_issu     = #{rst_book_issu},
+</if>
+        updt_syspayno     = #{updt_syspayno},
+        updt_daytm        = CURRENT
+WHERE   req_no = #{req_no}
+  </update>  
+
+ <delete id="deleteFspTechSupd" parameterType="java.lang.String">
+DELETE /* QueryID : kr.re.kitech.biz.fin.spa.deleteFspTechSupd */ 
+FROM    fsptechsupd 
+WHERE   req_no  = #{req_no} 
+  </delete>
+
+  <insert id="insertFspTechSupd" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSupdVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.spa.insertFspTechSupd */ 
+		 INTO fsptechsupd (req_no         ,
+                         req_odr        ,
+                         supt_detls     ,
+                         qty            ,
+                         time           ,
+                         unit_price     ,
+                         amt            ,
+                         rmk            ,
+                         syspayno       ,
+                         posi_cd        ,
+                         rst_book_issu  ,
+                         rst_book_treat_nm,
+                         test           ,
+                         regst_syspayno ,
+                         regst_daytm    )
+VALUES (#{req_no},
+        #{req_odr},
+        #{supt_detls},
+        #{qty},
+        #{time},
+        #{unit_price},
+        #{amt},
+        #{rmk},
+        #{syspayno},
+        #{posi_cd},
+        #{rst_book_issu},
+        #{rst_book_treat_nm},
+        #{test},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+
+ <delete id="deleteFspEquipUse" parameterType="java.lang.String">
+DELETE /* QueryID : kr.re.kitech.biz.fin.spa.deleteFspEquipUse */ 
+FROM    fspequipuse 
+WHERE   req_no  = #{req_no}
+  </delete>
+  
+<select id="selectFspEquipUseMax" parameterType="kr.re.kitech.biz.fin.spa.vo.FspEquipUseVo" resultType="kr.re.kitech.biz.fin.spa.vo.FspEquipUseVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.spa.selectFspEquipUseMax */ 
+		  NVL(MAX(use_odr), 0) + 1 AS cnt
+FROM    fspequipuse
+WHERE   equip_no = #{equip_no}
+AND     use_start_ymd = #{use_start_ymd}
+  </select>
+  
+<insert id="insertFspEquipUse" parameterType="kr.re.kitech.biz.fin.spa.vo.FspEquipUseVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.fin.insertFspEquipUse */ 
+		 INTO FspEquipUse(equip_no        ,
+                        use_start_ymd   ,  
+                        use_odr         ,
+                        use_start_time  ,   
+                        use_cls_ymd     ,
+                        use_cls_time    , 
+                        use_time        ,
+                        use_unit_price  ,   
+                        use_amt         ,
+                        use_clsf        ,
+                        accnt_no        ,
+                        use_usg         ,                                        
+                        user            ,
+                        use_dept        ,
+                        use_dept_new_ymd,     
+                        req_psn         ,
+                        req_psn_tel     ,
+                        req_no          ,
+                        rmk             ,
+                        treat_qty       ,
+                        use_start_minute,
+                        use_cls_minute  ,
+                        regst_syspayno  ,          
+                        regst_daytm     )
+VALUES (#{equip_no},
+        #{use_start_ymd},
+        #{use_odr},
+        #{use_start_time},
+        #{use_cls_ymd},
+        #{use_cls_time},
+        #{use_time},
+        #{use_unit_price},
+        #{use_amt},
+        #{use_clsf},
+        #{accnt_no},
+        #{use_usg},
+        #{user},
+        #{use_dept},
+        #{use_dept_new_ymd},
+        #{req_psn},
+        #{req_psn_tel},
+        #{req_no},
+        #{rmk},
+        #{treat_qty},
+        #{use_start_minute},
+        #{use_cls_minute},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+  
+ <delete id="deleteFspTechSupMatrl" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSupMatrlVo">
+DELETE /* QueryID : kr.re.kitech.biz.fin.fin.deleteFspTechSupMatrl */ 
+FROM    fsptechsupmatrl 
+WHERE   req_no  = #{req_no} 
+<if test="req_odr != null and req_odr != ''">
+	  AND     req_odr = #{req_odr}
+</if>
+  </delete>
+  
+ <insert id="insertFspTechSupMatrl" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSupMatrlVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.fin.insertFspTechSupMatrl */ 
+		 INTO fsptechsupmatrl(req_no          ,
+                            req_odr         ,
+                            matrl_nm        ,
+                            matrl_std       ,
+                            unit_price      ,
+                            qty             ,
+                            amt             ,
+                            rmk             ,
+                            regst_syspayno  ,
+                            regst_daytm     )
+VALUES (#{req_no},
+        #{req_odr},
+        #{matrl_nm},
+        #{matrl_std},
+        #{unit_price},
+        #{qty},
+        #{amt},
+        #{rmk},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+  
+<delete id="deleteFspTechSupPsn" parameterType="java.lang.String">
+DELETE /* QueryID : kr.re.kitech.biz.fin.fin.deleteFspTechSupPsn */ 
+FROM    fsptechsuppsn  
+WHERE   req_no  = #{req_no} 
+  </delete>
+  
+ <insert id="insertFspTechSupPsn" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSupPsnVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.fin.insertFspTechSupPsn */ 
+		 INTO fsptechsuppsn  (req_no          ,
+                            req_odr         ,
+                            supt_psn        ,
+                            tech_grd        ,
+                            posi_cd         ,
+                            unit_price      ,
+                            time            ,
+                            amt             ,
+                            rmk             ,
+                            regst_syspayno  ,
+                            regst_daytm     )
+VALUES (#{req_no},
+        #{req_odr},
+        #{supt_psn},
+        #{tech_grd},
+        #{posi_cd},
+        #{unit_price},
+        #{time},
+        #{amt},
+        #{rmk},
+        #{regst_syspayno},
+        CURRENT)
+  </insert>
+  
+<delete id="deleteFspTechSuph" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo">
+DELETE /* QueryID : kr.re.kitech.biz.fin.fin.deleteFspTechSuph */ 
+FROM    fsptechsuph 
+WHERE   req_no = #{req_no}
+  </delete>
+  
+<update id="updateFspTechSaveSuph" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSuphVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.fin.updateFspTechSaveSuph */ 
+		 fsptechsuph 
+SET rst_book_issu = #{rst_book_issu},
+    use_usg = #{use_usg},
+    charg = #{charg},
+    supt_respn_syspayno = #{supt_respn_syspayno},
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = CURRENT
+WHERE req_no = #{req_no}
+  </update>
+  
+  <update id="updateFspTechSuphBblenfrc" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spa.updateFspTechSuphBblenfrc */ 
+		 fsptechsuph
+SET ctrl_no = #{ctrl_no},
+    bugt_ctrl_way = #{bugt_ctrl_way},
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = current
+WHERE req_no = #{req_no}
+  </update>  
+
+<update id="updateFspTechSupd" parameterType="kr.re.kitech.biz.fin.spa.vo.FspTechSupdVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spa.updateFspTechSupd */ 
+		    fsptechsupd
+SET       supt_detls = #{supt_detls},
+          qty = #{qty},
+          time = #{time},
+          unit_price = #{unit_price},
+          amt = #{amt},
+          rmk = #{rmk},
+          syspayno = #{syspayno},
+          posi_cd = #{posi_cd},
+          rst_book_issu = #{rst_book_issu},
+          rst_book_treat_nm = #{rst_book_treat_nm},
+          updt_syspayno = #{updt_syspayno},
+          updt_daytm = current
+WHERE     req_no = #{req_no}
+ AND      req_odr=#{req_odr}
+  </update>                  
+                            
+</mapper>

@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="양식함">
+    	<w2:type>DEFAULT</w2:type>
+    	<w2:buildDate />
+    	<xf:model>
+    		<xf:instance>
+    			<data xmlns="" />
+    		</xf:instance>
+    		<w2:dataCollection baseNode="map">
+    			<w2:dataMap baseNode="map" id="dma_frm">
+    				<w2:keyInfo>
+    					<w2:key id="frm_title" name="frm_title" dataType="text"></w2:key>
+    					<w2:key id="wri_psn_syspayno" name="wri_psn_syspayno" dataType="text"></w2:key>
+    					<w2:key id="frm_id" name="frm_id" dataType="text"></w2:key>
+    				</w2:keyInfo>
+    			</w2:dataMap>
+
+    			<w2:dataList baseNode="list" repeatNode="map" id="dlt_frmList" saveRemovedData="true">
+    				<w2:columnInfo>
+    					<w2:column id="frm_id" name="자주하는질문 ID" dataType="text"></w2:column>
+    					<w2:column id="wri_daytm" name="작성일자" dataType="text"></w2:column>
+    					<w2:column id="frm_title" name="자주하는질문 제목" dataType="text"></w2:column>
+    					<w2:column id="regst_syspayno" name="작성자" dataType="text"></w2:column>
+    					<w2:column id="regst_daytm" name="작성일" dataType="date"></w2:column>
+    					<w2:column id="wri_psn_syspaynm" name="작성자 성명" dataType="text"></w2:column>
+    				</w2:columnInfo>
+    			</w2:dataList>
+    		</w2:dataCollection>
+    		<w2:workflowCollection></w2:workflowCollection>
+    		<xf:submission id="sbm_selectPatFrmList" ref='data:json,dma_frm'
+    			target='data:json,{"id":"dlt_frmList","key":"patFrmVoList"}' action="SvcPATPBDFRML01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    	</xf:model>
+    	<script type="text/javascript" lazy="false"><![CDATA[
+        
+    // 페이지 로드 이벤트
+	scwin.onpageload = function() {
+		var today = com.getServerDateTime();
+		var codeOptions = [
+		 ];
+		
+		com.setCmnCd(codeOptions, function() {
+			com.setEnterKeyEvent(grpSchHum, scwin.selectHumBtn);
+			com.initDataMap(dma_frm);
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/******
+	*
+	*    사용자 정의 함수
+	*
+	*******/
+	
+	// 공지사항 목록 검색
+	scwin.schFrmList = function() {
+		// 목록 조회
+		com.execute(sbm_selectPatFrmList, {
+			successCallback : function(e) {
+				tbx_result.setValue(dlt_frmList.getTotalRow());
+			}
+		});
+	};
+	
+	// 등록 페이지로 이동
+	scwin.openDetail = function(data) {
+		com.openTabMenu("IC62", data, function() {
+			scwin.schFrmList();
+		});
+	};
+	
+	/******
+	*
+	*    컴포넌트 이벤트
+	*
+	*******/
+	
+	// 검색 버튼 클릭 이벤트
+	scwin.btn_search_onclick = function() {
+		scwin.schFrmList();
+	};
+	
+	
+	// 그리드 클릭 이벤트 ( 상세 페이지로 이동 "공지사항 제목" 컬럼 클릭 시에만 실행함)
+	scwin.grd_frmList_oncellclick = function(row,col,colId) {
+		if (colId === "frm_title") {
+			var data = {
+				frm_id : dlt_frmList.getCellData(row, "frm_id")
+			};
+			scwin.openDetail(data);
+		}
+	};
+	
+	// 사원검색 돋보기 아이콘 클릭 이벤트
+	scwin.btn_search_hum_onclick = function(e) {
+		scwin.selectHumBtn("img");
+	};
+	
+	// 직원검색 팝업 호출
+	scwin.selectHumBtn = function(data) {
+		// 버튼(img)으로 팝업함수 바로 호출 처음 변수에 아무것도 넣지 않으면 최초 서브미션도 실행 안함. 
+		data == "img" ? data = { empno : ""} : data = { empno : inp_empno.getValue(), nm : inp_empno.getValue(), work_clsf : "HAG010" };
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			if (ret) {
+				inp_empno.setValue(ret.empno);
+				tb_nm.setValue(ret.nm);
+				dma_frm.set("wri_psn_syspayno", ret.syspayno);
+			}
+		});
+	};
+	
+	// 신규 버튼 클릭 이벤트
+	scwin.btn_req_onclick = function(e) {
+		scwin.openDetail({});
+	};
+	
+	scwin.inp_empno_onchange = function(info) {
+		if(info.newValue == "") {	
+			tb_nm.setValue("");
+			dma_frm.set("wri_psn_syspayno", "");
+		}
+	};
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:290px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr" style="">
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="제목"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td" >
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp full" id="inp_frm_title" ref="data:dma_frm.frm_title"
+    								style="width:620px;">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="w2tb_th" tagname="th" style="">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox id="" label="작성자" style="" tagname="span"></w2:textbox>
+    							</xf:group>
+    							<xf:group class="w2tb_td" tagname="td" style="">
+    								<w2:attributes></w2:attributes>
+    								<xf:group class="inpSch" id="grpSchHum" style="width: 120px;">
+    									<xf:input adjustMaxLength="false" class="inp" ev:onchange="scwin.inp_empno_onchange"
+    										ev:onkeypress="scwin.inp_empno_onkeypress" id="inp_empno" style="" title="근무자명">
+    									</xf:input>
+    									<xf:trigger class="btn" ev:onclick="scwin.btn_search_hum_onclick" id="btn_trigger2" style=""
+    										title="근무자 조회" type="button">
+    										<xf:label><![CDATA[검색]]></xf:label>
+    									</xf:trigger>
+    								</xf:group>
+    								<xf:input adjustMaxLength="false" class="inp" disabled="true" id="tb_nm" ref=""
+    									style="width: 155px;" title="근무자 상세 ">
+    								</xf:input>
+    							</xf:group>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group style="" id="" class="sch_more">
+    					<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    						<w2:attributes>
+    							<w2:summary></w2:summary>
+    						</w2:attributes>
+    						<xf:group tagname="caption"></xf:group>
+    						<xf:group tagname="colgroup">
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col" style="width:300px;"></xf:group>
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col" style="width:290px;"></xf:group>
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col"></xf:group>
+    						</xf:group>
+    						<xf:group tagname="tr" style="">
+    							<xf:group tagname="th" style="" class="w2tb_th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="담당자"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" style="" class="w2tb_td">
+    								<xf:group style="width: 120px;" id="" class="inpSch">
+    									<xf:input adjustMaxLength="false" style="" id="" class="inp"></xf:input>
+    									<xf:trigger style="" id="" type="button" class="btn">
+    										<xf:label><![CDATA[검색]]></xf:label>
+    									</xf:trigger>
+    								</xf:group>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    							<xf:group tagname="th" style="" class="w2tb_th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="담당자"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" style="" class="w2tb_td">
+    								<xf:group style="width: 120px;" id="" class="inpSch">
+    									<xf:input adjustMaxLength="false" style="" id="" class="inp"></xf:input>
+    									<xf:trigger style="" id="" type="button" class="btn">
+    										<xf:label><![CDATA[검색]]></xf:label>
+    									</xf:trigger>
+    								</xf:group>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    							<xf:group tagname="th" class="w2tb_th">
+    								<w2:attributes></w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="신청번호"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" class="w2tb_td">
+    								<w2:attributes></w2:attributes>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="tb_req_no" class="inp"></xf:input>
+    							</xf:group>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<xf:group class="le" id="" style="">
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:group style="" id="" class="btnarea">
+    					<xf:trigger class="btn" id="btn_req" style="" type="button" ev:onclick="scwin.btn_req_onclick">
+    						<xf:label><![CDATA[신규]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_frmList" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_frmList" visibleRowNum="20"
+    			class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_frmList_oncellclick" fixedRow="0" filterFocusMode="outfocus" sortEvent="onclick" sortable="true">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="830" inputType="text" style="height:28px;" id="column7" value="제목" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column3" value="작성자" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column20" value="작성일" displayMode="label"></w2:column>
+    					<w2:column width="114" inputType="text" style="height:28px;" id="frm_id_hd" value="frm_id" displayMode="label" hidden="true"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+						<w2:column width="830" inputType="link" readOnly="true" style="height:28px;align:left" id="frm_title" class="le" displayMode="label" ></w2:column>
+						<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="wri_psn_syspaynm" displayMode="label" ></w2:column>
+						<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="wri_daytm" displayMode="label" displayFormat="yyyy-MM-dd" dataType="date"></w2:column>
+						<w2:column width="114" inputType="text" style="height:28px;" id="frm_id" value="" displayMode="label" hidden="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

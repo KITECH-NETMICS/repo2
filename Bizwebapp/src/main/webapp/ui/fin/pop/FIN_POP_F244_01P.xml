@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="회의록조회(F244)">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" id="dlt_grd" repeatNode="map" saveRemovedData="true" style="">
+            		<w2:columnInfo>
+            			<w2:column id="meet_req_no" name="회의번호" dataType="text"></w2:column>
+            			<w2:column dataType="text" id="unslip_no" name="결의번호"></w2:column>
+            			<w2:column dataType="text" id="accnt_no" name="계정번호"></w2:column>
+            			<w2:column dataType="text" id="req_psn_nm" name="성명"></w2:column>
+            			<w2:column dataType="text" id="empno" name="개인번호"></w2:column>
+            			<w2:column dataType="text" id="res_person_no" name="연구자등록번호"></w2:column>
+            			<w2:column id="evid_no" name="증빙번호" dataType="text"></w2:column>
+            			<w2:column dataType="text" id="evid_clsf_nm" name="증빙구분"></w2:column>
+            			<w2:column dataType="text" id="rmk" name="비고"></w2:column>
+            			<w2:column dataType="text" id="syspayno" name="시스템개인번호"></w2:column>
+            			<w2:column id="meet_subject" name="회의명" dataType="text"></w2:column>
+            			<w2:column id="meet_ymd" name="회의일자" dataType="text"></w2:column>
+            			<w2:column id="meet_time" name="회의시간" dataType="text"></w2:column>
+            			<w2:column id="sci_tech_regst_no" name="과학기술인번호" dataType="text"></w2:column>
+            			<w2:column id="user_clsf" name="사용자구분" dataType="text"></w2:column>
+            			<w2:column id="evid_chk" name="증빙구분" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            		<w2:data use="false"></w2:data>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="from_ymd" name="시작일자"></w2:key>
+            			<w2:key dataType="text" id="to_ymd" name="종료일자"></w2:key>
+
+            			<w2:key dataType="text" id="syspayno" name="시스템개인번호"></w2:key>
+            			<w2:key id="empno" name="개인번호" dataType="text"></w2:key>
+            			<w2:key id="nm" name="성명" dataType="text"></w2:key>
+            			<w2:key id="card_no" name="카드번호" dataType="text"></w2:key>
+            			<w2:key id="inqr_value" name="회의명" dataType="text"></w2:key>
+            			<w2:key id="req_no" name="회의신청번호" dataType="text"></w2:key>
+            			<w2:key id="type" name="조회타입" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_outmeet" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="nm" name="이름" dataType="text"></w2:column>
+            			<w2:column id="dept_nm" name="부서명" dataType="text"></w2:column>
+            			<w2:column id="meet_req_no" name="회의신청번호" dataType="text"></w2:column>
+            			<w2:column id="meet_start_ymd" name="회의시작일" dataType="text"></w2:column>
+            			<w2:column id="meet_cls_ymd" name="회의종료일" dataType="text"></w2:column>
+            			<w2:column id="meet_start_time" name="회의시작시간" dataType="text"></w2:column>
+            			<w2:column id="meet_cls_time" name="회의종료시간" dataType="text"></w2:column>
+            			<w2:column id="reg_nm" name="등록자" dataType="text"></w2:column>
+            			<w2:column id="meet_ymd" name="name9" dataType="text"></w2:column>
+            			<w2:column id="meet_time" name="name10" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 조회 -->
+            <xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' 
+        	    action="SvcFINSPMPOPR12.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 이지자로 회의참여자 과학기술인번호 조회 -->
+        	<xf:submission id="sbm_checkSciTechRegstNo" ref='data:json,dma_search' target='' 
+        	    action="SvcFINSPMPOPR13.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+   	/**************************************************************************************
+ 	 * 화면 설명 : 회의록 조회팝업
+ 	 * 변경 이력 : 2022-09-27	이영희	최초 작성
+ 	 * 설  명    : 회의록관리에서 호출
+ 	 *************************************************************************************/
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.type="";	
+	scwin.onpageload = function() {
+		var param = com.getParameter();
+		dma_search.setJSON(param);		
+		
+		// enter key event
+		com.setEnterKeyEvent(grp_emp, scwin.btn_emp_onclick);	
+		
+		if(param.user_clsf == "1" || param.user_clsf === undefined){
+			tbx_out_title.hide();
+			grd_duplMeetPrsn.hide();
+			grp_out_msg.hide();
+			
+			btn_reget.hide(); // 등록
+			btn_cancel.hide(); // 취소
+			
+			if(param.type == "evid"){
+				scwin.type = "evid";
+				var today = com.getServerDateTime();
+				ica_from.setValue(com.addMonth(today, -1).substring(0, 6) + "01");
+				ica_to.setValue(today);
+				
+				if(dma_search.get("req_no") != ""){
+					scwin.search();	
+				}
+			}else{
+				scwin.search();	
+			}
+		}else if(param.user_clsf == "2"){
+			grp_search.hide();
+			grd_meet.hide();
+			tbx_title.hide();
+			
+			btn_close.hide();
+			
+			dlt_outmeet.setJSON(param.dataResult, false);//데이터 세팅
+			tbx_cnt.setValue(dlt_outmeet.getRowCount());
+			
+			for(var i = 0 ; i < dlt_outmeet.getRowCount() ; i++){
+				dlt_outmeet.setCellData(i, "meet_ymd", dlt_outmeet.getCellData(i, "meet_start_ymd") + " ~ " +dlt_outmeet.getCellData(i, "meet_start_ymd"));
+				dlt_outmeet.setCellData(i, "meet_time", dlt_outmeet.getCellData(i, "meet_start_time").substr(0,2) + ":" + dlt_outmeet.getCellData(i, "meet_start_time").substr(2,4) 
+										+ " ~ "  + dlt_outmeet.getCellData(i, "meet_cls_time").substr(0,2) + ":" +dlt_outmeet.getCellData(i, "meet_cls_time").substr(2,4));
+			}
+		}
+	};	
+
+	/**
+	 * 조회
+	 */
+	scwin.search = function() {
+		// 목록 조회
+		com.execute(sbm_selectData, {
+			successCallback : function(e){
+				dlt_grd.setJSON(e.responseJSON.fspMeetMntPopVoList)				
+			}
+		});
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	
+	/**
+	 * 조회버튼 클릭 이벤트
+	 */	
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	/**
+	 * 회의자 검색버튼 클릭 이벤트
+	 */	
+	scwin.btn_emp_onclick = function(e) {
+		var data={
+			empno : idx_emp_no.getValue(),
+			work_clsf : "HAG010"	
+		};
+		
+		if(idx_emp_no.getValue() == ""){
+			data.ref_yn = "Y";	
+		}
+		
+		com.pop.open(com.pop.TYPE.HUM, data, function(ret) {
+			dma_search.set("syspayno", ret.syspayno);
+			dma_search.set("empno", ret.empno);
+			dma_search.set("nm", ret.nm);
+		});
+	};
+	
+	/**
+	 * 그리드 더블클릭 이벤트
+	 */	
+	scwin.grd_meet_oncelldblclick = function(row,col,colId) {
+		if(scwin.type == "evid"){
+			if(dlt_grd.getCellData(row, "meet_req_no").trim() == "") return;
+			
+			if(dlt_grd.getCellData(row, "unslip_no").trim() != ""){
+				com.confirm("message.xom.ui.fin.063", function(ret){
+					if(ret){
+						if(dlt_grd.getCellData(row, "evid_chk") == "Y"){
+							dma_search.set("req_no", dlt_grd.getCellData(row, "meet_req_no"));
+							
+							scwin.getNoSciTechRegstNo(row);
+						}else{
+							com.closePopup(dlt_grd.getRowJSON(row));
+						}
+					}
+				});
+			}else{
+				com.closePopup(dlt_grd.getRowJSON(row));
+			}
+		}
+	};
+	
+	/**
+	 * 과학기술인번호 조회(이지바로과제)
+	 */	
+	scwin.getNoSciTechRegstNo = function(row){
+		com.execute(sbm_checkSciTechRegstNo, {
+			successCallback : function(e){
+				debugger;
+				var psnNm = e.responseJSON.no_sci_tech_psn;
+				if(!com.isEmpty(psnNm)){
+					com.alert(com.getMsg("message.xom.ui.fin.064", psnNm));
+				}else{
+					com.closePopup(dlt_grd.getRowJSON(row));
+				}
+			}
+		});
+	};
+	
+	/**
+	* 등록버튼 클릭 이벤트(회의록 관리)
+	*/
+	scwin.btn_reget_onclick = function(e) {
+		com.closePopup(true);
+	};
+	
+	/**
+	* 취소 버튼 클릭 이벤트(회의록 관리)
+	*/
+	scwin.btn_cancel_onclick = function(e) {
+		com.closePopup(false);
+	};
+	
+	/**
+	 * 회의자 초기화
+	 */	
+	scwin.idx_emp_no_onblur = function(e) {
+		if(idx_emp_no.getValue() == ""){
+			dma_search.set("syspayno", "");
+			dma_search.set("nm", "");
+		}
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group id="grp_search" class="searchSection ">
+    			<xf:group id="group_search" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="도서구입신청 상세정보"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:250px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:180px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style=""></xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr">
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:span style="" id="" label="[필수입력항목]" class="bul_req"></w2:span>
+    							<w2:textbox tagname="span" style="" id="" label="회의일자"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<w2:inputCalendar ref="data:dma_search.from_ymd" footerDiv="false" rightAlign="false"
+    								focusOnDateSelect="false" style="" id="ica_from" title="시작일" class="inpcal" renderDiv="true"
+    								calendarValueType="yearMonthDate">
+    							</w2:inputCalendar>
+    							<w2:textbox tagname="span" style="" id="" label="~" class="dash"></w2:textbox>
+    							<w2:inputCalendar ref="data:dma_search.to_ymd" footerDiv="false" rightAlign="false"
+    								focusOnDateSelect="false" style="" id="ica_to" title="종료일" class="inpcal" renderDiv="true" calendarValueType="yearMonthDate">
+    							</w2:inputCalendar>
+    						</xf:group>
+    						<xf:group tagname="th" style="" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="회의명"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" style="" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input ref="data:dma_search.inqr_value" adjustMaxLength="false" style="" id="ibx_plc_nm" title="회계코드"
+    								class="inp full">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group tagname="th" style="" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="회의번호"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" style="" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input ref="data:dma_search.req_no" adjustMaxLength="false" style="width:150px;" id="ibx_plc_nm10"
+    								title="회계코드" class="inp full">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr" style="">
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="카드번호"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpSch" id="grp_accnt_no" style="width: 200px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="ibx_accnt_no" ref="data:dma_search.card_no" style=""
+    									title="계정번호">
+    								</xf:input>
+    								<xf:trigger class="btn" ev:onclick="scwin.btn_accnt_no_onclick" id="btn_accnt_no" style=""
+    									title="계정번호 조회" type="button">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group tagname="th" style="" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="회의자"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" style="" class="w2tb_td">
+    							<w2:attributes>
+    								<w2:colspan>3</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:group style="width: 100px;" id="grp_emp" class="inpSch">
+    								<xf:input ref="data:dma_search.empno" ev:onblur="scwin.idx_emp_no_onblur" adjustMaxLength="false"
+    									style="" id="idx_emp_no" title="작성자" class="inp">
+    								</xf:input>
+    								<xf:trigger ev:onclick="scwin.btn_emp_onclick" style="" id="btn_emp" title="작성자 조회" type="button"
+    									class="btn">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input ref="data:dma_search.nm" adjustMaxLength="false" readOnly="true" style="width: 100px;" id=""
+    								title="작성자 상세" class="inp">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" id="group_searchBtn" class="schbtn">
+    				<xf:trigger ev:onclick="scwin.btn_search_onclick" style="" id="btn_search" type="button" class="btn search">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="">
+    				<w2:textbox class="tit_tbl" id="tbx_title" label="회의자정보" style="" tagname="h3"></w2:textbox>
+    				<w2:textbox label="◆ 외부인 회의 참석 내역" style="" tagname="span" class="tit_tbl" id="tbx_out_title"></w2:textbox>
+    				<xf:group class="result" id="" style="">
+    					<w2:span class="numtotal" id="tbx_cnt" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:group class="btnarea" id="" style=""></xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_meet" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="8" ev:oncelldblclick="scwin.grd_meet_oncelldblclick" readOnly="true">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="구분" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column10" inputType="text" style="height:28px;" value="회의일자" width="150"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="회의시간" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="증빙구분" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="증빙번호" width="100"></w2:column>
+    					<w2:column width="130" inputType="text" style="height:28px" id="column21" value="회의명" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column23" value="작성자" displayMode="label"></w2:column>
+    					<w2:column width="85" inputType="text" style="height:28px" id="column25" value="계정번호" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column27" value="결의번호" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" id="meet_req_no" inputType="text" style="height:28px;" width="80"></w2:column>
+    					<w2:column class="" displayMode="label" id="meet_ymd" inputType="text" style="height:28px;" width="150"
+    						editModeEvent="onclick">
+    					</w2:column>
+    					<w2:column class="" displayMode="label" escape="false" id="meet_time" inputType="text" readOnly="true"
+    						style="height:28px;" width="120">
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="evid_clsf_nm" inputType="text" readOnly="true"
+    						style="height:28px;" width="70" class="" editModeEvent="onclick">
+    					</w2:column>
+    					<w2:column class="" displayMode="label" id="evid_no" inputType="text" style="height:28px;" width="100"
+    						editModeEvent="onclick">
+    					</w2:column>
+    					<w2:column width="130" inputType="text" style="height:28px" id="meet_subject" value="" displayMode="label"
+    						class="left">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="req_psn_nm" value="" displayMode="label"></w2:column>
+    					<w2:column width="85" inputType="text" style="height:28px" id="accnt_no" value="" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="unslip_no" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_outmeet" defaultCellHeight="28"
+    			ev:oncelldblclick="scwin.grd_meet_oncelldblclick" evenRowBackgroundColor="#f7faff" id="grd_duplMeetPrsn"
+    			noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" readOnly="true" rowMouseOverColor="#e7f0fb"
+    			rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태"
+    			rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    			selectedRowColor="#fbf2cd" style="height: 85px;" summaryAuto="true" visibleRowNum="8">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="이름" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column10" inputType="text" style="height:28px;" value="소속" width="150"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="회의록번호" width="130"></w2:column>
+    					<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="회의일자" width="200"></w2:column>
+    					<w2:column displayMode="label" id="column21" inputType="text" style="height:28px" value="회의시간" width="150"></w2:column>
+    					<w2:column displayMode="label" id="column23" inputType="text" style="height:28px" value="회의록 작성자" width="80"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" id="nm" inputType="text" style="height:28px;" width="80"></w2:column>
+    					<w2:column class="le" displayMode="label" editModeEvent="onclick" id="dept_nm" inputType="text" style="height:28px;"
+    						width="150">
+    					</w2:column>
+    					<w2:column class="" displayMode="label" escape="false" id="meet_req_no" inputType="text" readOnly="true"
+    						style="height:28px;" width="120">
+    					</w2:column>
+    					<w2:column class="" displayMode="label" editModeEvent="onclick" id="meet_ymd" inputType="text" style="height:28px;"
+    						width="200">
+    					</w2:column>
+    					<w2:column class="left" displayMode="label" id="meet_time" inputType="text" style="height:28px" value=""
+    						width="150">
+    					</w2:column>
+    					<w2:column displayMode="label" id="reg_nm" inputType="text" style="height:28px" value="" width="80"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group class="helparea" id="grp_out_msg" style="">
+    			<xf:group id="" style="" tagname="ul">
+    				<xf:group id="" style="" tagname="li">
+    					<w2:textbox class="red" id="" label="※ 외부인 타회의 참석 내역을 확인하시고 등록여부를 선택해주세요." style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class=" btn  pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn  pro " id="btn_cancel" style="" type="button" ev:onclick="scwin.btn_cancel_onclick">
+    					<xf:label><![CDATA[취소]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn  pro conf" id="btn_reget" style="" type="button" ev:onclick="scwin.btn_reget_onclick">
+    					<xf:label><![CDATA[등록]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+
+
+    	</xf:group>
+    </body>
+</html>

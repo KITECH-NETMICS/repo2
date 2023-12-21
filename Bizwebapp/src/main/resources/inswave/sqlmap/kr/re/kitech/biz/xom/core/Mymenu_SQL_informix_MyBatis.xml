@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.xom.core">
+
+    <insert id="insertMymenu" parameterType="kr.re.kitech.biz.xom.core.vo.MymenuVo">	
+        INSERT INTO PORTAL:PORTAL_USER_BKMK_MENU (
+			BKMK_MENU_ID
+			, BKMK_MENU_NAME
+			, BKMK_TYPE
+			, PARENT_ID
+			, BKMK_MENU_URL
+			, SORT_ORDER
+			, DELETE_AT
+			, REGISTER_ID
+			, REGISTER_NAME
+			, REGIST_DATE
+			, UPDATER_ID
+			, UPDATER_NAME
+			, UPDATE_DATE
+		)
+		VALUES(
+			#{service_id}
+			, #{menu_folder_nm}
+			, '01'
+			, #{menu_up_id}
+			, #{bkmkMenuUrl}
+			, #{menu_seq}
+			, 0
+			, #{syspayno}
+			, #{registerName}
+			, SYSDATE
+			, #{syspayno}
+			, #{registerName}
+			, SYSDATE
+		)   
+    </insert>	
+	
+    <update id="updateMymenu" parameterType="kr.re.kitech.biz.xom.core.vo.MymenuVo">
+		UPDATE PORTAL:PORTAL_USER_BKMK_MENU
+		SET 
+			BKMK_MENU_NAME = #{menu_folder_nm}
+			, PARENT_ID = <choose><when test='menu_up_id eq "ROOT"'>''</when><otherwise>#{menu_up_id}</otherwise></choose>
+			, SORT_ORDER = #{menu_seq}
+			, DELETE_AT = #{deleteAt}
+			, UPDATER_ID = #{syspayno}
+			, UPDATER_NAME = #{registerName}
+			, UPDATE_DATE = SYSDATE
+		WHERE REGISTER_ID = #{syspayno}
+		AND BKMK_MENU_ID = #{service_id}
+		AND BKMK_TYPE = '01'      
+    </update>
+	
+    <delete id="deleteMymenu" parameterType="kr.re.kitech.biz.xom.core.vo.MymenuVo">
+        DELETE FROM MYMENU   /* QueryID : kr.re.kitech.biz.xom.core.deleteMymenu */ 
+        WHERE   
+        	SYSPAYNO       = #{syspayno}
+         AND MENU_ID       = #{menu_id}       
+    </delete>
+	
+    <select id="selectMymenu" parameterType="kr.re.kitech.biz.xom.core.vo.MymenuVo" resultType="kr.re.kitech.biz.xom.core.vo.MymenuVo">	
+        SELECT     /* QueryID : kr.re.kitech.biz.xom.core.selectMymenu */
+            SYSPAYNO, SERVICE_ID, MENU_ID, MENU_UP_ID, MENU_FOLDER_NM, MENU_LVL, MENU_SEQ, REGST_SYSPAYNO, REGST_DAYTM, UPDT_SYSPAYNO, UPDT_DAYTM
+        FROM MYMENU 
+        WHERE SYSPAYNO       = #{syspayno}      
+         AND SERVICE_ID     = #{service_id}    
+         AND MENU_ID        = #{menu_id}       			
+    </select>
+    
+     <select id="selectClassMymenu" parameterType="kr.re.kitech.biz.xom.core.vo.MymenuVo" resultType="kr.re.kitech.biz.xom.core.vo.MymenuVo">	
+		SELECT 						/* QueryID : kr.re.kitech.biz.xom.core.selectClassMymenu */
+			LEVEL AS menu_lvl
+			, TRIM(BKMK_MENU_ID) AS service_id
+			, TRIM(BKMK_MENU_ID) AS menu_id
+			, BKMK_MENU_NAME AS menu_folder_nm
+			, TRIM(CASE NVL(PARENT_ID, '') WHEN '' THEN 'ROOT' ELSE PARENT_ID END) AS menu_up_id
+			, SORT_ORDER AS menu_seq
+			, DELETE_AT AS deleteAt
+		    , REGISTER_ID AS syspayno
+		FROM PORTAL:PORTAL_USER_BKMK_MENU
+		WHERE BKMK_TYPE = '01'
+		START WITH PARENT_ID = ''
+		AND REGISTER_ID = #{syspayno}
+		AND DELETE_AT = 0
+		CONNECT BY PRIOR BKMK_MENU_ID = PARENT_ID 
+		AND REGISTER_ID = #{syspayno}
+		AND DELETE_AT = 0
+		ORDER SIBLINGS BY SORT_ORDER;
+    </select>
+	
+    <select id="selectClassMymenuCnt" parameterType="kr.re.kitech.biz.xom.core.vo.MymenuVo" resultType="long">
+		SELECT 						/* QueryID : kr.re.kitech.biz.xom.core.selectClassMymenu */
+			COUNT(BKMK_MENU_ID) as cnt
+		FROM PORTAL:PORTAL_USER_BKMK_MENU
+		WHERE BKMK_TYPE  = '01'
+		AND REGISTER_ID  = #{syspayno}
+		AND BKMK_MENU_ID = #{service_id}    </select>
+    
+    <select id="selectClassMymenuChkList" parameterType="kr.re.kitech.biz.xom.core.vo.MymenuVo" resultType="java.lang.String">	
+		SELECT 						/* QueryID : kr.re.kitech.biz.xom.core.selectClassMymenu */
+			TRIM(BKMK_MENU_ID) AS service_id
+		FROM PORTAL:PORTAL_USER_BKMK_MENU
+		WHERE BKMK_TYPE = '01'
+		START WITH PARENT_ID = ''
+		AND REGISTER_ID = #{syspayno}
+		CONNECT BY PRIOR BKMK_MENU_ID = PARENT_ID 
+		AND REGISTER_ID = #{syspayno}
+		ORDER SIBLINGS BY SORT_ORDER;
+    </select>
+	
+    <select id="selectListCountMymenu" parameterType="kr.re.kitech.biz.xom.core.vo.MymenuVo" resultType="long">
+         SELECT    /* QueryID : kr.re.kitech.biz.xom.core.selectListCountMymenu */
+             COUNT(*) totcnt  		                  
+         FROM MYMENU
+         WHERE  1=1    		
+         <if test="syspayno != null and syspayno != ''">
+              AND SYSPAYNO like '%' || #{syspayno} || '%'
+         </if>
+         <if test="service_id != null and service_id != ''">
+              AND SERVICE_ID like '%' || #{service_id} || '%'
+         </if>
+         <if test="menu_id != null and menu_id != ''">
+              AND MENU_ID like '%' || #{menu_id} || '%'
+         </if>
+    </select>
+
+</mapper>

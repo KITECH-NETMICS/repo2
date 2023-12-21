@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.lib">
+		
+<select id="selectCopyList" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibCopyVo" resultType="kr.re.kitech.biz.kbk.lib.vo.LibCopyVo">
+SELECT     regst_no,
+ ymd,
+ fun_xodxcommst_cd_nm(origntxt_copy_typ, 0) AS origntxt_copy_typ,
+ paper_nm_pat,
+ jurnl_nm,
+ std_pat_no,
+ auth_nm,
+ publ_yr,
+fun_xodxcommst_cd_nm(prcs_state, 0) AS prcs_state  
+  FROM kbkorgltxtcopyreq
+ WHERE 1=1
+	<if test="origntxt_copy_typ != null and origntxt_copy_typ != ''"> AND  origntxt_copy_typ LIKE '%' || #{origntxt_copy_typ} || '%' </if>
+	<if test="paper_nm_pat != null and paper_nm_pat != ''"> AND  paper_nm_pat LIKE '%' || #{paper_nm_pat} || '%' </if>
+	<if test="prcs_state != null and prcs_state != ''"> AND  prcs_state LIKE '%' ||  #{prcs_state} || '%' </if>
+	<if test="req_psn_syspayno != null and req_psn_syspayno != ''"> AND  req_psn_syspayno LIKE #{req_psn_syspayno} </if>
+	AND ymd BETWEEN #{ymd_fr} AND #{ymd_to}
+ORDER BY regst_no desc
+</select>
+	
+</mapper>

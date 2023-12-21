@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.ccs.cws">
+
+    <insert id="insertCwsOutWork" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo">	
+        INSERT INTO CWSOUTWORK   /* QueryID : kr.re.kitech.biz.ccs.cws.insertCwsOutWork */
+        ( 
+            REQ_NO
+            <if test="syspayno         != null"> , SYSPAYNO          </if>
+            <if test="start_ymd        != null"> , START_YMD         </if>
+            <if test="cls_ymd          != null"> , CLS_YMD           </if>
+            <if test="cause            != null"> , CAUSE             </if>
+            <if test="secure_yn        != null"> , SECURE_YN         </if>
+            <if test="secure_daytm     != null"> , SECURE_DAYTM      </if>
+            <if test="attach_file_no   != null"> , ATTACH_FILE_NO    </if>
+            <if test="out_work_clsf    != null"> , OUT_WORK_CLSF     </if>
+            <if test="out_work_clsf_etc!= null"> , OUT_WORK_CLSF_ETC </if>
+            <if test="regst_syspayno   != null"> , REGST_SYSPAYNO    </if>
+            <if test="regst_daytm      != null"> , REGST_DAYTM       </if>
+        )
+        VALUES  
+        ( 
+            #{req_no}
+            <if test="syspayno         != null"> , #{syspayno}          </if>
+            <if test="start_ymd        != null"> , #{start_ymd}         </if>
+            <if test="cls_ymd          != null"> , #{cls_ymd}           </if>
+            <if test="cause            != null"> , #{cause}             </if>
+            <if test="secure_yn        != null"> , #{secure_yn}         </if>
+            <if test="secure_daytm     != null"> , #{secure_daytm}      </if>
+            <if test="attach_file_no   != null"> , #{attach_file_no}    </if>
+            <if test="out_work_clsf    != null"> , #{out_work_clsf}     </if>
+            <if test="out_work_clsf_etc!= null"> , #{out_work_clsf_etc} </if>
+            <if test="regst_syspayno   != null"> , #{regst_syspayno}    </if>
+            <if test="regst_daytm      != null"> , CURRENT       </if>
+ 
+        )          
+    </insert>	
+	
+    <update id="updateCwsOutWork" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo">
+        UPDATE CWSOUTWORK    /* QueryID : kr.re.kitech.biz.ccs.cws.updateCwsOutWork */      
+      	  SET  
+                REQ_NO            = #{req_no}           
+        	                       
+            <if test="syspayno         != null"> , SYSPAYNO          = #{syspayno}          </if>
+            <if test="start_ymd        != null"> , START_YMD         = #{start_ymd}         </if>
+            <if test="cls_ymd          != null"> , CLS_YMD           = #{cls_ymd}           </if>
+            <if test="cause            != null"> , CAUSE             = #{cause}             </if>
+            <if test="secure_yn        != null"> , SECURE_YN         = #{secure_yn}         </if>
+            <if test="secure_daytm     != null"> , SECURE_DAYTM      = #{secure_daytm}      </if>
+            <if test="attach_file_no   != null"> , ATTACH_FILE_NO    = #{attach_file_no}    </if>
+            <if test="out_work_clsf    != null"> , OUT_WORK_CLSF     = #{out_work_clsf}     </if>
+            <if test="out_work_clsf_etc!= null"> , OUT_WORK_CLSF_ETC = #{out_work_clsf_etc} </if>
+            <if test="updt_syspayno    != null"> , UPDT_SYSPAYNO     = #{updt_syspayno}     </if>
+            <if test="updt_daytm       != null"> , UPDT_DAYTM        = CURRENT        </if>
+                 
+        WHERE   
+                REQ_NO            = #{req_no}           
+    </update>
+	
+    <delete id="deleteCwsOutWork" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo">
+        DELETE FROM CWSOUTWORK   /* QueryID : kr.re.kitech.biz.ccs.cws.deleteCwsOutWork */ 
+        WHERE   
+                REQ_NO            = #{req_no}           
+        
+    </delete>
+	
+    <select id="selectCwsOutWork" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo">	
+        SELECT     /* QueryID : kr.re.kitech.biz.ccs.cws.selectCwsOutWork */
+	        		        a.req_no,
+					a.syspayno,
+					(a.syspayno[3, 8]) AS emp_no,
+					b.nm,
+					fun_dept_nm(b.dept_cd, b.dept_new_ymd) as dept_nm,
+					fun_dept_nm(c.divsn_dept, c.divsn_dept_new_ymd) as divsn_dept_nm,
+					fun_posi_nm(b.posi_cd) as posi_nm,
+					e.cd_nm as duty_nm,
+					a.start_ymd,
+					a.cls_ymd,
+					a.out_work_clsf,
+					a.out_work_clsf_etc,
+					a.cause,
+					a.attach_file_no,
+					d.apr_state
+		FROM		
+					cwsoutwork a
+		JOIN		humbasicinfo b on a.syspayno = b.syspayno
+		LEFT JOIN	xodhdeptinfo c on b.dept_cd = c.dept_cd and b.dept_new_ymd = c.dept_new_ymd
+		LEFT JOIN	xodxcommst e on b.duty_cd = e.cd
+		JOIN        xomxintfatab d on a.req_no = d.req_no
+		WHERE
+		<if test="req_no != null and req_no != ''"> a.req_no = #{req_no}</if>
+		<if test='is_tag != null and "Y".equals(is_tag)'>
+			<if test="syspayno != null and syspayno != ''"> a.syspayno = #{syspayno}</if>
+			<if test="start_ymd != null and start_ymd != ''"> and #{start_ymd} BETWEEN a.start_ymd AND a.cls_ymd</if>
+		</if>
+		
+					
+			
+    </select>    
+    
+    <select id="selectCwsOutWorkDupCheck" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo">
+		SELECT 
+		FIRST		1
+		      x0.req_no
+		    , x0.syspayno
+		    , (x0.syspayno[3,8]) AS emp_no
+		    ,  TO_CHAR(TO_DATE(x0.start_ymd, '%Y%m%d'), '%Y-%m-%d') AS start_ymd
+		    ,  TO_CHAR(TO_DATE(x0.cls_ymd, '%Y%m%d'), '%Y-%m-%d') AS cls_ymd
+		    , x0.cause
+		    , x1.apr_state as apr_state_cd
+		    , x2.cd_nm AS apr_state
+		FROM cwsoutwork AS x0
+		JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+		JOIN xodxcommst AS x2 ON x2.cd = x1.apr_state
+		WHERE 1=1
+		AND (#{syspayno} = '' OR x0.syspayno = #{syspayno})
+		AND ((start_ymd BETWEEN #{start_ymd} AND #{cls_ymd}) OR (cls_ymd BETWEEN #{start_ymd} AND #{cls_ymd}))
+		ORDER BY x0.start_ymd desc
+    </select>
+    
+	
+    <select id="selectListCwsOutWork" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo">
+SELECT  req_no
+			       , divsn_dept_nm
+			       , dept_nm
+			       , nm
+			       , start_ymd
+			       , cls_ymd
+			       , req_day
+			       , cause
+			       , apr_state
+			       , syspayno
+			       , empno as emp_no
+			FROM (
+				    SELECT  
+		              	x0.req_no
+		              	, x1.divsn_nm as divsn_dept_nm
+			            , x1.divsn_cd as divsn_dept
+			            , x1.dept_cd
+			            , x1.dept_nm
+			            , x1.empnm AS nm
+			            , x1.empno
+			            , TO_CHAR(TO_DATE(x0.start_ymd, '%Y%m%d'), '%Y-%m-%d') AS start_ymd
+			            , TO_CHAR(TO_DATE(x0.cls_ymd, '%Y%m%d'), '%Y-%m-%d') AS cls_ymd
+			            , (SELECT COUNT(*) 
+				                FROM xomdtmst
+				                WHERE off_yn = 'N'
+				                AND ymd BETWEEN x0.start_ymd AND x0.cls_ymd) AS req_day
+			            , x0.cause
+			            , x3.apr_state as apr_state_cd
+			            , x4.cd_nm AS apr_state
+			            , x0.syspayno
+				    FROM cwsoutwork AS x0
+				    JOIN cwshuminfolog AS x1 ON x1.syspayno = x0.syspayno AND x1.basedate = TO_DATE(x0.start_ymd, '%Y%m%d')
+				    JOIN xomxintfatab AS x3 ON x3.req_no = x0.req_no
+				    JOIN xodxcommst AS x4 ON x4.cd = x3.apr_state
+			WHERE 	1=1
+					<if test="req_no         	!= null and req_no != ''"> 		AND x0.req_no          	= #{req_no}          											</if>
+					<if test="syspayno         	!= null and syspayno != ''">	AND x0.syspayno          = #{syspayno}          											</if>
+		            <if test="start_ymd        	!= null and start_ymd != ''">	AND x0.start_ymd         <![CDATA[>=]]> #{start_ymd}        	</if>
+		            <if test="cls_ymd        	!= null and cls_ymd != ''"> 	AND x0.cls_ymd         	<![CDATA[<=]]> #{cls_ymd}       	</if>
+		            <if test="dept_nm         != null and dept_nm != ''"> 	AND x1.dept_cd      = #{dept_cd}         											</if> 
+		            <if test="divsn_dept        != null and divsn_dept  != ''"> 	AND x1.divsn_cd      = #{divsn_dept}         											</if> 
+            		<if test="apr_state         != null and apr_state != ''"> 	AND x3.apr_state     = #{apr_state}         											</if>
+				)
+</select>
+	
+    <select id="selectListCountCwsOutWork" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo" resultType="long">
+            SELECT  
+					count(*) as totcnt
+			FROM (
+				    SELECT  
+		              	x0.req_no
+			            , x1.divsn_nm  AS divsn_dept_nm
+			            , x1.dept_nm
+			            , x1.empnm AS nm
+			            , TO_CHAR(TO_DATE(x0.start_ymd, '%Y%m%d'), '%Y-%m-%d') AS start_ymd
+			            , TO_CHAR(TO_DATE(x0.cls_ymd, '%Y%m%d'), '%Y-%m-%d') AS cls_ymd
+			            , (SELECT COUNT(*) 
+				                FROM xomdtmst
+				                WHERE off_yn = 'N'
+				                AND ymd BETWEEN x0.start_ymd AND x0.cls_ymd) AS req_day
+			            , x0.cause
+			            , x3.apr_state as apr_state_cd
+			            , x4.cd_nm AS apr_state
+			            , x0.syspayno
+				    FROM cwsoutwork AS x0
+				    JOIN cwshuminfolog AS x1 ON x1.syspayno = x0.syspayno AND x1.basedate = TO_DATE(x0.start_ymd, '%Y%m%d')
+				    JOIN xomxintfatab AS x3 ON x3.req_no = x0.req_no
+				    JOIN xodxcommst AS x4 ON x4.cd = x3.apr_state
+				)
+			WHERE 	1=1
+					<if test="req_no         	!= null and req_no != ''"> 		AND req_no          	= #{req_no}          											</if>
+					<if test="syspayno         	!= null and syspayno != ''">	AND syspayno          = #{syspayno}          											</if>
+		            <if test="start_ymd        	!= null and start_ymd != ''">	AND start_ymd         <![CDATA[>=]]> #{start_ymd}        	</if>
+		            <if test="cls_ymd        	!= null and cls_ymd != ''"> 	AND cls_ymd         	<![CDATA[<=]]> #{cls_ymd}         	</if>
+            		<if test="apr_state         != null and apr_state != ''"> 	AND apr_state_cd      = #{apr_state}         											</if>    		
+
+    </select>
+    
+    <select id="selectCwsOutWorkValidCheck" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsOutWorkVo">
+		SELECT req_no
+		FROM cwsoutwork 
+		WHERE syspayno = #{syspayno} 
+		AND #{start_ymd} BETWEEN start_ymd AND cls_ymd
+    </select>
+
+</mapper>

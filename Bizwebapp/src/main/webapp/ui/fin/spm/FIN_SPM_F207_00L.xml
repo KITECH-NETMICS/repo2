@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare"
+	xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="일계표">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+					<w2:keyInfo>
+						<w2:key id="accnt_ymd" name="accnt_ymd" dataType="text"></w2:key>						
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+					<w2:columnInfo>
+						<w2:column id="accnt_cd" name="slip_ymd" dataType="text"></w2:column>
+						<w2:column id="accnt_cd_abbr" name="slip_yymm" dataType="text"></w2:column>
+						<w2:column id="gubun_accnt_cd" name="slip_no" dataType="text"></w2:column>					
+						<w2:column id="dr_amt" name="dr_amt" dataType="text"></w2:column>
+						<w2:column id="cr_amt" name="cr_amt" dataType="text"></w2:column>
+						<w2:column id="accnt_ymd" name="accnt_ymd" dataType="text"></w2:column>						
+					</w2:columnInfo>
+				</w2:dataList>
+			</w2:dataCollection>
+			<w2:workflowCollection />
+			<!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' action="SvcFINSPMETCR06.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 일계표
+ 	 * 변경 이력 : 2023-09-18	이민기	최초 작성
+ 	 * 서비스아이디 : F207
+ 	 ****************************************************/  
+ 	 
+ 	 scwin.service_id = "";
+ 	 var sn = com.getLoginInfo("sn");
+ 	 
+    /*
+     * 페이지 열기
+     */          
+	scwin.onpageload = function() {
+		scwin.service_id = com.getParameter("menuObj").serviceID;
+		/*
+	     *  날짜 설정
+	     */
+		var now = new Date();
+		var defalutday = gcm.date.formatDateTime(now, "yyyyMMddHHmm"); // yyyyMMddHHmm
+		var ymd = gcm.date.formatDateTime(now); // yyyyMMdd 
+		var yearMm = ymd.substr(0, 6); // yyyyMM
+		
+		ica_ymd.setValue(ymd);		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/*
+     *  조회버튼 클릭 이벤트
+     */
+	scwin.year_validation = function(e) {
+		var accntYmd = ica_ymd.getValue();
+                
+        if(accntYmd.trim() == ""){
+            alert("결의일자를 입력해주세요.");
+        	ica_ymd.focus();
+        	return false;
+        }
+              
+        return true;
+	}
+	
+	/*
+     *  조회버튼 클릭 이벤트
+     */
+	scwin.btn_search_onclick = function(e) {
+		if(!scwin.year_validation()){return;}
+				
+		scwin.search();
+	};
+	
+	/*
+    *  조회
+    */
+	scwin.search = function() {		
+		com.execute(sbm_selectData, {
+			successCallback : function(e){
+				dlt_grd.setJSON(e.responseJSON.finBgaCctmDetlVoList);
+				tbx_result.setValue(dlt_grd.getRowCount());
+			}
+			
+		});
+	};
+	
+
+	
+	scwin.btn_excel_onclick = function(e) {
+		if(dlt_grd.getRowCount() == 0) return;
+		
+		var option = {
+			    fileName : "일계표.xlsx"
+			  , useDataFormat : true
+//			  , hiddenVisible : true
+		};
+		
+		com.downloadGridExcel(grd_list, option);
+	};
+	
+	
+	
+	scwin.btn_oz_print_onclick = function(e) {
+		if (ica_ymd.getValue().trim() == "") {
+			alert("계정원장(비용과목) 출력시에는 반드시 결의일자가 필요합니다.\n결의일자를 입력해주세요.");
+			ica_ymd.focus();
+			return;
+		}
+		
+        
+		var node = "accnt_ymd=" + ica_ymd.getValue();
+		
+		com.oz.openPopup({
+			ozrCode : "F090",      
+			param: node
+        });
+	};
+	]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+		<xf:group id="" class="pageWrap">
+			<xf:group style="" id="" class="searchSection">
+				<xf:group id="grp_search" class="schbox">
+					<xf:group tagname="table" style="" id="" class="w2tb tbl">
+						<w2:attributes>
+							<w2:summary></w2:summary>
+						</w2:attributes>
+						<xf:group tagname="caption" text="조회조건"></xf:group>
+						<xf:group tagname="colgroup">
+							<xf:group tagname="col" style="width:70px;"></xf:group>
+							<xf:group tagname="col" style="width:250px;"></xf:group>
+							<xf:group tagname="col" style="width:70px;"></xf:group>
+							<xf:group tagname="col" style="width:350px;"></xf:group>
+							<xf:group style="width:70px;" tagname="col"></xf:group>
+							<xf:group style="" tagname="col"></xf:group>
+						</xf:group>
+						<xf:group style="" tagname="tr">
+							<xf:group class="w2tb_th" style="" tagname="th">
+								<w2:attributes></w2:attributes>
+								<w2:textbox id="" label="결의일자" style="" tagname="span"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+								<w2:attributes></w2:attributes>
+								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+									footerDiv="false" id="ica_ymd" placeholder="년,월" ref="data:dma_search.accnt_ymd" renderDiv="true" rightAlign="false" style="">
+								</w2:inputCalendar>
+							</xf:group>
+							<xf:group class="w2tb_th" style="" tagname="th">
+								<w2:attributes></w2:attributes>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+								<w2:attributes></w2:attributes>
+							</xf:group>
+							<xf:group class="w2tb_th" style="" tagname="th">
+								<w2:attributes></w2:attributes>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+								<w2:attributes>
+									<w2:colspan>1</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+				<xf:group id="" class="schbtn">
+					<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+						<xf:label><![CDATA[조회]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			<xf:group class="titleSection" id="" style="margin-top:5px;">
+				<xf:group class="le" id="" style="">
+					<xf:group class="result" id="">
+						<w2:span id="" label="*조회결과 " style=""></w2:span>
+						<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+						<w2:span id="" label="건" style=""></w2:span>
+					</xf:group>
+				</xf:group>
+				<xf:group class="ri" id="" style="">
+					<xf:trigger class="btn icon down" ev:onclick="scwin.btn_excel_onclick" id="btn_excel" style="" type="button">
+						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn icon print" ev:onclick="scwin.btn_oz_print_onclick" id="btn_print" style="" type="button">
+						<xf:label><![CDATA[출력]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			<w2:gridView class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff" id="grd_list"
+				noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+				rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+				scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 100px;"
+				summaryAuto="true" sortable="true" readOnly="true" visibleRowNum="21" autoFit="allColumn">
+				<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+				<w2:header id="header1" style="">
+					<w2:row id="row1" style="">
+						<w2:column width="100" inputType="text" style="height:28px" id="column1" value="확정일자" displayMode="label"
+							hidden="true">
+						</w2:column>
+						<w2:column width="70" inputType="text" style="height:28px" id="column31" value="결의월" displayMode="label"
+							hidden="true">
+						</w2:column>
+						<w2:column width="145" inputType="text" style="height:28px" id="column2" value="회계코드" displayMode="label"></w2:column>
+						<w2:column width="336" inputType="text" style="height:28px" id="column6" value="회계코드명" displayMode="label"></w2:column>
+						<w2:column width="242" inputType="text" style="height:28px" id="column12" value="차변금액" displayMode="label"></w2:column>
+						<w2:column width="233" inputType="text" style="height:28px" id="column14" value="대변금액" displayMode="label"></w2:column>
+					</w2:row>
+				</w2:header>
+				<w2:gBody id="gBody1" style="">
+					<w2:row id="row2" style="">
+						<w2:column inputType="text" style="height:28px" id="accnt_ymd" displayMode="label" textAlign="center" width="100"
+							dataType="date" displayFormat="yyyy-MM-dd">
+						</w2:column>
+						<w2:column width="70" inputType="text" style="height:28px" id="slip_yymm" value="" displayMode="label"
+							dataType="date" displayFormat="yyyy-MM">
+						</w2:column>
+						<w2:column width="145" inputType="text" style="height:28px" id="accnt_cd" value="" displayMode="label"></w2:column>
+						<w2:column width="336" inputType="text" style="height:28px" id="accnt_cd_abbr" value="" displayMode="label"
+							textAlign="left">
+						</w2:column>
+						<w2:column width="242" inputType="text" style="height:28px" id="dr_amt" value="" displayMode="label"
+							dataType="number" displayFormat="#,###" textAlign="right" excelCellType="number">
+						</w2:column>
+						<w2:column width="233" inputType="text" style="height:28px" id="cr_amt" value="" displayMode="label"
+							dataType="number" displayFormat="#,###" textAlign="right" excelCellType="number">
+						</w2:column>
+					</w2:row>
+				</w2:gBody>
+				<w2:footer style="" id="footer1">
+					<w2:row style="" id="row3">
+						<w2:column width="100" inputType="text" style="height:20px" id="column37" value="" displayMode="label"></w2:column>
+						<w2:column width="70" inputType="text" style="height:20px" id="column36" value="" displayMode="label"></w2:column>
+						<w2:column width="145" inputType="text" style="height:20px" id="column35" value="합 계" displayMode="label"></w2:column>
+						<w2:column width="336" inputType="text" style="height:20px" id="column34" value="" displayMode="label"></w2:column>
+						<w2:column width="242" inputType="expression" style="height:20px" id="column33" value="" displayMode="label" dataType="number" displayFormat="#,###" textAlign="right" expression="SUM('dr_amt')"></w2:column>
+						<w2:column width="233" inputType="expression" style="height:20px" id="column32" value="" displayMode="label" dataType="number" displayFormat="#,###" textAlign="right" expression="SUM('cr_amt')"></w2:column>
+					</w2:row>
+				</w2:footer>
+			</w2:gridView>
+		</xf:group>
+	</body>
+</html>

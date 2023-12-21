@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="지재권 데이터 수정" meta_author="이대훈" meta_date="2023.09.11.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+				
+			<w2:dataMap baseNode="map" id="dma_param">
+			  <w2:keyInfo>
+			       <w2:key id="screen_id" name="스크린 구분" dataType="text"></w2:key>
+			       <w2:key id="srh_id" name="srh_id" dataType="text"></w2:key>
+			       <w2:key id="attach_file_no_a" name="보고내용" dataType="text"></w2:key>
+			       <w2:key id="attach_file_no_b" name="선행기술조사 보고서" dataType="text"></w2:key>
+			       <w2:key id="attach_file_no_c" name="발표자료" dataType="text"></w2:key>
+			       <w2:key id="attach_file_no_d" name="기타" dataType="text"></w2:key>
+			 </w2:keyInfo>
+			</w2:dataMap>
+			
+			<w2:dataMap baseNode="map" id="dma_save">
+			  <w2:keyInfo>
+			       <w2:key id="srh_id" name="srh_id" dataType="text"></w2:key>
+			       <w2:key id="rpt_srh_attach_file" name="선행기술조사 보고서" dataType="text"></w2:key>
+			       <w2:key id="rpt_announce_attach_file" name="발표자료" dataType="text"></w2:key>
+			 </w2:keyInfo>
+			</w2:dataMap>
+			
+			<w2:dataList baseNode="list" repeatNode="map" id="dlt_radio_list" saveRemovedData="true">
+				<w2:columnInfo>
+					<w2:column id="label" name="label" dataType="text"></w2:column>
+					<w2:column id="value" name="value" dataType="text"></w2:column>
+				</w2:columnInfo>
+			</w2:dataList>
+			
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+
+			<!-- 지식재산권 첨부파일 수정 -->
+			<xf:submission id="sbm_svcpatptrrevsu01" 
+						   ref='data:json,dma_save' 
+						   target='' 
+						   action="SvcPATPTRREVSU01.pwkjson" 
+						   ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>			
+
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 지재권 데이터 수정 팝업
+ 	 * 변경 이력 : 2023-09-11	이대훈	최초 작성
+ 	 ****************************************************/
+ 	  	  
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */ 
+	scwin.data = {
+		typeCode: ""
+	};
+	scwin.onpageload = function() {
+	
+		// 첨부파일 컴포넌트 초기화
+		com.file.init();
+	
+		dma_param.setJSON(com.getParameter());
+				
+		let scrnId = dma_param.get("screen_id");
+		let radioData = [];
+		dlt_radio_list.removeAll();
+		
+		if(/I11/.test(scrnId)){
+			popSubject.setValue("선행기술조사서 필수첨부파일 수정");
+			scwin.data.typeCode = "IA14";
+						
+			radioData.push({ label: "선행기술조사보고서", value : "attach_file_no_b"});
+			radioData.push({ label: "발표자료", value : "attach_file_no_c"});
+		}else if(/I18/.test(scrnId)){
+			popSubject.setValue("OA접수 첨부파일 수정");
+			scwin.data.typeCode = "IA33";
+			radioData.push({ label: "보고내용", value : "attach_file_no_a"});
+			radioData.push({ label: "의견안내용_필수첨부", value : "attach_file_no_b"});
+			radioData.push({ label: "의견안내용_기타첨부", value : "attach_file_no_c"});
+			radioData.push({ label: "대응결과내용", value : "attach_file_no_d"});				
+		}
+		
+		dlt_radio_list.setJSON(radioData);
+		radioAttachClsf.setSelectedIndex(0);
+	};
+	
+	scwin.save_onclick = function() {
+	
+		const uploadA = com.file.action.getTotalFileCount(upload_A.getID());
+		const uploadB = com.file.action.getTotalFileCount(upload_B.getID());
+		
+		if(uploadA > uploadB){
+			com.alert("교체파일의 개수는 기존파일의 수보다 작을 수 없습니다.");
+			return;
+		}
+		
+		com.confirm("저장 하시겠습니까?", function(ret) {
+             if (ret) {
+             	com.file.transport(scwin.save);
+             }
+        });
+	};
+	
+	scwin.save = function(attachObj) {
+	
+		const fileType = radioAttachClsf.getValue();
+		if(fileType === 'attach_file_no_b'){
+			dma_save.set("rpt_srh_attach_file", attachObj.upload_B);
+		}else{
+			dma_save.set("rpt_announce_attach_file", attachObj.upload_B);
+		}		
+		dma_save.set("srh_id");
+		
+		com.execute(sbm_svcpatptrrevsu01, {
+			successCallback : function(e) {
+				com.alert("저장되었습니다.");
+				com.closePopup();
+			}
+		});
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+		
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	scwin.radio_onchange = function(info) {
+		const INB = info.newValue;
+		let attachFileNo = "";
+		
+		if(INB){
+			attachFileNo = dma_param.get(INB)?.trim();
+						
+			if(attachFileNo){
+				com.file.init();			
+				com.file.create(upload_A.getID(), {fileKey: attachFileNo ? attachFileNo : scwin.data.typeCode, mode: "view" , target:"IPMS"});
+				com.file.create(upload_B.getID(), {fileKey: scwin.data.typeCode, mode: "edit" , target:"IPMS"});
+			}
+		}
+	};
+	
+		
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    	
+    		<xf:group class="titleSection" style="margin-top: 0;">
+    			<xf:group class="le">
+    				<w2:textbox id="popSubject" class="tit_tbl" label="지재권데이터 수정" tagname="h2"></w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    	
+			<xf:group class="w2tb tbl" tagname="table">
+			    <w2:attributes>
+			        <w2:summary></w2:summary>
+			    </w2:attributes>
+			    <xf:group tagname="caption"></xf:group>
+			    <xf:group tagname="colgroup">
+			        <xf:group style="width:200px;" tagname="col"></xf:group>
+			        <xf:group style="" tagname="col"></xf:group>
+			    </xf:group>
+			    <xf:group tagname="tr">
+			        <xf:group class="w2tb_th" tagname="th">
+			            <w2:attributes>
+			                <w2:scope>row</w2:scope>
+			            </w2:attributes>
+			            <w2:textbox class="" id="" label="첨부파일 종류" style="" tagname="span"></w2:textbox>
+			        </xf:group>
+			        <xf:group class="w2tb_td" tagname="td">
+			            <w2:attributes>
+			                <w2:colspan>1</w2:colspan>
+			                <w2:rowspan>1</w2:rowspan>
+			            </w2:attributes>
+			            <xf:select1 appearance="full" class="radioGroup" renderType="radiogroup" selectedIndex="-1" id="radioAttachClsf"
+			            	cols="" rows="" ref="" ev:onchange="scwin.radio_onchange">
+			            	<xf:choices>
+				            	<xf:itemset nodeset="data:dlt_radio_list">
+									<xf:label ref="label"></xf:label>
+									<xf:value ref="value"></xf:value>
+								</xf:itemset>
+			            	</xf:choices>
+			            </xf:select1>
+			        </xf:group>        
+			    </xf:group>
+			</xf:group>
+    	
+    		<xf:group class="titleSection" style="margin-top: 0;">
+    			<xf:group class="le" id="">
+    				<w2:textbox class="tit_tbl" id="" label="기존 첨부파일" style="" tagname="h3"></w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    		
+    		<xf:group class="fileuploadBox" id="upload_A" style="height:150px;"></xf:group>
+    		
+    		<xf:group class="titleSection" style="margin-top: 0;">
+    			<xf:group class="le" id="">
+    				<w2:textbox class="tit_tbl" id="" label="교체 첨부파일" style="" tagname="h3"></w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    		
+    		<xf:group class="fileuploadBox" id="upload_B" style="height:150px;"></xf:group>
+    		
+    		<xf:group class="helparea" id="" style="">
+    			<xf:group id="" style="" tagname="ol">
+    				<xf:group id="" tagname="li">
+    					<w2:textbox class="red" id="" label="첨부파일 교체 시 기존 첨부파일과 교체 첨부파일의 개수가 일치해야 합니다." style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group id="" style="" tagname="li">
+    					<w2:textbox class="red" id="" label="특정 파일 교체 시 원본 첨부파일 모두 다운로드 후 다시 첨부 해주시기 바랍니다."
+    						style="" tagname="span">
+    					</w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_save" type="button" class="btn pro conf" ev:onclick="scwin.save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

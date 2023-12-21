@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="대출&amp;연장신청">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_bookSearch">
+        			<w2:keyInfo>
+        				<w2:key id="loan_psn_syspayno" name="loan_psn_syspayno" dataType="text"></w2:key>
+        				<w2:key id="loan_ymd" name="loan_ymd" dataType="text"></w2:key>
+        				<w2:key id="resv_psn_syspayno" name="resv_psn_syspayno" dataType="text"></w2:key>
+        				<w2:key id="resv_ymd" name="resv_ymd" dataType="text"></w2:key>
+        				<w2:key id="flag" name="flag" dataType="text"></w2:key>
+        				<w2:key id="loan_no" name="loan_no" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_bookList" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="loan_no" name="loan_no" dataType="text"></w2:column>
+        				<w2:column id="loan_book_no" name="loan_book_no" dataType="text"></w2:column>
+        				<w2:column id="book_nm" name="book_nm" dataType="text"></w2:column>
+        				<w2:column id="loan_ymd" name="loan_ymd" dataType="text"></w2:column>
+        				<w2:column id="retrn_schdl_ymd" name="retrn_schdl_ymd" dataType="text"></w2:column>
+        				<w2:column id="retrn_ymd" name="retrn_ymd" dataType="text"></w2:column>
+        				<w2:column id="resv" name="resv" dataType="text"></w2:column>
+        				<w2:column id="cnt" name="cnt" dataType="text"></w2:column>
+        				<w2:column id="centr_cd" name="centr_cd" dataType="text"></w2:column>
+        				<w2:column id="chk" name="chk" dataType="text"></w2:column>
+        				<w2:column id="btnCancle" name="btnCancle" dataType="text"></w2:column>
+        				<w2:column id="btnReserv" name="btnReserv" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_bookLoanSel" ref="data:json,dma_bookSearch" target='data:json,{"id":"dlt_bookList","key":"libLoanVoList"}' action="SvcKBKLIBLONR01.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_updateInfo" ref="data:json,dma_bookSearch" target="" action="SvcKBKPOPLONU01.pwkjson" method="post" mediatype="application/json" encoding="UTF-8"
+        		instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+        		ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script src="/cm/js/biz/kbk.js" cache="false" />
+        <script type="text/javascript" lazy="false"><![CDATA[
+    
+	var sysPayNo = com.getLoginInfo("sn");
+	
+	/**
+	 * 페이지 로딩 이벤트
+	 */  
+	scwin.onpageload = function() {
+		
+		radio1.setValue("1");
+		
+	};
+	
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	/**
+	 * 라디오버튼 onchange 이벤트
+	 */ 
+	scwin.radio1_onchange = function(info) {
+		if(radio1.getValue() == "1")
+			triggerBtnReservation.show();
+		else
+			triggerBtnReservation.hide();
+	};
+	
+	
+	/**
+	 * 조회 버튼 클릭 이벤트
+	 */ 
+	scwin.triggerSearch_onclick = function(e) {
+		scwin.search();
+	};
+	
+	
+	/**
+	 * 대출정보조회
+	 */ 
+	scwin.search = function(e) {
+		var flag = "";
+		if (radio1.getValue() == "1") { //대출도서
+			flag = "loan";
+		} else if (radio1.getValue() == "2") { //예약도서
+			flag = "reserv";
+		} else if (radio1.getValue() == "3") { //반납도서
+			flag = "retrngrid";
+		}
+		
+		dma_bookSearch.set("loan_psn_syspayno", sysPayNo);
+		dma_bookSearch.set("resv_psn_syspayno", sysPayNo);
+		dma_bookSearch.set("flag", flag);
+	
+		com.execute(sbm_bookLoanSel, {
+			isImplExcel: true,
+			successCallback : function(e) {
+				
+				var flagChk = dma_bookSearch.get("flag");
+				var listCount = dlt_bookList.getTotalRow();
+				
+				//1,3 => 예약취소x, 대출중일 때 연장신청 가능
+				//2 => 예약취소o, 연장신청x
+				for(var i=0; i < listCount; i++)
+				{
+					if (flagChk == "loan" ||  flagChk == "retrngrid"){
+						dlt_bookList.setCellData(i, "btnCancle", ""); //예약취소x
+						gridBookLoan.setCellDisabled(i, "btnCancle", true);
+						gridBookLoan.setCell
+						
+						var tmpYmd = dlt_bookList.getCellData(i, "retrn_ymd").trim(); //반납일
+						var tmpResv = dlt_bookList.getCellData(i, "resv").trim(); //예약여부
+						if (tmpYmd == "" && tmpResv == ""){ //대출중일때
+							dlt_bookList.setCellData(i, "btnReserv", "연장신청");
+						}else{
+							dlt_bookList.setCellData(i, "btnReserv", "");
+							gridBookLoan.setCellDisabled(i, "btnReserv", true);
+							gridBookLoan.setCellDisabled(i, "chk", true);
+						}
+					}else{
+						dlt_bookList.setCellData(i, "btnCancle", "취소");
+						dlt_bookList.setCellData(i, "btnReserv", "");
+						gridBookLoan.setCellDisabled(i, "btnReserv", true);
+					}
+					
+				}
+			},
+			excelCallback : function(e) {
+				// DB 다운로드
+				var option = {
+					fileName : "대출&연장조회.xlsx"
+					, providerInfo : {
+						  service : "libService"
+						, method : "selectLoanList"
+						, vo : "kbk.lib.vo.LibLoanVo"
+						, paramMap : dma_bookSearch
+					}
+				};
+				com.downloadGridExcel(gridBookLoan, option);
+			}
+						
+		});
+	};
+	
+
+	/**
+	 * 예약 취소
+	 */ 
+	scwin.reservationCancel = function(row) {
+		
+		com.confirm("예약을 취소 하시겠습니까?", function(ret) {
+			if (ret) {
+				
+				var rowIndex = row;
+				
+				loanNo = dlt_bookList.getCellData(row, "loan_no");
+				entrCd = dlt_bookList.getCellData(row, "centr_cd");
+				
+				dma_bookSearch.set("loan_no", loanNo);
+				dma_bookSearch.set("resv_ymd", "");
+				dma_bookSearch.set("resv_psn_syspayno", "");
+				
+				com.execute(sbm_updateInfo, {
+					successCallback : function(e) {
+						scwin.search();
+					}
+				});
+			}else{
+				gridBookLoan.checkAll("chk", false);
+			}
+		});
+		
+	};
+	
+	
+	/**
+	 * 연장신청 버튼 클릭 이벤트
+	 */ 
+	scwin.triggerBtnReservation_onclick = function(e) {
+		if (gridBookLoan.getCheckedData("chk").length == 0)
+			com.alert("연장 신청할 데이터를 선택하세요.");
+		else
+			scwin.reservation();
+	};
+	
+		
+	/**
+	 * 예약연장신청
+	 */ 
+	scwin.reservation = function() {
+		
+		com.confirm("도서 연장 신청을 진행 하시겠습니까?", function(ret) {
+			
+			if (ret) {
+				var ret = dlt_bookList.getAllJSON().filter(function(elt, idx) {
+					if(elt.chk === "Y")
+						return true;
+					else
+						return false;
+				});
+				
+				com.executeDynamic({ id : "sbm_mail", action : "SvcKBKLIBBMSP01.pwkjson" }, {
+					requestData: ret
+				,   successCallback: function(e) {
+						com.alert("연장신청 되었습니다. 당담자가 도서 확인 후 연장해 드립니다.");
+						scwin.search();
+					}
+				});
+			}
+		});
+		
+	};
+	
+	
+	/**
+	 * 그리드 클릭 이벤트
+	 */ 
+	scwin.gridBookLoan_oncellclick = function(row,col,colId) {
+		if (colId == "btnReserv") { //연장신청
+			gridBookLoan.setCellChecked(row, gridBookLoan.getColumnIndex("chk"), true);
+			scwin.reservation();
+		}
+		if (colId == "btnCancle") { //예약취소
+			gridBookLoan.setCellChecked(row, gridBookLoan.getColumnIndex("chk"), true);
+			scwin.reservationCancel(row);
+		}
+	};
+	
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="grd_searchbox" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="검색조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style=""></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 appearance="full" class="radioGroup" cols="" id="radio1" ref="" renderType="radiogroup" rows="1"
+    								selectedIndex="-1" style="" ev:onchange="scwin.radio1_onchange">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[대출도서]]></xf:label>
+    										<xf:value><![CDATA[1]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[예약도서]]></xf:label>
+    										<xf:value><![CDATA[2]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[반납도서]]></xf:label>
+    										<xf:value><![CDATA[3]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="triggerSearch" type="button" class="btn search" ev:onclick="scwin.triggerSearch_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="">
+    			</xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:trigger class="btn" id="triggerBtnReservation" style="" type="button" ev:onclick="scwin.triggerBtnReservation_onclick">
+    					<xf:label><![CDATA[연장신청]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_bookList" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="gridBookLoan"
+    			visibleRowNum="20" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.gridBookLoan_oncellclick">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="45" inputType="text" style="height:28px;" id="column9" value="선택" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column7" value="도서등록번호" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:28px;" id="column5" value="도서명" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column3" value="대출일" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column16" value="반납예정일" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column14" value="반납일" displayMode="label"></w2:column>
+    					<w2:column width="140" inputType="text" style="height:28px;" id="column12" value="예약여부" displayMode="label"
+    						colSpan="2">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column10" value="연장신청" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column18" value="대출번호" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column20" value="센터코드" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="45" inputType="checkbox" style="height:28px;" id="chk" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="loan_book_no"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="300" inputType="text" readOnly="true" style="height:28px;" id="book_nm" escape="false"
+    						displayMode="label" class="le">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="loan_ymd" displayMode="label"
+    						escape="false" displayFormat="####-##-##">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="retrn_schdl_ymd" displayMode="label" readOnly="true"
+    						displayFormat="####-##-##">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="retrn_ymd" displayMode="label" readOnly="true"
+    						displayFormat="####-##-##">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="resv" displayMode="label" readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="link" style="height:28px" id="btnCancle" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="link" style="height:28px" id="btnReserv" displayMode="label" readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="loan_no" displayMode="label" hidden="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="centr_cd" displayMode="label" hidden="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

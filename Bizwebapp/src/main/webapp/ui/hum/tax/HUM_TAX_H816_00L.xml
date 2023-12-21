@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="원천징수부">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="belng_yr" name="belng_yr" dataType="text"></w2:key>
+       					<w2:key id="belng_yrmon" name="belng_yrmon" dataType="text"></w2:key>
+       					<w2:key id="syspayno" name="syspayno" dataType="text"></w2:key>        			
+            		</w2:keyInfo>
+            	</w2:dataMap>     
+            	<w2:dataMap baseNode="map" id="dma_log">
+            		<w2:keyInfo>
+            			<w2:key id="prt_knd" name="prt_knd" dataType="text"></w2:key>
+				        <w2:key id="req_syspayno" name="req_syspayno" dataType="text"></w2:key>
+				        <w2:key id="req_ymd" name="req_ymd" dataType="text"></w2:key>
+				        <w2:key id="use_rsn" name="use_rsn" dataType="text"></w2:key>
+				        <w2:key id="use_loc" name="use_loc" dataType="text"></w2:key>
+				        <w2:key id="prt_contnt" name="prt_contnt" dataType="text"></w2:key>
+				        <w2:key id="regst_syspayno" name="regst_syspayno" dataType="text"></w2:key>       			
+            		</w2:keyInfo>
+            	</w2:dataMap>        	
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="belng_yrmon" name="지급월" dataType="text"></w2:column>
+				        <w2:column id="pay_sum" name="급여계" dataType="text"></w2:column>
+				        <w2:column id="fretax_amt_meal" name="비과세식대" dataType="text"></w2:column>
+				        <w2:column id="fretax_amt_research" name="비과세연구활동비" dataType="text"></w2:column>
+				        <w2:column id="incomtax" name="소득세" dataType="text"></w2:column>
+				        <w2:column id="residtax" name="주민세" dataType="text"></w2:column>
+				        <w2:column id="tax_sum" name="세액계" dataType="text"></w2:column>
+            		</w2:columnInfo>            		
+            	</w2:dataList>            	
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+            <xf:submission id="sbm_selectList" ref='data:json,dma_search' target='' action="SvcHUMTAXPAYR01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+    		</xf:submission>    
+    		<xf:submission id="sbm_insertData" ref='data:json,dma_log'
+    			target='' action="SvcHUMPRTLOGMI01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+    			processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+    		</xf:submission> 	   
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		
+		var today = com.getServerDateTime();
+		var yr = today.substring(0, 4)-1;
+		inp_yr.setValue(yr);
+		
+		var session = com.getLoginInfo();
+		var syspayno = session.sn;
+		ibx_empno.setValue(session.empno);
+		ibx_nm.setValue(session.cn);
+		dma_search.set("syspayno", syspayno);
+		dma_log.set("req_syspayno",syspayno);
+		dma_log.set("regst_syspayno",syspayno);
+		
+		//화면 권한 체크
+		com.biz.checkRole({serviceId : "H816", roleCodes : session.roleCode}, function(e){
+			if(e.isRoleYn){
+				ibx_empno.setDisabled(false);
+				btn_meetEmp.setDisabled(false);
+			}else{
+				ibx_empno.setDisabled(true);
+				btn_meetEmp.setDisabled(true);
+			}
+		});		
+		
+		com.setEnterKeyEvent(grp_meet_psn, scwin.btn_meetEmp_onclick);//참여자조회
+
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+
+		
+	/**
+	*	엑셀다운로드
+	**/
+	scwin.btn_down_excel_onclick = function() {
+		var now = com.getServerDateTime("yyyyMMdd");
+		var name = '원천징수부' + now + '.xlsx';
+		
+		var option = {
+			    fileName : name
+		};
+		com.downloadGridExcel(grd_list, option);
+	};
+	
+	/*
+	* 목록 조회
+	*/
+	scwin.search = function() {		
+		if (inp_yr.getValue().length != 4) {
+			alert("정산연도를 바르게 입력하여 주시기 바랍니다.");
+			return;	
+		}		
+		
+		if (inp_yr.getValue() < 2011) {
+			alert("2012년 징수부부터 출력 가능합니다.");
+			return;	
+		}
+		
+		if (ibx_empno.getValue().length == "") {
+			alert("개인번호는 필수 입력사항 입니다.");
+			return;	
+		}
+		
+		
+		com.execute(sbm_selectList, {
+			successCallback : function(e) {
+				dlt_list.setJSON(e.responseJSON.humTaxPayVoList);				
+				tbx_result.setValue(dlt_list.getTotalRow());
+			},
+			
+			isImplExcel: true,
+			excelCallback : function(e) {
+				// DB 다운로드
+				var option = {
+					fileName : "원천징수부.xlsx"
+					, providerInfo : {
+						  service : "humPayTaxService"
+						, method : "selectTaxPayInfoList"
+						, vo : "hum.tax.vo.HumTaxPayVo"
+						, paramMap : dma_search
+					}
+				};
+				com.downloadGridExcel(grd_list, option);
+			}
+		});
+	};
+		
+	
+	/*
+	* 개인번호 조회조건 초기화
+	*/
+	scwin.ibx_empno_onchange = function(info) {
+		if(info.newValue == "") {
+			ibx_nm.setValue("");
+			dma_search.set("syspayno", "");
+		}
+	};
+	
+	/*
+	* 개인번호 조회
+	*/
+	scwin.btn_meetEmp_onclick = function(e) {
+		var data = { empno : ibx_empno.getValue()
+					, work_clsf : "HAG010"
+					, ref_yn : (ibx_empno.getValue() == "")?"Y" : "N"
+					};
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			ibx_empno.setValue(ret.empno);
+			ibx_nm.setValue(ret.nm);
+			dma_search.set("syspayno", ret.syspayno);
+		});
+	};
+	
+	/*
+	* 원천징수부 인쇄
+	*/
+	scwin.btn_print_onclick = function(e) {	
+		
+		if (inp_yr.getValue().length != 4) {
+			alert("정산연도를 바르게 입력하여 주시기 바랍니다.");
+			return;	
+		}		
+		
+		if (inp_yr.getValue() < 2011) {
+			alert("2012년 징수부부터 출력 가능합니다.");
+			return;	
+		}
+		
+		if (ibx_empno.getValue().length == "") {
+			alert("개인번호는 필수 입력사항 입니다.");
+			return;	
+		}
+		
+		if (ica_inputCalendar1.getValue() == "") {
+			alert("신청일자를 입력해주세요.");
+			return;	
+		}
+		
+		if (inp_resn.getValue() == "") {
+			alert("사용목적을 입력해주세요.");
+			return;	
+		}
+		
+		if (inp_agency.getValue() == "") {
+			alert("제출처를 입력해주세요.");
+			return;	
+		}
+		
+		dma_log.set("prt_knd", "소득자별근로소득원천징수부");		
+		dma_log.set("prt_contnt", inp_yr.getValue()+"년도 소득자별근로소득원천징수부");
+		//증명서 출력 로그 입력이후 출력
+		com.execute(sbm_insertData, {
+			successCallback : function(e) {				
+				var node =  "syspayno=" + dma_search.get("syspayno") + "&yrmon=" + inp_yr.getValue();
+				//"hum/ana/HumAnaEarmCltSel01.ozr", "HumAnaEarmCltSel02"
+				com.oz.openPopup({
+					ozrCode : "H110",      
+					param: node
+		        })
+			}			
+		});			
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:184px;"></xf:group>
+    						<xf:group tagname="col" style="width:129px;"></xf:group>
+    						<xf:group tagname="col" style="width:213px;"></xf:group>
+    						<xf:group tagname="col" style="width:113px;"></xf:group>
+    						<xf:group tagname="col" style="width:182px;"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr" style="">
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="inp_date_nm" label="정산년도" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_yr" ref="data:dma_search.belng_yr" style="" dataType="number" maxlength="4"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="개인번호(성명)" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>2</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:group class="inpSch" id="grp_meet_psn" style="width: 100px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="ibx_empno" style="" title="참여자명" ref="" ev:onchange="scwin.ibx_empno_onchange"></xf:input>
+    								<xf:trigger class="btn" ev:onclick="scwin.btn_meetEmp_onclick" id="btn_meetEmp" style="" title="참여자 조회"
+    									type="button">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_nm" style="width: 100px;" title="참여자 상세" ref="" disabled="true"></xf:input>
+    						</xf:group><xf:group tagname="td" class="w2tb_td"><w2:attributes></w2:attributes></xf:group><xf:group tagname="td" class="w2tb_td"><w2:attributes></w2:attributes></xf:group><xf:group class="w2tb_td" tagname="td" style="">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr" style="">
+    						<xf:group tagname="th" style="" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="신청일자"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" style="" class="w2tb_td">
+    							<xf:group style="" id="" class="inpcalWrap"></xf:group>
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="ica_inputCalendar1" renderDiv="true" rightAlign="false" style="" title="신청일 시작일" cancelButtonShow="true" ref="data:dma_log.req_ymd">
+    							</w2:inputCalendar>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="증명서의 사용목적"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>    							
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_resn" style="" ref="data:dma_log.use_rsn"></xf:input>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="제출처"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes>
+    								<w2:colspan>3</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="inp_agency" style="" ref="data:dma_log.use_loc">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group style="" id="" class="sch_more">
+    					<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    						<w2:attributes>
+    							<w2:summary></w2:summary>
+    						</w2:attributes>
+    						<xf:group tagname="caption"></xf:group>
+    						<xf:group tagname="colgroup">
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col" style="width:300px;"></xf:group>
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col" style="width:290px;"></xf:group>
+    							<xf:group tagname="col" style="width:60px;"></xf:group>
+    							<xf:group tagname="col"></xf:group>
+    						</xf:group>
+    						<xf:group tagname="tr" style="">
+    							<xf:group tagname="th" style="" class="w2tb_th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="담당자"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" style="" class="w2tb_td">
+    								<xf:group style="width: 120px;" id="" class="inpSch">
+    									<xf:input adjustMaxLength="false" style="" id="" class="inp"></xf:input>
+    									<xf:trigger style="" id="" type="button" class="btn">
+    										<xf:label><![CDATA[검색]]></xf:label>
+    									</xf:trigger>
+    								</xf:group>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    							<xf:group tagname="th" style="" class="w2tb_th">
+    								<w2:attributes>
+    									<w2:scope>row</w2:scope>
+    								</w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="담당자"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" style="" class="w2tb_td">
+    								<xf:group style="width: 120px;" id="" class="inpSch">
+    									<xf:input adjustMaxLength="false" style="" id="" class="inp"></xf:input>
+    									<xf:trigger style="" id="" type="button" class="btn">
+    										<xf:label><![CDATA[검색]]></xf:label>
+    									</xf:trigger>
+    								</xf:group>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    							<xf:group tagname="th" class="w2tb_th">
+    								<w2:attributes></w2:attributes>
+    								<w2:textbox tagname="span" style="" id="" label="신청번호"></w2:textbox>
+    							</xf:group>
+    							<xf:group tagname="td" class="w2tb_td">
+    								<w2:attributes></w2:attributes>
+    								<xf:input adjustMaxLength="false" style="width: 150px;" id="" class="inp"></xf:input>
+    							</xf:group>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger class="btn search" id="btn_print" style="" type="button" ev:onclick="scwin.btn_print_onclick">
+    					<xf:label><![CDATA[원천징수부]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<xf:group id="" class="le">
+    				<xf:group class="result" id="" style="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:group style="" id="" class="btnarea">
+    					<xf:trigger class="btn icon down" ev:onclick="scwin.btn_down_excel_onclick" id="btn_down_excel" style=""
+    						type="button">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="40"
+    			dataList="data:dlt_list" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_list" visibleRowNum="20"
+    			class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_cert_oncellclick" tooltipDisplay="true"
+    			sortable="true" sortEvent="onclick" filterFocusMode="outfocus">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="166" inputType="text" style="height:28px;" id="column7" value="지급월" displayMode="label"></w2:column>
+    					<w2:column width="146" inputType="text" style="height:28px;" id="column5" value="급여계" displayMode="label"></w2:column>
+    					<w2:column width="155" inputType="text" style="height:28px;" id="column3" value="비과세식대" displayMode="label"></w2:column>
+    					<w2:column width="156" inputType="text" style="height:28px;" id="column20" value="비과세연구활동비" displayMode="label"></w2:column>
+    					<w2:column width="142" inputType="text" style="height:28px;" id="column29" value="소득세" displayMode="label"></w2:column>
+    					<w2:column width="149" inputType="text" style="height:28px;" id="column27" value="주민세" displayMode="label"></w2:column>
+    					<w2:column width="177" inputType="text" style="height:28px;" id="column25" value="세액계" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="166" inputType="text" readOnly="true" style="height:28px;" id="belng_yrmon" class="" displayMode="label" textAlign="center">
+    					</w2:column>
+    					<w2:column width="146" inputType="text" readOnly="true" style="height:28px;" id="pay_sum" class="" escape="false"
+    						displayFormat="#,###" dataType="number" displayMode="label" textAlign="right">
+    					</w2:column>
+    					<w2:column width="155" inputType="text" readOnly="true" style="height:28px;" id="fretax_amt_meal" displayMode="label"
+    						escape="false" textAlign="right" dataType="number" displayFormat="#,###">
+    					</w2:column>
+    					<w2:column width="156" inputType="text" readOnly="true" style="height:28px;" id="fretax_amt_research" displayMode="label"
+    						textAlign="right" dataType="number" displayFormat="#,###">
+    					</w2:column>
+    					<w2:column width="142" inputType="text" style="height:28px;" id="incomtax" displayMode="label" readOnly="true"
+    						class="" dataType="number" displayFormat="#,###" textAlign="right">
+    					</w2:column>
+    					<w2:column width="149" inputType="text" style="height:28px;" id="residtax" displayMode="label" readOnly="true"
+    						class="" dataType="number" displayFormat="#,###" textAlign="right">
+    					</w2:column>
+    					<w2:column width="177" inputType="text" style="height:28px;" id="tax_sum" displayMode="label" readOnly="true" displayFormat="#,###" dataType="number" textAlign="right"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    			<w2:footer style="" id="footer1">
+    				<w2:row style="" id="row3">
+    					<w2:column width="166" inputType="text" style="height:20px" id="column36" value="합계" displayMode="label"></w2:column>
+    					<w2:column width="146" inputType="expression" style="height:20px" id="column35" value="" displayMode="label" expression="sum('pay_sum')" dataType="number" displayFormat="#,###" textAlign="right"></w2:column>
+    					<w2:column width="155" inputType="expression" style="height:20px" id="column34" value="" displayMode="label" dataType="number" expression="SUM('fretax_amt_meal')" displayFormat="#,###" textAlign="right"></w2:column>
+    					<w2:column width="156" inputType="expression" style="height:20px" id="column33" value="" displayMode="label" dataType="number" expression="SUM('fretax_amt_research')" displayFormat="#,###" textAlign="right"></w2:column>
+    					<w2:column width="142" inputType="expression" style="height:20px" id="column32" value="" displayMode="label" expression="SUM('incomtax')" displayFormat="#,###" textAlign="right"></w2:column>
+    					<w2:column width="149" inputType="expression" style="height:20px" id="column31" value="" displayMode="label" dataType="number" expression="SUM('residtax')" displayFormat="#,###" textAlign="right"></w2:column>
+    					<w2:column width="177" inputType="expression" style="height:20px" id="column30" value="" displayMode="label" dataType="number" expression="SUM('tax_sum')" displayFormat="#,###" textAlign="right"></w2:column>
+    				</w2:row>
+    			</w2:footer>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

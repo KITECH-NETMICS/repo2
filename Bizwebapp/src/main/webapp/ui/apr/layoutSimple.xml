@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programId="A001F" meta_programName="스냅샷프레임" meta_programDesc="스냅샷 공통 페이지" meta_author="James" meta_date="2022-06-14">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+			</w2:dataCollection>
+			<w2:workflowCollection>
+			</w2:workflowCollection>
+		</xf:model>
+		<script src="/cm/js/biz/apr.js" cache="false" />
+		<script type="text/javascript" lazy="false"><![CDATA[
+			scwin.onpageload = function() {
+				wfForm.getWindow().dma_snap.set("reqNo", com.getParameter("reqNo"));
+				wfForm.getWindow().dma_snap.set("endpoint", com.getParameter("endpoint"));
+
+				// 3가지 정보로 바로 조회
+				wfForm.getWindow().dma_snap.set("rootInstId", com.getParameter("rootInstId"));
+				wfForm.getWindow().dma_snap.set("instId", com.getParameter("instId"));
+				wfForm.getWindow().dma_snap.set("taskId", com.getParameter("taskId"));
+				wfForm.getWindow().dma_snap.set("trctag", com.getParameter("trctag"));
+				wfForm.getWindow().dma_snap.set("asistype", com.getParameter("asistype"));
+				wfForm.getWindow().dma_snap.set("instAlias", com.getParameter("instAlias"));
+
+				if ("1" == com.getParameter("asistype")) {	// 마이그레이션데이터는 양식명 넣기
+					wfForm.getWindow().dma_snap.set("defName", com.getParameter("defName"));
+				}
+				
+				var viewMode = com.getParameter("viewMode");
+				if ("read" == viewMode) {
+					wfForm.getWindow().dma_snap.set("endpoint", com.isEmpty(com.getParameter("endpoint")) ? "system" : com.getParameter("endpoint"));
+					wfForm.getWindow().dma_snap.set("instStatus", com.getParameter("instStatus"));
+				} else if ("approval" == viewMode){
+					wfForm.getWindow().dma_snap.set("instStatus", com.getParameter("instStatus"));
+					wfForm.getWindow().dma_snap.set("taskStatus", com.getParameter("taskStatus"));
+				}
+				
+				// 결재신청 직후 화면이동시 버튼 컨트롤 및 기본 세팅을 위해 draft 사용
+				wfForm.getWindow().dma_snap.set("viewMode", com.isEmpty(viewMode) ? "draft" : viewMode);
+			};
+		]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group class="locationSection" id="" style="">
+		</xf:group>
+		<xf:group id="" class="pageWrap">
+			<xf:group id="" class="panel-container">
+				<xf:group id="grp_right" class="panel-right">
+					<w2:wframe id="wfForm" src="/ui/apr/snapshot.xml" style=""></w2:wframe>
+				</xf:group>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

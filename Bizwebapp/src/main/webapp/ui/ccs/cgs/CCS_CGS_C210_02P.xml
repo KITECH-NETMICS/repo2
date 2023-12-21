@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="회의실 일정 달력">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_mRoomReq" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="req_no" name="차량예약번호" dataType="text"></w2:column>
+            			<w2:column id="region_nm" name="지역명" dataType="text"></w2:column>
+            			<w2:column id="meet_ymd" name="회의일자" dataType="text"></w2:column>
+            			<w2:column id="meet_ymd_nm" name="요일" dataType="number"></w2:column>
+            			<w2:column id="use_orign_time" name="회의시작시간" dataType="text"></w2:column>
+            			<w2:column id="use_cls_time" name="회의종료시간" dataType="text"></w2:column>
+            			<w2:column id="use_time" name="사용시간" dataType="text"></w2:column>
+            			<w2:column id="mroom_cd" name="회의실코드" dataType="text"></w2:column>
+            			<w2:column id="meet_ofic_nm" name="회의실명" dataType="text"></w2:column>
+            			<w2:column id="meet_subj" name="목적" dataType="text"></w2:column>
+            			<w2:column id="req_psn_empno_nm" name="등록자명" dataType="text"></w2:column>
+            			<w2:column id="req_psn_dept_nm" name="등록자부서명" dataType="text"></w2:column>
+            			<w2:column id="req_psn_tel" name="등록자번호" dataType="text"></w2:column>
+            			<w2:column id="charg_syspayno_nm" name="담당자명" dataType="text"></w2:column>
+            			<w2:column id="req_state_nm" name="신청상태" dataType="text"></w2:column>
+            			<w2:column id="regst_daytm" name="등록일시" dataType="text"></w2:column>
+            			<w2:column id="apr_state_code" name="등록상태" dataType="text"></w2:column>
+            			<w2:column id="region_cd" name="지역코드" dataType="text"></w2:column>
+            			<w2:column id="title" name="제목" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	
+            	<!-- 회의실신청리스트 조회 -->
+            	<w2:dataMap baseNode="map" id="dma_mRoomReqSearch">
+            		<w2:keyInfo>
+            			<w2:key id="meet_ymd" name="회의날짜" dataType="text"></w2:key>
+            			<w2:key id="mroom_cd" name="회의실코드" dataType="text"></w2:key>
+            			<w2:key id="req_state" name="등록상태" dataType="text"></w2:key>
+            			<w2:key id="req_psn_syspayno" name="등록자시스템개인번호" dataType="text"></w2:key>
+            			<w2:key id="region_cd" name="지역코드" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            
+            <!-- 회의실신청조회 -->
+			<xf:submission id="sbm_selectMroomReq" ref='data:json,dma_mRoomReqSearch'
+				target='data:json,{"id":"dlt_mRoomReq","key":"cgsMRoomReqVoList"}' action="SvcCCSCGSMRRR01.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+            
+            
+            
+            
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[ 
+        
+	scwin.onpageload = function() {
+		
+		var date = new Date();
+		var year = date.getFullYear();
+		var month = date.getMonth();
+		var thisMonth = new Date(year, month);
+		
+		dma_mRoomReqSearch.set("meet_ymd", getDateStr(thisMonth));
+		
+		com.execute(sbm_selectMroomReq, {
+			successCallback : function(e) {
+				
+			}
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	//날짜구하기
+	function getDateStr(date) {
+	    var sYear = date.getFullYear();
+	    var sMonth = date.getMonth() + 1;
+	    
+	    sMonth = sMonth > 9 ? sMonth : "0" + sMonth;
+	    return String(sYear) + String(sMonth);
+	}
+	
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+	};
+	
+	scwin.btn_insert_onclick = function(e) {
+		
+		var data = { 
+		  		
+		  };
+
+		scwin.openDetail(data);
+		
+		
+	};
+	
+	scwin.openDetail = function(data) {
+		var options = {
+			id : "crudOnePop",
+			popupName : "회의실신청서",
+			width : 1000, height: 550 
+		};
+		com.openPopup("/ui/ccs/cgs/CCS_CGS_C210_00P.xml", options, data, function(retObj) {
+		com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+		});
+	};	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<w2:scheduleCalendar selectable="false" ioFormat="yyyyMMdd" eventLimit="true" id="" lang="ko" defaultDate="" editable="false"
+    		headerRightBtn="false" titleColumn="title" startColumn="meet_ymd" dataList="data:dlt_mRoomReq" style="height:700px;" headerLeftBtn="false" idColumn="req_psn_empno_nm"
+    		headerTitle="true" endColumn="meet_ymd">
+    	</w2:scheduleCalendar>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger class=" btn pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger style="" id="btn_insert" type="button" class=" btn pro conf" ev:onclick="scwin.btn_insert_onclick">
+    				<xf:label><![CDATA[신청]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

@@ -1,0 +1,847 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="증명서신청등록">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_cert">
+            		<w2:keyInfo>
+            			<w2:key id="rowStatus" name="rowStatus" dataType="text"></w2:key>
+            			<w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+            			<w2:key id="req_ymd" name="req_ymd" dataType="text"></w2:key>
+            			<w2:key id="syspayno" name="syspayno" dataType="text"></w2:key>
+            			<w2:key id="empno" name="empno" dataType="text"></w2:key>
+            			<w2:key id="nm" name="nm" dataType="text"></w2:key>
+            			<w2:key id="dept_cd" name="부서번호" dataType="text"></w2:key>
+            			<w2:key id="dept_nm" name="부서이름" dataType="text"></w2:key>
+            			<w2:key id="dept_new_ymd" name="부서신설일" dataType="text"></w2:key>
+            			<w2:key id="posi_cd" name="직급번호" dataType="text"></w2:key>
+            			<w2:key id="posi_nm" name="직급이름" dataType="text"></w2:key>
+            			<w2:key id="issu_knd" name="발급종류" dataType="text"></w2:key>
+            			<w2:key id="usg_cd" name="발급용도" dataType="text"></w2:key>
+            			<w2:key id="issu_qty" name="발급부수" dataType="text"></w2:key>
+            			<w2:key id="issu_usg" name="근거내용" dataType="text"></w2:key>
+            			<w2:key id="issu_dline" name="발급기한" dataType="text"></w2:key>
+            			<w2:key id="issu_daytm" name="발급일자" dataType="text"></w2:key>
+            			<w2:key id="issu_no" name="발급번호" dataType="text"></w2:key>
+            			<w2:key id="apy_uid" name="결재자" dataType="text"></w2:key>
+            			<w2:key id="rmk" name="비고" dataType="text"></w2:key>
+            			<w2:key id="language" name="발급언어" dataType="text"></w2:key>
+            			<w2:key id="eng_univ" name="영문대학명" dataType="text"></w2:key>
+            			<w2:key id="eng_major" name="영문학과명" dataType="text"></w2:key>
+            			<w2:key id="apr_state" name="apr_state" dataType="text"></w2:key>
+            			<w2:key id="apr_state_nm" name="apr_state_nm" dataType="text"></w2:key>
+            			<w2:key id="approval" name="결재신청여부" dataType="text" value="false"></w2:key>
+            			<w2:key id="endpoints" name="담당자" dataType="text"></w2:key>
+            			<w2:key id="comments" name="결제의견" dataType="text"></w2:key>
+            			<w2:key id="info_cd" name="info_cd" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+
+            	<w2:dataMap baseNode="map" id="dma_snap">
+					<w2:keyInfo>
+						<w2:key id="reqNo" name="신청번호" dataType="text"></w2:key>
+						<w2:key id="endpoint" name="endpoint" dataType="text"></w2:key>
+						<w2:key id="comments" name="결재의견" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+            <xf:submission id="sbm_saveCert" ref="data:json,dma_cert"
+            	action="SvcHUMAPYCRTM01.pwkjson" processMsg="" method="post" mediatype="application/json"
+            	encoding="UTF-8" mode="asynchronous">
+            </xf:submission>
+            <xf:submission id="sbm_selectCert" ref="data:json,dma_cert" target='data:json,dma_cert'
+            	action="SvcHUMAPYCRTR02.pwkjson" processMsg="" method="post" mediatype="application/json"
+            	encoding="UTF-8" mode="asynchronous">
+            </xf:submission>
+            <!-- 전자결제(화면결제) 승인-->
+            <xf:submission id="sbm_aprRec" ref="data:json,dma_cert"
+            	action="SvcHUMAPYCRTU01.pwkjson" processMsg="" method="post" mediatype="application/json"
+            	encoding="UTF-8" mode="asynchronous">
+            </xf:submission>
+            <!-- 전자결제(화면결제) 반려-->
+            <xf:submission id="sbm_aprBack" ref="data:json,dma_cert"
+            	action="SvcHUMAPYCRTU02.pwkjson" processMsg="" method="post" mediatype="application/json"
+            	encoding="UTF-8" mode="asynchronous">
+            </xf:submission>
+            
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {		
+		var codeOptions = [ { code : "HCD", compID : "selb_issu_knd", ignoreUseYn : true},
+							{ code : "HCI", compID : "selb_usg_cd", ignoreUseYn : true}];
+		com.setCmnCd(codeOptions, function() {
+			scwin.btnController();
+			var req_no = com.getParameter("req_no");
+			triggerApprove.setStyle("display", "none");
+			triggerBack.setStyle("display", "none");
+			if (com.isEmpty(req_no)) {
+				var posiCd = com.getLoginInfo("posiCode");
+				var roleCode = com.getLoginInfo("roleCode");
+				
+				// 신규 재택근무 정보 등록을 위한 DataMap 초기화
+				com.initDataMap(dma_cert);
+				scwin.setUser(com.getLoginInfo("empno"));
+				// 삭제 버튼 숨김
+				btn_del.hide();
+				btn_print.setDisabled(true);
+				cal_req_ymd.setValue(com.getServerDateTime());
+				scwin.issu_knd_control(posiCd, roleCode, false);
+				com.biz.disabledButtons();
+			} 
+			else {
+				scwin.selectData(req_no);
+			}
+		});
+		
+	};
+	
+	scwin.selectData = function(req_no) {
+		if (btn_del.getStyle("display") === 'none') {
+			btn_del.show("");	
+		}
+		dma_cert.set("rowStatus", "U"); // 상태 : 수정
+		// 키 셋팅 및 조회
+		dma_cert.set("req_no", req_no);
+		
+		com.execute(sbm_selectCert, {
+			successCallback : function(e) {
+				console.log("succ");
+				// 관리자고 재직증명서 신청자료이며 퇴직신청일이 증명서 신청일보다 과거일때 메세지출력
+				debugger;
+				var aprState = e.responseJSON.elData.apr_state;
+				var req_syspayno = e.responseJSON.elData.syspayno;
+				var posiCd = e.responseJSON.elData.posi_cd;
+				
+				var tempD = {};
+				tempD.newValue = e.responseJSON.elData.issu_knd;
+				scwin.selb_issu_knd_onchange(tempD);
+				console.log("apr_state       :"+dma_cert.get("apr_state"));
+				com.biz.disabledButtons(dma_cert.get("apr_state"), dma_cert.get("req_no"));
+				btn_print.setDisabled(!dma_cert.get('issu_no'));
+				if ($p.top().$p.getParameter("prt") == 1) {
+					btn_print.trigger('click');
+				}
+				scwin.disableComp(aprState, req_syspayno);
+				scwin.btnController();
+				scwin.issu_knd_control(posiCd, "", true);
+			}
+		});
+	}
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	scwin.setGroupHide = function() {
+		grEng.hide();
+	};
+	
+	scwin.setGroupShow = function() {
+		grEng.show("");
+	};
+	
+	/**	
+	*	저장
+	**/
+	scwin.save = function(e) {
+		// 변경된 사항이 있는지 여부 체크
+		if (com.isNotModifiedByDataAndAttach(dma_cert)) {	
+			com.warn("message.xom.wq.013"/*변경된 정보가 없습니다.*/);
+			return;
+		}
+		
+		com.confirm("message.xom.wq.017" /*저장 하시겠습니까?*/, function(ret) {
+			if (ret) {
+				dma_cert.set("approval" ,  "false");
+				dma_cert.set("apr_state" , "XAD005");
+				com.execute(sbm_saveCert, {
+					successCallback : function(e) { // 성공 콜백
+						com.alert("message.xom.wq.023" /*정상적으로 처리되었습니다.*/, function () {
+							scwin.selectData(e.responseJSON.elData.req_no);
+						});
+					}
+				});
+			}
+		});
+	};
+	
+	/**
+	 * 삭제
+	 */
+	scwin.remove = function(e) {
+		com.confirm("message.xom.wq.022"/*삭제 하시겠습니까?*/, function(ret) {
+			if (ret) {
+					dma_cert.set("rowStatus", "D"); // 상태 : 삭제
+					com.execute(sbm_saveCert, {
+						successCallback : function(e) { // 성공 콜백
+							com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+								scwin.checkList = [];
+								scwin.backToList({});
+							});
+						}
+					});
+			}
+		});
+	};
+	
+	/**
+	*	posiCd 		: 부서번호
+	*	roleCode 	: 역할번호
+	*	flag 		: 신규등록, 수정 구분
+	**/
+	scwin.issu_knd_control = function(posiCd, roleCode, flag) {
+		if (posiCd == "350010" || posiCd == "351010" || posiCd =="354000") {
+			selb_issu_knd.setValue("HCD050");
+			selb_issu_knd.setDisabled(true);
+		}
+		
+		if (posiCd != "350010" && posiCd != "351010" && posiCd !="354000" && com.getLoginInfo('roleCode').indexOf("1003125") <= 0) {
+			let refDataComp = selb_issu_knd.modelControl.getDataComp();
+			refDataComp.setFilterCondition(
+					  refDataComp.getFilterCondition()
+					+ " && (comCd != 'HCD040' && comCd != 'HCD050')"
+			); // 연수증명서, 수료증명서
+		}	
+	};
+	scwin.validDatamap = function() {
+		return com.validateData(dma_cert, [
+			{ id : "req_ymd", mandatory : true },	
+			{ id : "issu_knd", mandatory : true },
+			{ id : "usg_cd", mandatory : true },
+			{ id : "issu_qty", mandatory : true },
+		 	{ id : "issu_usg", valFunc : function(data) {
+				 	if ( selb_usg_cd.getValue() === 'HCI040' && com.isEmpty(data)) {
+					 		return "message.alert.hum.apy.0002";
+					 }
+				}
+			},
+			{ id : "language", mandatory : true, valFunc : function(data) {
+					if ( selb_issu_knd.getValue() === "HCD040" || selb_issu_knd.getValue() === "HCD050") {
+						var regular = /^[a-zA-Z\s]+$/;
+						
+						if (rb_language.getValue() == "E") {
+							if (tb_eng_univ.getValue() == "") {
+								return "message.alert.hum.apy.0003";
+							}
+	
+							if (!regular.test(tb_eng_univ.getValue())) {
+								return "message.alert.hum.apy.0004";
+							}
+	
+							if (tb_eng_major.getValue() == "") {
+								return "message.alert.hum.apy.0005";
+							}
+	
+							if (!regular.test(tb_eng_major.getValue())) {
+								return "message.alert.hum.apy.0006";
+							}
+						} // end of if (inputEngUniv.getValue() == "")
+					} // end of if (radioLanguage.getValue() == "E")
+				} // end of language.valFunc()
+			}
+		]);
+	}
+	
+	scwin.setUser = function(emp_no) {
+		if ( com.isEmpty(emp_no) )
+			return; 
+		
+		var data = { empno : emp_no };
+		
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			dma_cert.set("syspayno", ret.syspayno);
+			dma_cert.set("empno", ret.empno);
+			dma_cert.set("nm", ret.nm);
+			dma_cert.set("dept_nm", ret.dept_nm);
+			dma_cert.set("dept_cd", ret.dept_cd);
+			dma_cert.set("dept_new_ymd", ret.dept_new_ymd);
+			dma_cert.set("posi_nm", ret.posi_nm);
+		});
+	};
+	
+	scwin.disableComp = function(apr_state, req_syspayno) {
+		var isValid = !com.biz.isAllowModify(apr_state, req_syspayno);
+		cal_req_ymd.setDisabled(isValid);
+		selb_issu_qty.setDisabled(isValid);
+		selb_issu_knd.setDisabled(isValid);
+		selb_usg_cd.setDisabled(isValid);
+		rb_language.setDisabled(isValid);
+	}
+	
+	scwin.selb_usg_cd_onviewchange = function(e) {
+		var usg = selb_usg_cd.getValue();
+		
+		if (usg === "HCI040") {
+			tb_issu_usg.setDisabled(false);
+		} else {
+			tb_issu_usg.setDisabled(true);
+			tb_issu_usg.setValue("");
+		}
+	}
+	
+	scwin.btn_list_onclick = function(e) {
+		scwin.backToList(); 
+	};
+	
+	scwin.backToList = function(data) {
+		com.moveList("H532", data);
+	}
+	
+	scwin.btn_save_onclick = function(e) {
+		if (!scwin.validDatamap()) {
+			// ignore validate
+		} else {
+			scwin.save();
+		}
+	};
+	
+	scwin.btn_del_onclick = function(e) {
+		scwin.remove();
+	};
+	
+	scwin.rb_language_onchange = function(e) {
+		var issu_knd = selb_issu_knd.getValue();
+		var language = this.getValue(); 
+		
+		if (issu_knd === "HCD040" || issu_knd === "HCD050") {
+			switch (language) {
+				case 'K':
+					scwin.setGroupHide();
+					break;
+				case 'E':
+					scwin.setGroupShow();
+					break;
+			}
+		}
+	};
+	
+	scwin.selb_issu_knd_onchange = function(e) {
+		
+		var language = rb_language.getValue();
+		
+		if (e.newValue === "HCD020") {
+			com.alert("message.alert.hum.apy.0001");
+
+			selb_issu_knd.setValue(e.oldValue);
+		}
+		
+		if (e.newValue === "HCD040" || e.newValue === "HCD050") {
+			switch (language) {
+				case 'K':
+					scwin.setGroupHide();
+					break;
+				case 'E':
+					scwin.setGroupShow();
+					break;
+			}
+		} else {
+			scwin.setGroupHide();
+		}
+	};
+	
+	scwin.btn_apr_onclick = function(e) {
+			
+			com.confirm("message.xom.wq.017" /*저장 하시겠습니까?*/, function(ret) {
+				if (ret) {
+					dma_cert.set("approval" ,  "true");
+					dma_cert.set("apr_state" , "XAD100");
+					dma_cert.set('info_cd', selb_issu_knd.getText());
+					com.execute(sbm_saveCert, {
+						successCallback : function(e) { // 성공 콜백
+							com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+								scwin.checkList = [];
+								scwin.selectData(e.responseJSON.elData.req_no);
+							});
+						}
+					});
+				}
+			});
+
+	};
+	
+	
+	scwin.btnController = function(e) {
+		//담당자 사번 세팅
+		var apr_state = dma_cert.get("apr_state");
+		var knd = dma_cert.get("issu_knd");
+		var endpoints = dma_cert.get('endpoints');
+		var sn = com.getLoginInfo("sn");
+		var param4 = com.getParameter('param4');
+	
+		if(apr_state == "XAD070"){
+			//저장 담당자 저장,승인,삭제
+			if (endpoints === com.getLoginInfo('uid')) {
+				triggerApprove.setStyle("display", "inline-block");
+				triggerApprove.setDisabled(false);
+				triggerBack.setStyle("display", "inline-block");
+				triggerBack.setDisabled(false);
+				btn_del.setDisabled(false);
+			}
+		}else if(apr_state == "XAD100"){
+			//승인 담당자 삭제 반려
+			if (endpoints === com.getLoginInfo('uid')) { 
+				triggerBack.setStyle("display", "inline-block");
+				triggerBack.setDisabled(false);
+				btn_del.setDisabled(false);
+			}
+		}else if(apr_state < "XAD020" ){
+			if (endpoints === com.getLoginInfo('uid')) {
+				if (param4 && param4 === 'apr') {
+					triggerApprove.setStyle("display", "none");
+					triggerApprove.setDisabled(true);
+					triggerBack.setDisabled(true);
+					btn_save.setDisabled(false);
+				} else {
+					triggerApprove.setStyle("display", "none");
+					triggerBack.setStyle("display", "none");
+					btn_save.setDisabled(false);
+					btn_apr.setDisabled(false);	
+				}
+			} else {
+				triggerApprove.setStyle("display", "none");
+				triggerBack.setStyle("display", "none");
+				btn_save.setDisabled(true);
+				btn_apr.setDisabled(true);	
+			}
+			
+		}
+	};
+	
+	scwin.triggerApprove_onclick = function(e) {
+		com.execute(sbm_aprRec, {
+			successCallback : function(e) {
+				alert("승인처리 되었습니다");
+				com.openTabMenu("A004", {});
+			}
+		});
+	};
+	
+	scwin.triggerBack_onclick = function(e) {
+		var options = {
+				id : "APR02P",
+				popupName : "반려의견",
+				width : 500, height: 300 
+		};
+		com.openPopup("/ui/apr/APR_C001_03P.xml", options, "", function(retObj) {
+			if (retObj.comments != null) {
+				dma_cert.set("comments", retObj.comments);
+				com.execute(sbm_aprBack, {
+					successCallback : function(e) {
+						alert("반려처리 되었습니다");
+						com.openTabMenu("A004", {});	
+					}
+				});
+			}
+		});
+	};
+	
+	
+	scwin.btn_print_onclick = function(e) {
+		var syspayno = dma_cert.get("syspayno");
+		var issu_knd_nm = dma_cert.get("issu_knd"); // 발급종류
+		var apr_state_nm = dma_cert.get("apr_state_nm"); // 결재상태
+		var req_no = dma_cert.get("req_no");
+		var ymd = com.getServerDateTime(); // 오늘날짜
+		var dline = dma_cert.get("issu_dline"); // 발급기간
+		var languege = dma_cert.get("language");
+
+		if (apr_state_nm.trim() != "결재완료") {
+			alert("결재완료인것만 인쇄 가능합니다.");
+
+			return;
+		}
+
+		if (dline < ymd) {
+			alert("발급기한이 지났습니다.");
+
+			return;
+		}
+		com.biz.checkRole({ serviceId : "H542", roleCodes : com.getLoginInfo('roleCode')}, function(e){
+			if (issu_knd_nm == "HCD020" && !(e.isRoleYn)) { // 권한
+				alert("관리자만 사용할 수 있습니다.");
+				return;
+			} else if (issu_knd_nm == "HCD020" && e.isRoleYn) {// 경력증명서
+				var pop_node = "&" + sn + "&" + req_no + "&" + syspayno + "&" + docuNo;
+				var url = gcm.baseUrls.oldBizUrl + "/websquare/websquare.jsp?w2xPath=/kitech/hum/bas/HumBasCertiPrtSel.xml" + pop_node;
+				window.open(url, "", "width=1005px,height=537px,toolbar=no,menubar=no,scrollbars=yes,statusbar=no,resizable=yes");
+			} else {
+				scwin.openOZPop(issu_knd_nm, languege, req_no);
+			}
+		});
+		
+	};
+	
+	scwin.openOZPop = function(issu_knd_nm, languege, req_no) {
+		var param = "";
+		var url = "";
+		var ozrCode = "";
+		var docuNo = dma_cert.get('issu_no');
+		debugger;
+		if (issu_knd_nm == "HCD010" && languege == "K") { // 재직증명서, 한글
+			param = "req_no=" + req_no + "&docu_no=" + docuNo;
+			ozrCode = "H080";
+		} else if (issu_knd_nm == "HCD010" && languege == "E") { // 재직증명서, 영문
+			param = "req_no=" + req_no + "&docu_no=" + docuNo;
+			ozrCode = "H081";
+		} else if (issu_knd_nm == "HCD030" && languege == "K") { // 근무확인서, 한글
+			param = "req_no=" + req_no + "&docu_no=" + docuNo;
+			ozrCode = "H082";
+		} else if ((issu_knd_nm == "HCD040" || issu_knd_nm == "HCD050") && languege == "K") {// 수료증명서, 연수증명서
+			param = "req_no=" + req_no;
+			ozrCode = "H083";
+		} else if ((issu_knd_nm == "HCD040" || issu_knd_nm == "HCD050") && languege == "E") {// 영문 수료증명서, 연수증명서
+			param = "req_no=" + req_no;
+			ozrCode = "H084";
+		}
+		console.log(param);
+		com.oz.openPopup({
+			ozrCode : ozrCode,      
+			param: param
+        });
+//		var reportArr = [];     
+//        reportArr.push({
+//			"ozrCode" : ozrCode,
+//			"param" : param
+//        });
+//      
+//         오즈 뷰어 팝업 호출
+//        com.oz.openPopup(reportArr);
+	}
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group class="searchSection step" id="" style="">
+    			<xf:group class="le" id="" style="">
+    				<xf:trigger class="btn" id="btn_list" style="" type="button" ev:onclick="scwin.btn_list_onclick">
+    					<xf:label><![CDATA[목록]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    			<xf:group class="btnbox" id="">
+    				<xf:trigger class="btn icon print" id="btn_print" style="" type="button" ev:onclick="scwin.btn_print_onclick">
+    					<xf:label><![CDATA[인쇄]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn blue" ev:onclick="scwin.btn_apr_onclick" id="btn_apr" style="" type="button">
+    					<xf:label><![CDATA[결재신청]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="증명서 신청 등록  기본정보"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group tagname="col" style="width:140px;"></xf:group>
+    				<xf:group tagname="col" style=""></xf:group>
+    				<xf:group tagname="col" style="width:140px;"></xf:group>
+    				<xf:group tagname="col" style=""></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox tagname="span" style="" id="" label="개인정보(성명)"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox class="txt" tagname="span" style="" id="tb_empno" ref="data:dma_cert.empno" label="00"></w2:textbox>
+    					<w2:textbox class="txt" tagname="span" style="" id="tb_nm" label="00" ref="data:dma_cert.nm"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="th" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox tagname="span" style="" id="" label="부서"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox class="txt" id="tb_dept_nm" label="00" style="" tagname="span" ref="data:dma_cert.dept_nm"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th" style="">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="직급" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td" style="">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox class="txt" id="tb_posi_nm" label="00" style="" tagname="span" ref="data:dma_cert.posi_nm"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="신청일" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal req" focusOnDateSelect="false" footerDiv="false" 
+    						id="cal_req_ymd" placeholder="시작일" renderDiv="true" rightAlign="false" style="" title="신청일"
+    						ref="data:dma_cert.req_ymd">
+    					</w2:inputCalendar>
+    					<w2:attributes></w2:attributes>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="결재상태" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox class="txt" id="tb_apr_state_nm" label="" style="" tagname="span" ref="data:dma_cert.apr_state_nm"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="문서번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:textbox class="txt" id="tb_req_no" label="" style="" tagname="span" ref="data:dma_cert.req_no"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<w2:textbox tagname="h3" style="" id="" label="신청내용" class="tit_tbl"></w2:textbox>
+    		</xf:group>
+    		<xf:group class="w2tb tbl" id="grp_cert" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="증명서 신청등록  신청내용"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="width:170px;" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="발급종류" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -" class="sel req"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="selb_issu_knd" ref="data:dma_cert.issu_knd" style="width:150px;"
+    						submenuSize="auto" title="발급종류" ev:onviewchange="scwin.selb_issu_knd_onviewchange" ev:onchange="scwin.selb_issu_knd_onchange">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="발급용도" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -" class="sel req"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="selb_usg_cd" ref="data:dma_cert.usg_cd" style="width:150px;"
+    						submenuSize="auto" title="발급용도" ev:onviewchange="scwin.selb_usg_cd_onviewchange">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[new row]]></xf:label>
+    								<xf:value><![CDATA[]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th" style="">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="발급부수" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td" style="">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 선택 -" class="sel req"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="selb_issu_qty" ref="data:dma_cert.issu_qty" style="width:150px;"
+    						submenuSize="auto" title="발급부수">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[1]]></xf:label>
+    								<xf:value>1</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[2]]></xf:label>
+    								<xf:value>2</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[3]]></xf:label>
+    								<xf:value>3</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[4]]></xf:label>
+    								<xf:value>4</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[5]]></xf:label>
+    								<xf:value>5</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[6]]></xf:label>
+    								<xf:value>6</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[7]]></xf:label>
+    								<xf:value>7</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[8]]></xf:label>
+    								<xf:value>8</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[9]]></xf:label>
+    								<xf:value>9</xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[10]]></xf:label>
+    								<xf:value>10</xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="발급언어" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<xf:select1 appearance="full" class="radioGroup req" cols="" id="rb_language" ref="data:dma_cert.language" renderType="radiogroup" rows=""
+    						selectedIndex="-1" style="" title="발급언어" ev:onchange="scwin.rb_language_onchange">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[국문]]></xf:label>
+    								<xf:value><![CDATA[K]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[영문]]></xf:label>
+    								<xf:value><![CDATA[E]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    					<w2:attributes></w2:attributes>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="근거내용" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes><w2:colspan>3</w2:colspan><w2:rowspan>1</w2:rowspan></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="tb_issu_usg" ref="data:dma_cert.issu_usg" style="" title="근거내용" disabled="true"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="visibility:hidden; display:none;" id="grEng">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="대학교영문명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes><w2:colspan>2</w2:colspan><w2:rowspan>1</w2:rowspan></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full req" id="tb_eng_univ" ref="data:dma_cert.eng_univ" style="" title="대학교영문명"></xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="전공영문명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    						<w2:colspan>2</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full req" id="tb_eng_major" ref="data:dma_cert.eng_major" style="" title="전공영문명"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="helparea" id="" style="">
+    			<xf:group id="" style="" tagname="ul">
+    				<xf:group id="" style="" tagname="li">
+    					<w2:textbox class="" id="" label="발급용도가 기타제출용인경우 근거내용을 자세히 적어주시기 바랍니다." style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group id="" style="" tagname="li">
+    					<w2:textbox class="" id="" label="단, 제출용(X), 개인사유(x) 등의 사유는 기재대상이 아님을 유의하시기 바랍니다.&lt;br/&gt;위와 같이 제출 기재사유가 확인되지 않는 경우 반려대상이오니 꼭 기재 사유 확인 후 발급요청 바랍니다." style="" tagname="span" escape="false"></w2:textbox>
+    				</xf:group>
+    				<xf:group id="" style="" tagname="li">
+    					<w2:textbox class="" id="" label="영문증명서 신청시 비고란에 영문주소 기재(EIP에 등록된 현주소 기준)" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le">
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class=" btn pro conf" id="triggerApprove" style="display:" type="button" ev:onclick="scwin.triggerApprove_onclick">
+    					<xf:label><![CDATA[승인]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="triggerBack" style="display:" type="button" ev:onclick="scwin.triggerBack_onclick">
+    					<xf:label><![CDATA[반려]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_del" type="button" class=" btn pro conf" ev:onclick="scwin.btn_del_onclick">
+    					<xf:label><![CDATA[삭제]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_save" type="button" class=" btn pro conf" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

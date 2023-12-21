@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.pat.apl">
+<!-- 출원 저장 -->
+<insert id="insertPatApp" parameterType="kr.re.kitech.biz.pat.apl.vo.PatAppVo">
+INSERT /* kr.re.kitech.biz.pat.apl.insertPatApp */
+   INTO patapp (
+    app_id
+  , req_no
+  , mngmt_no
+  , job_state_cd
+  , req_psn_syspayno
+  , req_daytm
+ <if test='req_app_clsf != null'> , req_app_clsf </if>
+ <if test='req_pub_yn != null'> , req_pub_yn </if>
+ <if test='req_claim_yn != null'> , req_claim_yn </if>
+ <if test='req_comment != null'> , req_comment </if>
+ <if test='req_attach_file != null'> , req_attach_file </if>
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{app_id}
+  , #{req_no}
+  , #{mngmt_no}
+  , #{job_state_cd}
+  , #{req_psn_syspayno}
+  , CURRENT
+ <if test='req_app_clsf != null'> , #{req_app_clsf} </if>
+ <if test='req_pub_yn != null'> , #{req_pub_yn} </if>
+ <if test='req_claim_yn != null'> , #{req_claim_yn} </if>
+ <if test='req_comment != null'> , #{req_comment} </if>
+ <if test='req_attach_file != null'> , #{req_attach_file} </if>
+  , #{regst_syspayno}
+  , CURRENT
+)
+</insert>
+
+<!-- 분할우선권원출원 조회 -->
+<select id="selectPatDvsPrrApp" parameterType="java.lang.String" resultType="kr.re.kitech.biz.pat.apl.vo.PatSmitAppVo">
+SELECT /*  kr.re.kitech.biz.pat.apl.selectPatDvsPrrApp */
+       dp_req_no
+     , req_no
+     , mngmt_no
+     , syspayno
+     , empno
+     , nm
+     , invnt_krn_nm
+     , smitapp_no
+     , smitapp_ymd
+FROM patdvsprrapp
+WHERE dp_req_no = #{dp_req_no}
+</select>
+
+<!-- 지재권 우선권 주장 출원번호 저장 -->
+<insert id="insertPatPrioritySmitApp" parameterType="kr.re.kitech.biz.pat.apl.vo.PatSmitAppVo">
+INSERT /* kr.re.kitech.biz.pat.apl.insertPatPrioritySmitApp */
+   INTO patprioritysmitapp (
+    req_no
+  , mngmt_no
+  , seq
+  <if test='pr_req_no != null'> , pr_req_no </if>
+  <if test='pr_mngmt_no != null'> , pr_mngmt_no </if>
+  <if test='syspayno != null'> , syspayno </if>
+  <if test='empno != null'> , empno </if>
+  <if test='nm != null'> , nm </if>
+  <if test='invnt_krn_nm != null'> , invnt_krn_nm </if>
+  <if test='smitapp_no != null'> , smitapp_no </if>
+  <if test='smitapp_ymd != null'> , smitapp_ymd </if>
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{req_no}
+  , #{mngmt_no}
+  , #{seq}
+  <if test='pr_req_no != null'> ,#{pr_req_no} </if>
+  <if test='pr_mngmt_no != null'> ,#{pr_mngmt_no} </if>
+  <if test='syspayno != null'> ,#{syspayno} </if>
+  <if test='empno != null'> ,#{empno} </if>
+  <if test='nm != null'> ,#{nm} </if>
+  <if test='invnt_krn_nm != null'> ,#{invnt_krn_nm} </if>
+  <if test='smitapp_no != null'> ,#{smitapp_no} </if>
+  <if test='smitapp_ymd != null'> ,#{smitapp_ymd} </if>
+  , #{regst_syspayno}
+  , CURRENT
+)
+</insert>
+
+<!-- 우선심사청구신청 결재완료 후 우선심사청구 저장 -->
+<insert id="insertPatPrityDemnd" parameterType="kr.re.kitech.biz.pat.apl.vo.PatPrityDemndVo">
+INSERT /* kr.re.kitech.biz.pat.apl.insertPatPrityDemnd */
+   INTO patpritydemnd (
+    prity_demnd_id
+  , req_no
+  , mngmt_no
+  , job_state_cd
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{prity_demnd_id}
+  , #{req_no}
+  , #{mngmt_no}
+  , #{job_state_cd}
+  , #{regst_syspayno}
+  , CURRENT
+)
+</insert>
+</mapper>

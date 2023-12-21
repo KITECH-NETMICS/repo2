@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="카드내역">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" id="dlt_grd" repeatNode="map" saveRemovedData="true" style="">
+            		<w2:columnInfo>
+            			<w2:column dataType="text" id="card_no" name="카드번호2"></w2:column>
+            			<w2:column dataType="text" id="cardno" name="카드번호"></w2:column>
+            			<w2:column dataType="text" id="card_knd" name="카드종류"></w2:column>
+            			<w2:column dataType="text" id="card_clsf" name="카드구분"></w2:column>
+            			<w2:column dataType="text" id="use_ymd" name="승인일자"></w2:column>
+            			<w2:column dataType="text" id="apprvl_no" name="승인번호"></w2:column>
+            			<w2:column dataType="text" id="joinsto_nm" name="가맹점"></w2:column>
+            			<w2:column dataType="number" id="supply_amt" name="공급가액"></w2:column>
+            			<w2:column dataType="number" id="tax_amt" name="과세금액"></w2:column>
+            			<w2:column dataType="number" id="use_amt" name="사용금액"></w2:column>
+            			<w2:column dataType="number" id="un_amt" name="미처리금액"></w2:column>
+            			<w2:column dataType="text" id="shop_addr1" name="주소1"></w2:column>
+            			<w2:column dataType="text" id="shop_addr2" name="주소2"></w2:column>
+            			<w2:column dataType="text" id="rmk" name="비고"></w2:column>
+            			<w2:column dataType="text" id="nm" name="보유자성명"></w2:column>
+            			<w2:column id="accnt_cd_nm" name="회계코드명" dataType="text"></w2:column>
+            			<w2:column dataType="text" id="conf_accnt_cd" name="확정회계코드"></w2:column>
+            			<w2:column id="adjstyn" name="정산여부" dataType="text"></w2:column>
+            			<w2:column id="dofogu" name="국내외구분" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            		<w2:data use="false"></w2:data>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="from_ymd" name="시작일자"></w2:key>
+            			<w2:key dataType="text" id="to_ymd" name="종료일자"></w2:key>
+            			<w2:key dataType="text" id="keep_charg" name="보유자"></w2:key>
+            			<w2:key dataType="text" id="empno" name="개인번호"></w2:key>
+            			<w2:key id="nm" name="성명" dataType="text"></w2:key>
+            			<w2:key id="card_no" name="카드번호" dataType="text"></w2:key>
+            			<w2:key id="inqr_clsf" name="작업구분" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <xf:submission id="sbm_selectData" ref="data:json,dma_search" target='data:json,{"id":"dlt_grd","key":"cardInfoList"}' 
+        	    action="SvcFINSPMEXPR02.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 카드내역조회
+ 	 * 변경 이력 : 2022-05-26	이영희	최초 작성
+ 	 ****************************************************/  
+ 	scwin.data={};
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */ 
+	scwin.onpageload = function() {		
+		dma_search.set("inqr_clsf", com.getParameter("biz_clsf"));
+		
+		var today = com.getServerDateTime();
+		dma_search.set("from_ymd", today.substring(0,6) +  "01");
+		dma_search.set("to_ymd", today);
+		
+		// enter key event
+		com.setEnterKeyEvent(grp_emp, scwin.btn_emp_onclick);
+		com.setEnterKeyEvent(grp_card, scwin.btn_search_onclick);
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.btn_search_onclick = function(e) {
+		if(dma_search.get("keep_charg") == "" && dma_search.get("card_no") == ""){
+			com.alert(com.getMsg("message.xom.ui.fin.026", "보유자 또는 카드번호"));
+			return;
+		}
+		
+		var cardNo = ibx_card_no.getValue();
+		if(cardNo.length == 8){
+			ibx_card_no.setValue(cardNo.replace(/(\d{4})(\d{4})/,'$1-$2'));
+		}
+		
+		com.execute(sbm_selectData, {
+			successCallback : function(e) {
+			}
+		});
+			
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**
+	 * 그리드 더블클릭 이벤트
+	 */
+	scwin.grd_card_oncelldblclick = function(row,col,colId) {
+		com.closePopup(dlt_grd.getRowJSON(row));
+	};	
+
+	/**
+	 * 보유자 클릭 이벤트
+	 */
+	scwin.btn_emp_onclick = function(e) {
+		var data={
+			empno : ibx_empno.getValue(),
+			work_clsf : "HAG010"
+		};
+		
+		if(ibx_empno.getValue() == ""){
+			data.ref_yn = "Y";	
+		}
+		
+		com.pop.open(com.pop.TYPE.HUM, data, function(ret) {
+			dma_search.set("keep_charg", ret.syspayno);
+			dma_search.set("empno", ret.empno);
+			dma_search.set("nm", ret.nm);
+		});
+	};
+	
+	/**
+	 * 카드 승인 일자 포맷
+	 */
+	scwin.formatDate = function(str){
+		if(str == "") return "";
+		var useYmd = str.replace(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, "$1-$2-$3 $4:$5:$6");
+		
+		return com.formatDateTime(new Date(useYmd), "yyyy-MM-dd HH:mm:ss");
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection " id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="grp_search" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:250px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="사용일자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="" placeholder="시작일" renderDiv="true" rightAlign="false" style="" title="기간 중 시작일 " ref="data:dma_search.from_ymd">
+    							</w2:inputCalendar>
+    							<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="" placeholder="종료일" renderDiv="true" rightAlign="false" style="" title="기간 중 종료일" ref="data:dma_search.to_ymd">
+    							</w2:inputCalendar>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="" style="" tagname="span"></w2:textbox>
+    							<w2:textbox id="" label="보유자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="inpSch" id="grp_emp" style="width: 120px;">
+    								<xf:input adjustMaxLength="false" class="inp" id="ibx_empno" style="" title="보유자" ref="data:dma_search.empno"></xf:input>
+    								<xf:trigger class="btn" id="btn_emp" style="" type="button" title="보유자 조회" ev:onclick="scwin.btn_emp_onclick">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="" style="width: 150px;" title="보유자 상세" ref="data:dma_search.nm" readOnly="true"></xf:input>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="카드번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td" id="grp_card">
+    							<w2:attributes>
+    								<w2:colspan>3</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_card_no" style="width:208px;" title="카드번호" ref="data:dma_search.card_no"></xf:input>
+    							<w2:span class="helptxt" id="" label="(뒤 XXXX - XXXX)" style=""></w2:span>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_card" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="10" ev:oncelldblclick="scwin.grd_card_oncelldblclick" autoFit="allColumn">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="카드번호" width="150"></w2:column>
+    					<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="소유자" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column29" inputType="text" style="height:28px;" value="사용일자" width="110"></w2:column>
+    					<w2:column displayMode="label" id="column32" inputType="text" style="height:28px" value="승인번호" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column30" inputType="text" style="height:28px" value="사용금액" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column46" inputType="text" style="height:28px" value="공급가액" width="90">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column44" inputType="text" style="height:28px" value="세액" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column42" inputType="text" style="height:28px" value="미처리금액" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column40" inputType="text" style="height:28px" value="가맹점" width="149"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column52" value="정산여부" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" escape="false" id="card_no" inputType="text" readOnly="true" style="height:28px;"
+    						width="150" value="">
+    					</w2:column>
+    					<w2:column displayMode="label" id="nm" inputType="text" readOnly="true" style="height:28px;" width="70"></w2:column>
+    					<w2:column displayMode="label" id="use_ymd" inputType="text" readOnly="true" style="height:28px;" width="110" value="" displayFormatter="scwin.formatDate"></w2:column>
+    					<w2:column displayMode="label" id="apprvl_no" inputType="text" readOnly="true" style="height:28px" width="80" value=""></w2:column>
+    					<w2:column displayMode="label" id="use_amt" inputType="text" readOnly="true" style="height:28px" width="90" value="" class="ri" dataType="number" displayFormat="#,###"></w2:column>
+    					<w2:column displayMode="label" id="supply_amt" inputType="text" readOnly="true" style="height:28px" value=""
+    						width="90" dataType="number" displayFormat="#,###" class="ri">
+    					</w2:column>
+    					<w2:column displayMode="label" id="tax_amt" inputType="text" readOnly="true" style="height:28px" value=""
+    						width="90" dataType="number" displayFormat="#,###" class="ri">
+    					</w2:column>
+    					<w2:column displayMode="label" id="un_amt" inputType="text" readOnly="true" style="height:28px" value=""
+    						width="90" dataType="number" displayFormat="#,###" class="ri">
+    					</w2:column>
+    					<w2:column displayMode="label" id="joinsto_nm" inputType="text" readOnly="true" style="height:28px" value=""
+    						width="149" class="le">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="adjstyn" value="" displayMode="label" readOnly="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

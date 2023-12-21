@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--<?xml-stylesheet href="/template/cm/css/all.css" type="text/css"?> -->
+<!--<?xml-stylesheet href="/template/cm/css/contents.css" type="text/css"?> -->
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare"
+	xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="로그인">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model ev:submitdone="scwin.sbm_logout_submitdone">
+			<xf:instance>
+				<data xmlns=""/>
+			</xf:instance>
+
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_login">
+					<w2:keyInfo>
+						<w2:key id="id" name="id" dataType="text"></w2:key>
+						<w2:key id="pw" name="pw" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+			</w2:dataCollection>
+						
+			<w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_login" ref="data:json,dma_login" action="/SvcComLogin.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous" />
+		</xf:model>
+		<style type="text/css"><![CDATA[
+    		.w2group {
+    			background-color: transparent;
+    		}
+    		
+    		a.underline:hover {
+    			text-decoration: underline;
+    		}
+    		
+    		@media all and (max-width:1063px){
+				.w2textarea {height:100% !important}
+    		}
+    		
+    		.w2tb .w2tb_th {
+    			background: #257ebe;
+    		}
+    		
+    		.w2multiselect_tr_over {
+    			background-color : #ec6c6c;
+    		} 
+    		
+   		]]></style>
+		<script type="text/javascript" lazy="false"><![CDATA[
+		
+			/**
+			 * onpageload 함수
+			 */
+			scwin.onpageload = function() {
+				WebSquare.cookie.setCookie("lang", "ko");
+				WebSquare.cookie.setCookie("bodyYn", "Y");
+			
+			};
+		
+			scwin.ibx_username_onkeydown = function(e) {
+				if(e.code == "Enter") { 
+					ibx_password.focus();
+				}
+			};
+			
+			scwin.ibx_password_onkeydown = function(e) {
+				if(e.code == "Enter") {
+					scwin.ach_submit_onclick();
+				}
+			};
+			
+			scwin.ach_submit_onclick = function() {
+			
+				if( ibx_username.getValue() == "" ) {
+					alert("아이디가 입력되지 않았습니다. 아이디를 입력하세요.");
+					ibx_username.focus();
+					return false;
+				}
+				
+				if( ibx_password.getValue() == "" ) {
+					alert("패스워드가 입력되지 않았습니다. 패스워드를 입력하세요.");
+					ibx_password.focus();
+					return false;
+				}
+				
+				dma_login.set("id", ibx_username.getValue());
+				dma_login.set("pw", ibx_password.getValue());
+				
+				com.execute(sbm_login, {
+					successCallback : function(e) {
+						// 세션정보 저장
+						gcm.data.setLoginInfo(e.responseJSON.userHeader.session);						
+						com.goHome(location.search);
+					}
+				});
+				
+			};
+		]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+
+		<xf:group style="background-color: #2a6970;width: 100%;height: 100%;">
+			<xf:group
+				style="text-align: left;vertical-align: top;border: 1px solid #ddd;width: 270px;height: 270px;padding: 0 25px;margin: 0 auto;background-color: transparent;display: none;"
+				id="grp_top" >
+
+			</xf:group>
+			<xf:group style="position: absolute;width: 500px;height: 500px;left: 50%;top: 50%;margin-left: -250px;margin-top: -250px;"
+				>
+				<xf:group style="width: 350px;margin: 0 auto;text-align: center;">
+					<xf:group style="position: relative;margin: 22px auto 12px 0;background-color: transparent;text-align: center;" >
+						<xf:image src="/cm/images/logo.png"
+							style="vertical-align: middle;margin-right: 10px;">
+						</xf:image>
+						<w2:textbox label="한국생산기술연구원"
+							style="font-size: 36px;color: #fff;font-weight: bold;text-decoration: none;font-family: Malgun Gothic, 맑은 고딕, arial, mgw, Verdana, dotum, Sans-serif;vertical-align: middle;margin-left: 10;">
+						</w2:textbox>
+					</xf:group>
+					<xf:group style="padding-top: 25px;position: relative;margin: 25px auto 13px 0;background-color: white;text-align: center;border-radius: 3px;height: 210px;">
+						<w2:textbox label="로그인 정보를 입력하세요" style="color: #5e6c84;font-family: Malgun Gothic, 맑은 고딕, arial, mgw, Verdana, dotum, Sans-serif;font-size: 10pt;font-weight: bold;margin-bottom: 25px;">
+						</w2:textbox>
+						<xf:input adjustMaxLength="false" style="border: 1px solid #e5e5e5;padding: 8px 12px;font-weight: normal;letter-spacing: -1px;font-size: 13px;line-height: 22px;-o-border-radius: 5px;border-radius: 5px;-ms-border-radius: 5px;outline: none;width:240px;-moz-border-radius: 3px;-webkit-border-radius: 5px;margin-bottom: 8px;-webkit-input-placeholder: white;"
+							id="ibx_username" placeholder="username" refSync="true" ev:onkeydown="scwin.ibx_username_onkeydown" >
+						</xf:input>
+						<xf:input  adjustMaxLength="false"  style="border: 1px solid #e5e5e5;padding: 8px 12px;font-weight: normal;letter-spacing: -1px;font-size: 13px;line-height: 22px;-o-border-radius: 3px;border-radius: 5px;-ms-border-radius: 5px;outline: none;width:240px;-moz-border-radius: 5px;-webkit-border-radius: 5px;margin-bottom: 8px;"
+							id="ibx_password" placeholder="password" type="password" refSync="true" ev:onkeydown="scwin.ibx_password_onkeydown">
+						</xf:input>
+						<w2:anchor id="ach_submit" outerDiv="false" ev:onclick="scwin.ach_submit_onclick"
+							style="display:inline-block;position: relative;color:#fff;background-color: #0052cc;font-weight:bold;-webkit-border-radius:5px;-moz-border-radius: 5px;-ms-border-radius: 5px;-o-border-radius: 5px;border-radius: 5px;outline: none;text-align: center;vertical-align: top;text-decoration:none;font-family: Malgun Gothic,맑은 고딕,dotum,돋움,Hiragino Kaku Gothic ProN,Meiryo,sans-serif;width:240px;padding:10px;border: 1px solid #2a64b1;">
+							<xf:label><![CDATA[로그인]]></xf:label>
+						</w2:anchor>
+					</xf:group>
+					<xf:group  style="position: relative;margin: 35px auto 12px 0;background-color: transparent;text-align: center;">
+						<w2:span label="Copyrights KITECH Systems Co., Ltd. All rights reserved."
+							style="font-size: 10px;text-decoration: none;font-family: Malgun Gothic, 맑은 고딕, arial, mgw, Verdana, dotum, Sans-serif;vertical-align: middle;margin-left: 10;color:#FFFFFF;"></w2:span>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

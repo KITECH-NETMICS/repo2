@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<select id="selectHumApyLndList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyLndSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyLndInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyLndList */ 
+		 a.req_no  --신청번호
+        ,a.req_ymd--신청일
+        ,a.syspayno
+        ,b.empno     --개인번호
+        ,b.nm        --성명
+        ,a.dept_cd  --부서코드
+        ,i.dept_nm   --부서명
+        ,b.posi_cd   --직급코드
+        ,j.posi_nm   --직급명
+        ,a.req_typ   --신청유형
+        ,d.cd_nm AS req_typ_nm --신청유형 이름
+        ,(SUBSTR(a.ttoff_orign_ymd, 1, 4)||'-'||SUBSTR(a.ttoff_orign_ymd, 5, 2)||'-'||SUBSTR(a.ttoff_orign_ymd, 7, 2)||
+        '~'||SUBSTR(a.ttoff_cls_ymd, 1, 4)||'-'||SUBSTR(a.ttoff_cls_ymd, 5, 2)||'-'||SUBSTR(a.ttoff_cls_ymd, 7, 2)) ymd --휴직기간
+        --,fun_period_day(a.ttoff_cls_ymd,a.ttoff_orign_ymd, 'M') AS period_ymd
+        ,a.month_no
+        ,a.combk_ymd  --복직일
+        ,a.combk_dept_cd  --복직부서코드
+        ,e.dept_nm AS combk_dept_cd_nm  --복직부서코드 이름
+        ,c.apr_state    --결재상태
+        ,f.cd_nm AS apr_state_nm  --결제상태 이름
+        ,h.cd_nm AS job_clsf_nm --직무구분명
+        ,a.job_clsf --직무구분코드
+FROM humapylandr a     --휴가복직 신청
+     ,humbasicinfo b
+     ,xodhdeptinfo i
+     ,xodhposiinfo j
+     ,xomxintfatab c
+     ,xodxcommst d
+     ,outer xodhdeptinfo e
+     ,xodxcommst f
+     ,xodxcommst h 
+WHERE
+     a.syspayno=b.syspayno
+     AND a.req_no=c.req_no
+     AND a.req_typ=d.cd
+     AND b.syspayno = a.syspayno
+     AND i.dept_cd = a.dept_cd
+     AND i.dept_new_ymd = a.dept_new_ymd
+     AND b.posi_cd = j.posi_cd
+     AND a.combk_dept_cd=e.dept_cd
+     AND a.combk_dept_new_ymd = e.dept_new_ymd
+     AND c.apr_state=f.cd
+     AND h.cd = a.job_clsf
+           <if test="syspayno != null and syspayno != ''">
+	 AND a.syspayno  = #{syspayno}
+</if>
+           <if test="req_no != null and req_no != ''">
+	 and a.req_no LIKE #{req_no}
+</if>
+           <if test="dept_cd != null and dept_cd != ''">
+	 AND a.dept_cd  = #{dept_cd}
+</if>
+           <if test="apr_state != null and apr_state != ''">
+	 AND c.apr_state  = #{apr_state}
+</if>
+           <if test="req_ymd_from != null and req_ymd_from != ''">
+	 AND a.req_ymd  <![CDATA[ >= ]]>  #{req_ymd_from}
+</if>
+           <if test="req_ymd_to != null and req_ymd_to != ''">
+	 AND a.req_ymd   <![CDATA[ <= ]]>   #{req_ymd_to}
+</if>
+           <if test="req_typ != null and req_typ != ''">
+	 AND a.req_typ  = #{req_typ}
+</if>
+           <if test="job_clsf != null and job_clsf != ''">
+	 AND a.job_clsf = #{job_clsf}
+</if>
+    
+ORDER BY a.req_no DESC
+</select>
+
+
+
+
+
+
+
+
+
+
+<select id="selectHumApyLndInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyLndSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyLndInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyLndInfo */ 
+(TRIM(b.nm)||'('||b.empno||')') AS nm_empno
+,b.nm
+,b.empno
+,g.dept_nm
+,h.posi_nm
+,a.req_ymd
+,d.cd_nm AS apr_state_nm
+,c.apr_state AS apr_state
+,a.req_no
+,a.req_typ
+,a.syspayno
+,a.ttoff_orign_ymd
+,a.ttoff_cls_ymd
+,a.month_no
+,a.combk_ymd
+,a.combk_dept_cd
+,e.dept_nm as combk_dept_nm
+,a.combk_dept_new_ymd
+,a.resn
+,a.attach_file_no
+,DECODE(b.job_clsf, a.job_clsf, a.job_clsf, b.job_clsf) AS job_clsf
+,f.cd_nm as job_clsf_nm
+FROM
+humapylandr a
+JOIN humbasicinfo b on a.syspayno = b.syspayno
+JOIN xodhdeptinfo g on g.dept_cd = DECODE(b.dept_cd, a.dept_cd, a.dept_cd, b.dept_cd) AND g.dept_new_ymd = DECODE(b.dept_new_ymd, a.dept_new_ymd, a.dept_new_ymd, b.dept_new_ymd)
+JOIN xodhposiinfo h on h.posi_cd = b.posi_cd
+LEFT JOIN xomxintfatab c on a.req_no = c.req_no
+LEFT JOIN xodxcommst d on c.apr_state = d.cd
+LEFT JOIN xodhdeptinfo e on a.combk_dept_cd = e.dept_cd AND a.combk_dept_new_ymd = e.dept_new_ymd
+LEFT JOIN xodxcommst f on DECODE(b.job_clsf, a.job_clsf, a.job_clsf, b.job_clsf) = f.cd
+WHERE a.req_no = #{req_no}
+</select>
+<delete id="deleteHumApyLnd" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyLndSrchVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyLnd */ 
+		 FROM humapylandr
+WHERE req_no = #{req_no}
+
+</delete>
+<insert id="insertHumApyLnd" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyLndInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyLnd */ 
+		 INTO humapylandr
+(
+req_no,
+req_ymd,
+req_typ,
+syspayno,
+dept_cd,
+dept_new_ymd,
+job_clsf,
+ttoff_orign_ymd,
+ttoff_cls_ymd,
+month_no,
+combk_ymd,
+combk_dept_cd,
+combk_dept_new_ymd,
+resn,
+attach_file_no,
+regst_syspayno,
+regst_daytm
+)
+VALUES
+(
+#{req_no},
+#{req_ymd},
+#{req_typ},
+#{syspayno},
+#{dept_cd},
+#{dept_new_ymd},
+#{job_clsf},
+#{ttoff_orign_ymd},
+#{ttoff_cls_ymd},
+#{month_no},
+#{combk_ymd},
+#{combk_dept_cd},
+#{combk_dept_new_ymd},
+#{resn},
+#{attach_file_no},
+#{regst_syspayno},
+current
+)
+</insert>
+<update id="updateHumApyLnd" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyLndInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyLnd */ 
+		 humapylandr
+SET
+req_ymd = #{req_ymd},
+req_typ = #{req_typ},
+job_clsf = #{job_clsf},
+ttoff_orign_ymd = #{ttoff_orign_ymd},
+ttoff_cls_ymd = #{ttoff_cls_ymd},
+month_no = #{month_no},
+combk_ymd = #{combk_ymd},
+combk_dept_cd = #{combk_dept_cd},
+combk_dept_new_ymd = #{combk_dept_new_ymd},
+resn = #{resn},
+attach_file_no = #{attach_file_no},
+updt_syspayno = #{updt_syspayno},
+updt_daytm = current
+WHERE req_no = #{req_no}
+</update>
+<insert id="insertHumApyLndSuccessAccept" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyLndAccptVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyLndSuccessAccept */ 
+		 INTO humappnthst
+(
+ appont_no
+,appont_typ
+,appont_prcs_ymd
+,appont_start_ymd
+,appont_cls_ymd
+,syspayno
+,empno
+,nm
+,appont_befr_dept_cd
+,appont_befr_dept_new_ymd
+,appont_befr_occugrp_cd
+,appont_befr_occutyp_cd
+,appont_befr_posi_cd
+,appont_befr_cd
+,appont_befr_job_cd
+,appont_befr_job_clsf
+,appont_befr_work_land
+,dept_cd
+,dept_new_ymd
+,occugrp_cd
+,occutyp_cd
+,posi_cd
+,duty_cd
+,job_cd
+,job_clsf
+,work_land
+,appont_resn
+,appont_resn_mnt
+,apprvl_carer_anal
+,cmitt_nm
+,cmitt_duty
+,large_excpt_work_nm
+,estb_nm
+,dispatch_loc
+,appont_prcs
+,ofca_no
+,rmk
+,ref_tab
+,ref_data
+,vend_cd
+,regst_syspayno
+,regst_daytm
+) 
+VALUES 
+(
+#{appont_no}
+,#{appont_typ}
+,#{appont_prcs_ymd}
+,#{appont_start_ymd}
+,#{appont_cls_ymd}
+,#{syspayno}
+,#{empno}
+,#{nm}
+,#{appont_befr_dept_cd}
+,#{appont_befr_dept_new_ymd}
+,#{appont_befr_occugrp_cd}
+,#{appont_befr_occutyp_cd}
+,#{appont_befr_posi_cd}
+,#{appont_befr_cd}
+,#{appont_befr_job_cd}
+,#{appont_befr_job_clsf}
+,#{appont_befr_work_land}
+,#{dept_cd}
+,#{dept_new_ymd}
+,#{occugrp_cd}
+,#{occutyp_cd}
+,#{posi_cd}
+,#{duty_cd}
+,#{job_cd}
+,#{job_clsf}
+,#{work_land}
+,#{appont_resn}
+,#{appont_resn_mnt}
+,#{apprvl_carer_anal}
+,#{cmitt_nm}
+,#{cmitt_duty}
+,#{large_excpt_work_nm}
+,#{estb_nm}
+,#{dispatch_loc}
+,#{appont_prcs}
+,#{ofca_no}
+,#{rmk}
+,#{ref_tab}
+,#{ref_data}
+,#{vend_cd}
+,#{regst_syspayno}
+,current
+)
+</insert>
+</mapper>

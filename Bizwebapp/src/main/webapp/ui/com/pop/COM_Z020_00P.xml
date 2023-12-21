@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="연구기자재 검색" meta_author="이영희" meta_date="2022.12.09.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="accnt_no" name="계정번호" dataType="text"></w2:key>
+            			<w2:key id="prj_no" name="과제번호" dataType="text"></w2:key>
+            			<w2:key id="equip_clsf" name="연구기자재구분" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_equip" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="prj_no" name="과제번호" dataType="text"></w2:column>
+            			<w2:column id="accnt_no" name="계정번호" dataType="text"></w2:column>
+            			<w2:column id="equip_odr" name="기자재순번" dataType="text"></w2:column>
+            			<w2:column id="equip_clsf" name="기자재구분" dataType="text"></w2:column>
+            			<w2:column id="equip_clsf_nm" name="기자재구분명" dataType="text"></w2:column>
+            			<w2:column id="gdnm" name="품명" dataType="text"></w2:column>
+            			<w2:column id="qty" name="수량" dataType="text"></w2:column>
+            			<w2:column id="amt" name="금액" dataType="text"></w2:column>
+            			<w2:column id="etub_id" name="etub_id" dataType="text"></w2:column>
+            			<w2:column id="consttn_clsf" name="심의여부" dataType="text"></w2:column>
+            			<w2:column id="consttn_plce_clsf" name="심의기구코드" dataType="text"></w2:column>
+            			<w2:column id="consttn_resn" name="심의사유" dataType="text"></w2:column>
+            			<w2:column id="consttn_plce" name="심의기구" dataType="text"></w2:column>
+            			<w2:column id="consttn_no" name="심의번호" dataType="text"></w2:column>
+            			<w2:column id="consttn_ymd" name="심의일자" dataType="text"></w2:column>
+            			<w2:column id="attach_file_no" name="첨부파일번호" dataType="text"></w2:column>
+            			<w2:column id="pur_req_no" name="구매요구번호" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_selectEquip" ref='data:json,dma_search'
+				target='' action="SvcCOMPOPR06.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 연구기자재 검색 팝업
+ 	 * 변경 이력 : 2022-12-09	이영희	최초 작성
+ 	 ****************************************************/
+	/**
+	 * 페이지 로딩 이벤트
+	 */    
+	scwin.req_clsf = "";
+	scwin.onpageload = function() {
+		var param = com.getParameter();
+		scwin.req_clsf = param.req_clsf;
+		dma_search.setJSON(param);
+		
+		var codeOptions = [ { code : "RBC", compID :"grd_equip:equip_clsf" } // 기자재구분
+		                ];		
+		com.setCmnCd(codeOptions, function(){
+			if(dma_search.get("accnt_no") != "" || dma_search.get("prj_no") != ""){				
+				scwin.search();	
+			}
+		});	
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	/**
+	 * 조회버튼 클릭
+	 */
+	scwin.search = function() {
+		// 목록 조회
+		com.execute(sbm_selectEquip, {
+			successCallback : function(e) {
+				dlt_equip.setJSON(e.responseJSON.resInpMatePopVoList);
+			}
+		});
+	};
+	
+	/**
+	 * 닫기 버튼 클릭
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	
+	/**
+	 * grid 더블클릭 이벤트
+	 */
+	scwin.grd_expns_oncelldblclick = function(row,col,colId) {
+		if(scwin.req_clsf == "H") return; // 결재스냅샷에서 호출
+		
+		if(dlt_equip.getCellData(row, "pur_req_no").trim() != ""){
+			alert("선택한 품명은 이미 구매요구를 작성한 건입니다. 확인바랍니다.");
+			//return;
+		}
+		
+		if(dlt_equip.getCellData(row, "qty") == '0'){
+			alert("수량이 없습니다 ");
+			return;
+		}
+		
+		var amt = Number(dlt_equip.getCellData(row, "amt"));
+		// RBC001 연구장비
+		if (dlt_equip.getCellData(row, "attach_file_no") == "" &&  dlt_equip.getCellData(row, "equip_clsf") == "RBC001" && amt >= 30000000 ) {
+			alert("3천만원 이상의 장비는 연구장비심의결과가 첨부되어야 구매가 가능합니다.\n연구장비심의결과를 연구관리담당자에게 제출하여 주시기 바랍니다.");
+			return;
+		}
+				
+		com.closePopup(dlt_equip.getRowJSON(row));
+	};
+	
+	/**
+	 * grid 클릭 이벤트
+	 */
+	scwin.grd_equip_oncellclick = function(row,col,colId) {
+		if(colId == "attach_file_no"){
+			if(dlt_equip.getCellData(row, "attach_file_no").trim() != ""){				
+				var data ={
+					attach_file_no : dlt_equip.getCellData(row, "attach_file_no"),
+					mode : "view",
+					ref_yn : "Y"
+				};
+				com.pop.open(com.pop.TYPE.ATTACH, data, function(ret) {
+				});
+			}	
+		}
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group class="titleSection pt0" id="" style="">
+    		<xf:group class="le" id="">
+    			<w2:textbox class="tit_tbl" id="" label="연구기자재 검색" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    		<xf:group class="ri" id="" style=""></xf:group>
+    	</xf:group>
+    	<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    		rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    		rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="40"
+    		dataList="data:dlt_equip" evenRowBackgroundColor="#f7faff" style="height: 85px;" id="grd_equip" visibleRowNum="10" class="grid"
+    		rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncelldblclick="scwin.grd_expns_oncelldblclick" sortable="true"
+    		filterFocusMode="outfocus" readOnly="true" ev:oncellclick="scwin.grd_equip_oncellclick" fixedColumn="4">
+    		<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    		<w2:header style="" id="header1">
+    			<w2:row style="" id="row1">
+    				<w2:column width="85" inputType="text" style="height:28px;" id="column9" value="과제번호" displayMode="label" colSpan=""
+    					rowSpan="">
+    				</w2:column>
+    				<w2:column width="50" inputType="text" style="height:28px;" id="column7" value="순번" displayMode="label" colSpan=""
+    					rowSpan="">
+    				</w2:column>
+    				<w2:column width="90" inputType="text" style="height:28px;" id="column5" value="구분" displayMode="label" colSpan=""
+    					rowSpan="">
+    				</w2:column>
+    				<w2:column width="160" inputType="text" style="height:28px;" id="column3" value="품명" displayMode="label" colSpan=""
+    					rowSpan="">
+    				</w2:column>
+    				<w2:column width="45" inputType="text" style="height:28px;" id="column20" value="수량" displayMode="label" colSpan=""
+    					rowSpan="">
+    				</w2:column>
+    				<w2:column width="90" inputType="text" style="height:28px" id="column21" value="금액" displayMode="label"></w2:column>
+    				<w2:column width="90" inputType="text" style="height:28px" id="column23" value="ETUB ID" displayMode="label"></w2:column>
+    				<w2:column width="90" inputType="text" style="height:28px" id="column25" value="구매요구번호" displayMode="label"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column27" value="심의여부" displayMode="label"></w2:column>
+    				<w2:column width="130" inputType="text" style="height:28px" id="column29" value="심의기구" displayMode="label" class=""></w2:column>
+    				<w2:column width="80" inputType="text" style="height:28px" id="column31" value="심의번호" displayMode="label"></w2:column>
+    				<w2:column width="85" inputType="text" style="height:28px" id="column33" value="심의일자" displayMode="label"></w2:column>
+    				<w2:column width="90" inputType="text" style="height:28px" id="column35" value="첨부파일" displayMode="label"></w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="column37" value="사유" displayMode="label"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody style="" id="gBody1">
+    			<w2:row style="" id="row2">
+    				<w2:column width="85" inputType="text" readOnly="true" style="height:28px;" id="prj_no" displayMode="label"></w2:column>
+    				<w2:column width="50" inputType="text" readOnly="true" style="height:28px;" id="equip_odr" class=""
+    					displayMode="label">
+    				</w2:column>
+    				<w2:column width="90" inputType="select" readOnly="true" style="height:28px;" id="equip_clsf" class="" escape="false"
+    					displayMode="label">
+    				</w2:column>
+    				<w2:column width="160" inputType="text" readOnly="true" style="height:28px;" id="gdnm" displayMode="label"
+    					escape="false" class="le">
+    				</w2:column>
+    				<w2:column width="45" inputType="text" readOnly="true" style="height:28px;" id="qty" displayMode="label" class="le"></w2:column>
+    				<w2:column width="90" inputType="text" style="height:28px" id="amt" value="" displayMode="label" class="ri" dataType="number" displayFormat="#,###"></w2:column>
+    				<w2:column width="90" inputType="text" style="height:28px" id="etub_id" value="" displayMode="label"></w2:column>
+    				<w2:column width="90" inputType="text" style="height:28px" id="pur_req_no" value="" displayMode="label"></w2:column>
+    				<w2:column width="70" inputType="select" style="height:28px" id="consttn_clsf" value="" displayMode="label" allOption=""
+    					chooseOption="" ref="">
+    					<w2:choices>
+    						<w2:item>
+    							<w2:label><![CDATA[심의]]></w2:label>
+    							<w2:value><![CDATA[RBH001]]></w2:value>
+    						</w2:item>
+    						<w2:item>
+    							<w2:label><![CDATA[미심의]]></w2:label>
+    							<w2:value><![CDATA[RBH002]]></w2:value>
+    						</w2:item>
+    					</w2:choices>
+    				</w2:column>
+    				<w2:column width="130" inputType="text" style="height:28px" id="consttn_plce" value="" displayMode="label"></w2:column>
+    				<w2:column width="80" inputType="text" style="height:28px" id="consttn_no" value="" displayMode="label"></w2:column>
+    				<w2:column width="85" inputType="text" style="height:28px" id="consttn_ymd" value="" displayMode="label" dataType="date"></w2:column>
+    				<w2:column width="90" inputType="link" style="height:28px" id="attach_file_no" value="" displayMode="label"></w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="consttn_resn" value="" displayMode="label" class="le"></w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger class="btn pro" id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

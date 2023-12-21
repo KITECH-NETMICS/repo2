@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.ptr">
+<update id="updateAttachmentFilesBySrhId" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+    UPDATE patsrhres
+    <set>
+        <if test="rpt_srh_attach_file != null and rpt_srh_attach_file != ''">
+            rpt_srh_attach_file = #{rpt_srh_attach_file},
+        </if>
+        
+        <if test="rpt_announce_attach_file != null and rpt_announce_attach_file != ''">
+            rpt_announce_attach_file = #{rpt_announce_attach_file},
+        </if>
+    </set>
+    WHERE srh_id = #{srh_id}
+</update>
+<select id="selectPatAppBibliographySS01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo" resultType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptr.selectPatAppBibliographySS01 */ 
+     mst.req_no
+        , mst.pat_clsf
+        , NVL(fun_xodxcommst_cd_nm(mst.pat_clsf, 0), '') pat_clsf_nm
+        , mst.tech_clsf
+        , NVL(fun_xodxcommst_cd_nm(mst.tech_clsf, 0), '') tech_clsf_nm
+        , mst.invnt_krn_nm
+        , mst.invnt_syspayno
+        , pai.nm_krn AS invnt_nm
+        , mst.smitapp_hope_natn_nm
+        , '[' || pof.patofic_nm|| ']' || poc.nm || ' (연락처)' || poc.contac_loc ||' (메일)' || poc.email AS patofic_full_nm
+        , mst.interview_yn
+   FROM  patappmastr mst
+INNER JOIN patappcoinvntpsn pai ON pai.req_no = mst.req_no AND pai.invnt_psn_clsf = '1'
+LEFT JOIN patoffice pof ON pof.patofic_cd = mst.hope_patofic_cd
+LEFT JOIN patoficcharg poc ON poc.id = mst.hope_patofic_charg_id
+  WHERE mst.req_no = #{req_no}
+  </select>
+
+<select id="selectPatPtrRevInvSS01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo" resultType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptr.selectPatPtrRevInvSS01 */ 
+		 srh.srh_id ref_id
+    , res.srhres_id
+    , res.srh_sn
+    , srh.req_no
+    , srh.mngmt_no
+    , srh.job_state_cd
+    , pst.state_desc AS job_state_nm_detail
+    , fn_state_desc(srh.job_state_cd) job_state_nm
+    , srh.req_psn_syspayno
+    , fun_emp_nm(srh.req_psn_syspayno) req_psn_nm
+    , TO_CHAR(srh.req_daytm, '%Y%m%d') req_daytm
+    , srh.req_patofic_cd
+    , pof.patofic_nm AS req_patofic_nm
+    , srh.hope_patofic_charg_id
+    , fn_ofic_user_nm(srh.hope_patofic_charg_id) hope_patofic_charg_nm
+    , srh.req_due_date
+    , srh.req_comment
+    , srh.req_attach_file_no
+    , srh.rcpt_wri_id
+    , srh.rcpt_psn_id
+    , srh.rcpt_adm_id
+    , fn_ofic_user_nm(srh.rcpt_wri_id) rcpt_wri_nm
+    , fn_ofic_user_nm(srh.rcpt_psn_id) rcpt_psn_nm
+    , fn_ofic_user_nm(srh.rcpt_adm_id) rcpt_adm_nm
+    , TO_CHAR(srh.rcpt_daytm, '%Y%m%d') rcpt_daytm
+    , srh.rcpt_charg_psn_id
+    , fn_ofic_user_nm(srh.rcpt_charg_psn_id) charg_psn_nm
+    , srh.rcpt_patofic_mng_no
+    , res.rpt_wri_id
+    , res.rpt_psn_id
+    , res.rpt_adm_id
+    , res.rpt_charg_psn_id
+    , fn_ofic_user_nm(res.rpt_wri_id) rpt_wri_nm
+    , fn_ofic_user_nm(res.rpt_psn_id) rpt_psn_nm
+    , fn_ofic_user_nm(res.rpt_psn_id) rpt_adm_nm
+    , fn_ofic_user_nm(res.rpt_charg_psn_id) rpt_charg_psn_nm
+    , TO_CHAR(res.rpt_daytm, '%Y%m%d') rpt_daytm
+    , res.rpt_comment
+    , res.rpt_attach_file
+    , res.rpt_search_clsf
+    , case res.rpt_search_clsf when '0' then '출원진행가능'
+                           when '1' then '보완 후 출원가능'
+                           when '2' then '출원불가' end rpt_search_clsf_nm
+    , res.rpt_srh_attach_file
+    , res.rpt_announce_attach_file
+    , res.eval_psn_syspayno
+    , case res.eval_clsf when '0' then fun_emp_nm(res.eval_psn_syspayno)
+                          when '1' then fun_emp_nm(res.rereq_psn_syspayno) end eval_psn_syspaynm
+    , case res.eval_clsf when '0' then to_char(res.eval_daytm, '%Y%m%d')
+                          when '1' then to_char(res.rereq_daytm, '%Y%m%d') end eval_daytm
+    , res.eval_clsf re_eval_clsf
+    , case res.eval_clsf when '0' then '완료/평가'
+                         when '1' then '보완요청' end re_eval_clsf_nm
+    , res.eval_service_scr
+    , res.eval_result_scr
+    , res.rereq_comment
+  FROM   patsrh srh
+    LEFT JOIN patsrhres res ON res.srh_id = srh.srh_id AND res.srh_sn =  (SELECT max(srh_sn) FROM patsrhres WHERE srh_id = srh.srh_id)
+    LEFT JOIN patstatecode pst ON pst.state_cd = srh.job_state_cd
+    LEFT JOIN patoffice pof ON pof.patofic_cd = srh.req_patofic_cd
+ WHERE srh.srh_id = #{srh_id}
+  </select>
+<update id="updatePatPtrRevInvSU01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptr.updatePatPtrRevInvSU01 */ 
+		 PATSRHRES
+   SET eval_psn_syspayno = #{eval_psn_syspayno}
+     , eval_daytm        = CURRENT
+     , eval_result_scr   = #{eval_result_scr}
+     , eval_service_scr  = #{eval_service_scr}
+     , eval_comment      = #{eval_comment}
+     , eval_clsf         = #{eval_clsf}
+ WHERE srhres_id         = #{srhres_id}
+  </update>
+<update id="updatePatPtrRevInvSU02" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptr.updatePatPtrRevInvSU02 */ 
+		 PATSRHRES
+   SET rereq_psn_syspayno = #{rereq_psn_syspayno}
+     , rereq_daytm        = CURRENT
+     , rereq_comment      = #{rereq_comment}
+     , eval_clsf          = #{eval_clsf}
+ WHERE srhres_id          = #{srhres_id}
+  </update>
+<update id="updatePatPtrMasterSU01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptr.updatePatPtrMasterSU01 */ 
+		 PATMASTR
+   SET state    = #{state}
+     , updt_syspayno = #{psn_syspayno}
+     , updt_daytm = current
+ WHERE req_no   = #{req_no}
+   AND mngmt_no = #{mngmt_no}
+  </update>
+<update id="updatePatPtrMasterSU02" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptr.updatePatPtrMasterSU02 */ 
+		 PATMASTR
+   SET state    = #{state}
+     , eval_act_yn   = 'Y'
+     , updt_syspayno = #{psn_syspayno}
+     , updt_daytm = current
+ WHERE req_no   = #{req_no}
+   AND mngmt_no = #{mngmt_no}
+  </update>
+<update id="updatePatPtrMasterSU03" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptr.updatePatPtrMasterSU03 */ 
+		 patmastr
+   SET state = #{state}
+     , eval_act_yn = 'Y'
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+ WHERE req_no = #{req_no}
+  </update>
+<update id="updatePatPtrSrhSU01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptr.updatePatPtrSrhSU01 */ 
+		 PATSRH
+   SET job_state_cd  = #{state}
+     , updt_syspayno = #{psn_syspayno}
+     , updt_daytm    = current
+ WHERE srh_id = #{srh_id}
+  </update>
+<update id="updatePatPtrSrhFSU01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptr.updatePatPtrSrhFSU01 */ 
+		 PATSRH
+   SET job_state_cd  = #{job_state_cd}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm    = CURRENT
+     , fnsh_daytm    = CURRENT
+ WHERE srh_id = #{srh_id}
+  </update>
+<select id="selectPatPtrMasterSS01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo" resultType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptr.selectPatPtrMasterSS01 */ 
+		 mst.smitapp_natn_cd
+  FROM patmastr mst
+WHERE mst.req_no = #{req_no}
+  AND mst.mngmt_no = #{mngmt_no}
+  </select>
+<update id="updatePatPtrReqMasterSU01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptr.updatePatPtrReqMasterSU01 */ 
+		 PATMASTR
+   SET state = 'P0211'
+     , patofic_cd = #{req_patofic_cd}
+     , patofic_nm = #{patofic_nm}
+     , patofic_charg_id = #{hope_patofic_charg_id}
+     , patofic_charg_nm = #{patofic_charg_nm}
+ WHERE mngmt_no = #{mngmt_no}
+  </update>
+<select id="selectPatPtrReeInvSS02" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo" resultType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptr.selectPatPtrReeInvSS02 */ 
+		 srh.srh_id ref_id
+             , res.srhres_id
+             , res.srh_sn
+             , srh.req_no
+             , srh.mngmt_no
+             , srh.job_state_cd
+             , pst.state_desc AS job_state_nm_detail
+             , fn_state_desc(srh.job_state_cd) job_state_nm
+             , srh.req_psn_syspayno
+             , fun_emp_nm(srh.req_psn_syspayno) req_psn_nm
+             , TO_CHAR(srh.req_daytm, '%Y%m%d') req_daytm
+             , srh.req_patofic_cd
+             , pof.patofic_nm AS patofic_nm
+             , srh.hope_patofic_charg_id
+             , fn_ofic_user_nm(srh.hope_patofic_charg_id) hope_patofic_charg_nm
+             , TO_CHAR(srh.req_due_date, '%Y%m%d') req_due_date
+             , srh.req_comment::char(4000) req_comment
+             , srh.req_attach_file_no
+             , srh.rcpt_wri_id
+             , srh.rcpt_psn_id
+             , srh.rcpt_adm_id
+             , fn_ofic_user_nm(srh.rcpt_wri_id) rcpt_wri_nm
+             , fn_ofic_user_nm(srh.rcpt_psn_id) rcpt_psn_nm
+             , fn_ofic_user_nm(srh.rcpt_adm_id) rcpt_adm_nm
+             , TO_CHAR(srh.rcpt_daytm, '%Y%m%d') rcpt_daytm
+             , srh.rcpt_charg_psn_id
+             , fn_ofic_user_nm(srh.rcpt_charg_psn_id) charg_psn_nm
+             , srh.rcpt_patofic_mng_no
+             , res.rpt_wri_id
+             , res.rpt_psn_id
+             , res.rpt_adm_id
+             , fn_ofic_user_nm(res.rpt_wri_id) rpt_wri_nm
+             , fn_ofic_user_nm(res.rpt_psn_id) rpt_psn_nm
+             , fn_ofic_user_nm(res.rpt_psn_id) rpt_adm_nm
+             , fn_ofic_user_nm(res.rpt_charg_psn_id) rpt_charg_psn_nm
+             , TO_CHAR(res.rpt_daytm, '%Y%m%d') rpt_daytm
+             , res.rpt_comment::char(4000) rpt_comment
+             , res.rpt_attach_file
+             , res.rpt_search_clsf
+             , case res.rpt_search_clsf when '0' then '출원진행가능'
+                                    when '1' then '보완 후 출원가능'
+                                    when '2' then '출원불가' end rpt_search_clsf_nm
+             , res.rpt_srh_attach_file
+             , res.rpt_announce_attach_file
+             , res.rereq_psn_syspayno
+             , fun_emp_nm(res.rereq_psn_syspayno) rereq_psn_nm
+             , TO_CHAR(res.rereq_daytm, '%Y%m%d') rereq_daytm
+             , res.rereq_comment::char(4000) rereq_comment
+             , res.rercpt_wri_id
+             , res.rercpt_psn_id
+             , fn_ofic_user_nm(res.rercpt_wri_id) rercpt_wri_nm
+             , fn_ofic_user_nm(res.rercpt_psn_id) rercpt_psn_nm
+             , fun_emp_nm(res.rereq_psn_syspayno) re_rereq_psn_syspaynm
+             , TO_CHAR(res.rercpt_daytm, '%Y%m%d') rercpt_daytm
+             , res.eval_psn_syspayno
+             , fun_emp_nm(res.eval_psn_syspayno) eval_psn_nm
+             , res.eval_service_scr
+             , res.eval_result_scr
+             , res.eval_comment::char(4000) eval_comment
+             , ress.rereq_psn_syspayno re_rereq_psn_syspayno
+             , fun_emp_nm(ress.rereq_psn_syspayno) re_rereq_psn_nm
+             , TO_CHAR(ress.rereq_daytm, '%Y%m%d') re_rereq_daytm
+             , ress.rereq_comment::char(4000) re_rereq_comment
+             , ress.rercpt_wri_id re_rercpt_wri_id
+             , ress.rercpt_psn_id re_rercpt_psn_id
+             , fn_ofic_user_nm(ress.rercpt_wri_id) re_rercpt_wri_nm
+             , fn_ofic_user_nm(ress.rercpt_psn_id) re_rercpt_psn_nm
+             , TO_CHAR(ress.rercpt_daytm, '%Y%m%d') re_rercpt_daytm
+             , ress.eval_clsf re_eval_clsf
+             , case ress.eval_clsf when '0' then '완료/평가'
+                                   when '1' then '보완요청' end re_eval_clsf_nm
+             , case res.eval_clsf when '0' then fun_emp_nm(res.eval_psn_syspayno)
+                                   when '1' then fun_emp_nm(res.rereq_psn_syspayno) end eval_psn_syspaynm
+             , case res.eval_clsf when '0' then to_char(res.eval_daytm, '%Y%m%d')
+                                   when '1' then to_char(res.rereq_daytm, '%Y%m%d') end eval_daytm
+             , res.eval_clsf
+             , case res.eval_clsf when '0' then '완료/평가'
+                                   when '1' then '보완요청' end eval_clsf_nm
+        FROM   patsrh srh
+               LEFT JOIN patsrhres res ON res.srh_id = srh.srh_id
+               LEFT JOIN patsrhres ress ON ress.srh_id = srh.srh_id
+               AND    ress.srh_sn = res.srh_sn - 1
+               LEFT JOIN patstatecode pst ON pst.state_cd = srh.job_state_cd
+               LEFT JOIN patoffice pof ON pof.patofic_cd = srh.req_patofic_cd
+            WHERE res.srhres_id = (SELECT srhres_id FROM patsrhres WHERE srh_id = #{srh_id} AND srh_sn =  (SELECT MAX(srh_sn) FROM patsrhres WHERE srh_id = #{srh_id}))
+  </select>
+<insert id="insertPatPtrReqSI01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.ptr.insertPatPtrReqSI01 */ 
+		 INTO PATSRH (srh_id
+                    , req_no
+                    , mngmt_no
+                    , job_state_cd
+                    , req_psn_syspayno
+                    , req_daytm
+                    , req_patofic_cd
+                    , hope_patofic_charg_id
+                    , req_due_date
+                    , req_comment
+                    , req_attach_file_no
+                    , regst_syspayno
+                    , regst_daytm)
+VALUES (#{srh_id}
+       , #{req_no}
+       , #{mngmt_no}
+       , 'P0211'
+       , #{req_psn_syspayno}
+       , CURRENT
+       , #{req_patofic_cd}
+       , #{hope_patofic_charg_id}
+       , #{req_due_date}
+       , #{req_comment}
+       , #{req_attach_file_no}
+       , #{req_psn_syspayno}
+       , CURRENT)
+  </insert>
+<update id="updatePatPtrReqSI02" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ptr.updatePatPtrReqSI02 */ 
+		 patsrh
+   SET job_state_cd = #{job_state_cd}
+     , req_psn_syspayno = #{req_psn_syspayno}
+     , req_daytm = CURRENT
+     , req_patofic_cd = #{req_patofic_cd}
+     , hope_patofic_charg_id = #{hope_patofic_charg_id}
+     , req_due_date = #{req_due_date}
+     , req_comment = #{req_comment}
+     , req_attach_file_no = #{req_attach_file_no}
+     , regst_syspayno = #{regst_syspayno}
+     , regst_daytm = CURRENT
+WHERE srh_id = #{srh_id}
+  </update>
+<select id="selectPatPtrReeInvSS01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo" resultType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptr.selectPatPtrReeInvSS01 */ 
+		 srh.srh_id ref_id
+             , res.srhres_id
+             , res.srh_sn
+             , srh.req_no
+             , srh.mngmt_no
+             , srh.job_state_cd
+             , pst.state_desc AS job_state_nm_detail
+             , fn_state_desc(srh.job_state_cd) job_state_nm
+             , srh.req_psn_syspayno
+             , fun_emp_nm(srh.req_psn_syspayno) req_psn_nm
+             , TO_CHAR(srh.req_daytm, '%Y%m%d') req_daytm
+             , srh.req_patofic_cd
+             , pof.patofic_nm AS patofic_nm
+             , srh.hope_patofic_charg_id
+             , fn_ofic_user_nm(srh.hope_patofic_charg_id) hope_patofic_charg_nm
+             , srh.req_due_date
+             , srh.req_comment
+             , srh.req_attach_file_no
+             , srh.rcpt_wri_id
+             , srh.rcpt_psn_id
+             , srh.rcpt_adm_id
+             , fn_ofic_user_nm(srh.rcpt_wri_id) rcpt_wri_nm
+             , fn_ofic_user_nm(srh.rcpt_psn_id) rcpt_psn_nm
+             , fn_ofic_user_nm(srh.rcpt_adm_id) rcpt_adm_nm
+             , TO_CHAR(srh.rcpt_daytm, '%Y%m%d') rcpt_daytm
+             , srh.rcpt_charg_psn_id
+             , fn_ofic_user_nm(srh.rcpt_charg_psn_id) charg_psn_nm
+             , srh.rcpt_patofic_mng_no
+             , res.rpt_wri_id
+             , res.rpt_psn_id
+             , res.rpt_adm_id
+             , fn_ofic_user_nm(res.rpt_wri_id) rpt_wri_nm
+             , fn_ofic_user_nm(res.rpt_psn_id) rpt_psn_nm
+             , fn_ofic_user_nm(res.rpt_psn_id) rpt_adm_nm
+             , fn_ofic_user_nm(res.rpt_charg_psn_id) rpt_charg_psn_nm
+             , TO_CHAR(res.rpt_daytm, '%Y%m%d') rpt_daytm
+             , res.rpt_comment
+             , res.rpt_attach_file
+             , res.rpt_search_clsf
+             , case res.rpt_search_clsf when '0' then '출원진행가능'
+                                    when '1' then '보완 후 출원가능'
+                                    when '2' then '출원불가' end rpt_search_clsf_nm
+             , res.rpt_srh_attach_file
+             , res.rpt_announce_attach_file
+             , res.rereq_psn_syspayno
+             , fun_emp_nm(res.rereq_psn_syspayno) rereq_psn_nm
+             , TO_CHAR(res.rereq_daytm, '%Y%m%d') rereq_daytm
+             , res.rereq_comment
+             , res.rercpt_wri_id
+             , res.rercpt_psn_id
+             , fn_ofic_user_nm(res.rercpt_wri_id) rercpt_wri_nm
+             , fn_ofic_user_nm(res.rercpt_psn_id) rercpt_psn_nm
+             , fun_emp_nm(res.rereq_psn_syspayno) re_rereq_psn_syspaynm
+             , TO_CHAR(res.rercpt_daytm, '%Y%m%d') rercpt_daytm
+             , res.eval_psn_syspayno
+             , fun_emp_nm(res.eval_psn_syspayno) eval_psn_nm
+             , res.eval_service_scr
+             , res.eval_result_scr
+             , res.eval_comment
+             , ress.rereq_psn_syspayno re_rereq_psn_syspayno
+             , fun_emp_nm(ress.rereq_psn_syspayno) re_rereq_psn_nm
+             , TO_CHAR(ress.rereq_daytm, '%Y%m%d') re_rereq_daytm
+             , ress.rereq_comment AS re_rereq_comment
+             , ress.rercpt_wri_id re_rercpt_wri_id
+             , ress.rercpt_psn_id re_rercpt_psn_id
+             , fn_ofic_user_nm(ress.rercpt_wri_id) re_rercpt_wri_nm
+             , fn_ofic_user_nm(ress.rercpt_psn_id) re_rercpt_psn_nm
+             , TO_CHAR(ress.rercpt_daytm, '%Y%m%d') re_rercpt_daytm
+             , ress.eval_clsf re_eval_clsf
+             , case ress.eval_clsf when '0' then '완료/평가'
+                                   when '1' then '보완요청' end re_eval_clsf_nm
+             , case res.eval_clsf when '0' then fun_emp_nm(res.eval_psn_syspayno)
+                                   when '1' then fun_emp_nm(res.rereq_psn_syspayno) end eval_psn_syspaynm
+             , case res.eval_clsf when '0' then to_char(res.eval_daytm, '%Y%m%d')
+                                   when '1' then to_char(res.rereq_daytm, '%Y%m%d') end eval_daytm
+             , res.eval_clsf
+             , case res.eval_clsf when '0' then '완료/평가'
+                                   when '1' then '보완요청' end eval_clsf_nm
+        FROM   patsrh srh
+               LEFT JOIN patsrhres res ON res.srh_id = srh.srh_id
+               LEFT JOIN patsrhres ress ON ress.srh_id = srh.srh_id
+               AND    ress.srh_sn = (SELECT srh_sn-1 FROM patsrhres WHERE srhres_id = (SELECT srhres_id FROM patsrhres where srh_id = #{srh_id} AND srh_sn = #{srh_sn}))
+               LEFT JOIN patstatecode pst ON pst.state_cd = srh.job_state_cd
+               LEFT JOIN patoffice pof ON pof.patofic_cd = srh.req_patofic_cd
+            WHERE res.srhres_id = (SELECT srhres_id FROM patsrhres WHERE srh_id = #{srh_id} AND srh_sn = #{srh_sn})
+  </select>
+<select id="selectPatPtrReeInvSS03" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo" resultType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptr.selectPatPtrReeInvSS03 */ 
+		 srh.srh_id ref_id
+             , srh.req_no
+             , srh.mngmt_no
+             , srh.job_state_cd
+             , pst.state_desc AS job_state_nm_detail
+             , fn_state_desc(srh.job_state_cd) job_state_nm
+             , srh.req_psn_syspayno
+             , fun_emp_nm(srh.req_psn_syspayno) req_psn_nm
+             , TO_CHAR(srh.req_daytm, '%Y%m%d') req_daytm
+             , srh.req_patofic_cd
+             , pof.patofic_nm AS patofic_nm
+             , srh.hope_patofic_charg_id
+             , fn_ofic_user_nm(srh.hope_patofic_charg_id) hope_patofic_charg_nm
+             , srh.req_due_date
+             , srh.req_comment
+             , srh.req_attach_file_no
+             , srh.rcpt_wri_id
+             , srh.rcpt_psn_id
+             , srh.rcpt_adm_id
+             , fn_ofic_user_nm(srh.rcpt_wri_id) rcpt_wri_nm
+             , fn_ofic_user_nm(srh.rcpt_psn_id) rcpt_psn_nm
+             , fn_ofic_user_nm(srh.rcpt_adm_id) rcpt_adm_nm
+             , TO_CHAR(srh.rcpt_daytm, '%Y%m%d') rcpt_daytm
+             , srh.rcpt_charg_psn_id
+             , fn_ofic_user_nm(srh.rcpt_charg_psn_id) charg_psn_nm
+             , srh.rcpt_patofic_mng_no
+        FROM   patsrh srh
+        LEFT JOIN patstatecode pst ON pst.state_cd = srh.srh_id
+        LEFT JOIN patoffice pof ON pof.patofic_cd = srh.req_patofic_cd
+        WHERE srh.srh_id = #{srh_id}
+  </select>
+<select id="selectPatPtrReeCntSS01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo" resultType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptr.selectPatPtrReeCntSS01 */ 
+		 CASE NVL(psr.srh_sn, '') WHEN '' THEN '의뢰'
+                                  ELSE  '보완요청(' || psr.srh_sn - 1 ||')' END AS srh_sn_nm
+       , NVL(psr.srh_sn, 0) AS srh_sn_cd
+  FROM patsrh pts
+LEFT JOIN patsrhres psr ON psr.srh_id = pts.srh_id
+ WHERE pts.srh_id = #{srh_id}
+ORDER BY 2
+  </select>
+  <select id="selectPatPtrReqInvSS01" parameterType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo" resultType="kr.re.kitech.biz.pat.ptr.vo.PatPtrRevInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.ptr.selectPatPtrReqInvSS01 */ 
+             psh.srh_id
+      , psh.mngmt_no
+      , fn_state_desc(psh.job_state_cd)  job_state_nm
+      , psh.job_state_cd
+      , pst.state_desc AS job_state_nm_dtl
+      , psh.req_psn_syspayno
+      , fun_emp_nm(psh.req_psn_syspayno)  req_psn_nm
+      , TO_CHAR(psh.req_daytm, '%Y%m%d') req_daytm
+      , pat.patofic_cd AS req_patofic_cd
+      , pat.patofic_nm AS req_patofic_nm
+      , fn_ofic_user_nm(pat.patofic_charg_id) hope_patofic_charg_nm
+      , pat.patofic_charg_id AS patofic_charg_id
+      , TO_CHAR(psh.req_due_date, '%Y%m%d') due_date
+      , psh.req_comment
+      , trim(psh.req_attach_file_no) req_attach_file_no
+      , pat.patofic_cd AS patofic_cd
+      , pat.patofic_nm AS patofic_nm
+  FROM patappmastr pam
+  INNER JOIN patmastr pat ON pam.req_no = pat.req_no
+LEFT OUTER JOIN patsrh psh ON psh.req_no = pam.req_no
+LEFT JOIN patstatecode pst ON pst.state_cd = psh.job_state_cd
+LEFT JOIN patoffice pof ON pof.patofic_cd = psh.req_patofic_cd
+LEFT JOIN patoffice pof2 ON pof2.patofic_cd = pam.hope_patofic_cd
+ WHERE 1=1
+   AND pam.req_no = #{req_no}
+   AND ('' = #{srh_id} OR psh.srh_id = #{srh_id})
+  </select>
+</mapper>

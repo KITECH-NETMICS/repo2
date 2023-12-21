@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head>
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_emp" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="empno" name="사번" dataType="text"></w2:column>
+        				<w2:column id="ename" name="성명" dataType="text"></w2:column>
+        				<w2:column id="job" name="직업" dataType="text"></w2:column>
+        				<w2:column id="hiredate" name="입사일" dataType="text"></w2:column>
+        				<w2:column id="dname" name="부서" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="scEname" name="성명" dataType="text"></w2:key>
+        				<w2:key id="scDname" name="부서명" dataType="text"></w2:key>
+        				<w2:key id="scDeptno" name="부서코드" dataType="text"></w2:key>
+        				<w2:key id="pageSize" name="pageSize" dataType="text"></w2:key>
+        				<w2:key id="pageIndex" name="pageIndex" dataType="text"></w2:key>
+        				<w2:key id="firstYn" name="firstYn" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" ev:ondataload="scwin.dlt_deptlist_ondataload" id="dlt_deptlist" repeatNode="map"
+        			saveRemovedData="true" style="">
+        			<w2:columnInfo>
+        				<w2:column dataType="text" id="deptno" name="deptno"></w2:column>
+        				<w2:column dataType="text" id="dname" name="dname"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_search" ref='data:json,{"id":"dma_search","key":"elData"}'
+        		target='data:json,{"id":"dlt_emp","key":"elData.empVoList"}' action="/DmoEmpList.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="scwin.sbm_search_submitdone" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission abortTrigger="" action="/DmoEmpView.pwkjson" customHandler="" encoding="UTF-8" errorHandler=""
+        		ev:submit="" ev:submitdone="scwin.sbm_deptlist_submitdone" ev:submiterror="" id="sbm_deptlist" instance=""
+        		mediatype="application/json" method="post" mode="asynchronous" processMsg="" ref='data:json,{"id":"dma_search","key":"elData"}'
+        		replace="" target='data:json,{"id":"dlt_deptlist","key":"elData.deptVoList"}' style="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+	scwin.onpageload = function() {
+		scwin.init();
+
+	};
+
+	scwin.onpageunload = function() {
+
+	};
+
+	scwin.init = function() {
+		sbx_page.setValue(10);
+		dma_search.set("pageIndex", 11);
+
+		com.sbm.execute(sbm_deptlist);
+		scwin.btn_search_onclick();
+	}
+	
+	scwin.btn_search_onclick = function(e) {
+		scwin.search(11, "Y");
+	};
+
+	scwin.search = function(idx, firstYn) {
+		if (firstYn == "Y") {
+			dma_search.set("pageIndex", 1);
+			dma_search.set("firstYn", "Y");
+		} else {
+			dma_search.set("pageIndex", idx);
+			dma_search.set("firstYn", "N");
+		}
+
+		com.sbm.execute(sbm_search);
+	};
+	scwin.btn_register_onclick = function(e) {
+		com.win.moveUrl("/ui/emp/empRegister.xml");
+	};
+
+	scwin.sbm_search_submitdone = function(e) {
+		if (com.sbm.getResultCode(e) == gcm.MESSAGE_CODE.STATUS_SUCCESS) {
+			var firstYn = dma_search.get("firstYn");
+
+			if (firstYn == "Y") {
+				var totalCnt = com.num.ceil(e.responseJSON.elData.totalCount
+						/ com.num.parseInt(dma_search.get("pageSize")));
+				tbx_cnt.setValue(e.responseJSON.elData.totalCount);
+				pgl_emp.setCount(totalCnt);
+			}
+		}
+	};
+
+	scwin.grd_emp_oncellclick = function(row, col, colId) {
+		if (colId == "empno") {
+			com.win.moveUrl("/ui/emp/empRegister.xml", {
+				"empno" : dlt_emp.getCellData(row, "empno")
+			});
+		}
+	};
+
+	scwin.dlt_deptlist_ondataload = function() {
+		sbx_dept.setNodeSet("data:dlt_deptlist", "dname", "deptno");
+	};
+
+	scwin.pgl_emp_onclick = function(idx) {
+		scwin.search(idx);
+	};
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="emp_contents" id="" style="">
+    		<xf:group class="shbox" id="tbl_search" style="">
+    			<xf:group class="shbox_inner" id="" style="">
+    				<xf:group adaptive="layout" adaptiveThreshold="768" class="w2tb tb" id="" style="width:100%;" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width: 160px;" tagname="col"></xf:group>
+    						<xf:group style="width: 170px;" tagname="col"></xf:group>
+    						<xf:group style="width: 200px;" tagname="col"></xf:group>
+    						<xf:group style="width:280px;" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group id="">
+    								<w2:textbox style="" id="" label="성명"></w2:textbox>
+    								<xf:input ref="data:dma_search.scEname" style="width:100px;" id="ibx_ename" placeholder="" class=""></xf:input>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group id="">
+    								<w2:textbox id="" label="부서명" style=""></w2:textbox>
+    								<xf:input class="" id="ibx_CONTENT" placeholder="" ref="data:dma_search.scDname" style="width:100px;"></xf:input>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group id="">
+    								<w2:textbox id="" label="부서" style=""></w2:textbox>
+    								<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="" direction="auto"
+    									disabled="false" disabledClass="w2selectbox_disabled" id="sbx_dept" ref="data:dma_search.scDeptno" renderType="native"
+    									style="width:140px;" submenuSize="auto" chooseOptionLabel="-전체-">
+    									<xf:choices></xf:choices>
+    								</xf:select1>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="btn_shbox" id="" style="">
+    								<w2:textbox id="" label="페이지크기:" style=""></w2:textbox>
+    								<xf:select1 allOption="" appearance="minimal" chooseOption="" direction="auto" disabled="false"
+    									disabledClass="w2selectbox_disabled" id="sbx_page" style="width: 60px;" submenuSize="auto" ref="data:dma_search.pageSize">
+    									<xf:choices>
+    										<xf:item>
+    											<xf:label><![CDATA[5]]></xf:label>
+    											<xf:value><![CDATA[5]]></xf:value>
+    										</xf:item>
+    										<xf:item>
+    											<xf:label><![CDATA[10]]></xf:label>
+    											<xf:value><![CDATA[10]]></xf:value>
+    										</xf:item>
+    										<xf:item>
+    											<xf:label><![CDATA[15]]></xf:label>
+    											<xf:value><![CDATA[15]]></xf:value>
+    										</xf:item>
+    										<xf:item>
+    											<xf:label><![CDATA[20]]></xf:label>
+    											<xf:value><![CDATA[20]]></xf:value>
+    										</xf:item>
+    										<xf:item>
+    											<xf:label><![CDATA[30]]></xf:label>
+    											<xf:value><![CDATA[30]]></xf:value>
+    										</xf:item>
+    										<xf:item>
+    											<xf:label><![CDATA[50]]></xf:label>
+    											<xf:value><![CDATA[50]]></xf:value>
+    										</xf:item>
+    										<xf:item>
+    											<xf:label><![CDATA[100]]></xf:label>
+    											<xf:value><![CDATA[100]]></xf:value>
+    										</xf:item>
+    									</xf:choices>
+    								</xf:select1>
+    								<xf:trigger class="btn_cm sch" disabled="" ev:onclick="scwin.btn_search_onclick" id="btn_search"
+    									style="" type="button">
+    									<xf:label><![CDATA[조회]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+
+    		</xf:group>
+    		<xf:group class="dfbox" id="" style="">
+    			<xf:group id="" class="fl flex">
+    				<w2:textbox style="" id="" label="총" class="span"></w2:textbox>
+    				<w2:textbox style="" id="tbx_cnt" label="0" class="sum"></w2:textbox>
+    				<w2:textbox class="" id="" label="건" style=""></w2:textbox>
+    			</xf:group>
+    			<xf:group class="fr" id="" style="">
+    			</xf:group>
+    		</xf:group>
+    		<xf:group adaptiveThreshold="" class="gvwbox" id="" style="">
+    			<w2:gridView autoFit="allColumn" autoFitMinWidth="800" captionTitle="" checkReadOnlyOnCut="" class="wq_gvw"
+    				dataList="data:dlt_emp" defaultCellHeight="37" id="grd_emp" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="30"
+    				scrollByColumn="false" scrollByColumnAdaptive="false" style="height:415px;" visibleRowNum="10" readOnly="true"
+    				ev:oncellclick="scwin.grd_emp_oncellclick">
+    				<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    				<w2:header id="header1" style="">
+    					<w2:row id="row1" style="">
+    						<w2:column blockSelect="false" displayMode="label" fixColumnWidth="true" id="c1" inputType="text"
+    							removeBorderStyle="false" style="height:44px" width="30" value="No">
+    						</w2:column>
+    						<w2:column blockSelect="false" displayMode="label" id="column18" inputType="text" removeBorderStyle="false"
+    							style="height:44px;" value="사번" width="90">
+    						</w2:column>
+    						<w2:column blockSelect="false" displayMode="label" id="column17" inputType="text" removeBorderStyle="false"
+    							style="height:44px;" value="성명" width="130">
+    						</w2:column>
+    						<w2:column blockSelect="false" displayMode="label" id="column16" inputType="text" removeBorderStyle="false"
+    							style="height:44px;" value="직업" width="150">
+    						</w2:column>
+    						<w2:column blockSelect="false" displayMode="label" id="column14" inputType="text" removeBorderStyle="false"
+    							style="height:44px;" value="입사일" width="100">
+    						</w2:column>
+    						<w2:column width="70" inputType="text" style="height:44px" id="column19" displayMode="label" value="부서"></w2:column>
+    					</w2:row>
+    				</w2:header>
+    				<w2:gBody id="gBody1" style="">
+    					<w2:row id="row2" style="">
+    						<w2:column blockSelect="false" checkboxLabel="선택" displayMode="label" id="c1" inputType="text"
+    							removeBorderStyle="false" style="height:38px" width="30">
+    						</w2:column>
+    						<w2:column blockSelect="false" displayMode="label" id="empno" inputType="text" readOnly="true"
+    							removeBorderStyle="false" style="height:38px;font-weight:bold;color:;" width="90" class="fwb">
+    						</w2:column>
+    						<w2:column blockSelect="false" displayMode="label" id="ename" inputType="text" readOnly="true"
+    							removeBorderStyle="false" style="height:38px;" width="130">
+    						</w2:column>
+    						<w2:column blockSelect="false" displayMode="label" id="job" inputType="text" readOnly="true"
+    							removeBorderStyle="false" style="height:38px;" textAlign="left" width="150">
+    						</w2:column>
+    						<w2:column blockSelect="false" displayMode="label" id="hiredate" inputType="text" readOnly="true"
+    							removeBorderStyle="false" style="height:38px;" textAlign="left" width="100">
+    						</w2:column>
+    						<w2:column width="70" inputType="text" style="height:38px" id="dname" displayMode="label"></w2:column>
+    					</w2:row>
+    				</w2:gBody>
+    			</w2:gridView>
+    		</xf:group>
+    		<w2:pageList displayButtonType="display" displayFormat="#" id="pgl_emp" pageSize="10" style="" class="wq_pglist"
+    			ev:onclick="scwin.pgl_emp_onclick">
+    		</w2:pageList>
+    		<xf:group class="btnbox" id="" style="">
+    			<xf:group class="fr" id="">
+    				<xf:trigger class="btn_cm" id="btn_register" style="" type="button" ev:onclick="scwin.btn_register_onclick">
+    					<xf:label><![CDATA[등록]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

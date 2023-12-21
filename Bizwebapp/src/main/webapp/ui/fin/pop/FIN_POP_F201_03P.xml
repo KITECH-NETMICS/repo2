@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="카드번호검색" meta_author="이영희" meta_date="2022.04.28.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="card_no" name="카드번호" dataType="text"></w2:column>
+            			<w2:column id="card_knd" name="카드종류" dataType="text"></w2:column>
+            			<w2:column id="card_clsf" name="카드구분" dataType="text"></w2:column>
+            			<w2:column id="apprvl_ymd" name="결재일" dataType="text"></w2:column>
+            			<w2:column id="accnt_no" name="계정번호" dataType="text"></w2:column>
+            			<w2:column id="keep_dept" name="보유부서" dataType="text"></w2:column>
+            			<w2:column id="dept_nm" name="보유부서명" dataType="text"></w2:column>
+            			<w2:column id="keep_charg" name="보유자" dataType="text"></w2:column>
+            			<w2:column id="emp_no_nm" name="보유자명(개인번호)" dataType="text"></w2:column>
+            			<w2:column id="card_state" name="카드상태" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            		<w2:data use="false"></w2:data>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="card_knd" name="카드종류" dataType="text"></w2:key>
+            			<w2:key id="card_clsf" name="카드구분" dataType="text"></w2:key>
+            			<w2:key id="card_no" name="카드번호" dataType="text"></w2:key>
+            			<w2:key id="card_state" name="카드상태" dataType="text"></w2:key>
+            			<w2:key id="keep_charg" name="보유자" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>            
+        	<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='data:json,{"id":"dlt_grd","key":"cardList"}' 
+        	    action="SvcFINSPMPOPR02.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 카드정보조회(팝업)
+ 	 * 변경 이력 : 2022-04-28	이영희	최초 작성
+ 	 ****************************************************/  
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */ 
+	scwin.onpageload = function() {
+		// 공통코드
+		var codeOptions = [ { code : "FAJ", compID :"sbx_card_knd,grd_card:card_knd" }
+		                   ,{ code : "FAI", compID :"sbx_card_clsf" }
+		                   ,{ code : "FCK", compID :"sbx_card_state,grd_card:card_state" }
+		                ];
+		com.setCmnCd(codeOptions, function() {
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.btn_search_onclick = function(e) {
+		//if(!com.validateData(dma_search,[{id :"card_no" , mandatory :true}], false)) return;		
+		com.execute(sbm_selectData, {
+			successCallback : function(e) {
+			}
+		});
+			
+	};
+	
+	/**
+	 * 선택한 행의 데이터 넘겨주기
+	 */
+	scwin.setCardInfo = function(row){
+		com.closePopup(dlt_grd.getRowJSON(row));
+	}
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**
+	 * 그리드 더블클릭 이벤트
+	 */
+	scwin.grd_card_oncelldblclick = function(row,col,colId) {
+		scwin.setCardInfo(row);
+	};
+	
+	/**
+	 * 적용버튼 클릭 이벤트
+	 */
+	scwin.btn_save_onclick = function(e) {
+		var row = grd_card.getFocusedRowIndex();
+		if(row < 0){
+			com.alert(com.getMsg("message.xom.co.com.0003", "카드내역"));
+			return;	
+		}
+		scwin.setCardInfo(grd_card.getFocusedRowIndex());
+	};
+
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection " id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:180px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:180px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="카드종류" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>1</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_card_knd" ref="data:dma_search.card_knd"
+    								style="width:150px;" submenuSize="auto" title="회계코드">
+    								<xf:choices>
+    									<xf:itemset nodeset="data:dlt_code">
+    										<xf:label ref="code_nm"></xf:label>
+    										<xf:value ref="code"></xf:value>
+    									</xf:itemset>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="카드구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_card_clsf" ref="data:dma_search.card_clsf"
+    								style="width:150px;" submenuSize="auto" title="회계코드">
+    								<xf:choices>
+    									<xf:itemset nodeset="data:dlt_code">
+    										<xf:label ref="code_nm"></xf:label>
+    										<xf:value ref="code"></xf:value>
+    									</xf:itemset>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th" style="">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td" style="">
+    							<w2:attributes></w2:attributes>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="카드번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" id="" ref="data:dma_search.card_no" style="width: 150px;"
+    								title="관련내용">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="카드상태" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_card_state" ref="data:dma_search.card_state"
+    								style="width:150px;" submenuSize="auto" title="회계코드">
+    								<xf:choices>
+    									<xf:itemset nodeset="data:dlt_code">
+    										<xf:label ref="code_nm"></xf:label>
+    										<xf:value ref="code"></xf:value>
+    									</xf:itemset>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="보유자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="" ref="data:dma_search.keep_charg" style="width: 150px;"
+    								title="관련내용">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff" id="grd_card"
+    			noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="50" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="10" tooltipDisplay="true" fixedColumn="4" ev:oncelldblclick="scwin.grd_card_oncelldblclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="카드구분" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="카드번호" width="194"></w2:column>
+    					<w2:column displayMode="label" id="column30" inputType="text" style="height:28px" value="결재일" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column46" inputType="text" style="height:28px" value="계정번호" width="93">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column44" inputType="text" style="height:28px" value="보유부서" width="197"></w2:column>    					
+    					<w2:column displayMode="label" id="column42" inputType="text" style="height:28px" value="보유자" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column40" inputType="text" style="height:28px" value="카드상태" width="108"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" escape="false" id="card_knd" inputType="select" readOnly="true" style="height:28px;"
+    						width="80">
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="card_no" inputType="text" readOnly="true"
+    						style="height:28px;" width="194" class="">
+    					</w2:column>
+    					<w2:column displayMode="label" id="apprvl_ymd" inputType="text" readOnly="true" style="height:28px" width="100"
+    						dataType="date" displayFormat="yyyy-MM-dd">
+    					</w2:column>
+    					<w2:column displayMode="label" id="accnt_no" inputType="text" readOnly="true" style="height:28px" width="93"
+    						class="" dataType="text">
+    					</w2:column>
+    					<w2:column displayMode="label" id="dept_nm" inputType="text" readOnly="true" style="height:28px" width="197"
+    						class="le" dataType="text">
+    					</w2:column>
+    					<w2:column displayMode="label" id="emp_no_nm" inputType="text" readOnly="true" style="height:28px" width="80"
+    						class="" dataType="text">
+    					</w2:column>
+    					<w2:column displayMode="label" id="card_state" inputType="select" readOnly="true" style="height:28px" width="108"
+    						class="">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" ev:onclick="scwin.btn_save_onclick" id="btn_save" style="" type="button">
+    					<xf:label><![CDATA[적용]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

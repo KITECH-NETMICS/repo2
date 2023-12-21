@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.edu">
+  <select id="selectSptTechEducReqdBugtList" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducReqdBugtVo" resultType="kr.re.kitech.biz.sup.edu.vo.SptTechEducReqdBugtVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.edu.selectSptTechEducReqdBugtList */ 
+		  t1.biz_clsf,
+        fun_xodxcommst_cd_nm(t1.biz_clsf, 0) AS biz_clsf_nm, 
+        t1.mngmt_no,
+        t1.accnt_no,
+        t2.accnt_no_nm,
+        t1.reqd_amt,
+        t1.rmk
+FROM    spttecheducreqdbugt t1,
+        resbgacctm          t2
+WHERE   t1.accnt_no = t2.accnt_no
+AND     t1.biz_clsf = #{biz_clsf}
+AND     t1.mngmt_no = #{mngmt_no}
+  </select>
+  
+	<update id="mergeSptTechEducReqdBugt" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducReqdBugtVo">
+		MERGE /* kr.re.kitech.biz.sup.edu.mergeSptTechEducReqdBugt */
+		 INTO spttecheducreqdbugt AS t1
+		USING dual AS t2 ON t1.biz_clsf = #{biz_clsf} AND t1.mngmt_no = #{mngmt_no} AND t1.accnt_no = #{accnt_no}
+		 WHEN MATCHED  THEN
+		 UPDATE
+		    SET reqd_amt = #{reqd_amt},
+		    	rmk = #{rmk},
+		        updt_syspayno = #{updt_syspayno},
+		        updt_daytm    = SYSDATE
+		 WHEN NOT MATCHED THEN
+		 INSERT (
+		 	biz_clsf,
+		 	mngmt_no,
+		 	accnt_no,
+		 	reqd_amt,
+		 	rmk,
+            regst_syspayno,
+            regst_daytm
+		 ) VALUES(
+		 	#{biz_clsf}, 		/* biz_clsf */
+		 	#{mngmt_no}, 		/* mngmt_no */
+		 	#{accnt_no}, 		/* accnt_no */
+		 	#{reqd_amt}, 		/* reqd_amt */
+		 	#{rmk}, 			/* rmk */
+            #{regst_syspayno}, 	/* regst_syspayno */
+            SYSDATE 			/* regst_daytm|now */
+		 )
+	</update>
+	
+	<delete id="deletePartSptTechEducReqdBugt" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducReqdBugtVo">
+		DELETE /* QueryID : kr.re.kitech.biz.sup.edu.deletePartSptTechEducReqdBugt */ 
+		  FROM spttecheducreqdbugt
+		 WHERE biz_clsf = #{biz_clsf}
+		   AND mngmt_no = #{mngmt_no}
+	</delete>
+</mapper>

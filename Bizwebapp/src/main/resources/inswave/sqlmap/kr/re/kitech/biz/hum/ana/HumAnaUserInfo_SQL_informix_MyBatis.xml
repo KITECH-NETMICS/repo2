@@ -1,0 +1,901 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.hum.ana">
+<select id="selectXodHoccyTyp" parameterType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo" resultType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.ana.selectXodHoccyTyp */ 
+    occutyp_cd, occutyp_nm 
+FROM 
+    xodhoccutyp 
+WHERE 
+    occugrp_cd = #{occugrp_cd} 
+    AND use_yn = 'Y'
+ORDER BY disp_seq
+</select>
+<select id="selectXodhPosiInfo" parameterType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo" resultType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.ana.selectXodhPosiInfo */ 
+    posi_cd, posi_nm 
+FROM 
+    xodhposiinfo 
+WHERE 
+    occutyp_cd = #{occutyp_cd} 
+    AND use_yn = 'Y'
+ORDER BY disp_seq
+</select>
+<select id="selectAnaUserAddInfoList" parameterType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo" resultType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo">
+/* XDA : kitech.hum.ana.xda.HumBasicInfoMS06 겸직직원명부총괄표 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.hum.ana.selectAnaUserAddInfoList */ 
+    TRIM(a.nm) AS nm,
+    a.empno,
+    g.divsn_dept_nm,
+    g.dept_nm,
+    CASE WHEN b.up_dept = b.divsn_dept AND b.up_dept_new_ymd = b.divsn_dept_new_ymd THEN '' ELSE bb.dept_nm END AS cntr_nm,
+    fun_posi_nm(a.posi_cd) AS posi_nm,
+    g.duty_nm,
+    CASE WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') = SUBSTR(a.entr_ymd,0,4) THEN NVL(d.carer_month_no,0)                                       --신규입사자인경우(경력년차만 추출)
+          WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+              THEN TO_NUMBER(fun_period_day_over(TO_CHAR(current, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --신규입사자도 아니고 한번도 승진을 하지 못한 경우(입사한다음년도부터경력+경력년차)
+          WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd != NVL(e.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+              THEN TO_NUMBER(fun_period_day_over(TO_CHAR(CURRENT, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --보직이동(직급의 변화)만 있는 경우 (위와같음)
+          WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND fun_xodxcommst_cd_nm(f.appont_typ,1)='채용' THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + NVL(d.carer_month_no,0)  --수석(보)직급이고 직전직급이 채용직급과 같은 경우(입사다음년부터경력+경력년차)
+          WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND f.appont_typ IN ('HBL160','HBL170') THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + 1                   --수석(보)직급이고 직전직급이 채용직급과 다른 경우(승진년도부터올해까지경력)
+          WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd = NVL(e.posi_cd,0) THEN (TO_CHAR(current, '%Y')-SUBSTR(e.appont_start_ymd,0,4))+1                      --승진한 이력이 있는 경우(승진년도부터올해까지경력)
+              ELSE TO_CHAR(current, '%Y')-SUBSTR(a.entr_ymd,0,4)                                                                                                   --예외자들(입사일부터 현재년도까지 경력)
+    END AS posi_an,
+    entr_ymd,
+    fun_xodxcommst_cd_nm(a.work_clsf,0) AS work_clsf_nm,
+    fun_xodxcommst_cd_nm(a.addr_region,0) AS addr_region_nm,
+    a.home_tel,
+    a.syspayno,
+    TO_CHAR(TO_DATE(aa.birth_ymd,'%Y%m%d') + 62 UNITS  YEAR - 1 UNITS DAY,'%Y%m%d') AS retire_yyymm,
+    NVL(a.sci_tech_regst_no,'') AS sci_tech_regst_no,
+    x.user_div,
+    DECODE(NVL(x.user_div, ''), 'HYY010', '근로', 'HYY020', '기타', '구분없음') AS user_div_nm,
+    SUBSTR(promo_base_ymd,1,4) AS promo_base_yr
+FROM humbasicinfo a
+JOIN (SELECT CASE WHEN SUBSTR(resid_no,8,1) IN ('1','2','5','6') THEN '19'
+                  WHEN SUBSTR(resid_no,8,1) IN ('9','0') THEN '18'  
+                  WHEN SUBSTR(resid_no,8,1) IN ('3','4','7','8') THEN '20' END || LEFT(resid_no,6) as birth_ymd, syspayno
+       FROM humbasicinfo
+      ) aa ON aa.syspayno = a.syspayno
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+JOIN xodhposiinfo c ON a.posi_cd = c.posi_cd
+JOIN (
+       SELECT 
+           a.syspayno,
+           b.cd_nm AS appont_typ_nm,
+           a.appont_typ,        
+           appont_ymd,           
+           c.dept_nm AS dept_nm,
+           fun_dept_nm(c.divsn_dept,c.divsn_dept_new_ymd) AS divsn_dept_nm,
+           fun_xodxcommst_cd_nm(a.duty_cd,0) AS duty_nm,
+           large_excpt_work_nm,
+           large_excpt_duty_nm,
+           estb_nm,
+           oh_dept_yn
+       FROM humadjobhis a
+       INNER JOIN xodxcommst b ON a.appont_typ = b.cd
+       INNER JOIN xodhdeptinfo c ON a.dept_cd = c.dept_cd AND a.dept_new_ymd = c.dept_new_ymd AND NVL(c.abol_ymd,'') = ''
+       WHERE NVL(a.abol_ymd,'') = ''
+      ) g ON g.syspayno = a.syspayno
+LEFT JOIN xodhdeptinfo bb ON bb.dept_cd = b.up_dept AND bb.dept_new_ymd = b.up_dept_new_ymd
+LEFT JOIN (
+            SELECT
+                x0.syspayno
+                ,x0.req_ymd
+                ,x0.carer_month_no  
+                ,x0.posi_cd 
+            FROM humrctbasinfo x0 
+            JOIN (
+                    SELECT 
+                        syspayno
+                        ,MIN(DECODE(req_ymd,'',NULL,req_ymd)) AS req_ymd 
+                    FROM humrctbasinfo 
+                    WHERE syspayno IS NOT NULL AND syspayno !='' AND appont_prcs = 'HCX030' GROUP BY 1
+                    ) x1 ON x0.syspayno = x1.syspayno AND (x0.req_ymd = x1.req_ymd OR x1.req_ymd IS NULL) AND x0.appont_prcs = 'HCX030'  
+            ) d ON a.syspayno = d.syspayno                                                                                                                  --채용관리테이블
+LEFT JOIN (
+            SELECT 
+                e.syspayno
+                ,CASE WHEN NVL(e.posi_cd_hbl160,'') != '' THEN e.posi_cd_hbl160 WHEN NVL(e.posi_cd_hbl370,'') != '' AND NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.posi_cd_hbl370 ELSE '' END posi_cd --직종변경이 발령이력 최근이고 직급 변화있음
+                ,CASE WHEN NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.appont_start_ymd_hbl160 ELSE '' END AS appont_start_ymd
+                FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ = 'HBL370' THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl370                          --제일 최근 발령이 직종변경
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ IN ('HBL160', 'HBL170') THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl160             --제일 최근 발령이 승진
+                            , MAX( CASE WHEN x0.appont_typ IN ('HBL160', 'HBL170') THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl370            --승진일때 공백
+                            , MAX( CASE WHEN x0.appont_typ = 'HBL370' THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl160                         --직종변경일때 공백
+                        FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , x0.appont_start_ymd
+                            , x0.appont_typ
+                            , x0.posi_cd
+                            , ROW_NUMBER() OVER(PARTITION BY x0.syspayno  ORDER BY x0.appont_start_ymd DESC ) AS rank       
+                        FROM humappnthst x0 
+                        WHERE x0.appont_prcs = 'HCX030'
+                        AND x0.appont_typ IN('HBL160','HBL170','HBL370')
+                            ) AS x0
+                GROUP BY 1 
+                ) e 
+            ) e ON a.syspayno = e.syspayno AND a.posi_cd = NVL(e.posi_cd,0)                                                                         --발령이력(승진한 이력이 있는자)
+LEFT JOIN (
+            SELECT 
+                x0.syspayno
+                ,x0.appont_typ
+                ,x0.posi_cd
+                ,x0.appont_start_ymd 
+            FROM humappnthst x0
+            JOIN ( 
+                SELECT 
+                    x0.syspayno
+                    ,x0.posi_cd
+                    ,x1.appont_befr_posi_cd
+                FROM humbasicinfo x0 
+                JOIN (
+                        SELECT 
+                            syspayno
+                            ,posi_cd
+                            ,appont_befr_posi_cd    
+                        FROM humappnthst 
+                        WHERE appont_befr_posi_cd != posi_cd AND fun_posi_nm(posi_cd) LIKE '%(보)%' AND appont_typ = 'HBL160'
+                        ) x1 ON x0.syspayno = x1.syspayno AND x0.posi_cd = x1.posi_cd AND x0.work_clsf!='HAG090'
+                ) x1 ON x0.syspayno = x1.syspayno AND x1.appont_befr_posi_cd = x0.posi_cd AND (x0.appont_typ IN('HBL160','HBL170') OR fun_xodxcommst_cd_nm(x0.appont_typ,1)='채용')
+            ) f ON a.syspayno = f.syspayno                                                                        --수석(보) 직급에 대해서만 적용되는 조인절
+LEFT JOIN (SELECT z.syspayno, z.user_div FROM humslmmpayamt z
+                     JOIN (SELECT syspayno, MAX(belng_yrmon) AS belng_yrmon 
+                               FROM humslmmpayamt GROUP BY 1) y ON y.syspayno = z.syspayno AND y.belng_yrmon = z.belng_yrmon) x ON x.syspayno = a.syspayno
+WHERE 1=1
+    <if test="empno != null and empno != ''">
+	 and a.empno LIKE #{empno}
+	</if>
+    <if test="nm != null and nm != ''">
+	 and a.nm LIKE #{nm}
+	</if>
+    <if test="dept_cd != null and dept_cd != ''">
+	 and a.dept_cd  LIKE #{dept_cd}
+	</if>
+    <if test="dept_nm != null and dept_nm != ''">
+	 and b.dept_nm  LIKE #{dept_nm}
+	</if>
+    <if test="resid_no != null and resid_no != ''">
+	 and a.resid_no LIKE #{resid_no}
+	</if>
+    <if test="occugrp_cd != null and occugrp_cd != ''">
+	 and a.occugrp_cd = #{occugrp_cd}
+	</if>
+    <if test="occutyp_cd != null and occutyp_cd != ''">
+	 and a.occutyp_cd = #{occutyp_cd}
+	</if>
+    <if test="posi_cd != null and posi_cd != ''">
+	 and a.posi_cd = #{posi_cd}
+	</if>    
+    <if test="work_clsf != null and work_clsf != '' and work_clsf != 'HAG091'">
+	 and a.work_clsf = #{work_clsf}
+	</if>
+  	<if test="work_clsf == 'HAG091'">
+	 and a.work_clsf <![CDATA[<>]]> 'HAG090'
+	</if>         
+    <if test="from_date != null and from_date != ''">
+	 and a.retire_ymd BETWEEN #{from_date} AND #{to_date}
+	</if>	
+ORDER BY 
+ ${orderbyid} ${sort_id}
+</select>
+<select id="selectAnaUserPrjInfoList" parameterType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo" resultType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo">
+
+/* XDA : kitech.hum.ana.xda.HumBasicInfoMS07 프로젝트부서직원명부총괄표 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.hum.ana.selectHumBasicInfo */ 
+ TRIM(a.nm) AS nm,
+ a.empno,
+ fun_dept_nm(b.divsn_dept,b.divsn_dept_new_ymd) as divsn_dept_nm,
+ b.dept_nm,
+ CASE WHEN b.up_dept = b.divsn_dept AND b.up_dept_new_ymd = b.divsn_dept_new_ymd THEN '' ELSE g.dept_nm END AS cntr_nm,
+ fun_posi_nm(a.posi_cd) posi_nm,
+ fun_xodxcommst_cd_nm(a.duty_cd,0) duty_nm,
+ CASE WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') = SUBSTR(a.entr_ymd,0,4) THEN NVL(d.carer_month_no,0)                                       --신규입사자인경우(경력년차만 추출)
+       WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+           THEN TO_NUMBER(fun_period_day_over(TO_CHAR(current, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --신규입사자도 아니고 한번도 승진을 하지 못한 경우(입사한다음년도부터경력+경력년차)
+       WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd != NVL(e.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+           THEN TO_NUMBER(fun_period_day_over(TO_CHAR(CURRENT, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --보직이동(직급의 변화)만 있는 경우 (위와같음)
+       WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND fun_xodxcommst_cd_nm(f.appont_typ,1)='채용' THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + NVL(d.carer_month_no,0)  --수석(보)직급이고 직전직급이 채용직급과 같은 경우(입사다음년부터경력+경력년차)
+       WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND f.appont_typ IN ('HBL160','HBL170') THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + 1                   --수석(보)직급이고 직전직급이 채용직급과 다른 경우(승진년도부터올해까지경력)
+       WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd = NVL(e.posi_cd,0) THEN (TO_CHAR(current, '%Y')-SUBSTR(e.appont_start_ymd,0,4))+1                      --승진한 이력이 있는 경우(승진년도부터올해까지경력)
+           ELSE TO_CHAR(current, '%Y')-SUBSTR(a.entr_ymd,0,4)                                                                                                   --예외자들(입사일부터 현재년도까지 경력)
+ END AS posi_an,
+ entr_ymd,
+ fun_xodxcommst_cd_nm(a.work_clsf,0) work_clsf_nm,
+ fun_xodxcommst_cd_nm(a.addr_region,0) addr_region_nm,
+ a.home_tel,
+ a.syspayno,
+ TO_CHAR(TO_DATE(aa.birth_ymd,'%Y%m%d') + 62 UNITS  YEAR - 1 UNITS DAY,'%Y%m%d') as retire_yyymm,
+ x.user_div,
+ DECODE(NVL(x.user_div, ''), 'HYY010', '근로', 'HYY020', '기타', '구분없음') AS user_div_nm,
+ SUBSTR(promo_base_ymd,1,4) AS promo_base_yr
+FROM humbasicinfo a
+JOIN (SELECT CASE WHEN SUBSTR(resid_no,8,1) IN ('1','2','5','6') THEN '19'
+                     WHEN SUBSTR(resid_no,8,1) IN ('9','0') THEN '18'  
+                     WHEN SUBSTR(resid_no,8,1) IN ('3','4','7','8') THEN '20' END || LEFT(resid_no,6) as birth_ymd, syspayno
+       FROM humbasicinfo) aa ON a.syspayno= aa.syspayno
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+JOIN xodhposiinfo c ON a.posi_cd = c.posi_cd
+LEFT JOIN (
+            SELECT
+                x0.syspayno
+                ,x0.req_ymd
+                ,x0.carer_month_no  
+                ,x0.posi_cd 
+            FROM humrctbasinfo x0 
+            JOIN (
+                    SELECT 
+                        syspayno
+                        ,MIN(DECODE(req_ymd,'',NULL,req_ymd)) AS req_ymd 
+                    FROM humrctbasinfo 
+                    WHERE syspayno IS NOT NULL AND syspayno !='' AND appont_prcs = 'HCX030' GROUP BY 1
+                    ) x1 ON x0.syspayno = x1.syspayno AND (x0.req_ymd = x1.req_ymd OR x1.req_ymd IS NULL) AND x0.appont_prcs = 'HCX030'  
+            ) d ON a.syspayno = d.syspayno                                                                                                                       --채용관리테이블
+LEFT JOIN (
+            SELECT 
+                e.syspayno
+                ,CASE WHEN NVL(e.posi_cd_hbl160,'') != '' THEN e.posi_cd_hbl160 WHEN NVL(e.posi_cd_hbl370,'') != '' AND NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.posi_cd_hbl370 ELSE '' END posi_cd --직종변경이 발령이력 최근이고 직급 변화있음
+                ,CASE WHEN NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.appont_start_ymd_hbl160 ELSE '' END AS appont_start_ymd
+                FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ = 'HBL370' THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl370                          --제일 최근 발령이 직종변경
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ IN ('HBL160', 'HBL170') THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl160             --제일 최근 발령이 승진
+                            , MAX( CASE WHEN x0.appont_typ IN ('HBL160', 'HBL170') THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl370           --승진일때 공백
+                            , MAX( CASE WHEN x0.appont_typ = 'HBL370' THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl160                         --징종변경일때 공백
+                        FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , x0.appont_start_ymd
+                            , x0.appont_typ
+                            , x0.posi_cd
+                            , ROW_NUMBER() OVER(PARTITION BY x0.syspayno  ORDER BY x0.appont_start_ymd DESC ) AS rank       
+                        FROM humappnthst x0 
+                        WHERE x0.appont_prcs = 'HCX030'
+                        AND x0.appont_typ IN('HBL160','HBL170','HBL370')
+                            ) AS x0
+                GROUP BY 1 
+                ) e 
+            ) e ON a.syspayno = e.syspayno AND a.posi_cd = NVL(e.posi_cd,0)                                                                         --발령이력(승진한 이력이 있는자)
+LEFT JOIN (
+            SELECT 
+                x0.syspayno
+                ,x0.appont_typ
+                ,x0.posi_cd
+                ,x0.appont_start_ymd 
+            FROM humappnthst x0
+            JOIN ( 
+                SELECT 
+                    x0.syspayno
+                    ,x0.posi_cd
+                    ,x1.appont_befr_posi_cd
+                FROM humbasicinfo x0 
+                JOIN (
+                        SELECT 
+                            syspayno
+                            ,posi_cd
+                            ,appont_befr_posi_cd    
+                        FROM humappnthst 
+                        WHERE appont_befr_posi_cd != posi_cd AND fun_posi_nm(posi_cd) LIKE '%(보)%' AND appont_typ = 'HBL160'
+                        ) x1 ON x0.syspayno = x1.syspayno AND x0.posi_cd = x1.posi_cd AND x0.work_clsf!='HAG090'
+                ) x1 ON x0.syspayno = x1.syspayno AND x1.appont_befr_posi_cd = x0.posi_cd AND (x0.appont_typ IN('HBL160','HBL170') OR fun_xodxcommst_cd_nm(x0.appont_typ,1)='채용')
+            ) f ON a.syspayno = f.syspayno                                                                        --수석(보) 직급에 대해서만 적용되는 조인절
+LEFT JOIN xodhdeptinfo g ON g.dept_cd = b.up_dept AND g.dept_new_ymd = b.up_dept_new_ymd
+LEFT JOIN (SELECT z.syspayno, z.user_div FROM humslmmpayamt z
+                     JOIN (SELECT syspayno, MAX(belng_yrmon) AS belng_yrmon 
+                               FROM humslmmpayamt GROUP BY 1) y ON y.syspayno = z.syspayno AND y.belng_yrmon = z.belng_yrmon
+            ) x ON x.syspayno = a.syspayno
+WHERE b.prj_dept_yn ='Y'
+	<if test="empno != null and empno != ''">
+		and a.empno LIKE #{empno}
+	</if>
+	<if test="nm != null and nm != ''">
+		and a.nm LIKE #{nm}
+	</if>
+	<if test="dept_cd != null and dept_cd != ''">
+		and a.dept_cd LIKE #{dept_cd}
+	</if>
+	<if test="dept_nm != null and dept_nm != ''">
+		and b.dept_nm LIKE #{dept_nm}
+	</if>
+	<if test="resid_no != null and resid_no != ''">
+		and a.resid_no LIKE #{resid_no}
+	</if>
+	<if test="occugrp_cd != null and occugrp_cd != ''">
+		and a.occugrp_cd = #{occugrp_cd}
+	</if>
+	<if test="occutyp_cd != null and occutyp_cd != ''">
+		and a.occutyp_cd = #{occutyp_cd}
+	</if>
+	<if test="posi_cd != null and posi_cd != ''">
+		and a.posi_cd = #{posi_cd}
+	</if>
+	<if test="work_clsf == 'HAG091'">
+		and a.work_clsf <![CDATA[<>]]> 'HAG090'
+	</if>
+	<if test="work_clsf != null and work_clsf != '' and work_clsf != 'HAG091'">	
+		and a.work_clsf = #{work_clsf}
+	</if>
+	<if test="from_date != null and from_date != ''">
+		and a.retire_ymd between #{from_date} and #{to_date}
+	</if>
+UNION ALL
+SELECT
+ TRIM(a.nm) AS nm,
+ a.empno,
+ g.divsn_dept_nm,
+ g.dept_nm,
+ CASE WHEN b.up_dept = b.divsn_dept AND b.up_dept_new_ymd = b.divsn_dept_new_ymd THEN '' ELSE g.dept_nm END AS cntr_nm,
+ fun_posi_nm(a.posi_cd) posi_nm,
+ g.duty_nm,
+ CASE WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') = SUBSTR(a.entr_ymd,0,4) THEN NVL(d.carer_month_no,0)                                       --신규입사자인경우(경력년차만 추출)
+       WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+           THEN TO_NUMBER(fun_period_day_over(TO_CHAR(current, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --신규입사자도 아니고 한번도 승진을 하지 못한 경우(입사한다음년도부터경력+경력년차)
+       WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd != NVL(e.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+           THEN TO_NUMBER(fun_period_day_over(TO_CHAR(CURRENT, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --보직이동(직급의 변화)만 있는 경우 (위와같음)
+       WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND fun_xodxcommst_cd_nm(f.appont_typ,1)='채용' THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + NVL(d.carer_month_no,0)  --수석(보)직급이고 직전직급이 채용직급과 같은 경우(입사다음년부터경력+경력년차)
+       WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND f.appont_typ IN ('HBL160','HBL170') THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + 1                   --수석(보)직급이고 직전직급이 채용직급과 다른 경우(승진년도부터올해까지경력)
+       WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd = NVL(e.posi_cd,0) THEN (TO_CHAR(current, '%Y')-SUBSTR(e.appont_start_ymd,0,4))+1                      --승진한 이력이 있는 경우(승진년도부터올해까지경력)
+           ELSE TO_CHAR(current, '%Y')-SUBSTR(a.entr_ymd,0,4)                                                                                                   --예외자들(입사일부터 현재년도까지 경력)
+ END AS posi_an,
+ entr_ymd,
+ fun_xodxcommst_cd_nm(a.work_clsf,0) work_clsf_nm,
+ fun_xodxcommst_cd_nm(a.addr_region,0) addr_region_nm,
+ a.home_tel,
+ a.syspayno,
+ TO_CHAR(TO_DATE(aa.birth_ymd,'%Y%m%d') + 62 UNITS  YEAR - 1 UNITS DAY,'%Y%m%d') as retire_yyymm,
+ x.user_div,
+ DECODE(NVL(x.user_div, ''), 'HYY010', '근로', 'HYY020', '기타', '구분없음') AS user_div_nm,
+ SUBSTR(promo_base_ymd,1,4) AS promo_base_yr
+FROM humbasicinfo a
+JOIN (SELECT CASE WHEN SUBSTR(resid_no,8,1) IN ('1','2','5','6') THEN '19'
+                     WHEN SUBSTR(resid_no,8,1) IN ('9','0') THEN '18'  
+                     WHEN SUBSTR(resid_no,8,1) IN ('3','4','7','8') THEN '20' END || LEFT(resid_no,6) as birth_ymd, syspayno
+       FROM humbasicinfo) aa ON a.syspayno= aa.syspayno
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+JOIN xodhposiinfo c ON a.posi_cd = c.posi_cd
+JOIN (
+       SELECT 
+           a.syspayno,
+           b.cd_nm appont_typ_nm,
+           a.appont_typ,        
+           appont_ymd,           
+           c.dept_nm dept_nm,
+           fun_dept_nm(c.divsn_dept,c.divsn_dept_new_ymd) as divsn_dept_nm,
+           fun_xodxcommst_cd_nm(a.duty_cd,0) duty_nm,
+           large_excpt_work_nm,
+           large_excpt_duty_nm,
+           estb_nm,
+           oh_dept_yn
+       FROM humadjobhis a 
+       JOIN xodxcommst b ON a.appont_typ = b.cd
+       JOIN xodhdeptinfo c ON a.dept_cd = c.dept_cd AND a.dept_new_ymd = c.dept_new_ymd
+       WHERE NVL(a.abol_ymd,'')='' AND NVL(c.abol_ymd,'')='' AND c.prj_dept_yn ='Y'
+      ) g ON a.syspayno = g.syspayno
+LEFT JOIN xodhdeptinfo bb ON bb.dept_cd = b.up_dept AND bb.dept_new_ymd = b.up_dept_new_ymd 
+LEFT JOIN (
+            SELECT
+                x0.syspayno
+                ,x0.req_ymd
+                ,x0.carer_month_no  
+                ,x0.posi_cd 
+            FROM humrctbasinfo x0 
+            JOIN (
+                    SELECT 
+                        syspayno
+                        ,MIN(DECODE(req_ymd,'',NULL,req_ymd)) AS req_ymd 
+                    FROM humrctbasinfo 
+                    WHERE syspayno IS NOT NULL AND syspayno !='' AND appont_prcs = 'HCX030' GROUP BY 1
+                    ) x1 ON x0.syspayno = x1.syspayno AND (x0.req_ymd = x1.req_ymd OR x1.req_ymd IS NULL) AND x0.appont_prcs = 'HCX030'  
+            ) d ON a.syspayno = d.syspayno                                                                                                                       --채용관리테이블
+LEFT JOIN (
+            SELECT 
+                e.syspayno
+                ,CASE WHEN NVL(e.posi_cd_hbl160,'') != '' THEN e.posi_cd_hbl160 WHEN NVL(e.posi_cd_hbl370,'') != '' AND NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.posi_cd_hbl370 ELSE '' END posi_cd --직종변경이 발령이력 최근이고 직급 변화있음
+                ,CASE WHEN NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.appont_start_ymd_hbl160 ELSE '' END AS appont_start_ymd
+                FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ = 'HBL370' THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl370                          --제일 최근 발령이 직종변경
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ IN ('HBL160', 'HBL170') THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl160             --제일 최근 발령이 승진
+                            , MAX( CASE WHEN x0.appont_typ IN ('HBL160', 'HBL170') THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl370            --승진일때 공백
+                            , MAX( CASE WHEN x0.appont_typ = 'HBL370' THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl160                         --직종변경일때 공백
+                        FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , x0.appont_start_ymd
+                            , x0.appont_typ
+                            , x0.posi_cd
+                            , ROW_NUMBER() OVER(PARTITION BY x0.syspayno  ORDER BY x0.appont_start_ymd DESC ) AS rank       
+                        FROM humappnthst x0 
+                        WHERE x0.appont_prcs = 'HCX030'
+                        AND x0.appont_typ IN('HBL160','HBL170','HBL370')
+                            ) AS x0
+                GROUP BY 1 
+                ) e 
+            ) e ON a.syspayno = e.syspayno AND a.posi_cd = NVL(e.posi_cd,0)                                                                         --발령이력(승진한 이력이 있는자)
+LEFT JOIN (
+            SELECT 
+                x0.syspayno
+                ,x0.appont_typ
+                ,x0.posi_cd
+                ,x0.appont_start_ymd 
+            FROM humappnthst x0
+            JOIN ( 
+                SELECT 
+                    x0.syspayno
+                    ,x0.posi_cd
+                    ,x1.appont_befr_posi_cd
+                FROM humbasicinfo x0 
+                JOIN (
+                        SELECT 
+                            syspayno
+                            ,posi_cd
+                            ,appont_befr_posi_cd    
+                        FROM humappnthst 
+                        WHERE appont_befr_posi_cd != posi_cd AND fun_posi_nm(posi_cd) LIKE '%(보)%' AND appont_typ = 'HBL160'
+                        ) x1 ON x0.syspayno = x1.syspayno AND x0.posi_cd = x1.posi_cd AND x0.work_clsf!='HAG090'
+                ) x1 ON x0.syspayno = x1.syspayno AND x1.appont_befr_posi_cd = x0.posi_cd AND (x0.appont_typ IN('HBL160','HBL170') OR fun_xodxcommst_cd_nm(x0.appont_typ,1)='채용')
+            ) f ON a.syspayno = f.syspayno                                                                        --수석(보) 직급에 대해서만 적용되는 조인절
+LEFT JOIN (SELECT z.syspayno, z.user_div FROM humslmmpayamt z
+                     JOIN (SELECT syspayno, MAX(belng_yrmon) AS belng_yrmon 
+                            FROM humslmmpayamt GROUP BY 1
+                           ) y ON y.syspayno = z.syspayno AND y.belng_yrmon = z.belng_yrmon
+            ) x ON x.syspayno = a.syspayno
+	WHERE 1=1
+	<if test="empno != null and empno != ''">
+		and a.empno LIKE #{empno}
+	</if>
+	<if test="nm != null and nm != ''">
+		and a.nm LIKE #{nm}
+	</if>
+	<if test="dept_cd != null and dept_cd != ''">
+		and a.dept_cd LIKE #{dept_cd}
+	</if>
+	<if test="dept_nm != null and dept_nm != ''">
+		and b.dept_nm LIKE #{dept_nm}
+	</if>
+	<if test="resid_no != null and resid_no != ''">
+		and a.resid_no LIKE #{resid_no}
+	</if>
+	<if test="occugrp_cd != null and occugrp_cd != ''">
+		and a.occugrp_cd = #{occugrp_cd}
+	</if>
+	<if test="occutyp_cd != null and occutyp_cd != ''">
+		and a.occutyp_cd = #{occutyp_cd}
+	</if>
+	<if test="posi_cd != null and posi_cd != ''">
+		and a.posi_cd = #{posi_cd}
+	</if>
+	<if test="work_clsf != null and work_clsf != '' and work_clsf != 'HAG091'">
+		and a.work_clsf = #{work_clsf}
+	</if>
+	<if test="work_clsf == 'HAG091'">
+		and a.work_clsf <![CDATA[<>]]> 	'HAG090'
+	</if>
+	<if test="from_date != null and from_date != ''">
+		and a.retire_ymd between #{from_date} and #{to_date}
+	</if>
+ORDER BY 
+    ${orderbyid} ${sort_id}
+</select>
+<select id="selectAnaUserInfoList" parameterType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo" resultType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.ana.selectAnaUserInfoList */ 
+    TRIM(a.nm) AS nm,
+    a.empno,
+    FUN_DEPT_NM(b.divsn_dept,b.divsn_dept_new_ymd) AS divsn_dept_nm,
+    b.dept_nm,
+    CASE WHEN b.up_dept = b.divsn_dept AND b.up_dept_new_ymd = b.divsn_dept_new_ymd THEN '' ELSE bb.dept_nm END AS cntr_nm,
+    FUN_POSI_NM(a.posi_cd) posi_nm,
+    FUN_XODXCOMMST_CD_NM(a.duty_cd,0) duty_nm,
+    CASE WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') = SUBSTR(a.entr_ymd,0,4) THEN NVL(d.carer_month_no,0) --신규입사자인경우(경력년차만 추출)
+          WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+          THEN TO_NUMBER(fun_period_day_over(TO_CHAR(current, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --신규입사자도 아니고 한번도 승진을 하지 못한 경우(입사한다음년도부터경력+경력년차)
+          WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd != NVL(e.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+          THEN TO_NUMBER(fun_period_day_over(TO_CHAR(CURRENT, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --보직이동(직급의 변화)만 있는 경우 (위와같음)
+          WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND fun_xodxcommst_cd_nm(f.appont_typ,1)='채용' THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + NVL(d.carer_month_no,0)  --수석(보)직급이고 직전직급이 채용직급과 같은 경우(입사다음년부터경력+경력년차)
+          WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND f.appont_typ IN ('HBL160','HBL170') THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + 1                   --수석(보)직급이고 직전직급이 채용직급과 다른 경우(승진년도부터올해까지경력)
+          WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd = NVL(e.posi_cd,0) THEN (TO_CHAR(current, '%Y')-SUBSTR(e.appont_start_ymd,0,4))+1                      --승진한 이력이 있는 경우(승진년도부터올해까지경력)
+          ELSE TO_CHAR(current, '%Y')-SUBSTR(a.entr_ymd,0,4)                                                                                                   --예외자들(입사일부터 현재년도까지 경력)
+    END AS posi_an,
+    a.entr_ymd,
+    NVL(cc.appont_start_ymd,a.promo_base_ymd) AS appont_start_ymd,
+    CASE WHEN NVL(a.retire_ymd,'') ='' AND a.work_clsf ='HAG090' THEN '확인대상'
+        ELSE FUN_XODXCOMMST_CD_NM(a.work_clsf,0) END AS work_clsf_nm,
+    FUN_XODXCOMMST_CD_NM(a.addr_region,0) AS addr_region_nm,
+    a.home_tel,
+    a.syspayno,
+    TO_CHAR(TO_DATE(aa.birth_ymd,'%Y%m%d') + 62 UNITS  YEAR - 1 UNITS DAY,'%Y%m%d') AS retire_yyymm,
+    a.retire_ymd,
+    dd.contrct_cls_ymd,
+    NVL(a.sci_tech_regst_no,'') AS sci_tech_regst_no,
+    x.user_div,
+    DECODE(NVL(x.user_div, ''), 'HYY010', '근로', 'HYY020', '기타', '구분없음') AS user_div_nm,
+    b.disp_seq,
+    FUN_XODXCOMMST_CD_NM(dd.employ_type,0) AS employ_type,
+    SUBSTR(promo_base_ymd,1,4) AS promo_base_yr
+FROM humbasicinfo a
+JOIN (SELECT CASE WHEN SUBSTR(resid_no,8,1) IN ('1','2','5','6') THEN '19'
+                     WHEN SUBSTR(resid_no,8,1) IN ('9','0') THEN '18'  
+                     WHEN SUBSTR(resid_no,8,1) IN ('3','4','7','8') THEN '20' END || LEFT(resid_no,6) as birth_ymd, syspayno
+         FROM humbasicinfo
+      ) aa ON a.syspayno = aa.syspayno
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+JOIN xodhposiinfo c ON a.posi_cd = c.posi_cd
+LEFT JOIN (SELECT x0.syspayno, x0.posi_cd, DECODE(MIN(x1.appont_start_ymd),'',NULL,MIN(x1.appont_start_ymd)) AS appont_start_ymd
+               FROM humbasicinfo x0
+         LEFT JOIN humappnthst x1 ON x0.syspayno = x1.syspayno AND x0.posi_cd = x1.posi_cd
+          GROUP BY 1,2
+            ) cc ON a.posi_cd = cc.posi_cd AND a.syspayno = cc.syspayno
+LEFT JOIN xodhdeptinfo bb ON bb.dept_cd = b.up_dept AND bb.dept_new_ymd = b.up_dept_new_ymd
+LEFT JOIN (
+           SELECT
+                x0.syspayno
+                ,x0.req_ymd
+                ,x0.carer_month_no  
+                ,x0.posi_cd 
+                ,x0.req_no
+            FROM humrctbasinfo x0
+            JOIN (
+                    SELECT 
+                        x0.syspayno
+                        , entr_ymd
+                        , MAX(DECODE(x0.req_ymd,'',NULL,x0.req_ymd)) AS req_ymd
+                    FROM humrctbasinfo x0
+                    JOIN humbasicinfo x1 ON x0.syspayno = x1.syspayno
+                    WHERE NVL(x0.syspayno,'') !='' AND x0.appont_prcs = 'HCX030'  AND NVL(x0.req_ymd,'') = '' GROUP BY 1,2
+                    UNION
+                    SELECT 
+                        x0.syspayno
+                        , entr_ymd
+                        , MAX(DECODE(x0.req_ymd,'',NULL,x0.req_ymd)) AS req_ymd
+                    FROM humrctbasinfo x0
+                    JOIN humbasicinfo x1 ON x0.syspayno = x1.syspayno
+                    WHERE NVL(x0.syspayno,'') !='' AND x0.appont_prcs = 'HCX030'  AND LEFT(x0.req_ymd,4) = LEFT(x1.entr_ymd,4) GROUP BY 1,2
+                    ) x1 ON x0.syspayno = x1.syspayno
+            WHERE (x0.req_ymd = x1.req_ymd OR x1.req_ymd IS NULL) AND x0.appont_prcs = 'HCX030'  
+            ) d ON a.syspayno = d.syspayno         --채용관리테이블
+LEFT JOIN humrctbasinfo dd ON a.rct_req_no = dd.req_no
+LEFT JOIN (
+            SELECT 
+                e.syspayno
+                ,CASE WHEN NVL(e.posi_cd_hbl160,'') != '' THEN e.posi_cd_hbl160 WHEN NVL(e.posi_cd_hbl370,'') != '' AND NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.posi_cd_hbl370 ELSE '' END posi_cd --직종변경이 발령이력 최근이고 직급 변화있음
+                ,CASE WHEN NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.appont_start_ymd_hbl160 ELSE '' END AS appont_start_ymd
+                FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ = 'HBL370' THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl370                          --제일 최근 발령이 직종변경
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ IN ('HBL160', 'HBL170') THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl160             --제일 최근 발령이 승진
+                            , MAX( CASE WHEN x0.appont_typ IN ('HBL160', 'HBL170') THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl370           --승진일때 공백
+                            , MAX( CASE WHEN x0.appont_typ = 'HBL370' THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl160                        --직종변경일때 공백
+                        FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , x0.appont_start_ymd
+                            , x0.appont_typ
+                            , x0.posi_cd
+                            , ROW_NUMBER() OVER(PARTITION BY x0.syspayno  ORDER BY x0.appont_start_ymd DESC ) AS rank       
+                        FROM humappnthst x0 
+                        WHERE x0.appont_prcs = 'HCX030'
+                        AND x0.appont_typ IN('HBL160','HBL170','HBL370')
+                            ) AS x0
+                GROUP BY 1 
+                ) e 
+            ) e ON a.syspayno = e.syspayno AND a.posi_cd = NVL(e.posi_cd,0)        --발령이력(승진한 이력이 있는자)
+LEFT JOIN (
+            SELECT 
+                x0.syspayno
+                ,x0.appont_typ
+                ,x0.posi_cd
+                ,x0.appont_start_ymd 
+            FROM humappnthst x0
+            JOIN ( 
+                SELECT 
+                    x0.syspayno
+                    ,x0.posi_cd
+                    ,x1.appont_befr_posi_cd
+                FROM humbasicinfo x0 
+                JOIN (
+                        SELECT 
+                            syspayno
+                            ,posi_cd
+                            ,appont_befr_posi_cd    
+                        FROM humappnthst 
+                        WHERE appont_befr_posi_cd != posi_cd AND FUN_POSI_NM(posi_cd) LIKE '%(보)%' AND appont_typ = 'HBL160'
+                        ) x1 ON x0.syspayno = x1.syspayno AND x0.posi_cd = x1.posi_cd AND x0.work_clsf!='HAG090'
+                ) x1 
+                ON x0.syspayno = x1.syspayno AND x1.appont_befr_posi_cd = x0.posi_cd
+                AND (x0.appont_typ IN('HBL160','HBL170') OR FUN_XODXCOMMST_CD_NM(x0.appont_typ,1)='채용')
+            ) f ON a.syspayno = f.syspayno    
+LEFT JOIN (SELECT z.syspayno, z.user_div FROM humslmmpayamt z
+           JOIN (SELECT syspayno, MAX(belng_yrmon) AS belng_yrmon 
+                 FROM humslmmpayamt GROUP BY 1) y 
+           ON y.syspayno = z.syspayno AND y.belng_yrmon = z.belng_yrmon) x ON x.syspayno = a.syspayno
+WHERE 1 = 1     
+ <if test="empno != null and empno != ''">
+	 and a.empno LIKE #{empno}||%'
+</if>
+ <if test="nm != null and nm != ''">
+	 and a.nm LIKE #{nm}||"%"
+</if>
+ <if test="dept_cd != null and dept_cd != ''">
+	 and a.dept_cd LIKE #{dept_cd}
+</if>
+ <if test="dept_nm != null and dept_nm != ''">
+	 and b.dept_nm LIKE #{dept_nm}||'%'
+</if>
+ <if test="resid_no != null and resid_no != ''">
+	 and REPLACE(a.resid_no, '-', '') LIKE REPLACE(#{resid_no}, '-', '')||'%'
+</if>
+ <if test="occugrp_cd != null and occugrp_cd != ''">
+	 and a.occugrp_cd = #{occugrp_cd}
+</if>
+ <if test="occutyp_cd != null and occutyp_cd != ''">
+	 and a.occutyp_cd = #{occutyp_cd}
+</if>
+ <if test="posi_cd != null and posi_cd != ''">
+	 and a.posi_cd = #{posi_cd}
+</if>
+<if test="work_clsf != null and work_clsf != '' and work_clsf != 'HAG091'">
+	 and a.work_clsf = #{work_clsf}
+</if>
+ <if test="work_clsf == 'HAG091'">
+	 and a.work_clsf <![CDATA[<>]]> 'HAG090'
+</if>        
+ <if test="from_date != null and from_date != ''">
+	 and a.retire_ymd BETWEEN #{from_date} AND #{to_date}
+</if>
+ <if test="from_entr_date != null and from_entr_date != ''">
+	 and a.entr_ymd BETWEEN #{from_entr_date} AND #{to_entr_date}
+</if>
+ <if test="searchPosiGubn != null and searchPosiGubn != ''">
+	 and a.posi_cd IN ('351010', '354000', '354010', '353010', '353020', '350010', '352010', '350020', '351020')
+</if>
+ <if test="searchGubn != null and searchGubn != ''">
+	 and a.occugrp_cd = 'HAA010'  and  a.occutyp_cd = '130000'
+</if>
+<if test="contrct_cls_ymd != null and contrct_cls_ymd != ''">
+	and dd.contrct_cls_ymd = #{contrct_cls_ymd}	
+</if>
+ORDER BY ${orderbyid} ${sort_id}
+</select>
+<select id="selectAnaUserInfoListExcel" parameterType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo" resultType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo">
+/* XDA : kitech.hum.ana.xda.HumBasicInfoMS02 직원명부총괄표 엑셀 다운로드 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.hum.ana.selectAnaUserInfoListExcel */ 
+TRIM(a.nm) AS nm, 
+TRIM(a.nm_chchar) AS nm_chchar, 
+TRIM(a.nm_eng) AS nm_eng, 
+a.empno,       
+b.dept_nm,       
+a.dept_cd,       
+b.divsn_dept,       
+fun_dept_nm(b.divsn_dept, b.divsn_dept_new_ymd) AS divsn_dept_nm, 
+CASE WHEN b.up_dept = b.divsn_dept AND b.up_dept_new_ymd = b.divsn_dept_new_ymd THEN '' ELSE bb.dept_nm END cnt_nm,
+a.occugrp_cd,       
+fun_xodxcommst_cd_nm(a.occugrp_cd,0) AS occugrp_nm,  
+a.occutyp_cd,       
+fun_occutyp_nm(a.occutyp_cd) AS occutyp_nm,   
+a.posi_cd,       
+fun_posi_nm(a.posi_cd) AS posi_nm,     
+a.job_cd,       
+fun_job_nm(a.job_cd) AS job_nm,      
+fun_emp_untjob(a.syspayno) AS emp_untjob,    
+fun_xodxcommst_cd_nm(a.duty_cd,0) AS duty_nm,   
+CASE WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') = SUBSTR(a.entr_ymd,0,4) THEN NVL(d.carer_month_no,0)                                       --신규입사자인경우(경력년차만 추출)
+        WHEN a.posi_cd = NVL(d.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+            THEN TO_NUMBER(fun_period_day_over(TO_CHAR(current, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --신규입사자도 아니고 한번도 승진을 하지 못한 경우(입사한다음년도부터경력+경력년차)
+        WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd != NVL(e.posi_cd,0) AND TO_CHAR(current, '%Y') != SUBSTR(a.entr_ymd,0,4) AND a.entr_ymd = a.promo_base_ymd 
+            THEN TO_NUMBER(fun_period_day_over(TO_CHAR(CURRENT, '%Y%m%d'),SUBSTR((LEFT(a.entr_ymd,4) + '1'),1,4) || '0101', 'Y')) + NVL(d.carer_month_no,0)      --보직이동(직급의 변화)만 있는 경우 (위와같음)
+        WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND fun_xodxcommst_cd_nm(f.appont_typ,1)='채용' THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + NVL(d.carer_month_no,0)  --수석(보)직급이고 직전직급이 채용직급과 같은 경우(입사다음년부터경력+경력년차)
+        WHEN fun_posi_nm(a.posi_cd) LIKE '%(보)%' AND f.appont_typ IN ('HBL160','HBL170') THEN (TO_CHAR(current, '%Y')-SUBSTR(f.appont_start_ymd,0,4)) + 1                   --수석(보)직급이고 직전직급이 채용직급과 다른 경우(승진년도부터올해까지경력)
+        WHEN a.posi_cd != NVL(d.posi_cd,0) AND a.posi_cd = NVL(e.posi_cd,0) THEN (TO_CHAR(current, '%Y')-SUBSTR(e.appont_start_ymd,0,4))+1                      --승진한 이력이 있는 경우(승진년도부터올해까지경력)
+            ELSE TO_CHAR(current, '%Y')-SUBSTR(a.entr_ymd,0,4)                                                                                                   --예외자들(입사일부터 현재년도까지 경력)
+END AS posi_an,
+a.entr_ymd,       
+a.retire_ymd,       
+a.ttoff_orign_ymd,      
+a.ttoff_cls_ymd,       
+a.promo_base_ymd,       
+c.longwk_cntfr_ymd,      
+a.addpostn_yn,       
+a.othr_charg_yn,       
+a.appont_contrct_ymd,      
+a.appont_cls_ymd,       
+fun_xodxcommst_cd_nm(a.work_land,0) AS work_land_nm ,  
+fun_xodxcommst_cd_nm(a.work_clsf,0) AS work_clsf_nm,  
+fun_xodxcommst_cd_nm(a.addr_region,0) AS addr_region_nm,   
+a.job_clsf,       
+fun_xodxcommst_cd_nm(a.job_clsf,0) AS job_clsf_nm,   
+a.oh_add_objct,       
+a.pruse_respn_psn,      
+fun_emp_nm(a.pruse_respn_psn) AS pruse_respn_psn_nm,  
+c.month_work_time,      
+a.ext_no ,
+<if test="privacy_info != null and privacy_info != ''"> 
+a.resid_no,
+aa.birth_ymd,
+(FLOOR(MONTHS_BETWEEN(sysdate, TO_DATE(aa.birth_ymd,'%Y%m%d')) / 12)) AS age,    
+fun_xodxcommst_cd_nm(a.sex, 0) AS sex,        
+a.home_tel,  
+a.mobile,
+REPLACE(a.mobile,'-','') AS mobile_replace,     
+a.email,       
+'(' || a.domic_postmt_no || ')' || a.domic_addr_base ||' '||a.domic_addr_detls AS domic_addr, 
+'(' || a.addr_postmt_no || ')' || a.addr_base ||' '||a.addr_detls AS addr, 
+marry_yn,
+</if>      
+
+g.educ,        
+fun_xodxcommst_cd_nm(g.educ,0) AS educ_nm,    
+g.degr,        
+fun_xodxcommst_cd_nm(g.degr,0) AS degr_nm,    
+g.schl_nm,       
+g.major,        
+fun_xodxcommst_cd_nm(g.major,0) AS major_nm, 
+fun_hum_get_educ(a.syspayno, 'HAL050', 1) AS high_entsch_yrmon,
+fun_hum_get_educ(a.syspayno, 'HAL050', 2) AS high_gradt_yrmon,
+fun_hum_get_educ(a.syspayno, 'HAL050', 3) AS high_schl_nm,
+fun_hum_get_educ(a.syspayno, 'HAL050', 4) AS high_major_nm,
+fun_hum_get_educ(a.syspayno, 'HAL030', 1) AS bachelor_entsch_yrmon,
+fun_hum_get_educ(a.syspayno, 'HAL030', 2) AS bachelor_gradt_yrmon,
+fun_hum_get_educ(a.syspayno, 'HAL030', 3) AS bachelor_schl_nm,
+fun_hum_get_educ(a.syspayno, 'HAL030', 4) AS bachelor_major_nm,
+fun_hum_get_educ(a.syspayno, 'HAL020', 1) AS master_entsch_yrmon,
+fun_hum_get_educ(a.syspayno, 'HAL020', 2) AS master_gradt_yrmon,
+fun_hum_get_educ(a.syspayno, 'HAL020', 3) AS master_schl_nm,
+fun_hum_get_educ(a.syspayno, 'HAL020', 4) AS master_major_nm,
+fun_hum_get_educ(a.syspayno, 'HAL010', 1) AS doctor_entsch_yrmon,
+fun_hum_get_educ(a.syspayno, 'HAL010', 2) AS doctor_gradt_yrmon,
+fun_hum_get_educ(a.syspayno, 'HAL010', 3) AS doctor_schl_nm,
+fun_hum_get_educ(a.syspayno, 'HAL010', 4) AS doctor_major_nm,
+to_char(sysdate,'%Y%m%d') base_date,
+LEFT(TO_CHAR(TO_DATE(aa.birth_ymd,'%Y%m%d') + 62 units  year,'%Y') ,4) || LEFT(TO_CHAR(TO_DATE(aa.birth_ymd,'%Y%m%d') - 1 units day,'%m%d'),4) AS retire_yyymm,
+NVL(a.sci_tech_regst_no,'') AS sci_tech_regst_no,
+x.user_div,
+DECODE(NVL(x.user_div, ''), 'HYY010', '근로', 'HYY020', '기타', '구분없음') AS user_div_nm,
+b.disp_seq,
+SUBSTR(promo_base_ymd,1,4) AS promo_base_yr,
+g1.cd_nm as retire_resn,
+g2.cd_nm as trans_typ,
+gg.trans_agncy_nm
+FROM humbasicinfo a
+JOIN (SELECT CASE WHEN SUBSTR(resid_no,8,1) IN ('1','2','5','6') THEN '19'
+                     WHEN SUBSTR(resid_no,8,1) IN ('9','0') THEN '18'  
+                     WHEN SUBSTR(resid_no,8,1) IN ('3','4','7','8') THEN '20' END || LEFT(resid_no,6) as birth_ymd, syspayno
+         FROM humbasicinfo
+      ) aa ON a.syspayno = aa.syspayno
+JOIN xodhdeptinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+JOIN  xodhposiinfo h ON a.posi_cd = h.posi_cd
+LEFT JOIN xodhdeptinfo bb ON bb.dept_cd = b.up_dept AND bb.dept_new_ymd = b.up_dept_new_ymd
+LEFT JOIN humslbasinfo c ON a.syspayno = c.syspayno
+LEFT JOIN (
+            SELECT
+                x0.syspayno
+                ,x0.req_ymd
+                ,x0.carer_month_no  
+                ,x0.posi_cd 
+            FROM humrctbasinfo x0 
+            JOIN (
+                    SELECT 
+                        syspayno
+                        ,MIN(DECODE(req_ymd,'',NULL,req_ymd)) AS req_ymd 
+                    FROM humrctbasinfo 
+                    WHERE syspayno IS NOT NULL AND syspayno !='' AND appont_prcs = 'HCX030' GROUP BY 1
+                    ) x1 ON x0.syspayno = x1.syspayno AND (x0.req_ymd = x1.req_ymd OR x1.req_ymd IS NULL) AND x0.appont_prcs = 'HCX030'  
+            ) d ON a.syspayno = d.syspayno                                                                                                                  --채용관리테이블
+LEFT JOIN (
+            SELECT 
+                e.syspayno
+                ,CASE WHEN NVL(e.posi_cd_hbl160,'') != '' THEN e.posi_cd_hbl160 WHEN NVL(e.posi_cd_hbl370,'') != '' AND NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.posi_cd_hbl370 ELSE '' END posi_cd --직종변경이 발령이력 최근이고 직급 변화있음
+                ,CASE WHEN NVL(e.appont_start_ymd_hbl160,'') != '' THEN e.appont_start_ymd_hbl160 ELSE '' END AS appont_start_ymd
+                FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ = 'HBL370' THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl370                          --제일 최근 발령이 직종변경
+                            , MAX( CASE WHEN x0.rank = 1 AND x0.appont_typ IN ('HBL160', 'HBL170') THEN x0.posi_cd ELSE '' END) AS posi_cd_hbl160             --제일 최근 발령이 승진
+                            , MAX( CASE WHEN x0.appont_typ IN ('HBL160', 'HBL170') THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl370           --승진일때 공백
+                            , MAX( CASE WHEN x0.appont_typ = 'HBL370' THEN '' ELSE x0.appont_start_ymd END) AS appont_start_ymd_hbl160                        --직종변경일때 공백
+                        FROM (
+                        SELECT 
+                            x0.syspayno 
+                            , x0.appont_start_ymd
+                            , x0.appont_typ
+                            , x0.posi_cd
+                            , ROW_NUMBER() OVER(PARTITION BY x0.syspayno  ORDER BY x0.appont_start_ymd DESC ) AS rank       
+                        FROM humappnthst x0 
+                        WHERE x0.appont_prcs = 'HCX030'
+                        AND x0.appont_typ IN('HBL160','HBL170','HBL370')
+                            ) AS x0
+                GROUP BY 1 
+                ) e 
+            ) e ON a.syspayno = e.syspayno AND a.posi_cd = NVL(e.posi_cd,0)                                                                         --발령이력(승진한 이력이 있는자)
+LEFT JOIN (
+            SELECT 
+                x0.syspayno
+                ,x0.appont_typ
+                ,x0.posi_cd
+                ,x0.appont_start_ymd 
+            FROM humappnthst x0
+            JOIN ( 
+                SELECT 
+                    x0.syspayno
+                    ,x0.posi_cd
+                    ,x1.appont_befr_posi_cd
+                FROM humbasicinfo x0 
+                JOIN (
+                        SELECT 
+                            syspayno
+                            ,posi_cd
+                            ,appont_befr_posi_cd    
+                        FROM humappnthst 
+                        WHERE appont_befr_posi_cd != posi_cd AND fun_posi_nm(posi_cd) LIKE '%(보)%' AND appont_typ = 'HBL160'
+                        ) x1 ON x0.syspayno = x1.syspayno AND x0.posi_cd = x1.posi_cd AND x0.work_clsf!='HAG090'
+                ) x1 ON x0.syspayno = x1.syspayno AND x1.appont_befr_posi_cd = x0.posi_cd AND (x0.appont_typ IN('HBL160','HBL170') OR fun_xodxcommst_cd_nm(x0.appont_typ,1)='채용')
+            ) f ON a.syspayno = f.syspayno                                                                        --수석(보) 직급에 대해서만 적용되는 조인절
+LEFT JOIN humeducinfo g ON a.syspayno = g.syspayno
+LEFT JOIN (
+             SELECT z.syspayno, z.user_div 
+             FROM humslmmpayamt z
+             JOIN (
+                    SELECT syspayno, MAX(belng_yrmon) AS belng_yrmon 
+                    FROM humslmmpayamt GROUP BY 1
+                   ) y ON y.syspayno = z.syspayno AND y.belng_yrmon = z.belng_yrmon
+            ) x ON x.syspayno = a.syspayno
+LEFT JOIN humapysvr gg ON gg.syspayno = a.syspayno
+LEFT JOIN xodxcommst g1 on g1.cd = gg.retire_resn
+LEFT JOIN xodxcommst g2 on g2.cd = gg.trans_typ
+LEFT JOIN humrctbasinfo dd ON a.rct_req_no = dd.req_no
+WHERE g.apprvl_educ_yn = 'Y'
+    <if test="empno != null and empno != ''">
+	 and a.empno LIKE #{empno}
+</if>
+    <if test="nm != null and nm != ''">
+	 and a.nm LIKE #{nm}
+</if>
+    <if test="dept_cd != null and dept_cd != ''">
+	 and a.dept_cd  LIKE #{dept_cd}
+</if>
+    <if test="dept_nm != null and dept_nm != ''">
+	 and b.dept_nm  LIKE #{dept_nm}
+</if>
+    <if test="occugrp_cd != null and occugrp_cd != ''">
+	 and a.occugrp_cd = #{occugrp_cd}
+</if>
+    <if test="occutyp_cd != null and occutyp_cd != ''">
+	 and a.occutyp_cd = #{occutyp_cd}
+</if>
+    <if test="posi_cd != null and posi_cd != ''">
+	 and a.posi_cd = #{posi_cd}
+</if>
+<if test="work_clsf != null and work_clsf != '' and work_clsf != 'HAG091'">
+	 and a.work_clsf = #{work_clsf}
+</if>
+ <if test="work_clsf == 'HAG091'">
+	 and a.work_clsf <![CDATA[<>]]> 'HAG090'
+</if>   
+    <if test="from_date != null and from_date != ''">
+	 and a.retire_ymd BETWEEN #{from_date} AND #{to_date}
+</if>
+    <if test="from_entr_date != null and from_entr_date != ''">
+	 and a.entr_ymd BETWEEN #{from_entr_date} AND #{to_entr_date}
+</if>
+    <if test="searchPosiGubn != null and searchPosiGubn != ''">
+	 and a.posi_cd IN ('351010', '354000', '354010', '353010', '353020', '350010', '352010', '350020', '351020')
+</if>
+<if test="contrct_cls_ymd != null and contrct_cls_ymd != ''">
+	and dd.contrct_cls_ymd = #{contrct_cls_ymd}	
+</if>
+ORDER BY b.disp_seq, a.nm ASC
+  </select>
+  <insert id="insertHumResidnoDownHis" parameterType="kr.re.kitech.biz.hum.ana.vo.HumAnaUserVo">
+	/* XDA : kitech.hum.ana.xda.HumResidnoDownHisSI01  단건*/
+	INSERT /* QueryID : kr.re.kitech.biz.hum.ana.insertHumResidnoDownHis */ 
+		 INTO humresidnodownhis(syspayno, scrn_id, param, regst_daytm) 
+ 	VALUES(#{regst_syspayno}, #{scrn_id}, #{param}, sysdate)
+  </insert>
+</mapper>

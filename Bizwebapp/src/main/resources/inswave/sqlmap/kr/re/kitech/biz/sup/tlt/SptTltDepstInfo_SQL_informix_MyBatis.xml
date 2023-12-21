@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.tlt">
+<!-- 기업부담금관리 목록 조회 -->
+<select id="selectSptTltDepstInfoList" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstSrcVo" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltDepstInfoList */ 
+      a.depst_mngmt_no
+     , a.mngmt_no
+     , a.cust_no
+     , b.syspayno
+     , h.empno
+     , h.nm 
+     , e.dispatch_term
+     , b.posi_an
+     , a.depst_clsf
+     , fun_xodxcommst_cd_nm(a.depst_clsf, 0) AS depst_clsf_nm
+     , a.depst_schdl_amt
+     , a.depst_schdl_ymd
+     , a.real_amt
+     , a.depst_schdl_amt - NVL(a.real_amt, 0) AS gap_amt
+     , c.req_no
+     , c.accnt_no
+     , c.depst_state
+     , c.depst_ymd
+     , c.depst_amt
+     , c.bill_no
+     , c.unslip_no
+     , c.rmk
+     , d.cmpy_nm_krchar
+  FROM spttltdepstinfo a
+  JOIN spttltdepstitem b ON a.depst_mngmt_no = b.depst_mngmt_no
+  JOIN humbasicinfo h ON b.syspayno = h.syspayno
+  LEFT JOIN spttltdepstdetls c ON a.depst_mngmt_no = c.depst_mngmt_no
+  JOIN sptcustbaseinfo d ON a.cust_no = d.cust_no
+  JOIN sptdispatchprcond e /* 파견현황 */ ON a.mngmt_no = e.mngmt_no AND b.syspayno = e.syspayno
+ WHERE a.depst_schdl_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+  <if test='syspayno != null and syspayno != ""'> AND b.syspayno = #{syspayno} </if>
+  <if test='accnt_no != null and accnt_no != ""'> AND c.accnt_no = #{accnt_no} </if>
+  <if test='unslip_no != null and unslip_no != ""'> AND c.unslip_no = #{unslip_no} </if>
+  <if test='cmpy_nm_krchar != null and cmpy_nm_krchar != ""'> AND d.cmpy_nm_krchar LIKE '%'||#{cmpy_nm_krchar} ||'%' </if>  
+  <if test='depst_state != null and depst_state =="Y"'> AND NVL(c.depst_state, '') IN ('RDF002', 'RDF004') /*발행 */ </if>
+  <if test='depst_state != null and depst_state =="N"'> AND NVL(c.depst_state, '') IN ('RDF003', '') </if>
+  <if test='depst_clsf != null and depst_clsf != ""'> AND a.depst_clsf = #{depst_clsf} </if>
+ ORDER BY a.depst_mngmt_no DESC
+</select>
+
+<!-- 기업부담금 입금예정관리 상세조회  -->  
+<select id="selectSptTltDepstInfoDetail" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstSrcVo" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltDepstInfoDetail */ 
+        t3.mngmt_no               -- 파견기업관리번호
+      , t2.cmpy_nm_krchar       -- 기업명
+      , t2.cust_no               -- 기업번호
+      , t2.bsns_psn_regst_no     -- 사업자번호
+      , t2.reprs_psn             -- 대표자명
+      , t2.cmpy_post_no          -- 우편번호
+      , t2.cmpy_addr             -- 주소
+      , t3.objct_clsf   -- 대상분야
+      , fun_xodxcommst_cd_nm(t3.objct_clsf, 0) AS objct_clsf_nm -- 대상분야명
+      , t3.contrct_ymd        -- 최초선정일자
+      , t1.depst_clsf         -- 입금예정구분
+      , t1.pay_unslip_no AS unslip_no  -- 지급결의번호
+      , t1.depst_mngmt_no     -- 입금관리번호
+      , t1.depst_schdl_amt    -- 입금예정금액
+      , t1.depst_schdl_ymd    -- 입금예정일
+      , t1.real_amt           -- 실입금액
+      , t1.rmk                -- 비고
+      , TRIM(t1.attach_file_no) AS  attach_file_no    -- 첨부파일
+      , 'U' AS cud_type
+  FROM spttltdepstinfo t1
+  JOIN sptcustbaseinfo t2 ON t1.cust_no = t2.cust_no
+  JOIN sptdispatchbaseinfo t3 ON t1.cust_no = t3.cust_no AND t1.mngmt_no = t3.mngmt_no
+ WHERE t1.depst_mngmt_no = #{depst_mngmt_no}
+</select>  
+
+<!-- 기술지원직 내역 조회 --> 
+<select id="selectSptTltDepstItemList" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstItemVo" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstSrcVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltDepstItemList */ 
+       t1.syspayno
+     , t2.depst_mngmt_no
+     , t4.nm
+     , t3.posi
+     , t3.send_clsf
+     , t3.dispatch_term
+     , t1.posi_an
+     , t3.dispatch_start_ymd
+     , t3.dispatch_cls_ymd
+     , t1.salry_start_ymd
+     , t1.salry_cls_ymd
+     , t1.depst_schdl_amt
+     , 'U' AS cud_type
+  FROM spttltdepstinfo t2
+  JOIN spttltdepstitem t1 ON t1.depst_mngmt_no = t2.depst_mngmt_no
+  JOIN sptdispatchprcond t3 ON t2.mngmt_no = t3.mngmt_no AND t1.syspayno = t3.syspayno
+  JOIN humbasicinfo t4 ON t1.syspayno = t4.syspayno
+ WHERE t2.depst_mngmt_no = #{depst_mngmt_no}
+</select>
+
+<!-- 기업부담금예정관리 -기업조회  -->
+<select id="selectSptCustBaseInfo" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstInfoVo">
+SELECT MAX(t2.mngmt_no) AS mngmt_no
+     , t1.cmpy_nm_krchar
+     , t1.cust_no
+     , t1.bsns_psn_regst_no
+     , t1.reprs_psn
+     , t1.cmpy_post_no
+     , t1.cmpy_addr
+     , fun_xodxcommst_cd_nm(t2.objct_clsf, 0) AS objct_clsf_nm
+     , t2.contrct_ymd
+  FROM sptcustbaseinfo t1
+  JOIN sptdispatchbaseinfo /* 파견기업기본정보 */ t2 ON t1.cust_no = t2.cust_no
+ WHERE t1.cust_no = #{cust_no}
+GROUP BY 2,3,4,5,6,7,8,9
+</select>
+
+<!-- 기업지원연구직 콤보박스 -->
+<select id="selectSptDisPatchPrCond" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstItemVo">
+SELECT /* kr.re.kitech.biz.sup.tlt.selectSptDisPatchPrCond */
+       t1.posi                                                -- 파견기업직위
+     , t1.send_clsf -- 파견현황
+     , fun_period_day(TO_CHAR(CURRENT, '%Y%m%d'), t2.promo_base_ymd, 'Y') AS posi_an
+     , t1.dispatch_term       -- 파견계약기간
+     , t1.dispatch_start_ymd  -- 파견시작일자
+     , t1.dispatch_cls_ymd    -- 파견종료일자
+     , t2.syspayno
+     , t2.nm
+  FROM sptdispatchprcond t1
+  JOIN humbasicinfo t2 ON t1.syspayno = t2.syspayno
+ WHERE t1.mngmt_no = #{mngmt_no}
+</select>
+
+<!-- 기업지원부담금 입금예정내역 저장 -->
+<insert id="insertSptTltDepstInfo" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstInfoVo">
+INSERT /* kr.re.kitech.biz.sup.tlt.insertSptTltDepstInfo */
+  INTO spttltdepstinfo(depst_mngmt_no, 
+                       cust_no,
+                       mngmt_no,
+                       depst_clsf,
+                       pay_unslip_no,
+                       depst_schdl_ymd,
+                       depst_schdl_amt,
+                       real_amt,
+                       rmk,
+                       attach_file_no,
+                       regst_syspayno,
+                       regst_daytm)
+VALUES(#{depst_mngmt_no}, 
+       #{cust_no},
+       #{mngmt_no},
+       #{depst_clsf},
+       #{unslip_no},
+       #{depst_schdl_ymd},
+       #{depst_schdl_amt},
+       #{real_amt},
+       #{rmk},
+       #{attach_file_no},
+       #{regst_syspayno},
+       SYSDATE)
+</insert>
+
+<!-- 기업지원부담금 입금예정내역 수정 -->
+<update id="updateSptTltDepstInfo" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstInfoVo">
+UPDATE /* kr.re.kitech.biz.sup.tlt.updateSptTltDepstInfo */
+       spttltdepstinfo
+   SET depst_clsf =#{depst_clsf}       
+     , pay_unslip_no =#{pay_unslip_no}  
+     , depst_schdl_ymd =#{depst_schdl_ymd}  
+     , depst_schdl_amt =#{depst_schdl_amt}  
+     , real_amt =#{real_amt} 
+     , rmk =#{rmk}
+     , attach_file_no =#{attach_file_no}  
+     , updt_syspayno =#{updt_syspayno}  
+     , updt_daytm = SYSDATE
+ WHERE depst_mngmt_no = #{depst_mngmt_no}
+</update>
+
+<!-- 기업지원직 내역 저장 -->
+<update id="mergeSptTltDepstItem" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstItemVo">
+MERGE /* kr.re.kitech.biz.sup.tlt.mergeSptTltDepstItem */
+  INTO spttltdepstitem a
+USING dual AS b ON 1=1 AND a.depst_mngmt_no = #{depst_mngmt_no} AND a.syspayno = #{syspayno}
+WHEN MATCHED THEN
+ UPDATE
+    SET posi_an = #{posi_an},
+        salry_start_ymd = #{salry_start_ymd},   
+        salry_cls_ymd = #{salry_cls_ymd},
+        depst_schdl_amt = #{depst_schdl_amt},
+        updt_syspayno = #{updt_syspayno},
+        updt_daytm = SYSDATE
+
+WHEN NOT MATCHED THEN
+  INSERT (depst_mngmt_no, 
+         syspayno, 
+         posi_an,
+         salry_start_ymd,   
+         salry_cls_ymd,
+         depst_schdl_amt,
+         regst_syspayno, 
+         regst_daytm)
+  VALUES(#{depst_mngmt_no}, 
+         #{syspayno}, 
+         #{posi_an},
+         #{salry_start_ymd},   
+         #{salry_cls_ymd},
+         #{depst_schdl_amt},
+         #{regst_syspayno}, 
+         SYSDATE)
+</update>
+
+<!-- 기술지원직 내역 삭제 -->
+<delete id="deleteSptTltDepstItem" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstItemVo">
+DELETE /* kr.re.kitech.biz.sup.tlt.deleteSptTltDepstItem */
+  FROM spttltdepstitem
+ WHERE depst_mngmt_no = #{depst_mngmt_no}
+   AND syspayno = #{syspayno}
+</delete>
+
+<!-- 기업부담금 입금예정관리 삭제 -->
+<delete id="deleteSptTltDepstInfo" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.sup.tlt.deleteSptTltDepstInfo */
+  FROM spttltdepstinfo
+ WHERE depst_mngmt_no = #{depst_mngmt_no}
+  ;
+DELETE FROM spttltdepstitem
+ WHERE depst_mngmt_no = #{depst_mngmt_no}
+ ;
+</delete>
+
+<!-- 기업부담금 입금의뢰 내역 조회 -->
+<select id="selectSptTltDepstDetls" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstDetlsVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltDepstDetls */ 
+       t1.req_no
+     , t1.depst_mngmt_no
+     , t1.req_psn
+     , t2.empno AS req_psn_empno
+     , t2.nm AS req_psn_nm
+     , t3.dept_nm
+     , t1.req_ymd
+     , t1.depst_state
+     , t1.accnt_no
+     , t1.bankaccnt_no
+     , t1.bank
+     , t1.depst_amt
+     , t1.depst_ymd
+     , TRIM(t1.bill_no) AS bill_no
+     , t1.unslip_no
+     , t1.rmk
+     , t1.attach_file_no
+     , t4.apr_state
+     , TRIM(NVL(fun_fin_tax_bill_state(t1.bill_no, 1),'')) AS state_nm 
+  FROM spttltdepstdetls t1
+  JOIN humbasicinfo t2 ON t1.req_psn = t2.syspayno
+  JOIN xodhdeptinfo t3 ON t2.dept_cd = t3.dept_cd AND t2.dept_new_ymd = t3.dept_new_ymd
+  JOIN xomxintfatab t4 ON t1.req_no = t4.req_no
+ WHERE t1.depst_mngmt_no = #{depst_mngmt_no}
+</select>
+
+<!-- 기업지원부담금 입금의뢰 내역 조회 -->
+<update id="mergeSptTltDepstDetls" parameterType="kr.re.kitech.biz.fin.com.vo.FcpDepstReqVo">
+MERGE /* kr.re.kitech.biz.sup.tlt.mergeSptTltDepstDetls */
+  INTO spttltdepstdetls AS a
+USING dual AS b ON 1=1 AND a.req_no = #{req_no}
+WHEN MATCHED THEN
+UPDATE
+   SET accnt_no = #{accnt_no},
+       bankaccnt_no = #{bankaccnt_no},
+       depst_amt = #{depst_liq},
+       bill_no = #{recv_bill_no},
+       rmk = #{rmk},
+       attach_file_no = #{attach_file_no},
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+WHEN NOT MATCHED THEN
+INSERT (req_no,
+        depst_mngmt_no,
+        req_psn,
+        req_ymd,
+        depst_state,
+        accnt_no,
+        bankaccnt_no,
+        bank,
+        depst_amt,
+        depst_ymd,
+        bill_no,
+        rmk,
+        attach_file_no,
+        regst_syspayno,
+        regst_daytm)
+VALUES(#{req_no},
+       #{depst_mngmt_no},
+       #{req_psn},
+       TO_CHAR(SYSDATE, '%Y%m%d'),
+       'RDF003',
+       #{accnt_no},
+       #{bankaccnt_no},
+       #{bank_cd},
+       #{depst_liq},
+       #{depst_ymd},
+       #{recv_bill_no},
+       #{rmk},
+       #{attach_file_no},
+       #{regst_syspayno},
+       SYSDATE)
+</update>
+
+<!-- 민간인납부금 저장 -->
+<insert id="insertSptTltPricBth" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstDetlsVo">
+INSERT /* kr.re.kitech.biz.sup.tlt.insertSptTltPricBth */ 
+  INTO spttltpricbth( cust_no
+                    , syspayno
+                    , req_no
+                    , regst_syspayno
+                    , regst_daytm
+     ) VALUES ( #{cust_no}
+              , #{req_psn}
+              , #{req_no}
+              , #{regst_syspayno}
+              , SYSDATE )
+</insert>
+
+<!-- 입금의뢰내역 삭제 -->
+<delete id="deleteSptTltDepstDetls" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.sup.tlt.deleteSptTltDepstDetls */
+  FROM spttltdepstdetls
+ WHERE req_no = #{req_no}
+</delete>
+
+<!-- 입금예정관리 실입금액 수정 -->
+<update id="updateSptTltDepstInfoAmt" parameterType="kr.re.kitech.biz.sup.tlt.vo.SptTltDepstDetlsVo">
+UPDATE /* kr.re.kitech.biz.sup.tlt.updateSptTltDepstInfoAmt */
+       spttltdepstinfo
+   SET real_amt = real_amt + #{depst_amt},
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = CURRENT
+ WHERE depst_mngmt_no = #{depst_mngmt_no}
+</update>
+<select id="selectSptTltDepstDetlsApr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.com.vo.FcpDepstReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.tlt.selectSptTltDepstDetlsApr */ 
+       t1.req_no
+     , t1.depst_mngmt_no
+     , t1.req_psn
+     , t2.empno AS req_psn_empno
+     , t2.nm AS req_psn_nm
+     , t3.dept_nm AS req_dept_nm
+     , t1.req_ymd
+     , t1.depst_state
+     , t1.accnt_no
+     , t1.bankaccnt_no
+     , t1.bank AS bank_cd
+     , t1.depst_amt AS depst_liq
+     , t1.depst_ymd
+     , t1.bill_no AS recv_bill_no
+     , t1.unslip_no
+     , t1.rmk
+     , TRIM(t1.attach_file_no) AS attach_file_no
+     , a.acct_txday
+     , a.depst_clsf
+     , b.slip_no
+     , b.slip_odr
+     , c.vend_abbr
+  FROM spttltdepstdetls t1
+  JOIN humbasicinfo t2 ON t1.req_psn = t2.syspayno
+  JOIN xodhdeptinfo t3 ON t2.dept_cd = t3.dept_cd AND t2.dept_new_ymd = t3.dept_new_ymd
+  JOIN fcpdepstreq a ON t1.req_no = a.req_no
+  JOIN fspslipdecsnd b ON a.depst_unslip_no = b.unslip_no AND a.depst_unslip_odr = b.unslip_odr
+  JOIN xodfvend c ON a.vend_cd = c.vend_cd
+ WHERE t1.depst_mngmt_no = #{depst_mngmt_no}
+</select>
+<update id="updateSptTltDepstDetlsUnslipNo" parameterType="kr.re.kitech.biz.fin.com.vo.FcpDepstReqVo">
+UPDATE /* kr.re.kitech.biz.sup.tlt.updateSptTltDepstDetlsUnslipNo */
+      spttltdepstdetls
+   SET unslip_no = #{unslip_no}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+</mapper>

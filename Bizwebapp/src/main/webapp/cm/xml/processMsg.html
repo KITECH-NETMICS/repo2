@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>loading</title>
+    <style type="text/css">
+      body {margin:0px;}
+	.ly_loading {padding:20px 0 0 13px; width:280px; height:81px; border:1px solid #b3b3b3; background:url("/websquare/message/images/bg_ly.gif") left top repeat-x;position:relative;}
+	.pro_loading {width:100%;height:20px;font-size:13px;font-color:#3f3f67;font-weight:bold;}
+      .preloader {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        z-index: 999999999 !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+      .preloader .lds-ellipsis {
+        display: inline-block;
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        margin-top: -40px;
+        margin-left: -40px;
+        top: 50%;
+        left: 50%;
+      }
+      .preloader .lds-ellipsis div {
+        position: absolute;
+        top: 33px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: rgb(255, 255, 255);
+        animation-timing-function: cubic-bezier(0, 1, 1, 0);
+      }
+      .preloader .lds-ellipsis div:nth-child(1) {
+        left: 8px;
+        animation: lds-ellipsis1 0.6s infinite;
+      }
+      .preloader .lds-ellipsis div:nth-child(2) {
+        left: 8px;
+        animation: lds-ellipsis2 0.6s infinite;
+      }
+      .preloader .lds-ellipsis div:nth-child(3) {
+        left: 32px;
+        animation: lds-ellipsis2 0.6s infinite;
+      }
+      .preloader .lds-ellipsis div:nth-child(4) {
+        left: 56px;
+        animation: lds-ellipsis3 0.6s infinite;
+      }
+
+      .preloader.preloader-dark {
+        background-color: #000;
+      }
+
+      .preloader.preloader-dark .lds-ellipsis div {
+        background-color: #fff;
+      }
+
+      @keyframes lds-ellipsis1 {
+        0% {
+          transform: scale(0);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      @keyframes lds-ellipsis3 {
+        0% {
+          transform: scale(1);
+        }
+        100% {
+          transform: scale(0);
+        }
+      }
+      @keyframes lds-ellipsis2 {
+        0% {
+          transform: translate(0, 0);
+        }
+        100% {
+          transform: translate(24px, 0);
+        }
+      }
+    </style>
+    <script type="text/javascript">
+      function init() {
+        try {
+          var prsMsg = parent.WebSquare.layer.processMsg;
+          document.getElementById("processMsgLayer").innerHTML = prsMsg;
+          document.getElementById("abortButton").style.display = "none";
+          document.getElementById("hideButton").style.display = "none";
+
+          if (window.processKey) {
+            clearInterval(window.processKey);
+          }
+
+          window.processKey = setInterval(function () {
+            setColor();
+          }, 500);
+
+          var hideTrigger = parent.WebSquare.layer.hideTrigger;
+          if (hideTrigger === "true") {
+            document.getElementById("hideButton").style.display = "block";
+            document.getElementById("hideButton").onclick = function () {
+              parent.WebSquare.layer.hideProcessMessage();
+            };
+          }
+
+          // WEF-125 [새마을금고] Submission abort 기능 추가
+          // abortTrigger 클릭시 현재 통신 중인 processMsg 설정된 모든 submission을 abort한다.
+          var abortTrigger = parent.WebSquare.layer.abortTrigger;
+          if (abortTrigger === "true") {
+            document.getElementById("abortButton").style.display = "block";
+             document.getElementById("abortButton").onclick = function () {
+              var t_submissionIDQueue = [];
+              for (
+                var i = 0;
+                i < parent.WebSquare.layer.submissionIDQueue.length;
+                i++
+              ) {
+                t_submissionIDQueue.push(
+                  parent.WebSquare.layer.submissionIDQueue[i]
+                );
+              }
+              for (var i = 0; i < t_submissionIDQueue.length; i++) {
+                parent.WebSquare.ModelUtil.abort(t_submissionIDQueue[i]);
+              }
+            }; 
+          }
+        } catch (e) {
+          parent.WebSquare &&
+            parent.WebSquare.exception &&
+            parent.WebSquare.exception.printStackTrace(e, null, this);
+        }
+      }
+
+      window.onload = init;
+
+      var colorArr = ["#3f3f67", "#EEEEEE"];
+      function setColor() {
+        var color = colorArr.shift();
+        colorArr.push(color);
+        document.getElementById("processMsgLayer").style.color = color;
+      }
+    </script>
+  </head>
+  <body>
+    <div class="preloader">
+		<div class="lds-ellipsis">
+		  <div></div>
+		  <div></div>
+		  <div></div>
+		  <div></div>
+		</div>
+	  </div>
+    <div class="ly_loading" style="display:none">
+		<div id="processMsgLayer" class="pro_loading" style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;width:200px;"></div>
+		<img src="/websquare/message/images/progressingbar.gif" width="267px" height="23px" class="loading_bar" alt="로딩중">
+		<input id='hideButton' type='button' style="position:absolute;top:20px;right:14px;height:20px;text-align:center;word-wrap:break-word;display:none;" value="창닫기" />
+		<input id='abortButton' type='button' style="position:absolute;top:20px;right:14px;height:20px;text-align:center;word-wrap:break-word;display:none;" value="취소" />
+	</div>
+  </body>
+</html>

@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+
+	 <select id="selectListCgsDormReq" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo">	     
+			SELECT   /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCgsDormReq */
+			    x0.req_no,
+			    x0.use_psn_nm,
+			    x1.cd_nm AS region_nm,
+			    x0.use_from_ymd,
+			    x0.use_to_ymd,
+			    TRIM(CASE x0.stay_clsf
+			        WHEN 'L' THEN
+			            TRIM(TO_CHAR(TO_DATE(x0.use_from_ymd, '%Y%m%d'), '%Y-%m-%d'))
+			            || ' ~ ' || TRIM(TO_CHAR(TO_DATE(x0.use_to_ymd, '%Y%m%d'), '%d'))
+			        WHEN 'S' THEN
+			            TO_CHAR(TO_DATE(x0.use_from_ymd, '%Y%m%d'), '%Y-%m-%d') || ' (' ||
+			            SUBSTR('일월화수목금토', 1 + WEEKDAY(TO_DATE(x0.use_to_ymd, '%Y%m%d')), 1) || ')'
+			    END) AS use_ymd,
+			    TRIM(DECODE(x0.dorm_clsf, '', x2.cd_nm, x2.cd_nm || ' (' || x3.cd_nm || ')')) AS req_room_clsf_nm,
+			    x4.room_no AS req_room_no,
+			    x5.room_no AS use_room_no,
+			    x6.nm AS req_psn_nm,
+			    DECODE(x0.stay_clsf, 'L', '장기', 'S', '단기') AS stay_clsf_nm,
+			    x7.cd_nm AS req_state_nm,
+			    x0.reject_resn,
+			    x4.auto_approval_yn,
+			    x8.off_yn
+			FROM cgsdorm2req AS x0
+			    LEFT OUTER JOIN xodxcommst AS x1 ON x1.cd = x0.region_cd
+			    LEFT OUTER JOIN xodxcommst AS x2 ON x2.cd = x0.req_room_clsf
+			    LEFT OUTER JOIN xodxcommst AS x3 ON x3.cd = x0.dorm_clsf
+			    LEFT OUTER JOIN cgsdorm2 AS x4 ON x4.region_cd = x0.region_cd AND x4.room_cd = x0.req_room_cd
+			    LEFT OUTER JOIN cgsdorm2 AS x5 ON x5.region_cd = x0.region_cd AND x5.room_cd = x0.use_room_cd
+			    LEFT OUTER JOIN humbasicinfo AS x6 ON x6.syspayno = x0.req_psn_syspayno
+			    LEFT OUTER JOIN xodxcommst AS x7 ON x7.cd = x0.req_state
+			    LEFT OUTER JOIN xomdtmst AS x8 ON x8.ymd = x0.use_to_ymd
+			WHERE
+			    x0.use_to_ymd <![CDATA[>=]]> #{ymd}
+			    AND (x0.use_psn_syspayno = #{syspayno} OR x0.req_psn_syspayno = #{syspayno})
+			ORDER BY x0.use_to_ymd DESC
+    </select>
+    
+   	<select id="selectListCgsDormApprovDate" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo">	     
+			SELECT   /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCgsDormApprovDate */
+			    x0.req_no,
+			    x0.use_psn_nm,
+			    x1.cd_nm AS region_nm,
+			    x0.use_from_ymd,
+			    x0.use_to_ymd,
+			    TRIM(CASE x0.stay_clsf
+			        WHEN 'L' THEN
+			            TRIM(TO_CHAR(TO_DATE(x0.use_from_ymd, '%Y%m%d'), '%Y-%m-%d'))
+			            || ' ~ ' || TRIM(TO_CHAR(TO_DATE(x0.use_to_ymd, '%Y%m%d'), '%d'))
+			        WHEN 'S' THEN
+			            TO_CHAR(TO_DATE(x0.use_from_ymd, '%Y%m%d'), '%Y-%m-%d') || ' (' ||
+			            SUBSTR('일월화수목금토', 1 + WEEKDAY(TO_DATE(x0.use_to_ymd, '%Y%m%d')), 1) || ')'
+			    END) AS use_ymd,
+			    TRIM(DECODE(x0.dorm_clsf, '', x2.cd_nm, x2.cd_nm || ' (' || x3.cd_nm || ')')) AS req_room_clsf_nm,
+			    x4.room_no AS req_room_no,
+			    x5.room_no AS use_room_no,
+			    x6.nm AS req_psn_nm,
+			    DECODE(x0.stay_clsf, 'L', '장기', 'S', '단기') AS stay_clsf_nm,
+			    x7.cd_nm AS req_state_nm,
+			    x0.reject_resn,
+			    x4.auto_approval_yn
+			FROM cgsdorm2req AS x0
+			    LEFT OUTER JOIN xodxcommst AS x1 ON x1.cd = x0.region_cd
+			    LEFT OUTER JOIN xodxcommst AS x2 ON x2.cd = x0.req_room_clsf
+			    LEFT OUTER JOIN xodxcommst AS x3 ON x3.cd = x0.dorm_clsf
+			    LEFT OUTER JOIN cgsdorm2 AS x4 ON x4.region_cd = x0.region_cd AND x4.room_cd = x0.req_room_cd
+			    LEFT OUTER JOIN cgsdorm2 AS x5 ON x5.region_cd = x0.region_cd AND x5.room_cd = x0.use_room_cd
+			    LEFT OUTER JOIN humbasicinfo AS x6 ON x6.syspayno = x0.req_psn_syspayno
+			    LEFT OUTER JOIN xodxcommst AS x7 ON x7.cd = x0.req_state
+			WHERE 1=1
+			AND  x0.use_to_ymd BETWEEN  #{startYmd} AND  #{closeYmd}
+			AND (x0.use_psn_syspayno =  #{syspayno} OR x0.req_psn_syspayno =  #{syspayno})
+			AND x7.cd_nm =   #{cd_nm}
+			ORDER BY x0.use_to_ymd DESC
+    </select>
+
+	<!-- 지역호실리스트 -->
+   	<select id="selectListCgsDorm" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormVo">	     
+		SELECT   /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCgsDorm */
+		    x0.cd AS region_cd,
+		    x0.cd_nm AS region_nm,
+		    x1.cd AS dorm_clsf,
+		    x1.cd_nm AS dorm_clsf_nm,
+		    x2.cd AS room_clsf,
+		    TRIM(NVL2(x1.cd, x2.cd_nm || ' (' || x1.cd_nm || ')', x2.cd_nm)) AS room_clsf_nm,
+		    NVL(x3.cnt, 0) AS cnt,
+		    <![CDATA[ TRIM(NVL2(x1.cd, x2.cd_nm || ' (' || x1.cd_nm || ')', x2.cd_nm) || ' (' || NVL(x3.cnt, 0) || '/' || x4.all_cnt || ')' ) as all_cnt]]>
+		FROM xodxcommst AS x0
+		    LEFT OUTER JOIN xodxcommst AS x1 ON x1.cd_clsf = 'CAC' AND x1.use_ex = 'Y' AND x0.cd = 'CAB001'
+		    LEFT OUTER JOIN xodxcommst AS x2 ON x2.cd_clsf = 'FCP' AND x2.use_ex = 'Y'
+		    LEFT OUTER JOIN (
+		        SELECT
+		            x0.region_cd,
+		            x0.dorm_clsf,
+		            x0.room_clsf,
+		            COUNT(*) AS cnt
+		        FROM cgsdorm2 AS x0
+		            LEFT OUTER JOIN humbasicinfo AS x1 ON x1.syspayno =  #{use_psn_syspayno}
+		        WHERE
+		            x0.use_yn = 'Y'
+		            AND (x0.use_psn_sex = 'N' OR x0.use_psn_sex = DECODE(x1.sex, 'HCZ001', 'M', 'HCZ002', 'W',  #{use_psn_sex}))
+		            AND (x0.use_psn_clsf = 'N' OR x0.use_psn_clsf = (
+		                    CASE WHEN x1.posi_cd IS NULL THEN 'N'
+		                         WHEN x1.posi_cd IN ('210015','250040','310010','310032','310051','310070','330010','330011','330020','330021','330040','350010','351010','351020','352010','353010','354000','354010','350020','410010','410020') THEN 'S' 
+		                         ELSE 'E' END
+		                )
+		            )
+		            AND x0.max_fixed_no <![CDATA[>]]> (
+		                SELECT COUNT(*) FROM cgsdorm2req WHERE
+		                    region_cd = x0.region_cd
+		                    AND (( #{use_from_ymd} BETWEEN use_from_ymd AND use_to_ymd) OR (use_from_ymd BETWEEN  #{use_from_ymd} AND  #{use_to_ymd}))
+		                    AND req_state IN ('CGL001', 'CGL002')
+		                    AND DECODE(req_state, 'CGL002', use_room_cd, req_room_cd) = x0.room_cd
+		            )
+		            AND NOT EXISTS (
+		                SELECT * FROM cgsdorm2req WHERE
+		                    region_cd = x0.region_cd
+		                    AND ((#{use_from_ymd} BETWEEN use_from_ymd AND use_to_ymd) OR (use_from_ymd BETWEEN  #{use_from_ymd} AND  #{use_to_ymd}))
+		                    AND req_state IN ('CGL001', 'CGL002')
+		                    AND DECODE(req_state, 'CGL002', use_room_cd, req_room_cd) = x0.room_cd
+		                    AND (use_psn_syspayno = x1.syspayno OR use_psn_sex <![CDATA[<>]]> DECODE(x1.sex, 'HCZ001', 'M', 'HCZ002', 'W',  #{use_psn_sex}))
+		            )
+		            AND x0.stay_clsf =  #{stay_clsf}
+		        GROUP BY
+		            x0.region_cd, x0.dorm_clsf, x0.room_clsf
+		    ) AS x3 ON x0.cd = x3.region_cd AND NVL(x1.cd, '') = x3.dorm_clsf AND x2.cd = x3.room_clsf
+	    LEFT OUTER JOIN (select region_cd, dorm_clsf, room_clsf, count(*) as all_cnt
+		           		from cgsdorm2
+		           		group by region_cd, dorm_clsf, room_clsf) as x4 on x0.cd = x4.region_cd AND NVL(x1.cd, '') = x4.dorm_clsf AND x2.cd = x4.room_clsf
+		WHERE
+		    x0.cd_clsf = 'CAB'
+		    AND x0.use_ex = 'Y'
+		    AND EXISTS (
+		        SELECT * FROM cgsdorm2 WHERE
+		            region_cd = x0.cd
+		            AND dorm_clsf = NVL(x1.cd, '')
+		            AND room_clsf = x2.cd
+		    )
+		ORDER BY
+		    x0.seq, x2.seq, x1.seq
+    </select>
+    
+    <select id="selectListCgsDormNo" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormVo">	     
+		SELECT   /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCgsDormNo */
+		    x0.region_cd,
+		    x1.cd_nm AS region_nm,
+		    x0.dorm_clsf,
+		    x2.cd_nm AS dorm_clsf_nm,
+		    x0.room_cd,
+		    x0.room_no,
+		    x0.room_clsf,
+		    x3.cd_nm AS room_clsf_nm,
+		    x0.room_kind,
+		    x4.cd_nm AS room_kind_nm,
+		    x0.stay_clsf,
+		    DECODE(x0.stay_clsf, 'L', '장기', 'S', '단기') AS stay_clsf_nm,
+		    x0.use_psn_sex,
+		    DECODE(x0.use_psn_sex, 'M', '남', 'W', '여') AS use_psn_sex_nm,
+		    x0.use_psn_clsf,
+		    DECODE(x0.use_psn_clsf, 'E', '직원', 'S', '학생연구원') AS use_psn_clsf_nm,
+		    x0.in_psn_use_fee,
+		    x0.out_psn_use_fee,
+		    x0.month_in_use_fee,
+		    x0.month_out_use_fee,
+		    CASE x0.stay_clsf
+		        WHEN 'S' THEN NVL2(x5.syspayno, in_psn_use_fee, out_psn_use_fee)        
+		        WHEN 'L' THEN NVL2(x5.syspayno, month_in_use_fee, month_out_use_fee)
+		    END AS use_fee,
+		    x0.rmk,
+		    x0.auto_approval_yn,
+		    DECODE(x0.auto_approval_yn, 'Y', '가능', 'N', '불가능') AS auto_approval_yn_nm
+		FROM cgsdorm2 AS x0
+		    LEFT OUTER JOIN xodxcommst AS x1 ON x1.cd = x0.region_cd
+		    LEFT OUTER JOIN xodxcommst AS x2 ON x2.cd = x0.dorm_clsf
+		    LEFT OUTER JOIN xodxcommst AS x3 ON x3.cd = x0.room_clsf
+		    LEFT OUTER JOIN xodxcommst AS x4 ON x4.cd = x0.room_kind
+		    LEFT OUTER JOIN humbasicinfo AS x5 ON x5.syspayno = #{use_psn_syspayno}
+		WHERE
+		    x0.use_yn = 'Y'
+		    AND (x0.use_psn_sex = 'N' OR x0.use_psn_sex = DECODE(x5.sex, 'HCZ001', 'M', 'HCZ002', 'W', #{use_psn_sex}))
+		    AND (x0.use_psn_clsf = 'N' OR x0.use_psn_clsf = (
+		            CASE WHEN x5.posi_cd IS NULL THEN 'N'
+		            WHEN x5.posi_cd IN ('210015','250040','310010','310032','310051','310070','330010','330011','330020','330021','330040','350010','351010','351020','352010','353010','354000','354010','350020','410010','410020') THEN 'S'
+		            ELSE 'E' END
+		        )
+		    )
+		    AND x0.max_fixed_no <![CDATA[>]]> (
+		        SELECT COUNT(*) FROM cgsdorm2req WHERE
+		            region_cd = x0.region_cd
+		            AND ((#{use_from_ymd} BETWEEN use_from_ymd AND use_to_ymd) OR (use_from_ymd BETWEEN #{use_from_ymd} AND #{use_to_ymd}))
+		            AND req_state IN ('CGL001', 'CGL002')
+		            AND DECODE(req_state, 'CGL002', use_room_cd, req_room_cd) = x0.room_cd
+		    )
+		    AND NOT EXISTS (
+		        SELECT * FROM cgsdorm2req WHERE
+		            region_cd = x0.region_cd
+		            AND ((#{use_from_ymd} BETWEEN use_from_ymd AND use_to_ymd) OR (use_from_ymd BETWEEN #{use_from_ymd} AND #{use_to_ymd}))
+		            AND req_state IN ('CGL001', 'CGL002')
+		            AND DECODE(req_state, 'CGL002', use_room_cd, req_room_cd) = x0.room_cd
+		            AND (use_psn_syspayno = x5.syspayno OR use_psn_sex <![CDATA[<>]]> DECODE(x5.sex, 'HCZ001', 'M', 'HCZ002', 'W', #{use_psn_sex}))
+		    )
+		    AND x0.stay_clsf = #{stay_clsf}
+		    AND x0.region_cd = #{region_cd}
+		    AND ('' = #{dorm_clsf} OR x0.dorm_clsf = #{dorm_clsf})
+		    AND x0.room_clsf = #{room_clsf}
+		ORDER BY
+		    x0.auto_approval_yn DESC, x0.region_cd, x0.room_clsf
+    </select>
+    
+    <select id="selectHoliday" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo">	     
+		SELECT off_yn FROM xomdtmst WHERE ymd = #{ymd}   /* QueryID : kr.re.kitech.biz.ccs.cgs.selectHoliday */
+    </select>
+    
+     <select id="selectListHoliday" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo">	     
+		SELECT ymd, apply_dept_cd, day, day_no, off_yn, off_rmk, rmk, month_week, year_week,   /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListHoliday */
+		        regst_psn_syspayno, regst_daytm, updt_psn_syspayno, updt_daytm
+		FROM xomdtmst 
+		WHERE ymd <![CDATA[ >=]]> #{req_fr_ymd}
+		AND ymd  <![CDATA[<= ]]>#{req_to_ymd}
+
+    </select>
+    
+    <select id="selectListPosi"  resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo">	     
+		SELECT  /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListPosi */
+		    a.posi_cd, 
+		    posi_nm 
+		FROM xodhposiinfo a
+		JOIN xodhoccutyp b ON b.occutyp_cd = a.occutyp_cd
+		JOIN xodxcommst c ON c.cd_clsf = 'HAA' AND c.cd in ('HAA010','HAA015','HAA020','HAA045') and c.cd = b.occugrp_cd
+		WHERE a.use_yn='Y'
+		AND a.posi_nm not like '%(단)%'
+    </select>
+	
+	<!-- 기숙사신청 -->
+	<insert id="insertCgsDorm" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo">
+		INSERT INTO cgsdorm2req ( /* QueryID : kr.re.kitech.biz.ccs.cgs.insertCgsDorm */
+		    req_no, req_psn_syspayno, use_psn_syspayno, use_psn_nm, use_psn_sex,
+		    use_psn_dept_nm, use_psn_tel, use_psn_mail, req_resn, stay_clsf,
+		    use_from_ymd, use_to_ymd, region_cd, dorm_clsf, req_room_clsf, req_room_cd,
+		    use_room_cd, req_state, use_fee, regst_psn_syspayno, regst_daytm
+		)
+		SELECT
+		    req_no, req_psn_syspayno, use_psn_syspayno, use_psn_nm, use_psn_sex,
+		    use_psn_dept_nm, use_psn_tel, use_psn_mail, req_resn, stay_clsf,
+		    use_from_ymd, use_to_ymd, region_cd, dorm_clsf, req_room_clsf, req_room_cd,
+		    use_room_cd, req_state, use_fee, regst_psn_syspayno, regst_daytm
+		FROM (
+		    SELECT
+		        ROW_NUMBER() OVER (ORDER BY x0.auto_approval_yn DESC) row_no,
+		        CAST(#{req_no} AS CHAR(12)) AS req_no,
+		        CAST(#{req_psn_syspayno} AS CHAR(8)) AS req_psn_syspayno,
+		        CAST(#{use_psn_syspayno} AS CHAR(8)) AS use_psn_syspayno,
+		        CAST(#{use_psn_nm} AS VARCHAR(20)) AS use_psn_nm,
+		        CAST(DECODE(x1.sex, 'HCZ001', 'M', 'HCZ002', 'W', #{use_psn_sex}) AS CHAR(1)) AS use_psn_sex,
+		        CAST(NVL2(x1.syspayno, x2.dept_nm, #{use_psn_dept_nm}) AS VARCHAR(50)) AS use_psn_dept_nm,
+		        CAST(NVL2(x1.syspayno, x1.mobile, #{use_psn_tel}) AS VARCHAR(20)) AS use_psn_tel,
+		        CAST(NVL2(x1.syspayno, x1.email, #{use_psn_mail}) AS VARCHAR(50)) AS use_psn_mail,
+		        CAST(#{req_resn} AS VARCHAR(100)) AS req_resn,
+		        CAST(#{stay_clsf} AS CHAR(1)) AS stay_clsf,
+		        CAST(#{use_from_ymd} AS CHAR(8)) AS use_from_ymd,
+		        CAST(#{use_to_ymd} AS CHAR(8)) AS use_to_ymd,
+		        x0.region_cd,
+		        x0.dorm_clsf,
+		        x0.room_clsf AS req_room_clsf,
+		        x0.room_cd AS req_room_cd,
+		        DECODE(x0.auto_approval_yn, 'Y', x0.room_cd, CAST('' AS CHAR(5))) AS use_room_cd,
+		        CAST(DECODE(x0.auto_approval_yn, 'Y', 'CGL002', 'CGL001') AS CHAR(6)) AS req_state,
+		        CASE CAST(#{stay_clsf} AS CHAR(1))
+		            WHEN 'S' THEN NVL2(x1.syspayno, in_psn_use_fee, out_psn_use_fee)        
+		            WHEN 'L' THEN NVL2(x1.syspayno, month_in_use_fee, month_out_use_fee)
+		        END AS use_fee,
+		        CAST(#{req_psn_syspayno} AS CHAR(8)) AS regst_psn_syspayno,
+		        CURRENT AS regst_daytm
+		    FROM cgsdorm2 AS x0
+		        LEFT OUTER JOIN humbasicinfo AS x1 ON x1.syspayno = #{use_psn_syspayno}
+		        LEFT OUTER JOIN xodhdeptinfo AS x2 ON x2.dept_cd = x1.dept_cd AND x2.dept_new_ymd = x1.dept_new_ymd
+		    WHERE
+		        x0.use_yn = 'Y'
+		        AND (x0.use_psn_sex = 'N' OR x0.use_psn_sex = DECODE(x1.sex, 'HCZ001', 'M', 'HCZ002', 'W', #{use_psn_sex}))
+		        AND (x0.use_psn_clsf = 'N' OR x0.use_psn_clsf = (
+		                CASE WHEN x1.posi_cd IS NULL THEN 'N'
+		                WHEN x1.posi_cd IN ('210015','250040','310010','310032','310051','310070','330010','330011','330020','330021','330040','350010','351010','351020','352010','353010','353020','354000','354010','350020','410010','410020') THEN 'S'
+		                ELSE 'E' END
+		            )
+		        )
+		        AND x0.max_fixed_no > (
+		            SELECT COUNT(*) FROM cgsdorm2req WHERE
+		                region_cd = x0.region_cd
+		                AND ((#{use_from_ymd} BETWEEN use_from_ymd AND use_to_ymd) OR (use_from_ymd BETWEEN #{use_from_ymd} AND #{use_to_ymd}))
+		                AND req_state IN ('CGL001', 'CGL002')
+		                AND DECODE(req_state, 'CGL002', use_room_cd, req_room_cd) = x0.room_cd
+		        )
+		        AND NOT EXISTS (
+		            SELECT * FROM cgsdorm2req WHERE
+		                region_cd = x0.region_cd
+		                AND ((#{use_from_ymd} BETWEEN use_from_ymd AND use_to_ymd) OR (use_from_ymd BETWEEN #{use_from_ymd} AND #{use_to_ymd}))
+		                AND req_state IN ('CGL001', 'CGL002')
+		                AND DECODE(req_state, 'CGL002', use_room_cd, req_room_cd) = x0.room_cd
+		                AND (use_psn_syspayno = x1.syspayno OR use_psn_sex<![CDATA[ <> ]]> DECODE(x1.sex, 'HCZ001', 'M', 'HCZ002', 'W', #{use_psn_sex}))
+		        )
+		        AND x0.stay_clsf = #{stay_clsf}
+		        AND x0.region_cd = #{region_cd}
+		        AND ('' = #{dorm_clsf} OR x0.dorm_clsf = #{dorm_clsf})
+		        AND x0.room_clsf = #{req_room_clsf}
+		        AND ('' = #{req_room_cd} OR x0.room_cd = #{req_room_cd})
+		)
+		WHERE row_no = 1
+	</insert>
+	
+	<!-- 기숙사신청대기 -->
+	<insert id="insertCgsDormStand" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo">
+		INSERT INTO cgsdorm2req (  /* QueryID : kr.re.kitech.biz.ccs.cgs.insertCgsDormStand */
+		    req_no, req_psn_syspayno, use_psn_syspayno, use_psn_nm, use_psn_sex,
+		    use_psn_dept_nm, use_psn_tel, use_psn_mail, req_resn, stay_clsf,
+		    use_from_ymd, use_to_ymd, region_cd, dorm_clsf, req_room_clsf, req_room_cd,
+		    use_room_cd, req_state, use_fee, regst_psn_syspayno, regst_daytm
+		)
+		SELECT
+		    req_no, req_psn_syspayno, use_psn_syspayno, use_psn_nm, use_psn_sex,
+		    use_psn_dept_nm, use_psn_tel, use_psn_mail, req_resn, stay_clsf,
+		    use_from_ymd, use_to_ymd, region_cd, dorm_clsf, req_room_clsf, req_room_cd,
+		    use_room_cd, req_state, use_fee, regst_psn_syspayno, regst_daytm
+		FROM (
+		    SELECT
+		        ROW_NUMBER() OVER (ORDER BY x0.room_cd DESC) row_no,
+		        CAST(#{req_no} AS CHAR(12)) AS req_no,
+		        CAST(#{req_psn_syspayno} AS CHAR(8)) AS req_psn_syspayno,
+		        CAST(#{use_psn_syspayno} AS CHAR(8)) AS use_psn_syspayno,
+		        CAST(#{use_psn_nm} AS VARCHAR(20)) AS use_psn_nm,
+		        CAST(DECODE(x1.sex, 'HCZ001', 'M', 'HCZ002', 'W', #{use_psn_sex}) AS CHAR(1)) AS use_psn_sex,
+		        CAST(NVL2(x1.syspayno, x2.dept_nm, #{use_psn_dept_nm}) AS VARCHAR(50)) AS use_psn_dept_nm,
+		        CAST(NVL2(x1.syspayno, x1.mobile, #{use_psn_tel}) AS VARCHAR(20)) AS use_psn_tel,
+		        CAST(NVL2(x1.syspayno, x1.email, #{use_psn_mail}) AS VARCHAR(50)) AS use_psn_mail,
+		        CAST(#{req_resn} AS VARCHAR(100)) AS req_resn,
+		        CAST(#{stay_clsf} AS CHAR(1)) AS stay_clsf,
+		        CAST(#{use_from_ymd} AS CHAR(8)) AS use_from_ymd,
+		        CAST(#{use_to_ymd} AS CHAR(8)) AS use_to_ymd,
+		        x0.region_cd,
+		        x0.dorm_clsf,
+		        x0.room_clsf AS req_room_clsf,
+		        CAST(#{req_room_cd} AS CHAR(5)) AS req_room_cd,
+		        CAST('' AS CHAR(5)) AS use_room_cd,
+		        CAST('CGL001' AS CHAR(6)) AS req_state,
+		        CASE CAST(#{stay_clsf} AS CHAR(1))
+		            WHEN 'S' THEN NVL2(x1.syspayno, in_psn_use_fee, out_psn_use_fee)        
+		            WHEN 'L' THEN NVL2(x1.syspayno, month_in_use_fee, month_out_use_fee)
+		        END AS use_fee,
+		        CAST(#{req_psn_syspayno} AS CHAR(8)) AS regst_psn_syspayno,
+		        CURRENT AS regst_daytm
+		    FROM cgsdorm2 AS x0
+		        LEFT OUTER JOIN humbasicinfo AS x1 ON x1.syspayno = #{use_psn_syspayno}
+		        LEFT OUTER JOIN xodhdeptinfo AS x2 ON x2.dept_cd = x1.dept_cd AND x2.dept_new_ymd = x1.dept_new_ymd
+		    WHERE
+		        x0.region_cd = #{region_cd}
+		        AND ('' = #{dorm_clsf} OR x0.dorm_clsf = #{dorm_clsf})
+		        AND x0.room_clsf = #{req_room_clsf}
+		)
+		WHERE row_no = 1
+	</insert>		
+	
+	<delete id="deleteCgsDorm" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo">
+		DELETE FROM cgsdorm2req
+		WHERE req_no = #{req_no} AND req_state IN ('CGL001', 'CGL002')
+    </delete>
+	
+	<!-- 기숙사신청 정보 조회 -->
+	<select id="selectDormReq" parameterType="String" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsDormReqVo">	     
+		SELECT  /* QueryID : kr.re.kitech.biz.ccs.cgs.selectDormReq */
+		    x0.req_no,
+		    x0.req_psn_syspayno,
+		    x1.empno AS req_psn_empno,
+		    x1.nm AS req_psn_nm,
+		    x2.posi_nm AS req_psn_posi_nm,
+		    x3.dept_nm AS req_psn_dept_nm,
+		    DECODE(x0.use_psn_syspayno,'','O','I') AS use_psn_clsf,
+		    x0.use_psn_syspayno,
+		    x4.empno AS use_psn_empno,
+		    x0.use_psn_nm,
+		    x0.use_psn_sex,
+		    x5.posi_nm AS use_psn_posi_nm,
+		    x0.use_psn_dept_nm,
+		    x0.use_psn_tel,
+		    x0.use_psn_mail,
+		    x0.req_resn,
+		    x0.stay_clsf,
+		    SUBSTR(x0.use_from_ymd,1,6) AS use_ym,
+		    x0.use_from_ymd,
+		    x0.use_to_ymd,
+		    TRIM(CASE x0.stay_clsf
+		        WHEN 'L' THEN
+		            TRIM(TO_CHAR(TO_DATE(x0.use_from_ymd, '%Y%m%d'), '%Y-%m-%d'))
+		            || ' ~ ' || TRIM(TO_CHAR(TO_DATE(x0.use_to_ymd, '%Y%m%d'), '%d'))
+		        WHEN 'S' THEN
+		            TO_CHAR(TO_DATE(x0.use_from_ymd, '%Y%m%d'), '%Y-%m-%d') || ' (' ||
+		            SUBSTR('일월화수목금토', 1 + WEEKDAY(TO_DATE(x0.use_to_ymd, '%Y%m%d')), 1) || ')'
+		    END) AS use_ymd,
+		    x0.region_cd,
+		    x8.cd_nm AS region_nm,
+		    x0.dorm_clsf,
+		    x0.req_room_clsf,
+		    x9.cd_nm AS req_room_clsf_nm,
+		    x0.req_room_cd,
+		    x6.room_no AS req_room_no,
+		    x0.use_room_cd,
+		    x7.room_no AS use_room_no,
+		    x0.req_state,
+		    x10.cd_nm AS req_state_nm,
+		    x0.reject_resn,
+		    x0.attach_file_no,
+		    x0.use_fee,
+		    x0.adjust_fee,
+		    NVL(NVL(x7.mngmt_psn_syspayno, x6.mngmt_psn_syspayno), x13.mngmt_psn_syspayno) mngmt_psn_syspayno,
+		    NVL(NVL(x11.nm, x12.nm), x14.nm) AS mngmt_psn_nm,
+		    NVL(NVL(x11.ext_no, x12.ext_no), x14.ext_no) AS mngmt_psn_ext_no,
+		    NVL(NVL(x11.mobile, x12.mobile), x14.mobile) AS mngmt_psn_mobile,
+		    NVL(NVL(x11.email, x12.email), x14.email) AS mngmt_psn_email
+		FROM cgsdorm2req AS x0
+		    LEFT OUTER JOIN humbasicinfo AS x1 ON x1.syspayno = x0.req_psn_syspayno
+		    LEFT OUTER JOIN xodhposiinfo AS x2 ON x2.posi_cd = x1.posi_cd
+		    LEFT OUTER JOIN xodhdeptinfo AS x3 ON x3.dept_cd = x1.dept_cd AND x3.dept_new_ymd = x1.dept_new_ymd
+		    LEFT OUTER JOIN humbasicinfo AS x4 ON x4.syspayno = x0.use_psn_syspayno
+		    LEFT OUTER JOIN xodhposiinfo AS x5 ON x5.posi_cd = x4.posi_cd
+		    LEFT OUTER JOIN cgsdorm2 AS x6 ON x6.region_cd = x0.region_cd AND x6.room_cd = x0.req_room_cd
+		    LEFT OUTER JOIN cgsdorm2 AS x7 ON x7.region_cd = x0.region_cd AND x7.room_cd = x0.use_room_cd
+		    LEFT OUTER JOIN xodxcommst AS x8 ON x8.cd = x0.region_cd
+		    LEFT OUTER JOIN xodxcommst AS x9 ON x9.cd = x0.req_room_clsf
+		    LEFT OUTER JOIN xodxcommst AS x10 ON x10.cd = x0.req_state
+		    LEFT OUTER JOIN humbasicinfo AS x11 ON x11.syspayno = x7.mngmt_psn_syspayno
+		    LEFT OUTER JOIN humbasicinfo AS x12 ON x12.syspayno = x6.mngmt_psn_syspayno
+		    LEFT OUTER JOIN (
+		        SELECT region_cd, MAX(mngmt_psn_syspayno) mngmt_psn_syspayno FROM cgsdorm2 GROUP BY region_cd
+		    ) AS x13 ON x13.region_cd = x0.region_cd
+		    LEFT OUTER JOIN humbasicinfo AS x14 ON x14.syspayno = x13.mngmt_psn_syspayno
+		WHERE x0.req_no = #{req_no}
+    </select>
+
+	
+</mapper>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.res.exp">
+  <select id="selectResRsAllowanceRate" parameterType="kr.re.kitech.biz.res.exp.vo.ResRsAllowanceRateVo" resultType="kr.re.kitech.biz.res.exp.vo.ResRsAllowanceRateVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exp.selectResRsAllowanceRate */   
+		  c.cd_nm AS bsns_inout_nm
+  , b.bsns_nm 
+  , a.bsns_cd_inout
+  , a.bsns_cd
+  , a.start_ymd
+  , a.close_ymd
+  , a.psn_limit_rate_01
+  , a.psn_limit_rate_02
+  , a.psn_limit_rate_03
+  , a.psn_limit_rate_04
+  , a.psn_limit_rate_05
+  , a.rmk
+  , a.use_yn
+  , a.regst_syspayno
+  , d.nm as regst_nm
+  , substr(a.regst_daytm,0,10) as regst_daytm
+  , a.updt_syspayno
+  , e.nm as updater_nm
+  , substr(a.updt_daytm,0,10) as updt_daytm
+FROM resbsnsrate a
+JOIN xodrbacode b ON a.bsns_cd = b.bsns_cd
+JOIN xodxcommst c ON c.cd = a.bsns_cd_inout
+LEFT JOIN humbasicinfo d ON d.syspayno = a.regst_syspayno
+LEFT JOIN humbasicinfo e ON e.syspayno = a.updt_syspayno
+WHERE ('' = #{bsns_cd_inout} OR a.bsns_cd_inout = #{bsns_cd_inout})
+AND ('' = #{bsns_cd} OR a.bsns_cd = #{bsns_cd})
+<if test='start_ymd != null and start_ymd != ""'> AND start_ymd >= #{ start_ymd } </if>
+<if test='close_ymd != null and close_ymd != ""'> AND start_ymd <![CDATA[<= ]]> #{ close_ymd } </if>
+</select>
+  
+ <select id="selectResRsAllowanceRateBsnsCode" parameterType="kr.re.kitech.biz.res.exp.vo.ResRsAllowanceRateVo" resultType="kr.re.kitech.biz.res.exp.vo.ResRsAllowanceRateVo">
+SELECT bsns_cd,bsns_nm,depth,use_ex 
+FROM xodrbacode 
+WHERE depth = 1;
+ 
+ </select>
+  
+<update id="mergeResRsAllowanceRate" parameterType="kr.re.kitech.biz.res.exp.vo.ResRsAllowanceRateVo">
+MERGE /* QueryID : kr.re.kitech.biz.res.exp.mergeResRsAllowanceRate */ 
+		 INTO resbsnsrate AS a
+USING dual AS b ON bsns_cd_inout = #{bsns_cd_inout} AND bsns_cd = #{bsns_cd} AND start_ymd = #{start_ymd} AND use_yn = #{use_yn}
+WHEN MATCHED THEN
+UPDATE 
+SET  
+  psn_limit_rate_01 = #{psn_limit_rate_01}
+, psn_limit_rate_02 = #{psn_limit_rate_02}
+, psn_limit_rate_03 = #{psn_limit_rate_03}
+, psn_limit_rate_04 = #{psn_limit_rate_04}
+, psn_limit_rate_05 = #{psn_limit_rate_05}
+, rmk = #{rmk}
+, updt_syspayno = #{updt_syspayno}
+, updt_daytm = sysdate
+<if test='close_ymd != null and close_ymd != ""'> , close_ymd = #{ close_ymd } </if>
+WHEN NOT MATCHED THEN
+INSERT
+(a.bsns_cd_inout, a.bsns_cd, a.start_ymd, a.close_ymd, a.psn_limit_rate_01, a.psn_limit_rate_02, a.psn_limit_rate_03, a.psn_limit_rate_04, a.psn_limit_rate_05
+, a.rmk, a.use_yn, a.regst_syspayno, a.regst_daytm)
+VALUES
+(#{bsns_cd_inout}, #{bsns_cd}, #{start_ymd}, #{close_ymd}, 
+#{psn_limit_rate_01},
+#{psn_limit_rate_02}, 
+#{psn_limit_rate_03}, 
+#{psn_limit_rate_04}, 
+#{psn_limit_rate_05}, 
+#{rmk}, #{use_yn}, #{regst_syspayno}, sysdate)
+</update>
+  
+    <delete id="deleteResRsAllowanceRate" parameterType="kr.re.kitech.biz.res.exp.vo.ResRsAllowanceRateVo">
+DELETE /* QueryID : kr.re.kitech.biz.res.exp.deleteResRsAllowanceRate */ 
+FROM    resbsnsrate
+WHERE   bsns_cd_inout    = #{bsns_cd_inout}
+AND     bsns_cd    = #{bsns_cd}
+AND     start_ymd    = #{start_ymd}
+<if test='close_ymd != null and close_ymd != ""'> AND close_ymd = #{ close_ymd } </if>
+<if test='use_yn != null and use_yn != ""'> AND use_yn = #{ use_yn } </if>
+  </delete>
+  
+<!-- 사용않음 저장 -->
+<update id="updateResRsAllowanceRate" parameterType="kr.re.kitech.biz.res.exp.vo.ResRsAllowanceRateVo">
+UPDATE /* kr.re.kitech.biz.res.exp.updateResRsAllowanceRate */
+       resbsnsrate
+   SET use_yn = #{use_yn}
+     , rmk = #{rmk}
+     , close_ymd = #{close_ymd}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE bsns_cd_inout = #{bsns_cd_inout} 
+   AND bsns_cd = #{bsns_cd} 
+   AND start_ymd = #{start_ymd} 
+   AND use_yn = 'Y'
+</update>
+</mapper>

@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.lpl.lpr">
+
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqHMS01 -->
+  <select id="selectLplLprPrGoddsReqList" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo" resultType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lpr.selectLplLprPrGoddsReqList */ 
+    a.req_no
+   ,a.req_ymd
+   ,a.req_psn_nm
+   ,b. prgds_nm
+   ,a.accnt_no
+   ,a.accnt_cd
+   ,a.ctrl_no
+   ,a.req_psn_syspayno
+   ,a.req_psn_dept_nm
+   ,a.req_psn_posi_nm
+   ,b.recv_psn_syspayno
+   ,fun_humbasicinfo_cd_nm(b.recv_psn_syspayno, 0) as recv_psn_nm
+   ,c.apr_state
+   ,fun_xodxcommst_cd_nm(c.apr_state, 0) as req_state_nm         
+FROM      lprprgdreqh a LEFT JOIN lprprgdreqd b                                               
+ON a.req_no = b.req_no
+INNER JOIN xomxintfatab c
+ON a.req_no = c.req_no 
+WHERE 1=1
+AND   a.req_ymd between #{req_fr_ymd} AND #{req_to_ymd}
+AND   a.req_psn_dept_cd LIKE DECODE(#{req_psn_dept_cd},'','%',#{req_psn_dept_cd})
+AND   a.req_psn_syspayno LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno})
+AND   c.apr_state LIKE DECODE(#{apr_state},'','%',#{apr_state})
+AND   a.req_no IN(SELECT req_no FROM lprprgdreqd where prgds_nm LIKE DECODE(#{prgds_nm},'','%',#{prgds_nm}))
+ORDER BY a.req_no, req_psn_nm asc
+  </select>
+  
+  <!--kitech.lpl.lpr.xda.LprPrGdMS01-->
+  <select id="selectLplLprPrGoods" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo" resultType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lpr.selectLplLprPrGoods */ 
+  prgds_nm
+ ,inv_vol
+ ,un_distr_vol
+ ,unit_price
+FROM lprprgd
+WHERE 1=1
+AND   prgds_nm LIKE DECODE(#{prgds_nm},'','%',#{prgds_nm})
+AND   use_yn LIKE DECODE(#{use_yn},'','%',#{use_yn})
+  </select>
+
+  <!-- kitech.lpl.lpr.xda.LprPrGdMS04 -->
+  <select id="selectLplLprPrGoodsInv" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo" resultType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+select /* QueryID : kr.re.kitech.biz.lpl.lpr.selectLplLprPrGoodsInv */ 
+		 prgds_nm, inv_vol
+from lprprgd
+where use_yn = 'Y'
+  </select> 
+      
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqHMS02 -->  
+  <select id="selectLplLprPrGoddsReqInfo" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo" resultType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lpr.selectLplLprPrGoddsReqInfo */ 
+    a.req_no
+    ,a.req_clsf
+    ,a.req_ymd
+    ,a.req_psn_syspayno
+    ,fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 1) as req_psn_empno
+    ,a.req_psn_nm
+    ,a.req_psn_dept_cd
+    ,a.req_psn_dept_nm
+    ,a.req_psn_posi_nm
+    ,a.accnt_rspns_syspayno
+    ,a.accnt_rspns_dept_cd
+    ,a.accnt_rspns_dept_nm
+    ,a.accnt_no
+    ,a.accnt_cd
+    ,a.ctrl_no
+    ,a.expns_cd
+    ,a.req_cause
+    ,a.rmk
+    ,a.req_state
+    ,b.accnt_no_nm as accntnm
+    ,a.attach_file_no
+    ,c.apr_state
+FROM lprprgdreqh a
+INNER JOIN xomxintfatab c
+ON c.req_no = a.req_no
+LEFT OUTER JOIN RESBGACCTM b ON a.accnt_no = b.accnt_no
+WHERE a.req_no = #{req_no}
+  </select> 
+  
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqDMS01 -->
+  <select id="selectLplLprPrGoddsProductList" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo" resultType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lpr.selectLplLprPrGoddsReqProdList */ 
+		  a.req_no
+       ,a.prgds_nm
+       ,a.req_qty
+       ,a.distr_qty
+       ,a.distr_ymd
+       ,a.recv_psn_syspayno
+       ,a.regst_psn_syspayno
+       ,a.regst_daytm
+       ,a.updt_psn_syspayno
+       ,a.updt_daytm
+       ,b.inv_vol
+       ,b.unit_price
+       ,nvl(a.req_qty,0)*nvl(b.unit_price,0) as sum_cost
+FROM   lprprgdreqd a LEFT JOIN TABLE(multiset(SELECT prgds_nm, unit_price, inv_vol
+                                                   FROM   lprprgd))b
+ON    a.prgds_nm = b.prgds_nm                                                   
+WHERE       1=1
+and req_no = #{req_no}
+  </select>  
+  
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqHMS04 -->
+  <select id="selectLplLprPrGoddsDeliv" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo" resultType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lpr.selectLplLprPrGoddsDeliv */ 
+		     a.req_no
+          ,a.req_ymd
+          ,a.req_psn_nm
+          ,b.prgds_nm     
+          ,b.distr_ymd
+          ,b.recv_psn_syspayno
+          ,fun_humbasicinfo_cd_nm(b.recv_psn_syspayno, 0) as recv_psn_nm
+          ,b.inv_vol
+          ,b.req_qty
+          ,b.distr_qty
+          ,b.unit_price
+          ,b.un_distr_vol
+          ,b.unit
+FROM      lprprgdreqh a LEFT JOIN TABLE(multiset(
+                        SELECT c.req_no, c.prgds_nm, c.req_qty, c.distr_ymd,c.recv_psn_syspayno
+                               ,c.distr_qty, d.inv_vol, d.unit_price, d.un_distr_vol, d.unit
+                        FROM lprprgdreqd c LEFT JOIN TABLE(multiset(SELECT inv_vol, prgds_nm, unit_price, un_distr_vol, unit
+                                                                    FROM lprprgd)) d
+                        on c.prgds_nm = d.prgds_nm
+                      GROUP BY c.req_no, c.prgds_nm, c.req_qty, c.distr_ymd, c.recv_psn_syspayno, c.distr_qty, d.inv_vol,  d.unit_price, d.un_distr_vol, d.unit))b                                                
+ON a.req_no = b.req_no
+WHERE 1=1
+AND   a.req_no = #{req_no}
+AND   b.prgds_nm LIKE DECODE(#{prgds_nm},'','%',#{prgds_nm})
+  </select>  
+   
+  
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqDSI01 -->
+  <insert id="insertLplLprPrGoodsReq" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lpr.insertLplLprPrGoodsReq */ 
+		 INTO lprprgdreqh
+(    
+    req_no,
+    req_clsf,
+    req_ymd,
+    req_psn_syspayno,
+    req_psn_nm,
+    req_psn_dept_cd,
+    req_psn_dept_new_ymd,
+    req_psn_dept_nm,
+    req_psn_posi_cd,
+    req_psn_posi_nm,
+    accnt_rspns_syspayno,
+    accnt_rspns_dept_cd,
+    accnt_rspns_dept_nm,
+    accnt_no,    
+    expns_cd,
+    accnt_cd,
+    req_amt,
+    req_cause,
+    rmk,
+    req_state,
+    attach_file_no,
+    regst_psn_syspayno,
+    regst_daytm
+)
+VALUES(#{req_no}, 
+#{req_clsf}, 
+#{req_ymd}, 
+#{req_psn_syspayno}, 
+#{req_psn_nm}, 
+#{req_psn_dept_cd}, 
+#{req_psn_dept_new_ymd}, 
+#{req_psn_dept_nm}, 
+#{req_psn_posi_cd}, 
+#{req_psn_posi_nm}, 
+#{accnt_rspns_syspayno}, 
+#{accnt_rspns_dept_cd}, 
+#{accnt_rspns_dept_nm}, 
+#{accnt_no}, 
+#{expns_cd}, 
+#{accnt_cd}, 
+#{req_amt}, 
+#{req_cause}, 
+#{rmk}, 
+#{req_state}, 
+#{attach_file_no}, 
+#{regst_psn_syspayno}, 
+CURRENT)
+  </insert>  
+
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqHSU01 -->
+  <update id="updateLplLprPrGoodsReq" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lpr."updateLplLprPrGoodsReq */ 
+		 lprprgdreqh
+SET       req_ymd = #{req_ymd},
+          accnt_rspns_syspayno = #{accnt_rspns_syspayno},
+          accnt_rspns_dept_cd = #{accnt_rspns_dept_cd},
+          accnt_rspns_dept_nm = #{accnt_rspns_dept_nm},
+          accnt_no = #{accnt_no},
+          expns_cd = #{expns_cd},     
+          accnt_cd = #{accnt_cd},     
+          bugt_ctrl_way = #{bugt_ctrl_way},
+          ctrl_no = #{ctrl_no},
+          req_amt = #{req_amt},
+          req_cause = #{req_cause},
+          rmk = #{rmk},
+          attach_file_no = #{attach_file_no},
+          updt_psn_syspayno = #{updt_psn_syspayno},
+          updt_daytm = CURRENT
+WHERE     req_no = #{req_no}
+  </update>  
+  
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqHSU03 -->
+  <update id="updateLplLprPrGoodsReqState" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lpr.updateLplLprPrGoodsReqState */ 
+		    lprprgdreqh
+SET       req_state = #{req_state}
+         ,updt_psn_syspayno = #{updt_psn_syspayno}
+         ,updt_daytm = sysdate
+WHERE    1=1
+AND      req_no =#{req_no}
+  </update>   
+  
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqHSD01 -->
+  <delete id="deleteLplLprPrGoodsReq" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lpr.deleteLplLprPrGoodsReq */ 
+		     lprprgdreqh
+WHERE      req_no = #{req_no}
+  </delete> 
+   
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqDSI01 -->
+  <insert id="insertLplLprPrGoodsReqDetail" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lpr.insertLplLprPrGoodsReqDetail */ 
+		 INTO    lprprgdreqd
+(    req_no
+    ,prgds_nm
+    ,req_qty
+    ,unit_price
+    ,req_amt
+    ,distr_qty
+    ,distr_ymd
+    ,recv_psn_syspayno
+    ,regst_psn_syspayno
+    ,regst_daytm
+)
+VALUES(#{req_no}, #{prgds_nm}, #{req_qty}, #{unit_price}, #{req_amt}, #{distr_qty}, #{distr_ymd}, #{recv_psn_syspayno}, #{regst_psn_syspayno}, sysdate)
+  </insert>  
+  
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqHSU02 -->
+  <update id="updateLplLprPrGoodsReqDetail" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lpr.updateLplLprPrGoodsReqDetail */ 
+		    lprprgdreqd
+SET       distr_qty = #{distr_qty}
+         ,distr_ymd = #{distr_ymd}
+         ,recv_psn_syspayno = #{recv_psn_syspayno}
+         ,updt_psn_syspayno = #{updt_psn_syspayno}
+         ,updt_daytm = sysdate
+WHERE    1=1
+AND      req_no =#{req_no}
+AND      prgds_nm = #{prgds_nm}
+  </update>
+    
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqDSD01 -->
+  <delete id="deleteLplLprPrGoodsReqDetail" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lpr.deleteLplLprPrGoodsReqDetail */ 
+		     lprprgdreqd
+WHERE      req_no = #{req_no}
+  </delete>  
+   
+   <!-- kitech.lpl.lpr.xda.LprPrGdSU01, kitech.lpl.lpr.xda.LprPrGdSU02 -->
+   <update id="updateLplLprPrGodds" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lpr.updateLplLprPrGodds */ 
+		    lprprgd
+SET       un_distr_vol = #{un_distr_vol}
+		 <if test="inv_vol != null">
+		 ,inv_vol = #{inv_vol}
+		 </if>
+         ,updt_psn_syspayno = #{updt_psn_syspayno}
+         ,updt_daytm = sysdate
+WHERE    prgds_nm = #{prgds_nm}
+  </update>
+  
+  <!-- kitech.lpl.lpr.xda.LprPrGdWrhsHisSI01 -->
+  <insert id="insertLplLprPrGdWrhsHis" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lpr.insertLplLprPrGdWrhsHis */ 
+		 INTO    lprprgdwrhsghis
+(    
+     req_no
+    ,prgds_nm
+    ,seq
+    ,io_clsf
+    ,ymd
+    ,qty
+    ,unit
+    ,vend_nm
+    ,vend_cd
+    ,rmk
+    ,regst_psn_syspayno
+    ,regst_daytm
+)
+VALUES(#{req_no}, 
+#{prgds_nm}, 
+(SELECT nvl(max(seq)+1, 0) as seq FROM lprprgdwrhsghis WHERE ymd = #{ymd1}),
+#{io_clsf}, 
+#{ymd2}, 
+#{qty}, 
+#{unit}, 
+#{vend_nm}, 
+#{vend_cd}, 
+#{rmk}, 
+#{regst_psn_syspayno}, 
+CURRENT)
+  </insert>
+    
+  <!-- kitech.lpl.lpr.xda.LprPrGdReqHSS02 -->
+  <select id="selectLplLprPrGoodsFile" parameterType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo" resultType="kr.re.kitech.biz.lpl.lpr.vo.LplLprPrGoodsReqInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lpr.selectLplLprPrGoodsFile */ 
+    a.attach_file_no
+    , a.path||a.attach_file_no||a.seq AS fileinfo
+FROM xomxcomattachfile a
+INNER JOIN xodxcommst b ON b.mngmt_item_1 = a.attach_file_no AND b.cd = 'XAJ001'
+  </select>
+     
+</mapper>

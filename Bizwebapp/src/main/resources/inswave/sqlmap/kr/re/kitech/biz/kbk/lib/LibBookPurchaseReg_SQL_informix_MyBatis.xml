@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.kbk.lib">
+
+<!-- 도서구입신청 상세 조회 -->
+<select id="selectLibBookPurRegDtl" resultType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurRegVo" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurRegVo">
+SELECT /* QueryID : kr.re.kitech.biz.kbk.lib.selectLibBookPurRegDtl */
+       a.req_no
+      , a.centr_cd
+      , a.regst_ymd
+      , a.ymd
+      , fun_xodxcommst_cd_nm(a.book_pur_typ, 0) AS book_pur_typ_nm
+      , a.book_pur_typ
+      , a.req_qty
+      , fun_emp_nm(a.loan_psn_syspayno) AS loan_psn_syspaynm
+      , fun_humbasicinfo_cd_nm(a.loan_psn_syspayno, 1) AS loan_psn_empno
+      , a.loan_psn_syspayno
+      , a.unit_amt
+      , fun_xodxcommst_cd_nm(a.curncy_unit, 0) AS curncy_unit_nm
+      , a.curncy_unit
+      , a.tot_expns
+      , a.isbn
+      , a.accnt_no
+      , b.accnt_no_nm
+      , a.accnt_expir_ymd
+      , a.accnt_cd
+      , a.expns_cd
+      , a.bugt_ctrl_way
+      , a.bugt_ctrl_no
+      , a.book_info_url
+      , a.cycle_item
+      , TRIM(a.attach_file_no) AS attach_file_no
+      , fun_xodxcommst_cd_nm(a.prcs_state, 0) AS prcs_statenm
+      , a.prcs_state
+      , trim(a.rcpt_ymd) AS rcpt_ymd
+      , trim(a.prcs_complt_ymd) AS prcs_complt_ymd
+      , trim(fun_humbasicinfo_cd_nm(a.req_psn_syspayno,0))||"("||fun_humbasicinfo_cd_nm(a.req_psn_syspayno,1)||")" AS req_psn_syspaynm
+  FROM kbkbookpurreq a 
+  LEFT JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+ WHERE a.req_no = #{req_no}
+</select>
+	
+<!-- 도서구입신청 신청도서 조회 -->
+<select id="selectLibBookPurRegList" resultType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurRegListVo" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurRegVo">
+SELECT /* QueryID : kr.re.kitech.biz.kbk.lib.selectLibBookPurRegList */
+       req_no 
+     , no 
+     , book_nm 
+     , MAX(auth_nm) AS auth_nm 
+     , MAX(issu_agncy) AS issu_agncy 
+     , MAX(req_qty) AS req_qty 
+     , MAX(unit_amt) AS unit_amt 
+     , MAX(curncy_unit) AS curncy_unit 
+     , MAX(tot_expns) AS tot_expns 
+     , MAX(publ_yr) AS publ_yr
+ FROM kbkbookpurreqlist
+ WHERE req_no = #{req_no}
+ GROUP BY 1,2,3
+</select>
+	
+	<update id="updateLibBookPurReg" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurRegVo">
+UPDATE /* QueryID : kr.re.kitech.biz.kbk.lib.updateLibBookPurReg */
+      kbkbookpurreq
+   SET prcs_state = #{prcs_state}
+     , rcpt_ymd = #{rcpt_ymd}
+     , prcs_complt_ymd = #{prcs_complt_ymd}
+     , updt_psn_syspayno = #{updt_psn_syspayno}
+     , updt_daytm = CURRENT
+ WHERE req_no = #{req_no}
+</update>
+	
+</mapper>

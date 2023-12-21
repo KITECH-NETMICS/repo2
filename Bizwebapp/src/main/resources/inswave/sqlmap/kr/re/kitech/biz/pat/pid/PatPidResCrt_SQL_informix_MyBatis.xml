@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.pid">
+  <select id="selectPatPidResCrt" parameterType="kr.re.kitech.biz.pat.pid.vo.PatPidResCrtVo" resultType="kr.re.kitech.biz.pat.pid.vo.PatPidResCrtVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pid.selectPatPidResCrt */ 
+     fn_ofic_user_nm(rcpt_wri_id) AS rcpt_wri_nm
+      , TO_CHAR(rcpt_daytm, '%Y%m%d') AS rcpt_daytm
+      , fn_ofic_user_nm(rcpt_charg_psn_id) AS rcpt_charg_psn_nm
+      , fn_ofic_user_nm(rcpt_psn_id) AS rcpt_psn_nm
+      , rcpt_ids_date
+      , rcpt_comment
+      , rcpt_attach_file
+      , job_state_cd
+  FROM patids
+ WHERE ids_id = #{ids_id}
+  </select>
+  <update id="updatePatPidResCrt" parameterType="kr.re.kitech.biz.pat.pid.vo.PatPidResCrtVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pid.updatePatPidResCrt */ 
+     patids
+   SET job_state_cd = #{job_state_cd}
+     , eval_psn_syspayno = #{eval_psn_syspayno}
+     , eval_daytm = CURRENT
+     , eval_res_clsf = #{eval_daytm}
+     , eval_service_scr = #{eval_res_clsf}
+     , eval_result_scr = #{eval_service_scr}
+     , eval_comment = #{eval_result_scr}
+     , fnsh_daytm = CURRENT
+     , updt_syspayno = #{eval_comment}
+     , updt_daytm = CURRENT
+WHERE ids_id = #{updt_syspayno}
+  </update>
+  <select id="selectPatPidResDtl" parameterType="kr.re.kitech.biz.pat.pid.vo.PatPidResCrtVo" resultType="kr.re.kitech.biz.pat.pid.vo.PatPidResCrtVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pid.selectPatPidResDtl */ 
+     fn_ofic_user_nm(rcpt_wri_id) AS rcpt_wri_nm
+      , TO_CHAR(rcpt_daytm, '%Y%m%d') AS rcpt_daytm
+      , fn_ofic_user_nm(rcpt_charg_psn_id) AS rcpt_charg_psn_nm
+      , fn_ofic_user_nm(rcpt_psn_id) AS rcpt_psn_nm
+      , rcpt_ids_date
+      , rcpt_comment
+      , rcpt_attach_file
+      , fun_emp_nm(eval_psn_syspayno) AS eval_psn_syspaynm
+      , TO_CHAR(eval_daytm, '%Y%m%d') AS eval_daytm
+      , CASE eval_res_clsf WHEN '0' THEN '승인'
+                            WHEN '1' THEN '미승인'
+                            ELSE '-' END AS eval_res_clsf
+      , eval_service_scr
+      , eval_result_scr
+      , eval_comment
+  FROM patids
+ WHERE ids_id = #{ids_id}
+  </select>
+</mapper>

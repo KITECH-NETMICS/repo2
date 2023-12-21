@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.apr">
+
+	<!-- 개인별 결재선 리스트 조회 -->
+    <select id="selectAprLineMaxNum" resultType="java.lang.String">
+		SELECT max(apl_id)+1 AS maxNum FROM PRIVATE_APR_LINE
+    </select>
+    
+	<!-- 개인별 결재선 리스트 저장 -->
+	<insert id="insertAprLine" parameterType="kr.re.kitech.biz.apr.vo.AprLineVo">
+		INSERT INTO private_apr_line( /* kr.re.kitech.biz.apr.insertAprLine */
+		         apl_id
+		       , apl_name
+		       , apl_desc
+		       , apl_endpoint
+	
+		  ) VALUES(
+		         #{apl_id}
+		       , #{apl_name} 
+		       , #{apl_desc}
+		       , #{apl_endpoint} 
+		   )
+	</insert>
+	
+	<!-- 개인별 결재선 리스트 수정 -->
+	<update id="updateAprLine" parameterType="kr.re.kitech.biz.apr.vo.AprLineVo">
+		UPDATE private_apr_line  /* kr.re.kitech.biz.apr.updateAprLine */
+		   SET 
+		      <if test='apl_name != null and apl_name != ""'>   apl_name = #{apl_name} </if>
+		      <if test='apl_desc != null and apl_desc != ""'> , apl_desc = #{apl_desc} </if>
+		      <if test='apl_endpoint != null and apl_endpoint != ""'> , apl_endpoint = #{apl_endpoint} </if>
+		 WHERE apl_id = #{apl_id}
+	</update>
+	
+	<!-- 개인별 결재선 리스트 삭제 -->
+	<delete id="deleteAprLine" parameterType="kr.re.kitech.biz.apr.vo.AprLineVo">
+		DELETE FROM private_apr_line   /* QueryID : kr.re.kitech.biz.apr.deleteAprLine */ 
+        WHERE apl_id = #{apl_id}
+    </delete>
+    
+    <!-- 개인별 결재선 리스트 상세내용 저장 -->
+	<insert id="insertAprLineData" parameterType="kr.re.kitech.biz.apr.vo.AprLineVo">
+		INSERT INTO private_apr_line_data( /* kr.re.kitech.biz.apr.insertAprLineData */
+		         apld_id
+		       , apld_aplid
+		       , apld_endpoint
+		       , apld_apltype
+		       , apld_order
+	
+		  ) VALUES(
+		         (SELECT max(apld_id)+1 FROM private_apr_line_data) 
+		       , #{apld_aplid} 
+		       , #{apld_endpoint}
+		       , #{apld_apltype}
+		       , #{apld_order} 
+		   )
+	</insert>
+     
+    <!-- 개인별 결재선 리스트 상세내용 삭제 -->
+	<delete id="deleteAprLineData" parameterType="kr.re.kitech.biz.apr.vo.AprLineVo">
+		DELETE FROM private_apr_line_data   /* QueryID : kr.re.kitech.biz.apr.deleteAprLineData */ 
+        WHERE apld_aplid = #{apl_id}
+    </delete>
+
+	<!-- 개인별 결재선 리스트 조회 -->
+    <select id="selectAprLineList" resultType="kr.re.kitech.biz.apr.vo.AprLineVo" parameterType="kr.re.kitech.biz.apr.vo.AprUserVo">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.selectAprLineList */
+			apl_id
+		 ,  apl_name
+		 ,  apl_desc
+		 ,  apl_endpoint
+		FROM PRIVATE_APR_LINE 
+		WHERE APL_ENDPOINT = #{empcode} 
+		ORDER BY APL_ID
+    </select>
+    
+    <!-- 개인별 결재선 선택 리스트 조회 -->
+    <select id="selectAprLineDescList" resultType="kr.re.kitech.biz.apr.vo.AprLineDescVo" parameterType="kr.re.kitech.biz.apr.vo.AprLineVo">
+     SELECT /* QueryID : kr.re.kitech.biz.apr.selectAprLineDescList */
+     	PLDATA.apld_id
+     	, PLDATA.apld_aplid
+     	, PLDATA.apld_endpoint
+     	, PLDATA.apld_apltype
+     	, PLDATA.apld_order
+     	, EMP.EMPNAME
+     	, EMP.JIKNAME
+     	, EMP.PARTCODE
+     	, PART.PARTNAME  
+     FROM PRIVATE_APR_LINE_DATA PLDATA 
+     JOIN bpm:emptable EMP  ON EMP.EMPCODE      =PLDATA.APLD_ENDPOINT
+     LEFT JOIN bpm:parttable PART ON EMP.PARTCODE=PART.PARTCODE 
+    WHERE PLDATA.APLD_APLID = #{apl_id}
+      AND PLDATA.APLD_APLTYPE <![CDATA[ <> ]]> '상신'
+    ORDER BY PLDATA.APLD_ORDER 
+    </select>
+    
+     <!-- 개인별 결재선 선택 리스트 조회 -->
+    <select id="selectAprUserList" resultType="kr.re.kitech.biz.apr.vo.AprUserVo" parameterType="kr.re.kitech.biz.apr.vo.AprUserVo">
+     SELECT /* QueryID : kr.re.kitech.biz.apr.selectAprUserList */
+     	 e.empcode
+     	, e.empsn
+     	, e.empname
+     	, e.jikname
+     	, e.jikcd
+     	, e.email
+     	, e.partcode
+     	, p.partname
+     	, e.empposition
+     	, e.locale
+     	, e.globalcom
+     	, e.isadmin
+     	, c.comname 
+    FROM bpm:emptable e 
+    LEFT JOIN bpm:parttable p on e.partcode = p.partcode		
+    LEFT JOIN bpm:comtable  c on e.globalcom = c.comcode    
+    JOIN humbasicinfo  f on e.empsn = f.syspayno
+    WHERE e.isdeleted = 0 
+    AND empname like  '%'||#{empname}||'%'
+    ORDER BY empname 
+    </select>
+    
+    <!-- 개인별 초기 결재라인 세팅-->
+    <select id="selectBaseAprLine" resultType="kr.re.kitech.biz.apr.vo.AprUserVo" parameterType="kr.re.kitech.biz.apr.vo.AprUserVo">
+     SELECT /* QueryID : kr.re.kitech.biz.apr.selectBaseAprLine */
+		    partcode,
+		    partname,
+		    parent_partcode,
+		    partname,
+		    topempcode,
+			empcode,
+			empname,
+			empposition,
+			partbizcode,
+			jikname,
+			jikcd,
+			'APPROVAL' AS apld_apltype
+		      from  
+		     (   
+		SELECT 
+		    x0.partcode,
+		    x0.partname,
+		    x0.parent_partcode,
+		    x0.partname,
+		    x0.topempcode,
+			x1.empcode,
+			x1.empname,
+			x1.empposition,
+			x0.partbizcode,
+			CASE WHEN x1.jikcd = 'HAB033' OR x1.jikcd = 'HAB091' THEN '*' ELSE x1.jikname END AS jikname,			
+			x1.jikcd
+		FROM bpm:parttable AS x0
+		JOIN bpm:emptable AS x1 ON x1.partcode = x0.partcode
+		WHERE x1.empcode = #{empcode}
+		UNION
+		SELECT 
+		    x0.partcode,
+		    x0.partname,
+		    x0.parent_partcode,
+		    x0.partname,
+		    x0.topempcode,
+			x1.empcode,
+			x1.empname,
+			x1.empposition,
+			x0.partbizcode,
+			x1.jikname,
+			x1.jikcd
+		FROM bpm:parttable AS x0
+		JOIN bpm:emptable AS x1 ON x1.empsn = x0.topempcode
+		WHERE x0.partname = '원장실' -- 어떤 방식이든 원장이 나오도록 하드코딩
+		UNION
+		SELECT 
+		    x0.partcode,
+		    x0.partname,
+		    x0.parent_partcode,
+		    x0.partname,
+		    x0.topempcode,
+			x1.empcode,
+			x1.empname,
+			x1.empposition,
+			x0.partbizcode,
+			x1.jikname,
+			x1.jikcd
+		FROM (
+			SELECT
+			    n.partcode,
+			    n.partname,
+			    n.parent_partcode,
+			    n.partname,
+			    n.topempcode,
+			    n.partbizcode
+			FROM bpm:parttable AS n
+			WHERE n.isdeleted = 0
+			START WITH n.partcode = (
+				SELECT partcode FROM bpm:emptable WHERE empcode = #{empcode}
+			)
+			CONNECT BY PRIOR n.parent_partcode = n.partcode
+			ORDER BY n.partcode
+		) AS x0
+		JOIN bpm:emptable AS x1 ON x1.empsn = x0.topempcode
+		ORDER BY x0.partbizcode desc, jikname
+		)
+		WHERE partname == '원장실' OR partname NOT LIKE '%장실'
+        UNION
+        SELECT
+	          x0.partcode,
+	          x0.partname,
+	          x0.parent_partcode,
+	          x0.partname,
+	          x0.topempcode,
+              x1.empcode,
+              x1.empname,
+              x1.empposition,
+              x0.partbizcode,
+              x1.jikname,
+              x1.jikcd,
+              'APPROVAL' AS apld_apltype
+	    FROM bpm:parttable AS x0
+	    JOIN bpm:emptable AS x1 ON x1.partcode = x0.partcode
+	    WHERE x1.empcode = #{empcode}
+		AND istop = '0'
+		AND NVL(x1.jikcd,'') = ''
+	    AND x0.partname like '%장실'
+	    ORDER BY partbizcode desc, jikname
+    </select>
+    
+    <!-- 개인별 결재선 부서리스트 -->
+    <select id="selectBaseDeptLine" resultType="kr.re.kitech.biz.apr.vo.AprDeptVo" parameterType="kr.re.kitech.biz.apr.vo.AprDeptVo">
+		SELECT	/* QueryID : kr.re.kitech.biz.apr.selectBaseDeptLine */
+			partcode,
+			parent_partcode,
+			partname,
+			partbizcode,
+			partlocation,
+			LEVEL AS part_shape,
+			disp_seq
+		FROM (
+			select 
+				pt.partcode,
+				pt.parent_partcode,
+				pt.partname,
+				pt.partbizcode,
+				pt.partlocation,
+				ff.disp_seq
+			FROM PARTTABLE pt  
+			LEFT JOIN xodhdeptinfo ff ON pt.partcode = ff.dept_cd AND ff.abol_ymd IS NULL
+			WHERE pt.ISDELETED = 0
+			ORDER BY ff.disp_seq DESC)
+		START WITH parent_partcode is null
+		CONNECT BY PRIOR partcode = parent_partcode
+    </select>
+    
+    <!-- 부서별 사용자 리스트(APR) -->
+    <select id="selectDeptToUserLine" resultType="kr.re.kitech.biz.apr.vo.AprUserVo" parameterType="kr.re.kitech.biz.apr.vo.AprDeptVo">
+		SELECT	/* QueryID : kr.re.kitech.biz.apr.selectDeptToUserLine */  
+			e.empcode,
+			e.empsn,
+			e.empname,
+			e.jikname,
+			e.jikcd,
+			e.email,
+			e.partcode,
+			p.partname,
+			e.empposition,
+			e.locale,
+			e.globalcom,
+			e.isadmin,
+			c.comname  
+		FROM bpm:emptable e
+		LEFT JOIN bpm:parttable p ON e.partcode = p.partcode 
+		LEFT JOIN bpm:comtable  c ON e.globalcom = c.comcode 
+		JOIN humbasicinfo  f ON e.empsn = f.syspayno 
+		WHERE e.isdeleted = 0  
+		AND e.partcode = #{partcode} 
+		AND f.work_clsf IN ('HAG010')  
+		UNION  
+		SELECT
+			e.empcode,
+			e.empsn,
+			e.empname,
+			e.jikname,
+			e.jikcd,
+			e.email,
+			e.partcode,
+			p.partname,
+			e.empposition,
+			e.locale,
+			e.globalcom,
+			e.isadmin,
+			c.comname
+		FROM bpm:emptable e
+		LEFT JOIN bpm:parttable p on e.empsn = p.doc_manager 
+		LEFT JOIN bpm:comtable  c on e.globalcom = c.comcode 
+		JOIN humbasicinfo  f on e.empsn = f.syspayno
+		WHERE e.isdeleted = 0  
+		AND p.partcode = 'D050'  
+		AND f.work_clsf IN ('HAG010') 
+		ORDER BY empname
+    </select>
+    
+    	<!-- 개인별 결재선 리스트 조회 -->
+    <select id="selectArbitrarilyRule" resultType="kr.re.kitech.biz.apr.vo.AprRuleVo" parameterType="kr.re.kitech.biz.apr.vo.AprVo">
+    	SELECT	/* QueryID : kr.re.kitech.biz.apr.selectArbitrarilyRule */
+			first 1 a.rule_jikcd AS rule_jikcd,
+			NVL(b.mngmt_item_1, '') as ruleHabCds
+		FROM appv_arbitrarily_rule a 
+		LEFT JOIN xodxcommst b ON a.rule_jikcd = b.cd AND b.cd_clsf = 'ADP'
+		WHERE a.app_code = #{procDefAlias} /* 양식코드 'F31' */
+		AND a.isdeleted = 0
+		<if test='ruleType != null and ruleType != ""'>
+		AND a.rule_cd = #{ruleType}  /* 전결구분코드  'ADR040' */ 
+		AND a.rule_money  = (
+	                            SELECT MIN(rule_money) AS rule_money
+	                            FROM appv_arbitrarily_rule
+	                            WHERE app_code = #{procDefAlias} /* 양식코드 'F31' */
+	                            AND isdeleted = 0
+	                            AND rule_cd = #{ruleType} /* 전결구분코드 'ADR040' */
+	                            AND rule_money  >= #{ruleMoney}  )  /* 전결금액 4500000 */
+	    </if>
+    </select>
+</mapper>

@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.csf"> 	
+<select id="selectCsfSecrtEduList2" parameterType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo" resultType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.csf.selectCsfSecrtEdu */ 
+		b_yr as year,
+        b_educ_ymd as educ_ymd,
+        b_educ_knd  as educ_knd,
+        b_educ_time as educ_time,
+        a_work_region as work_region,
+        b_complt_time as complt_time,
+        b_rmk as rmk,
+        a_educ_psn_nm as educ_psn_nm,
+        a_educ_psn_syspayno as educ_psn_syspayno,
+        a_dept_cd as dept_cd,
+        a_dept_new_ymd as dept_new_ymd,
+        a_posi_nm as posi_nm,
+        a_dept_nm as dept_nm,
+        a.empno,
+        a.entr_ymd,
+        a.retire_ymd
+FROM (SELECT '' as a_yr
+            ,'' as a_educ_knd
+            ,'' as a_educ_time
+            ,work_land as a_work_region
+            ,0 as a_complt_time
+            ,'' as a_rmk
+            ,syspayno as a_educ_psn_syspayno
+            ,nm as a_educ_psn_nm
+            ,dept_cd as a_dept_cd
+            ,dept_new_ymd as a_dept_new_ymd
+            ,fun_posi_nm(posi_cd) as a_posi_nm
+            ,fun_dept_nm(dept_cd, dept_new_ymd) as a_dept_nm
+            ,empno
+            ,entr_ymd
+            ,retire_ymd
+FROM  humbasicinfo 
+WHERE       1=1
+AND         retire_ymd = ''
+AND         syspayno LIKE DECODE(#{educ_psn_syspayno},'','%',#{educ_psn_syspayno})) a
+LEFT JOIN
+(SELECT      yr          as b_yr
+            ,educ_ymd    as b_educ_ymd
+            ,educ_knd    as b_educ_knd
+            ,educ_time   as b_educ_time         
+            ,work_region as b_work_region
+            ,complt_time as b_complt_time
+            ,rmk as b_rmk
+            ,educ_psn_syspayno as b_educ_psn_syspayno
+            ,educ_psn_nm as educ_psn_nm
+            ,dept_cd
+            ,dept_new_ymd     
+            ,posi_nm as b_posi_nm
+            ,fun_dept_nm(dept_cd,dept_new_ymd) as b_dept_nm 
+FROM        csfsecrtedu
+WHERE       1=1
+AND         yr LIKE DECODE(#{year},'','%',#{year})
+AND         educ_knd LIKE DECODE(#{educ_knd},'','%',#{educ_knd})
+AND         educ_psn_nm LIKE DECODE(#{educ_psn_nm},'','%',#{educ_psn_nm})) b
+ON a.a_educ_psn_syspayno = b.b_educ_psn_syspayno
+ORDER BY  a_dept_nm, a_posi_nm, a_dept_cd, a_dept_new_ymd, a_educ_psn_nm, a_educ_psn_syspayno, a_work_region, b_educ_knd
+		  ,b_educ_time, b_complt_time, b_rmk, b_yr
+</select>
+<select id="selectCsfSecrtEduList" resultType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo" parameterType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.csf.selectCsfSecrtEdu */ 
+  a.yr AS year
+ ,a.educ_ymd
+ ,a.educ_typ
+ ,c.cd_nm AS educ_typ_nm
+ ,a.educ_knd
+ ,d.cd_nm AS educ_knd_nm
+ ,a.educ_time
+ ,a.educ_psn_syspayno
+ ,a.educ_psn_nm
+ ,a.dept_cd
+ ,a.dept_new_ymd
+ ,fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm
+ ,a.posi_nm
+ ,a.work_region
+ ,e.cd_nm AS work_region_nm
+ ,a.complt_time
+ ,a.rmk
+ ,b.empno
+ ,b.entr_ymd
+ ,a.regst_psn_syspayno
+ ,a.regst_daytm
+ ,a.updt_psn_syspayno
+ ,a.updt_daytm
+ ,b.retire_ymd
+FROM csfsecrtedu a
+LEFT JOIN humbasicinfo b ON b.syspayno = a.educ_psn_syspayno
+LEFT JOIN xodxcommst c ON c.cd = a.educ_typ
+LEFT JOIN xodxcommst d ON d.cd = a.educ_knd
+LEFT JOIN xodxcommst e ON e.cd = a.work_region
+WHERE ( '' = #{year} OR a.yr = #{year}) --[yr][yr]
+AND   ( '' = #{educ_typ} OR a.educ_typ = #{educ_typ}) --[educ_typ][educ_typ]
+AND   ( '' = #{educ_knd} OR a.educ_knd = #{educ_knd}) --[educ_knd][educ_knd]
+AND   ( '' = #{educ_psn_empno} OR b.empno = #{educ_psn_empno}) --[empno][empno]
+AND a.educ_psn_nm LIKE DECODE(#{educ_psn_nm},'','%',#{educ_psn_nm}) --[educ_psn_nm][educ_psn_nm]
+ORDER BY a.yr, a.educ_ymd, a.educ_psn_nm, a.educ_knd
+</select>
+<select id="selectEducTypCdList" parameterType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo" resultType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.csf.selectEducTypCdList */ 
+    DISTINCT a.educ_year, a.educ_typ, b.cd_nm
+FROM humeducmngmt AS a
+INNER JOIN xodxcommst AS b ON a.educ_typ = b.cd
+WHERE a.educ_year = #{year}
+AND a.target_occutyp_cd IN (
+    SELECT '000000' FROM sysmaster:sysdual UNION 
+    SELECT occutyp_cd FROM humbasicinfo WHERE syspayno = #{educ_psn_syspayno} )
+AND a.target_posi_cd IN (
+    SELECT '000000' FROM sysmaster:sysdual UNION 
+    SELECT posi_cd FROM humbasicinfo WHERE syspayno = #{educ_psn_syspayno} )
+AND a.target_syspayno IN ('00000000', #{educ_psn_syspayno})
+UNION ALL
+SELECT 
+   CAST( #{year} AS CHAR(4))  AS educ_year
+    ,'HDI040' AS educ_typ
+    , '기타교육' AS cd_nm
+FROM sysmaster:sysdual
+</select>
+<select id="selectEducKndCdList" parameterType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo" resultType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.csf.selectEducKndCdList */ 
+     a.educ_typ ,a.educ_cd, b.cd_nm
+FROM humeducmngmt AS a
+INNER JOIN xodxcommst AS b ON a.educ_cd = b.cd
+WHERE a.educ_year = #{year}
+<if test='educ_knd_grp != null and educ_knd_grp != ""'> AND educ_typ IN
+	<foreach item="item" index="index" collection="educ_knd_grp.split(',')" open="(" separator="," close=")">
+	    '${item}'
+	</foreach>
+</if>
+AND a.target_occutyp_cd IN (
+    SELECT '000000' FROM sysmaster:sysdual UNION 
+    SELECT occutyp_cd FROM humbasicinfo WHERE syspayno = #{educ_psn_syspayno} )
+AND a.target_posi_cd IN (
+    SELECT '000000' FROM sysmaster:sysdual UNION 
+    SELECT posi_cd FROM humbasicinfo WHERE syspayno = #{educ_psn_syspayno} )
+AND a.target_syspayno IN ('00000000', #{educ_psn_syspayno} )
+UNION ALL
+SELECT 
+   'HDI040'  AS educ_typ
+    ,'HDO999' AS educ_cd
+    ,'기타교육' AS cd_nm
+FROM sysmaster:sysdual
+</select>
+<insert id="insertCsfSecrtEdu" parameterType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo">
+INSERT /* QueryID : kr.re.kitech.biz.ccs.csf.insertCsfSecrtEdu */ 
+INTO csfsecrtedu(
+     yr,
+     educ_ymd,
+     educ_typ,
+     educ_knd,
+     educ_time,
+     educ_psn_syspayno,
+     educ_psn_nm,
+     dept_cd,
+     dept_new_ymd,
+     posi_nm,
+     work_region,
+     complt_time,
+     rmk,
+     regst_psn_syspayno,
+     regst_daytm
+) VALUES ( 
+	#{year}
+	,#{educ_ymd}
+	,#{educ_typ}
+	,#{educ_knd}
+	,#{educ_time}
+	,(SELECT b.syspayno  
+	  FROM  humbasicinfo b
+	  WHERE  b.empno=#{empno})
+	,#{educ_psn_nm}
+	,(SELECT b.dept_cd  
+	  FROM xodhdeptinfo a, humbasicinfo b
+	  WHERE a.dept_cd=b.dept_cd
+	  AND a.dept_new_ymd=b.dept_new_ymd
+	  AND b.empno=#{empno})
+	,(SELECT b.dept_new_ymd
+	  FROM xodhdeptinfo a, humbasicinfo b
+	  WHERE a.dept_cd=b.dept_cd
+	  AND a.dept_new_ymd=b.dept_new_ymd
+	  AND b.empno=#{empno})
+	,(SELECT c.posi_nm  
+	  FROM humbasicinfo b, xodhposiinfo c
+	  WHERE 1=1
+	  AND c.posi_cd=b.posi_cd
+	  AND b.empno=#{empno}) 
+	,(SELECT work_lAND 
+	  FROM humbasicinfo 
+	  WHERE empno = #{empno})  
+	,#{complt_time},#{rmk}
+	,#{regst_syspayno}
+	,CURRENT
+)
+</insert>
+<update id="updateCsfSecrtEdu" parameterType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo">
+UPDATE csfsecrtedu /* QueryID : kr.re.kitech.biz.ccs.csf.updateCsfSecrtEdu */ 
+SET educ_psn_nm = #{educ_psn_nm},
+      dept_cd =(SELECT b.dept_cd  
+                    FROM xodhdeptinfo a, humbasicinfo b
+                    WHERE a.dept_cd=b.dept_cd
+                    AND a.dept_new_ymd=b.dept_new_ymd
+                    AND b.empno=#{empno}),
+      dept_new_ymd =(SELECT b.dept_new_ymd  
+                              FROM xodhdeptinfo a, humbasicinfo b
+                              WHERE a.dept_cd=b.dept_cd
+                              AND a.dept_new_ymd=b.dept_new_ymd
+                              AND b.empno=#{empno}),
+      posi_nm =(SELECT c.posi_nm 
+                     FROM humbasicinfo b, xodhposiinfo c
+                     WHERE 1=1
+                     AND c.posi_cd=b.posi_cd
+                     AND b.empno=#{empno}),
+      work_region  =#{work_region},
+      complt_time  =#{complt_time},
+      rmk = #{rmk},
+      updt_psn_syspayno = #{updt_syspayno},
+      updt_daytm = CURRENT
+WHERE       1=1
+AND         yr = #{year}
+AND         educ_ymd = #{educ_ymd}
+AND         educ_knd = #{educ_knd}
+AND         educ_time = #{educ_time}
+AND         educ_psn_syspayno = (SELECT b.syspayno  FROM  humbasicinfo b WHERE b.empno=#{empno})
+AND         educ_typ = #{educ_typ}
+</update>
+<delete id="deleteCsfSecrtEdu" parameterType="kr.re.kitech.biz.ccs.csf.vo.CsfSecrtEduVo">
+DELETE /* QueryID : kr.re.kitech.biz.ccs.csf.deleteCsfSecrtEdu */ 
+FROM csfsecrtedu
+WHERE 1=1
+AND yr = #{year}
+AND educ_ymd = #{educ_ymd}
+AND educ_knd = #{educ_knd}
+AND educ_time = #{educ_time}
+AND educ_psn_syspayno = (SELECT b.syspayno FROM humbasicinfo b WHERE b.empno = #{empno})
+AND educ_typ = #{educ_typ}
+</delete>
+</mapper>

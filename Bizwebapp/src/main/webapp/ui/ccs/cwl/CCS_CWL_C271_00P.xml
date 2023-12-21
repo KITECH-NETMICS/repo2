@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="경조내역수정">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="req_ymd1" name="조회 시작일" dataType="text"></w2:key>
+            			<w2:key id="req_ymd2" name="조회 종료일" dataType="text"></w2:key>
+            			<w2:key id="cgncd_clsf" name="경조사 구분코드" dataType="text"></w2:key>
+            			<w2:key id="req_psn_syspayno" name="사원번호" dataType="text"></w2:key>
+            			<w2:key id="empno" name="사원번호" dataType="text"></w2:key>
+            			<w2:key id="nm" name="이름" dataType="text"></w2:key>
+            			<w2:key id="syspayno" name="사원번호" dataType="text"></w2:key>
+            			<w2:key id="fam_relat" name="가족관계 구분코드" dataType="text"></w2:key>
+            			<w2:key id="req_ymd" name="경조사비 신청일" dataType="text"></w2:key>
+            			<w2:key id="req_no" name="신청번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_cwlCgCdMnt">
+            		<w2:keyInfo>
+            			<w2:key id="req_no" name="신청번호" dataType="text"></w2:key>
+            			<w2:key id="empno" name="사원번호" dataType="text"></w2:key>
+            			<w2:key id="nm" name="성명" dataType="text"></w2:key>
+            			<w2:key id="dept_nm" name="부서명" dataType="text"></w2:key>
+            			<w2:key id="fam_relat" name="가족관계 구분" dataType="text"></w2:key>
+            			<w2:key id="cgncd_clsf" name="경조사 구분" dataType="text"></w2:key>
+            			<w2:key id="pay_ymd" name="지급일자" dataType="text"></w2:key>
+            			<w2:key id="expns_amt" name="지출금액" dataType="text"></w2:key>
+            			<w2:key id="pay_amt" name="지급금액" dataType="text"></w2:key>
+            			<w2:key id="cgncd_detls" name="경조내역" dataType="text"></w2:key>
+            			<w2:key id="rmk" name="비고" dataType="text"></w2:key>
+            			<w2:key id="updt_psn_syspayno" name="수정자개인번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_cwlUpdateCgCd">
+            		<w2:keyInfo>
+            			<w2:key id="fam_relat" name="가족관계" dataType="text"></w2:key>
+            			<w2:key id="cgncd_clsf" name="경조사구분" dataType="text"></w2:key>
+            			<w2:key id="pay_ymd" name="지급일자" dataType="text"></w2:key>
+            			<w2:key id="pay_amt" name="지급금액" dataType="text"></w2:key>
+            			<w2:key id="expns_amt" name="지출금액" dataType="text"></w2:key>
+            			<w2:key id="cgncd_detls" name="경조내역" dataType="text"></w2:key>
+            			<w2:key id="rmk" name="비고" dataType="text"></w2:key>
+            			<w2:key id="updt_psn_syspayno" name="수정자" dataType="text"></w2:key>
+            			<w2:key id="req_no" name="신청번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+    		<!-- 상세 조회 -->
+    		<xf:submission id="sbm_outCwlCgCdMnt" ref="data:json,dma_search" encoding="UTF-8" mode="asynchronous"
+    			 action="SvcCCSCWLCGCDMNTR01.pwkjson" method="post" mediatype="application/json">
+    		</xf:submission>
+    		<!-- 경조내역 수정 -->
+    		<xf:submission id="sbm_updateCgCd" ref="data:json,dma_cwlCgCdMnt" encoding="UTF-8" mode="asynchronous"
+    			 action="SvcCCSCWLCGCDU01.pwkjson" method="post" mediatype="application/json">
+    		</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+	 * 화면 설명 : 경조내역수정
+	 * 변경 이력 : 2023-08-04 swt 최초생성
+	 * serviceId : C271
+	 ****************************************************/
+	 
+    /*************************************************************************************************************
+     *
+     *	페이지 이벤트 함수
+     *
+     *************************************************************************************************************/
+    /*
+     * 페이지 열기
+     */
+	scwin.onpageload = function() {
+		
+		//경조사비(관)화면에서 전달 받은 req_no
+		req_no = com.getParameter("req_no");
+		//상세조회 실행
+		scwin.selectData(req_no);
+		
+	};
+
+    /*
+     * 페이지 닫기
+     */
+	scwin.onpageunload = function() {
+		
+	};
+	
+   	/*
+     * 상세조회
+     */
+	scwin.selectData = function(req_no) {
+		
+		//공통코드 (selectbox)
+		var codeOptions = [ { code : "HAH", compID : "selb_Fam_Rel" } 		//가족관계
+						,	{ code : "CWC", compID : "selb_Cgn_Cd_Clsf" } 	//경조구분
+			];
+		com.setCmnCd(codeOptions, function() {
+		});	
+		
+		//상세조회용 신청번호 세팅
+		dma_search.set("req_no", req_no);
+
+		//상세조회
+		com.execute(sbm_outCwlCgCdMnt, {
+			successCallback : function(e) {
+				//데이터 세팅
+				dma_cwlCgCdMnt.setJSON(e.responseJSON.elData);
+			}
+		});
+		
+	};
+	
+	/**	
+	*  저장 버튼 클릭 이벤트
+	**/
+	scwin.btn_save_onclick = function(e) {
+		
+		com.confirm("message.xom.wq.017" /*저장 하시겠습니까?*/, function(ret) {
+			if (ret) {
+				//수정위해 넘겨줄 데이터 추가 세팅
+				dma_cwlCgCdMnt.set("updt_psn_syspayno", com.getLoginInfo("sn"));
+				
+				com.execute(sbm_updateCgCd, {
+					successCallback : function(e) { // 성공 콜백
+						com.alert("message.xom.wq.023" /*정상적으로 처리되었습니다.*/, function () {
+						
+							com.closePopup(true);
+							
+						});
+					}
+				});
+			}
+		});
+		
+	};
+	
+	/**	
+	*  닫기 버튼 클릭 이벤트
+	**/
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**	
+	*  인쇄 버튼 클릭 이벤트
+	**/
+	scwin.btn_print_onclick = function(e) {
+		
+		var aprState	= com.getParameter("apr_state");
+		var reqNo		= com.getParameter("req_no");	
+
+		//완료일경우에만 인쇄창 사용가능 
+		if (aprState != "XAD100") {
+			com.alert("결재 완료 상태인 경우에만 인쇄 가능합니다.");
+			return;
+		}
+
+		//OzReport 사용하여 인쇄창 열기
+		var node = "req_no="+ reqNo;
+		com.oz.openPopup({
+			ozrCode : "C041",
+			param: node
+        });
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pop_contents" id="" style="">
+    		<xf:group class="titleSection pt0" id="" style="">
+    			<xf:group class="le" id="">
+    				<w2:textbox class="tit_tbl" id="" label="경조사내역수정" style="" tagname="h3"></w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="차량배차신청서 신청정보 상세정보입력"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:120px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:120px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:120px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="신청자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp" id="" style="width: 60px;" title="" ref="data:dma_cwlCgCdMnt.empno"
+    						readOnly="true">
+    					</xf:input>
+    					<xf:input adjustMaxLength="false" class="inp" id="" style="width: 60px;" title="" ref="data:dma_cwlCgCdMnt.nm"
+    						readOnly="true">
+    					</xf:input>
+    					<xf:input adjustMaxLength="false" class="inp" id="" style="width:185px;" title="" ref="data:dma_cwlCgCdMnt.dept_nm"
+    						readOnly="true">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="경조구분" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="selb_Fam_Rel" ref="data:dma_cwlCgCdMnt.fam_relat" style="width:95px;" submenuSize="auto">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="selb_Cgn_Cd_Clsf" ref="data:dma_cwlCgCdMnt.cgncd_clsf" style="width:85px;" submenuSize="auto">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group tagname="th" class="w2tb_th">지급일자<w2:attributes><w2:scope>row</w2:scope></w2:attributes></xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false"
+    						id="" placeholder="" renderDiv="true" rightAlign="false" style="" title="" ref="data:dma_cwlCgCdMnt.pay_ymd">
+    					</w2:inputCalendar>
+    				</xf:group>
+    				<xf:group tagname="th" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="지급(지출)금액" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp ri" id="inp_Expns_Amt" style="width: 80px;" ref="data:dma_cwlCgCdMnt.expns_amt" displayFormat="#,###,###,###"></xf:input>
+    					<w2:textbox class="txt" id="" label="원정(\)" style="" tagname="span"></w2:textbox>
+    				</xf:group></xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="경조내역" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>5</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="비고" ref="data:dma_cwlCgCdMnt.cgncd_detls"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    		<xf:group tagname="tr">
+    			<xf:group tagname="th" class="w2tb_th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="비고" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group tagname="td" class="w2tb_td">
+    				<w2:attributes>
+    					<w2:colspan>5</w2:colspan>
+    					<w2:rowspan>1</w2:rowspan>
+    				</w2:attributes>
+    				<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="비고" ref="data:dma_cwlCgCdMnt.rmk"></xf:input>
+    			</xf:group></xf:group></xf:group>
+    		<xf:group class="btnGroup" id="" style="">
+    			<xf:group class="le" id="" style="">
+    				<xf:trigger class=" btn pro " id="btn_print" style="" type="button" ev:onclick="scwin.btn_print_onclick">
+    					<xf:label><![CDATA[인쇄]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class=" btn pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

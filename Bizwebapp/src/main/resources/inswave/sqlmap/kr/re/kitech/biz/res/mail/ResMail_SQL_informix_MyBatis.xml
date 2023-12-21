@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.res.mail">
+<!-- 기술이전 계약완료 후 메일발송(마스터정보조회) -->
+<select id="selectResPstMast" resultType="java.util.HashMap" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.res.mail.selectResPstMast */
+       a.tech_fee_no 
+     , a.mou_clsf  
+     , fun_xodxcommst_cd_nm(a.mou_clsf,0) AS mou_clsf_nm
+     , a.tech_nm
+     , a.tech_prj_clsf
+     , b.nm
+     , b.email -- 수신자
+     , fun_dept_path01(b.dept_cd,b.dept_new_ymd,3,5) AS dept_nm
+     , a.mou_contrct_ymd
+     , a.contrct_start_ymd
+     , a.contrct_cls_ymd
+     , TRIM(a.attach_file_no) AS attach_file_no
+     , d.accnt_no  
+     , d.accnt_no_nm
+     , REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(a.permit_clsf, 'RFC005', '통상'), 'RFC003', '전용'),'RFC001', '독점적통상'), 'RFC004', '매각(유상)'), 'RFC006', '매각(무상)'), 'RFC002', '기술출자'), 'RFC007', '기타'), ' ', ',') AS permit_clsf_nm -- email 발송용
+     , a.regst_syspayno AS nego_rspns 
+     , h.email AS sender_email
+     , h.nm AS sender_nm
+FROM respstmast a
+JOIN humbasicinfo b ON a.resch_rspns_main = b.syspayno
+LEFT JOIN humbasicinfo h ON a.regst_syspayno = h.syspayno
+LEFT JOIN resbgacctm d ON a.prj_no = d.prj_no AND d.accnt_clsf = 'RAR001' 
+WHERE a.tech_fee_no = #{tech_fee_no}
+</select>
+
+<!-- 계약완료 후 메일발송(협약업체조회) -->
+<select id="selectResPstCrtPagr" resultType="kr.re.kitech.biz.res.tec.vo.ResPstCrtPagrVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.res.mail.selectResPstCrtPagr */
+       t1.tech_fee_no,
+       t1.tech_fee_mou_odr,
+       t1.vend_cd,
+       t1.vend_nm,  
+       t1.fxd_tech_fee,
+       t1.fxd_tech_suply_value,
+       t1.fxd_tech_tax_fee,
+       t1.advnc_fee,
+       t1.advnc_suply_value,
+       t1.advnc_tax_fee,
+       t3.reprs_psn_nm    
+FROM respstcrtpagr t1
+JOIN xodfvend t3 ON t1.vend_cd = t3.vend_cd       
+WHERE t1.tech_fee_no = #{tech_fee_no}
+</select>
+
+<!-- 계약완료 후 메일발송(기술료 관련 출원번호) -->
+<select id="selectResPstAply" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT  /* kr.re.kitech.biz.res.mail.selectResPstAply */
+      b.invnt_krn_nm 
+    , TRIM('- ' || fun_xodxcommst_cd_nm(a.indst_right_clsf,0) 
+           || ' ' || CASE WHEN NVL(a.smitapp_no,'') != '' AND NVL(a.regst_no,'') != '' THEN TRIM(a.smitapp_no) || '(출원일자: '|| b.smitapp_ymd ||') / ' || TRIM(a.regst_no) || '(등록일자: '|| b.regst_ymd ||')'
+                          WHEN NVL(a.smitapp_no,'') != '' AND NVL(a.regst_no,'') = '' THEN TRIM(a.smitapp_no) || '(출원일자: '|| b.smitapp_ymd ||')' 
+                          WHEN NVL(a.smitapp_no,'') = '' AND NVL(a.regst_no,'') != '' THEN TRIM(a.regst_no) || '(출원일자: '|| b.regst_ymd ||')' 
+                     END
+          ) AS smitapp_nm
+FROM respstaply a
+LEFT JOIN patmastr b ON a.mngmt_no = b.mngmt_no AND a.pat_req_no = b.req_no
+WHERE a.tech_fee_no = #{tech_fee_no}
+</select>
+</mapper>

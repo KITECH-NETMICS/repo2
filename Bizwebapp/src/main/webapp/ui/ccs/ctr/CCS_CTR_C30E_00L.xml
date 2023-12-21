@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="출장비기준관리">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<!-- 조회 -->
+				<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="biztrip_expns_clsf" name="출장비용구분" dataType="text"></w2:key>
+            			<w2:key id="biztrip_clsf" name="출장구분" dataType="text"></w2:key>
+            			<w2:key id="region_clsf" name="지역구분" dataType="text"></w2:key>
+            			<w2:key id="start_region" name="출발지역" dataType="text"></w2:key>
+            			<w2:key id="arriv_region" name="도착지역" dataType="text"></w2:key>
+            			<w2:key id="grd_clsf" name="직급(코드)" dataType="text"></w2:key>
+            			<w2:key id="biztrip_daycnt" name="출장일수" dataType="text"></w2:key>
+            			<w2:key id="arriv_city_nm" name="도착도시명" dataType="text"></w2:key>
+            			<w2:key id="biztrip_fee" name="출장비" dataType="text"></w2:key>
+            			<w2:key id="week_biztrip_fee" name="주말출장비" dataType="text"></w2:key>
+            			<w2:key id="rmk" name="비고" dataType="text"></w2:key>
+            			<w2:key id="move_dist" name="이동거리" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<!-- 조회  -->
+            	<w2:dataList id="dlt_fareList" baseNode="list" saveRemovedData="true" repeatNode="map" ev:onrowpositionchange=""
+            		ev:onbeforerowpositionchange="">
+            		<w2:columnInfo>
+            			<w2:column id="biztrip_expns_clsf" name="구분(코드)" dataType="text" ignoreStatus="true"></w2:column>
+            			<w2:column id="biztrip_expns_clsf_nm" name="구분" dataType="text"></w2:column>
+            			<w2:column id="biztrip_clsf" name="출장구분(코드)" dataType="text"></w2:column>
+            			<w2:column id="biztrip_clsf_nm" name="출장구분" dataType="text"></w2:column>
+            			<w2:column id="start_region" name="출발지(코드)" dataType="text"></w2:column>
+            			<w2:column id="start_region_nm" name="출발지" dataType="text"></w2:column>
+            			<w2:column id="arriv_region" name="도착지(코드)" dataType="text"></w2:column>
+            			<w2:column id="arriv_region_nm" name="도착지" dataType="text"></w2:column>
+            			<w2:column id="arriv_city_nm" name="도착도시" dataType="text"></w2:column>
+            			<w2:column id="region_clsf" name="국외지역(코드)" dataType="text"></w2:column>
+            			<w2:column id="region_clsf_nm" name="국외지역" dataType="text"></w2:column>
+            			<w2:column id="move_dist" name="이동거리" dataType="text"></w2:column>            			
+            			<w2:column id="grd_clsf" name="직급(코드)" dataType="text"></w2:column>            			            			
+            			<w2:column id="grd_clsf_nm" name="직급" dataType="text"></w2:column>
+            			<w2:column id="biztrip_daycnt" name="출장일수" dataType="text"></w2:column>
+            			<w2:column id="biztrip_fee" name="금액(주중)" dataType="text"></w2:column>
+            			<w2:column id="week_biztrip_fee" name="금액(주말)" dataType="text"></w2:column>
+            			<w2:column id="rmk" name="비고" dataType="text"></w2:column>
+
+            		</w2:columnInfo>
+            	</w2:dataList>
+
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+			
+			<!-- 출장비기준관리조회 -->
+			<xf:submission id="sbm_selectMroomReq" ref='data:json,dma_search'
+				target='' action="SvcCCSCTRCTRMR01.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+            
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+        
+    scwin.currentDate = com.getServerDateTime("yyyyMMdd");	 
+        
+	scwin.onpageload = function() {
+		//공통코드 셋팅
+		let codeOption = [
+			{ code : "FAR", compID : "sbx_expns"},
+			{ code : "FAT", compID : "sbx_startRegion"},
+			{ code : "FAU", compID : "sbx_arrivRegion"},
+		];
+		com.setCmnCd(codeOption, function() {
+		});
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+
+	//출장비기준관리 조회
+	scwin.searchMroomReq = function() {
+		com.execute(sbm_selectMroomReq, {
+			successCallback : function(e) {
+				dlt_fareList.setJSON(e.responseJSON.ctrBiztripFareVoList, false);
+				tbx_result.setValue(dlt_fareList.getRowCount());			
+			}
+		});
+	};
+	
+	
+	 //조회
+	scwin.btn_search_onclick = function() {
+		scwin.searchMroomReq();
+	};
+	
+	
+	//신청클릭
+	scwin.btn_add_onclick = function(e) {
+		scwin.openDetail();
+	};
+	
+	
+	//상세팝업(둥록,상세)
+	scwin.openDetail = function(data) {
+		var options = {
+			id : "crudOnePop",
+			popupName : "출장비기준등록",
+			width : 1000, height: 300 
+		};
+		com.openPopup("/ui/ccs/ctr/CCS_CTR_C310_00P.xml", options, data, function(retObj) {
+			scwin.searchMroomReq();
+		});
+	};
+	
+
+	/**
+	 * 출장비 구분 변경시 이벤트
+	 */
+	scwin.ibx_empno_onchange = function(info) {
+		var tripKnd = dma_search.get("biztrip_clsf");
+		var sbxExpns = dma_search.get("biztrip_expns_clsf");
+		if(tripKnd == "FCA001" && sbxExpns == "FAR001") {
+			sbx_startRegion.setDisabled(false);
+			sbx_arrivRegion.setDisabled(false);
+		}else{
+			sbx_startRegion.setValue("");
+			sbx_arrivRegion.setValue("");
+			sbx_startRegion.setDisabled(true);
+			sbx_arrivRegion.setDisabled(true);
+			
+		}
+	};	
+	
+	
+		
+	/*
+     * 엑셀다운로드
+     */
+	scwin.btn_down_onclick = function(e) {
+		if(dlt_fareList.getTotalRow() > 0) {
+			let option = {
+				fileName : scwin.currentDate + "_출장비기준정보.xlsx"
+			,   removeColumns : "0"
+			};
+			
+			com.downloadGridExcel(grd_trip, option);
+		}
+		else
+			com.alert("조회결과가 없습니다");
+	
+	};
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+	<w2:wframe id="" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:150px;"></xf:group>
+    						<xf:group tagname="col" style="width:77px;"></xf:group>
+    						<xf:group tagname="col" style="width:150px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:170px;"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr" style="">
+    						<xf:group tagname="th" style="" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="출장구분"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" style="" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_tripKnd" ref="data:dma_search.biztrip_clsf" style="width:120px;"
+    								submenuSize="auto" title="참석유형" visibleRowNum="10" chooseOptionLabel="-전체-" ev:onviewchange="scwin.ibx_empno_onchange" >
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[국내]]></xf:label>
+    										<xf:value><![CDATA[FCA001]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[국외]]></xf:label>
+											<xf:value><![CDATA[FCA002]]></xf:value>
+    									</xf:item>
+<!--    									<xf:item>-->
+<!--    										<xf:label><![CDATA[주재국출장]]></xf:label>-->
+<!--											<xf:value><![CDATA[FCA000]]></xf:value>-->
+<!--    									</xf:item>-->
+    									<xf:item>
+    										<xf:label><![CDATA[근거리]]></xf:label>
+											<xf:value><![CDATA[FCA003]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    							<!-- <xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 전체 -" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" ev:onviewchange="scwin.searchMRoom_change" id="region_cd"
+    								ref="data:dma_mRoomReqSearch.region_cd" style="width:120px;" submenuSize="auto" title="지역" visibleRowNum="10">
+    								<xf:choices></xf:choices>
+    							</xf:select1> -->
+    							<!-- <xf:group style="" id="" class="inpcalWrap">
+
+    							</xf:group> -->
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="출장비 구분"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_expns" ref="data:dma_search.biztrip_expns_clsf"
+    								style="width:120px;" submenuSize="auto" visibleRowNum="10" chooseOptionLabel="- 전체 -" ev:onchange="scwin.ibx_empno_onchange">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    							
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="출발지"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_startRegion" ref="dma_search.start_region" style="width:120px;"
+    								submenuSize="auto" visibleRowNum="10" title="회의실" chooseOptionLabel="- 전체 -">
+    								<xf:choices>
+    									<xf:itemset nodeset="data:dlt_mRoom">
+    										<xf:label ref="meet_ofic_nm"></xf:label>
+    										<xf:value ref="mroom_cd"></xf:value>
+    									</xf:itemset>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th" style="">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="도착지" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td" style="">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_arrivRegion" ref="data:dma_search.arriv_region" style="width:120px;"
+    								submenuSize="auto" visibleRowNum="10" title="신청상태" chooseOptionLabel="- 전체 -">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<xf:group class="le" id="" style="">
+    				<xf:group class="result" id="" style="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:group style="" id="" class="btnarea">
+    					<xf:trigger class="btn" id="" style="" type="button" ev:onclick="scwin.btn_add_onclick">
+    						<xf:label><![CDATA[신청]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger style="" id="" type="button" class="btn icon down" ev:onclick="scwin.btn_down_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group> 
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_fareList" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_trip"
+    			visibleRowNum="20" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_detail_oncellclick"
+    			filterFocusMode="outfocus" sortEvent="onclick" sortable="true">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column9" value="구분(코드)" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column10" value="구분" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column7" value="출장구분(코드)" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column8" value="출장구분" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column5" value="출발지(코드)" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column6" value="출발지" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column3" value="도착지(코드)" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column4" value="도착지" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column20" value="도착도시" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column29" value="국외지역(코드)" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column30" value="국외지역" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column27" value="이동거리" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column25" value="직급(코드)" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column26" value="직급" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column21" value="출장일수" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column23" value="금액(주중)" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column24" value="주말운임" displayMode="label"></w2:column>
+    					<w2:column width="250" inputType="text" style="height:28px;" id="column22" value="비고" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="biztrip_expns_clsf"
+    						displayMode="label" hidden="true">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="biztrip_expns_clsf_nm"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;text-align:;" id="biztrip_clsf"
+    						class="le" escape="false" displayMode="label" hidden="true">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;text-align:;" id="biztrip_clsf_nm"
+    						displayMode="label">
+    					</w2:column>
+						<w2:column width="100" inputType="text" style="height:28px;" id="start_region" displayMode="label" readOnly="true"
+    						hidden="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="start_region_nm" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="arriv_region" displayMode="label" readOnly="true"
+    						hidden="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="arriv_region_nm" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="arriv_city_nm" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="250" inputType="link" readOnly="true" style="height:28px;" id="region_clsf" displayMode="label"
+    						class="le" hidden="true">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="region_clsf_nm" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="move_dist" displayMode="label" readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="grd_clsf" displayMode="label" readOnly="true"
+    						hidden="true">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="grd_clsf_nm" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="biztrip_daycnt" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="biztrip_fee" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="week_biztrip_fee" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="250" inputType="text" style="height:28px;" id="rmk" displayMode="label" readOnly="true"></w2:column>
+    					
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+  <select id="selectHumApyMidSvrList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyMidSvrList */ 
+		 a.req_no     --신청번호
+       , a.req_ymd  --신청일
+       , a.syspayno
+       , b.empno    --개인번호
+       , b.nm       --이름
+       , b.dept_cd  --부서코드
+       , b.dept_nm  --부서이름
+       , b.posi_cd  --직급코드
+       , b.posi_nm  --직큽이름
+       , b.entr_ymd --입원일
+       , a.longwk_cntfr_ymd  --중간기산일
+       , a.bankaccnt_typ     --계좌유형
+       , c.cd_nm AS bankaccnt_typ_nm --계좌유형이름
+       , trim(a.bankaccnt_no) as bankaccnt_no --계좌번호
+       , d.apr_state             --결제상태코드
+       , e.cd_nm AS apr_state_nm --결제상태이름
+       , to_char(d.last_execute_tim, '%Y%m%d') AS last_execute_tim --결제신청시간 
+FROM humapysvr a --퇴직금정산
+     , v_humbASicinfo b
+     , xodxcommst c
+     , xomxintfatab d
+     , xodxcommst e
+WHERE a.syspayno=b.syspayno
+      AND a.bankaccnt_typ=c.cd
+      AND a.req_no=d.req_no
+      AND d.apr_state=e.cd
+      AND a.middle_adjst_yn='Y'  --중간정산유무
+      AND d.state_inform_flag = '1'
+         <if test="syspayno != null and syspayno != ''">
+	 and a.syspayno  = #{syspayno}
+</if>
+         <if test="req_no != null and req_no != ''">
+	 and a.req_no LIKE '%'||#{req_no}||'%'
+</if>
+         <if test="dept_cd != null and dept_cd != ''">
+	 and b.dept_cd  = #{dept_cd}
+</if>
+         <if test="apr_state != null and apr_state != ''">
+	 and d.apr_state  = #{apr_state}
+</if>
+         <if test="req_ymd_from != null and req_ymd_from != ''">
+	 and a.req_ymd  >=  #{req_ymd_from}
+</if>
+         <if test="req_ymd_to != null and req_ymd_to != ''">
+	 and a.req_ymd  <![CDATA[ <=]]>  #{req_ymd_to}
+</if>
+ORDER BY a.req_no DESC
+  </select>
+  
+  <select id="selectHumApySvrInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySvrInfo */ 
+ a.nm,      --성명
+ a.empno,
+ fun_dept_nm(a.dept_cd, a.dept_new_ymd) dept_nm, --부서명
+ fun_posi_nm(a.posi_cd) posi_nm,   --직급명
+ e.req_no,
+ e.req_ymd,
+ e.apr_state_nm,     --상태명
+ e.apr_state,     --상태
+ a.dept_cd,     --부서코드
+ a.dept_new_ymd,     --부서신설일
+ a.entr_ymd,     --입사일
+ a.resid_no,     --주민번호
+ e.bankaccnt_typ,    --계좌유형
+ b.bankaccnt_no a_bankaccnt_no,     --급여계좌
+ d.bankaccnt_no f_bankaccnt_no,     --별도계좌
+ DECODE(NVL(e.req_no,''),'',DECODE(e.bankaccnt_typ, 'HSA010', b.bankaccnt_no,'HSA020', d.bankaccnt_no, b.bankaccnt_no), e.bankaccnt_no) bankaccnt_no,
+ e.middle_adjst_resn,     --정산사유
+ e.middle_adjst_typ,
+ e.conct_ymd,
+ e.attach_file_no,
+ e.cole_yn,
+ e.longwk_cntfr_ymd,
+ e.retire_hope_ymd,
+ a.syspayno
+FROM humbasicinfo a  --인사기본정보
+INNER JOIN humslbasinfo b ON a.syspayno = b.syspayno  --급여기본정보
+LEFT OUTER JOIN fbaapartaccnt d ON b.syspayno = d.syspayno --별도계좌
+INNER JOIN( SELECT
+     c.syspayno,
+     a.req_no,
+     c.req_ymd,
+     a.apr_state,
+     b.cd_nm apr_state_nm,
+     c.retire_resn,     --정산사유
+     c.middle_adjst_resn, -- 중도정산
+     c.middle_adjst_typ,
+     c.conct_ymd,
+     c.attach_file_no,
+     c.bankaccnt_typ,
+     c.bankaccnt_no,
+     a.mngmt_item_3 cole_yn,
+     c.longwk_cntfr_ymd,
+     a.req_no,
+     c.retire_hope_ymd
+ FROM xomxintfatab a  --결재
+ INNER JOIN xodxcommst b ON a.apr_state = b.cd  --공통
+ INNER JOIN humapysvr c ON a.req_no = c.req_no
+ WHERE a.req_no = #{req_no}
+ AND a.state_inform_flag = '1'
+) e ON b.syspayno = e.syspayno
+  </select> 
+ 
+ <!-- 퇴직금중간정산신청 대상여부 조회-->
+   <select id="selectHumslEmpState" parameterType="kr.re.kitech.biz.hum.apy.vo.HumslBasInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumslBasInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumslEmpState */ 
+		 a.sci_tech_anuty,
+       DATE(CURRENT) - DATE(TO_DATE(b.entr_ymd, '%Y%m%d') ) AS wrk_days
+FROM   humslbasinfo a
+INNER JOIN humbasicinfo b ON a.syspayno = b.syspayno
+WHERE a.syspayno = #{syspayno}
+  </select>
+ 
+  <select id="selectHumApySvrCount" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySvrCount */ 
+		 COUNT(*) AS cnt
+FROM humapysvr
+WHERE syspayno = #{syspayno}
+AND   middle_adjst_typ = #{middle_adjst_typ}
+  </select>
+  
+  <select id="selectHumApySvrEmpInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySvrEmpInfo */ 
+ a.nm,      --성명
+ a.empno,
+ fun_dept_nm(a.dept_cd, a.dept_new_ymd) dept_nm, --부서명
+ fun_posi_nm(a.posi_cd) posi_nm,   --직급명 
+ a.dept_cd,     --부서코드
+ a.dept_new_ymd,     --부서신설일
+ a.entr_ymd,     --입사일
+ a.resid_no,     --주민번호
+ b.bankaccnt_no a_bankaccnt_no,     --급여계좌
+ d.bankaccnt_no f_bankaccnt_no,     --별도계좌
+ b.bankaccnt_no bankaccnt_no,
+ b.longwk_cntfr_ymd,
+ a.syspayno
+FROM
+ humbasicinfo a,  --인사기본정보
+ humslbasinfo b,  --급여기본정보
+ OUTER fbaapartaccnt d --별도계좌  
+WHERE
+  a.syspayno = b.syspayno 
+AND b.syspayno = d.syspayno
+AND a.syspayno = #{syspayno}
+  </select>  
+
+  <select id="selectHumSlmmPayAmt" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumSlmmPayAmtVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumSlmmPayAmt */ 
+		 FIRST 1
+ a.longwk_cntfr_ymd,            --근속기산일
+ b.retire_appro_avg_wage, --퇴직충당평균임금
+ b.retire_appro,  --퇴직충당
+ b.retire_appro_longwk            --근속년수 
+FROM
+ humslbasinfo a,
+ humslmmpayamt b
+WHERE 
+ a.syspayno = b.syspayno
+ AND a.syspayno = #{syspayno}
+ORDER BY belng_yrmon DESC
+  </select> 
+  
+  <!-- 퇴직충당금 조회 : 급여기본정보조회 쿼리  kitech.hum.sal.xda.HumBasicInfoSS01 -->
+  <select id="selectHumApyMidSvrEmpBasicInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumApyMidSvrEmpBasicInfo */ 
+    a.syspayno,
+    a.empno, /*개인번호*/
+    a.nm, /*성명*/
+    fun_xodxcommst_cd_nm(a.occugrp_cd ,0 ) AS occugrp_nm, /*직군*/
+    a.occutyp_nm, /*직종*/
+    a.posi_nm, /*직급*/
+    a.dept_nm, /*부서*/
+    a.duty_nm, /*직책*/
+    a.entr_ymd, /*입원일*/
+    b.longwk_cntfr_ymd,
+    a.appont_contrct_ymd,  /*임용계약일(시작)*/
+    a.appont_cls_ymd,  /*임용계약일(종료)*/
+    a.ttoff_orign_ymd , /*휴직일 발령(시작)*/
+    a.ttoff_cls_ymd, /*휴직일 발령(종료)*/ /*휴직일 발령 이력 공통 코드 미입력*/
+    b.analsal_contrct_ymd, /*연봉계약일(시작일)*/
+    b.analsal_cls_ymd, /*연봉계약일(종료일)*/
+    a.retire_ymd,/*퇴직일*/
+    a.work_clsf, /*근무상태*/
+    fun_xodxcommst_cd_nm(a.work_clsf,0 ) AS work_clsf_nm, /*근무상태(명)*/
+    TO_CHAR(b.analsal,'#,###,###,###,###,###') AS analsal, /*연봉*/
+    b.mmsal, 			/*월봉*/
+    b.month_fxdamt_amt, /*기본정액(월)*/
+    b.month_resch_actn_amt,	/*연구활동비(월)*/
+    b.month_outcm_analsal,	/*성과연봉(월)*/
+    b.month_work_time,     /*근무시간(월)*/
+    c.cd_nm salry_bank_nm,
+    b.bankaccnt_no,		/*계좌번호*/
+    b.insr_acq_ymd,		/*건강보험 취득일*/
+    b.anuty_acq_ymd,
+    b.foctr_psn_fretax_objct,
+    b.helth_insr,
+    b.pepl_anuty,
+    b.emp_insr,
+    b.union_join,
+    b.court_debt_mny,
+    b.savng_shape_dedct,
+    b.sci_tech_anuty,
+    b.frihpsc,
+    b.mid_meal_sub_pay,
+    b.own_driv_sub_pay,
+    DECODE(TO_CHAR(d.pjt_cnt),'0','N','Y') AS pjt_yn,
+    e.retire_appro AS tm_pay,
+    DECODE(b.sci_tech_anuty, 'Y', (NVL(g.sci_tech_anuty_amt,0) + NVL(b.sci_trans_amt,0)), DECODE(NVL(f.retire_appro_pre,0), 0, (NVL(e.retire_appro,0) + NVL(h.retire_appro,0)), NVL(f.retire_appro_pre,0))) AS retire_appro_pre,
+    b.salry_tax_rt
+FROM v_humbasicinfo a,    /*인사 기본 뷰*/
+    humslbasinfo   b,    /*급여기본 정보*/
+    (SELECT COUNT(*) pjt_cnt FROM humrctpjt WHERE syspayno = #{syspayno}) d,
+    OUTER (SELECT FIRST 1 retire_appro, 
+     syspayno, 
+     TO_CHAR(belng_yrmon) AS belng_yrmon 
+   FROM humslmmpayamt 
+   WHERE belng_yrmon BETWEEN substr(#{b_belng_yy},0,4)||'01'AND substr(#{b_belng_yy},0,4)||'12' 
+    AND syspayno = #{syspayno}
+            AND NVL(retire_appro,0) <![CDATA[<>]]> 0
+            ORDER BY belng_yrmon DESC) e,   
+    OUTER (SELECT retire_appro AS retire_appro_pre, 
+     syspayno, 
+     TO_CHAR(belng_yrmon) AS belng_yrmon 
+   FROM humslmmpayamt 
+   WHERE belng_yrmon = #{belng_yrmon} AND syspayno = #{syspayno}) f,
+    OUTER xodxcommst c,    /*공통 정보 (급여은행)*/
+    OUTER((SELECT  syspayno,
+                   SUM(NVL(salry_cd_amt, 0)) AS sci_tech_anuty_amt
+            FROM   humslmmpaycd
+            WHERE  belng_yrmon <![CDATA[<]]> to_char(CURRENT, '%Y%m')
+            AND    syspayno = #{syspayno}
+            AND    salry_cd = '815'
+            GROUP BY 1) g),
+    OUTER((SELECT  syspayno,
+                   SUM(NVL(salry_cd_amt, 0)) AS retire_appro
+            FROM   humslmmpaycd
+            WHERE  belng_yrmon BETWEEN substr(#{belng_yrmon},0,4)||'01' AND substr(#{belng_yrmon},0,4) ||'12'
+            AND    syspayno = #{syspayno}
+            AND    salry_cd = '805'
+            GROUP BY 1) h)
+WHERE   a.syspayno   = b.syspayno
+AND     b.salry_bank = c.cd
+AND     a.syspayno   = e.syspayno
+AND     a.syspayno   = f.syspayno
+AND     a.syspayno   = g.syspayno
+AND     a.syspayno   = h.syspayno
+AND     a.syspayno   = #{syspayno}
+  </select>   
+  
+  <insert id="insertHumApyMidSvr" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyMidSvr */ 
+		 INTO humapysvr 
+(
+   req_no, --신청번호 
+   req_ymd, --신청일 
+   syspayno, --시스템개인번호 
+   dept_cd, --부서코드 
+   dept_new_ymd, --부서신설일 
+   middle_adjst_yn, --중간정산여부 
+   equal_id_yn, --동일ID사용여부 
+   bankaccnt_typ, --계좌유형 
+   bankaccnt_no, --계좌번호
+   main_yr_schdl_ymd, --정년예정일
+   contrct_cls_ymd, --계약종료일(계약직)   
+   longwk_cntfr_ymd, --근속(퇴직금)기산일 
+   retire_hope_ymd, --퇴직희망일 
+   retire_resn, --퇴직사유 
+   middle_adjst_resn, --중간정산사유 
+   middle_adjst_typ,
+   conct_ymd, -- 계약체결일
+   trans_typ, --이직유형 
+   postmt_no, --우편번호 
+   base_addr, --기본주소 
+   detls_addr, --상세주소 
+   home_tel, --집전화 
+   mobile, --핸드폰 
+   email, --이메일 
+   trans_agncy_nm, --이직기관명 
+   psn_no_syspayno, --인수시스템개인번호
+   psn_no_dept_cd, --인수부서코드 
+   psn_no_dept_new_ymd, --인수부서신설일 
+   data_essen_yn,  -- 개인정보 동의(필수)
+   data_opt_yn,  -- 개인정보 동의(선택)
+   attach_file_no, --첨부파일번호 
+   regst_syspayno, --등록시스템개인번호 
+   regst_daytm --등록일시 
+ )VALUES(
+  #{req_no}, --신청번호 
+  #{req_ymd}, --신청일 
+  #{syspayno}, --시스템개인번호 
+  #{dept_cd}, --부서코드 
+  #{dept_new_ymd}, --부서신설일 
+  #{middle_adjst_yn}, --중간정산여부 
+  #{equal_id_yn}, --동일ID사용여부
+  #{bankaccnt_typ}, --계좌유형 
+  #{bankaccnt_no}, --계좌번호 
+  #{main_yr_schdl_ymd}, --정년예정일 
+  #{contrct_cls_ymd}, --계약종료일(계약직) 
+  #{longwk_cntfr_ymd}, --근속(퇴직금)기산일 
+  #{retire_hope_ymd}, --퇴직희망일 
+  #{retire_resn}, --퇴직사유 
+  #{middle_adjst_resn}, --중간정산사유 
+  #{middle_adjst_typ},
+  #{conct_ymd}, -- 계약체결일
+  #{trans_typ}, --이직유형 
+  #{postmt_no}, --우편번호 
+  #{base_addr}, --기본주소 
+  #{detls_addr}, --상세주소 
+  #{home_tel}, --집전화 
+  #{mobile}, --핸드폰 
+  #{email}, --이메일 
+  #{trans_agncy_nm}, --이직기관명 
+  #{psn_no_syspayno}, --인수시스템개인번호
+  #{psn_no_dept_cd}, --인수부서코드 
+  #{psn_no_dept_new_ymd}, --인수부서신설일
+  #{data_essen_yn}, -- 개인정보 동의(필수)
+  #{data_opt_yn}, -- 개인정보 동의(선택) 
+  #{attach_file_no}, --첨부파일번호 
+  #{regst_syspayno}, --등록시스템개인번호 
+  CURRENT --등록일시 
+ )
+ </insert>
+ 
+   <update id="updateHumApyMidSvr" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyMidSvr */ 
+		 humapysvr 
+SET req_ymd = #{req_ymd}, --신청일            
+   syspayno = #{syspayno}, --시스템개인번호    
+   dept_cd = #{dept_cd}, --부서코드          
+   dept_new_ymd = #{dept_new_ymd}, --부서신설일
+   middle_adjst_yn = #{middle_adjst_yn}, --중간정산여부       
+   equal_id_yn = #{equal_id_yn}, --동일ID사용여부
+   bankaccnt_typ = #{bankaccnt_typ}, --계좌유형          
+   bankaccnt_no = #{bankaccnt_no}, --계좌번호 
+   longwk_cntfr_ymd = #{longwk_cntfr_ymd}, --근속(퇴직금)기산일  
+   retire_hope_ymd = #{retire_hope_ymd}, --퇴직(중간정산)희망일   
+   retire_resn = #{retire_resn}, --정산유형
+   middle_adjst_typ = #{middle_adjst_typ},
+   middle_adjst_resn = #{middle_adjst_resn}, --퇴직사유
+   conct_ymd = #{conct_ymd}, -- 계약체결일
+   postmt_no = #{postmt_no}, --우편번호          
+   base_addr = #{base_addr}, --기본주소          
+   detls_addr = #{detls_addr}, --상세주소          
+   home_tel = #{home_tel}, --집전화            
+   mobile  = #{mobile}, --핸드폰            
+   email  = #{email}, --이메일    
+   data_essen_yn = #{data_essen_yn},  -- 개인정보 동의(필수)
+   data_opt_yn = #{data_opt_yn}, -- 개인정보 동의(선택) 
+   attach_file_no = #{attach_file_no}, --첨부파일번호   
+   trans_typ = #{trans_typ},   
+   trans_agncy_nm = #{trans_agncy_nm},
+   psn_no_syspayno = #{psn_no_syspayno},
+   psn_no_dept_cd = #{psn_no_dept_cd},
+   psn_no_dept_new_ymd = #{psn_no_dept_new_ymd},
+   updt_syspayno = #{updt_syspayno},
+   updt_daytm = CURRENT
+WHERE req_no = #{req_no}
+  </update>
+  
+  <delete id="deleteHumApyMidSvr" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyMidSvrInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyMidSvr */ 
+		 FROM humapysvr WHERE req_no = #{req_no}
+  </delete>  
+ </mapper>

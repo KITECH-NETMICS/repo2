@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.inv">
+		
+	<select id="selectBookSummary" resultType="kr.re.kitech.biz.kbk.inv.vo.InvSummaryVo">
+		SELECT centrnm, bookcnt, loancnt FROM (
+		 SELECT fun_xodxcommst_cd_nm(A.centr_cd,0) AS centrnm,
+		        count(book_nm) AS bookcnt, 
+		        SUM(DECODE(b.retrn_ymd,'',1,0)) AS loancnt FROM kbkbook a JOIN kbkbookloan b ON a.regst_no = b.loan_book_no
+		 GROUP BY A.centr_cd 
+		 ORDER BY centrnm desc)
+		
+		UNION ALL
+		SELECT '합계' AS centrnm,
+		       COUNT(a.book_nm) AS bookcnt, 
+		       SUM(DECODE(b.retrn_ymd,'',1,0)) AS loancnt FROM kbkbook a JOIN kbkbookloan b ON a.regst_no = b.loan_book_no
+	</select>
+	
+	<select id="selectReportSummary" resultType="kr.re.kitech.biz.kbk.inv.vo.InvSummaryVo">
+		SELECT centrnm, bookcnt FROM (
+		SELECT fun_xodxcommst_cd_nm(centr_cd,0) AS centrnm,
+		       count(*) AS bookcnt 
+		      FROM kbkreschrptp
+		GROUP BY  centr_cd
+		ORDER BY  centrnm DESC)
+		UNION ALL
+		SELECT '합계' AS centrnm,
+		       count(*) AS bookcnt 
+		      FROM kbkreschrptp
+	</select>
+	
+	<select id="selectJourSummary" resultType="kr.re.kitech.biz.kbk.inv.vo.InvSummaryVo">
+		SELECT centrnm, bookcnt FROM (
+			SELECT fun_xodxcommst_cd_nm(a.centr_cd,0) AS centrnm,
+			       COUNT(*) AS bookcnt 
+			FROM kbkjurnlno a JOIN kbkjurnlcontnt b ON a.jurnl_no = b.jurnl_no
+			GROUP BY  centr_cd
+			ORDER BY  centrnm DESC)
+		
+		UNION ALL
+		SELECT '합계' AS centrnm,
+		       COUNT(*) AS bookcnt 
+		FROM kbkjurnlno a JOIN kbkjurnlcontnt b ON a.jurnl_no = b.jurnl_no
+	</select>
+</mapper>

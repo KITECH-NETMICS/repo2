@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.bmg">
+	
+	<select id="selectKbkBmgJurnlNo" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkJurnlNoVo" resultType="kr.re.kitech.biz.kbk.bmg.vo.KbkJurnlNoVo">
+SELECT a.centr_cd
+     , fun_xodxcommst_cd_nm(a.centr_cd, 0) as centr_nm
+     , a.jurnl_no
+     , a.regst_ymd
+     , a.jurnl_clsf_cd
+     , fun_xodxcommst_cd_nm(a.jurnl_clsf_cd, 0) AS jurnl_clsf_nm
+     , a.jurnl_subj
+     , a.publ_vend
+     , imprnt AS imprnt_cd
+     , fun_xodxcommst_cd_nm(a.imprnt, 0) AS imprnt_nm
+     , a.cont_yn
+     , DECODE(nvl(a.electr_jurnl_homepg, ''), '', '', '원문') as electr_jurnl_homepg
+     , a.electr_jurnl_homepg
+     , a.rmk
+     , a.recent_wrhsg_schdl_ymd
+     , a.pspnmt_time
+     , CASE WHEN (to_number(nvl(a.recent_wrhsg_schdl_ymd, 0)) + nvl(a.pspnmt_time, 0)) > to_number(substr(to_char(sysdate, '%Y%m%d'), 0, 8))
+            THEN 'Vol:' || b.vol || '  No:' || b.no
+            WHEN  a.jurnl_clsf_cd = 'BCG002'
+            THEN ''
+            ELSE '결호'
+       END AS chk_contnt
+FROM kbkjurnlno a
+LEFT JOIN (SELECT first 1 no
+                , vol
+                , jurnl_no
+           FROM kbkjurnlcontnt
+           WHERE jurnl_no = 'J003726'
+           ORDER BY vol desc, no desc
+) b
+ON a.jurnl_no = b.jurnl_no
+WHERE a.jurnl_clsf_cd = #{jurnl_clsf_cd}
+<if test='jurnl_subj != null and jurnl_subj != ""'>
+    AND  replace(upper(a.jurnl_subj), ' ', '') LIKE replace(upper(#{jurnl_subj}), ' ', '') || '%'
+</if>
+<if test='cont_yn != null and cont_yn != ""'>
+    AND   a.cont_yn = #{cont_yn}
+</if>
+<if test='centr_cd != null and centr_cd != ""'>
+    AND   a.centr_cd = #{centr_cd}
+</if>
+</select>
+	
+		
+	
+		
+	
+	
+	
+
+<select id="selectKbkBmgJurnlNoList" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkJurnlContntVo" resultType="kr.re.kitech.biz.kbk.bmg.vo.KbkJurnlContntVo">
+SELECT a.jurnl_no
+     , a.vol
+     , a.no
+     , a.publ_yr
+     , a.publ_month
+     , a.wrhsg_ymd
+     , a.wrhsg_schdl_ymd
+     , a.cycle_item
+     , a.missno_yn
+     , b.jurnl_subj
+FROM kbkjurnlcontnt a
+JOIN kbkjurnlno b
+ON a.jurnl_no = b.jurnl_no
+WHERE a.jurnl_no = #{jurnl_no}
+ORDER BY vol desc, no desc
+</select>
+<select id="selectKbkJurnlNoReg" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkJurnlNoVo" resultType="kr.re.kitech.biz.kbk.bmg.vo.KbkJurnlNoVo">
+SELECT regst_no
+     , jurnl_no
+     , jurnl_clsf_cd
+     , fun_xodxcommst_cd_nm(jurnl_clsf_cd, 0) AS jurnl_clsf_nm
+     , regst_ymd
+     , jurnl_subj
+     , publ_vend
+     , clsf_cd
+     , fun_xodxcommst_cd_nm(clsf_cd, 0) AS clsf_nm
+     , natn_cd
+     , fun_xodxcommst_cd_nm(natn_cd, 0) AS natn_nm
+     , clsf AS sci_clsf_cd
+     , fun_xodxcommst_cd_nm(clsf, 0) AS sci_clsf_nm
+     , agent_vend
+     , cont_yn
+     , startpubl_ymd
+     , pur_clsf AS pur_clsf_cd
+     , fun_xodxcommst_cd_nm(pur_clsf, 0) AS pur_clsf_nm
+     , issn
+     , imprnt AS imprnt_cd
+     , fun_xodxcommst_cd_nm(imprnt, 0) as imprnt_nm
+     , recent_wrhsg_schdl_ymd
+     , pspnmt_time
+     , tong_yn
+     , subj_fild
+     , kitech_owshp_yn
+     , kitech_owshp_yr
+     , centr_cd
+     , fun_xodxcommst_cd_nm(centr_cd, 0) as centr_nm
+     , out_agncy_owshp_item
+     , electr_jurnl_homepg
+     , homepg
+     , rmk
+FROM kbkjurnlno
+WHERE jurnl_no = #{jurnl_no}
+</select>
+<insert id="insertKbkJurnlNoReg" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkJurnlNoVo">
+INSERT 
+INTO kbkjurnlno 
+(
+    jurnl_no
+<if test='regst_no != null and regst_no != ""'>
+,   regst_no
+</if>
+<if test='jurnl_clsf_cd != null and jurnl_clsf_cd != ""'>
+,   jurnl_clsf_cd
+</if>
+<if test='regst_ymd != null and regst_ymd != ""'>
+,   regst_ymd
+</if>
+<if test='jurnl_subj != null and jurnl_subj != ""'>
+,   jurnl_subj
+</if>
+<if test='publ_vend != null and publ_vend != ""'>
+,   publ_vend
+</if>
+<if test='clsf_cd != null and clsf_cd != ""'>
+,   clsf_cd
+</if>
+<if test='natn_cd != null and natn_cd != ""'>
+,   natn_cd
+</if>
+<if test='sci_clsf_cd != null and sci_clsf_cd != ""'>
+,   clsf
+</if>
+<if test='agent_vend != null and agent_vend != ""'>
+,   agent_vend
+</if>
+<if test='cont_yn != null and cont_yn != ""'>
+,   cont_yn
+</if>
+<if test='startpubl_ymd != null and startpubl_ymd != ""'>
+,   startpubl_ymd
+</if>
+<if test='pur_clsf_cd != null and pur_clsf_cd != ""'>
+,   pur_clsf
+</if>
+<if test='issn != null and issn != ""'>
+,   issn
+</if>
+<if test='imprnt_cd != null and imprnt_cd != ""'>
+,   imprnt
+</if>
+<if test='recent_wrhsg_schdl_ymd != null and recent_wrhsg_schdl_ymd != ""'>
+,   recent_wrhsg_schdl_ymd
+</if>
+<if test='pspnmt_time != null and pspnmt_time != ""'>
+,   pspnmt_time
+</if>
+<if test='tong_yn != null and tong_yn != ""'>
+,   tong_yn
+</if>
+<if test='subj_fild != null and subj_fild != ""'>
+,   subj_fild
+</if>
+<if test='kitech_owshp_yn != null and kitech_owshp_yn != ""'>
+,   kitech_owshp_yn
+</if>
+<if test='kitech_owshp_yr != null and kitech_owshp_yr != ""'>
+,   kitech_owshp_yr
+</if>
+<if test='centr_cd != null and centr_cd != ""'>
+,   centr_cd
+</if>
+<if test='out_agncy_owshp_item != null and out_agncy_owshp_item != ""'>
+,   out_agncy_owshp_item
+</if>
+<if test='electr_jurnl_homepg != null and electr_jurnl_homepg != ""'>
+,   electr_jurnl_homepg
+</if>
+<if test='homepg != null and homepg != ""'>
+,   homepg
+</if>
+<if test='rmk != null and rmk != ""'>
+,   rmk
+</if>
+,   regst_psn_syspayno
+,   regst_daytm
+)
+VALUES
+(	
+	'J' || (SELECT lpad(trunc(nvl(max(to_number(substr(jurnl_no, 2, 7))) + 1, 0)), 6, '0')
+            FROM kbkjurnlno)
+<if test='regst_no != null and regst_no != ""'>
+,   #{regst_no}
+</if>
+<if test='jurnl_clsf_cd != null and jurnl_clsf_cd != ""'>
+,   #{jurnl_clsf_cd}
+</if>
+<if test='regst_ymd != null and regst_ymd != ""'>
+,   #{regst_ymd}
+</if>
+<if test='jurnl_subj != null and jurnl_subj != ""'>
+,   #{jurnl_subj}
+</if>
+<if test='publ_vend != null and publ_vend != ""'>
+,   #{publ_vend}
+</if>
+<if test='clsf_cd != null and clsf_cd != ""'>
+,   #{clsf_cd}
+</if>
+<if test='natn_cd != null and natn_cd != ""'>
+,   #{natn_cd}
+</if>
+<if test='sci_clsf_cd != null and sci_clsf_cd != ""'>
+,   #{sci_clsf_cd}
+</if>
+<if test='agent_vend != null and agent_vend != ""'>
+,   #{agent_vend}
+</if>
+<if test='cont_yn != null and cont_yn != ""'>
+,   #{cont_yn}
+</if>
+<if test='startpubl_ymd != null and startpubl_ymd != ""'>
+,   #{startpubl_ymd}
+</if>
+<if test='pur_clsf_cd != null and pur_clsf_cd != ""'>
+,   #{pur_clsf_cd}
+</if>
+<if test='issn != null and issn != ""'>
+,   #{issn}
+</if>
+<if test='imprnt_cd != null and imprnt_cd != ""'>
+,   #{imprnt_cd}
+</if>
+<if test='recent_wrhsg_schdl_ymd != null and recent_wrhsg_schdl_ymd != ""'>
+,   #{recent_wrhsg_schdl_ymd}
+</if>
+<if test='pspnmt_time != null and pspnmt_time != ""'>
+,   #{pspnmt_time}
+</if>
+<if test='tong_yn != null and tong_yn != ""'>
+,   #{tong_yn}
+</if>
+<if test='subj_fild != null and subj_fild != ""'>
+,   #{subj_fild}
+</if>
+<if test='kitech_owshp_yn != null and kitech_owshp_yn != ""'>
+,   #{kitech_owshp_yn}
+</if>
+<if test='kitech_owshp_yr != null and kitech_owshp_yr != ""'>
+,   #{kitech_owshp_yr}
+</if>
+<if test='centr_cd != null and centr_cd != ""'>
+,   #{centr_cd}
+</if>
+<if test='out_agncy_owshp_item != null and out_agncy_owshp_item != ""'>
+,   #{out_agncy_owshp_item}
+</if>
+<if test='electr_jurnl_homepg != null and electr_jurnl_homepg != ""'>
+,   #{electr_jurnl_homepg}
+</if>
+<if test='homepg != null and homepg != ""'>
+,   #{homepg}
+</if>
+<if test='rmk != null and rmk != ""'>
+,   #{rmk}
+</if>
+,   #{syspayno}
+,   current
+)
+</insert>
+<update id="updateKbkJurnlNoReg" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkJurnlNoVo">
+UPDATE kbkjurnlno
+SET updt_psn_syspayno = #{syspayno}
+,	updt_daytm = current
+<if test='regst_no != null and regst_no != ""'>
+,   regst_no = #{regst_no}
+</if>
+<if test='jurnl_clsf_cd != null and jurnl_clsf_cd != ""'>
+,   jurnl_clsf_cd = #{jurnl_clsf_cd}
+</if>
+<if test='regst_ymd != null and regst_ymd != ""'>
+,   regst_ymd = #{regst_ymd}
+</if>
+<if test='jurnl_subj != null and jurnl_subj != ""'>
+,   jurnl_subj = #{jurnl_subj}
+</if>
+<if test='publ_vend != null and publ_vend != ""'>
+,   publ_vend = #{publ_vend}
+</if>
+<if test='clsf_cd != null and clsf_cd != ""'>
+,   clsf_cd = #{clsf_cd}
+</if>
+<if test='natn_cd != null and natn_cd != ""'>
+,   natn_cd = #{natn_cd}
+</if>
+<if test='sci_clsf_cd != null and sci_clsf_cd != ""'>
+,   clsf = #{sci_clsf_cd}
+</if>
+<if test='agent_vend != null and agent_vend != ""'>
+,   agent_vend = #{agent_vend}
+</if>
+<if test='cont_yn != null and cont_yn != ""'>
+,   cont_yn = #{cont_yn}
+</if>
+<if test='startpubl_ymd != null and startpubl_ymd != ""'>
+,   startpubl_ymd = #{startpubl_ymd}
+</if>
+<if test='pur_clsf_cd != null and pur_clsf_cd != ""'>
+,   pur_clsf = #{pur_clsf_cd}
+</if>
+<if test='issn != null and issn != ""'>
+,   issn = #{issn}
+</if>
+<if test='imprnt_cd != null and imprnt_cd != ""'>
+,   imprnt = #{imprnt_cd}
+</if>
+<if test='recent_wrhsg_schdl_ymd != null and recent_wrhsg_schdl_ymd != ""'>
+,   recent_wrhsg_schdl_ymd = #{recent_wrhsg_schdl_ymd}
+</if>
+<if test='pspnmt_time != null and pspnmt_time != ""'>
+,   pspnmt_time = #{pspnmt_time}
+</if>
+<if test='tong_yn != null and tong_yn != ""'>
+,   tong_yn = #{tong_yn}
+</if>
+<if test='subj_fild != null and subj_fild != ""'>
+,   subj_fild = #{subj_fild}
+</if>
+<if test='kitech_owshp_yn != null and kitech_owshp_yn != ""'>
+,   kitech_owshp_yn = #{kitech_owshp_yn}
+</if>
+<if test='kitech_owshp_yr != null and kitech_owshp_yr != ""'>
+,   kitech_owshp_yr = #{kitech_owshp_yr}
+</if>
+<if test='centr_cd != null and centr_cd != ""'>
+,   centr_cd = #{centr_cd}
+</if>
+<if test='out_agncy_owshp_item != null and out_agncy_owshp_item != ""'>
+,   out_agncy_owshp_item = #{out_agncy_owshp_item}
+</if>
+<if test='electr_jurnl_homepg != null and electr_jurnl_homepg != ""'>
+,   electr_jurnl_homepg = #{electr_jurnl_homepg}
+</if>
+<if test='homepg != null and homepg != ""'>
+,   homepg = #{homepg}
+</if>
+<if test='rmk != null and rmk != ""'>
+,   rmk = #{rmk}
+</if>
+WHERE jurnl_no = #{jurnl_no}
+</update>
+<delete id="deleteKbkJurnlNoReg" parameterType="kr.re.kitech.biz.kbk.bmg.vo.KbkJurnlNoVo">
+DELETE
+FROM kbkjurnlno
+WHERE jurnl_no = #{jurnl_no}
+</delete>
+</mapper>

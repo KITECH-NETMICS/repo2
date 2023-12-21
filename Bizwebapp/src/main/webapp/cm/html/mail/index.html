@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>메일발송 템플릿 개발자 가이드</title>
+<link rel="stylesheet" href="support/css/index.css">
+<script src="/cm/ext/google-code-prettify/run_prettify.js?autoload=true&amp;skin=desert"></script>
+<script src="/websquare/externalJS/jquery/jquery-1.10.2.min.js"></script>
+<script>
+	$(document).ready(function() {
+		$("aside ul h3").click(function() {
+			$("aside ul h3").removeClass("selected");
+			$("aside ul ul").hide("fast");
+			$(this).addClass("selected");
+			$(this).siblings("ul").show("fast");
+		});
+		$("aside ol a").click(function() {
+			$("div.main").show();
+			$("#templateViewer").hide();
+		});
+		$("aside ul a").click(function() {
+			$("div.main").hide();
+			$("#templateViewer").show();
+			var href = $(this).attr("href");
+			$("#templateModuleName").val( href.match(/^templates\/(.*)\.html$/)[1] );
+		});
+		$("#btnCopy").click(function() {
+			$("#templateModuleName").select();
+			try { document.execCommand('copy'); } catch(e) {}
+		});
+	});
+</script>
+</head>
+<body>
+	<header>
+		<h1>메일발송 템플릿 개발자 가이드</h1>
+	</header>
+
+	<aside>
+		<h2>기본 API 사용법</h2>
+		<ol>
+			<li><a href="#section1">개요</a></li>
+			<li><a href="#section2">템플릿 작성과 관리</a></li>
+			<li><a href="#section3">Websquare XML에서의 사용</a></li>
+			<li><a href="#section4">Java에서의 사용</a></li>
+			<li><a href="#section5">발송이력관리 참고사항</a></li>
+		</ol>
+		<h2>업무별 메일발송 템플릿</h2>
+		<ul>
+			<li>
+				<h3>전자결재</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/apr/CompleteAPR.html">전자결재 완료 안내</a></li>
+					<li><a target="templateFrame" href="templates/apr/RejectAPR.html">결재반려 알림</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>연구관리</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/res/ResAgrInnerPartPayClose.html">참여율 1차저장 안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResAgrInnerPartPayErr.html">참여율 등록요청</a></li>
+					<li><a target="templateFrame" href="templates/res/ResAgrInnerPartPayMnt.html">내부1 참여율 등록 안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResEtubInfoSel.html">연구장비-EtubeID 매핑안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResPrjEndMail.html">과제종료안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResPrjSecrtMail.html">보안과제안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResPrjMapping.html">과제미매핑코드</a></li>
+					<li><a target="templateFrame" href="templates/res/ResClosePrj.html">과제종료예정안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResClosePrj2.html">과제종료예정안내2</a></li>
+					<li><a target="templateFrame" href="templates/res/ResRsMate.html">연구장비심의요청</a></li>
+					<li><a target="templateFrame" href="templates/res/ResPrjEquipEndMail.html">연구기자재 미구입안내(Deprecated)</a></li>
+					<li><a target="templateFrame" href="templates/res/ResPrjEquipPurMissed.html">연구기자재 구매진행 요청</a></li>
+					<li><a target="templateFrame" href="templates/res/ResPrjEvalResltRegEvalPop_U.html">최종평가결과 등록안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResAttncePsnMngmt.html">과제참여연구원 참여확인요청</a></li>
+					<li><a target="templateFrame" href="templates/res/ResBsnsAplyReq.html">최종사업계획서 등록안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResBsnsLastFileReq.html">과제생성요청</a></li>
+					<li><a target="templateFrame" href="templates/res/ResPrjAgrBudgetMnt.html">실행예산편성 요청</a></li>
+					<li><a target="templateFrame" href="templates/res/ResPrjExeBdgetMnt.html">계정생성안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResAdxAccReq.html">A.D.X계정생성안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResInstiPresntReq.html">학회발표수정안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResRsNoteLSel.html">연구노트반납요청</a></li>
+					<li><a target="templateFrame" href="templates/res/ResRsNoteReq.html">연구노트수정안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResRsPaperReq.html">논문수정안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResPrjAgreeBiz.html">과제생성완료안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResRsAgencyAllowanceReq.html">기관주요사업연구수당지급내역서</a></li>
+					<li><a target="templateFrame" href="templates/res/ResRsReportLSel.html">연구과제 보고서 미제출 안내</a></li>
+					<li><a target="templateFrame" href="templates/res/ResBsnsAdjstConfChk.html">사업조정회의안건중복확인요청</a></li>
+					<li><a target="templateFrame" href="templates/fin/BudStdntPayRollMnt2.html">학생인건비통합관리계정집행안내</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>총무보안</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/ccs/CtrTripMntDomNoRegMail.html">1. 당일출장 증빙 미등록 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CtrTripMntDomeMail.html">2. 국내출장 복명서 처리 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CtrTripMntOverMail.html">3. 해외출장 복명서 처리 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CtrTripMntStayMail.html">4. 주재국 복명서 처리 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsDormShortReqMail.html">5. 기숙사신청 승인 안내(단기)</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsDormShortReqRtnMail.html">6. 기숙사신청 반려 안내(단기)</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsDormBatchReqMail.html">7. 기숙사신청 일괄배정 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsDormBatchReqRtnMail.html">8. 기숙사신청 일괄취소 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsMeetRoomReqMail.html">9. 회의실 신청 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsCarUseReqMail.html">10. 차량 배차 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsCondoReqMail.html">11. 콘도신청 승인 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsCondoReqRtnMail.html">12. 콘도신청 반려 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CwlAidAssemLoanReqMail.html">13. 상조회대출 처리 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CwlCdNCgReqMail.html">14. 경조사비 신청 처리 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CwlMidWayReqMail.html">15. 대출 중도상환 처리 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CwsNoticeMissTagMail.html">16. 근태 태그 누락자 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CwsNoticeLackTimeMail.html">17. 근무시간 부족 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsWorkTimeAdjsMail.html">18. 근무시간 정산 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CwsLappEvidReqMail.html">19. 휴가원 증빙자료 미등록 안내</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CtrCvnTripReq.html">20. 외부강의신고서 연계 메일</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CwsNoticeWorkDenial.html">21. 노무수령거부 안내 메일</a></li>
+					<li><a target="templateFrame" href="templates/ccs/CgsSignUseMail.html">22. 계좌인감 승인 안내 메일</a></li> 
+					<li><a target="templateFrame" href="templates/ccs/CtrTriReqMail.html">23. 출장현황 안내 메일</a></li> 
+					<li><a target="templateFrame" href="">24. 해외사무소 주재국 출장일정 안내 메일</a></li> 
+					<li><a target="templateFrame" href="templates/ccs/CtrTripOverConfPoolCheck.html">25. 해외출장복명 부실학회 안내 메일</a></li> 
+					<li><a target="templateFrame" href="templates/hum/GiftPay.html">개원기념일 기념품 지급 안내</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>기업지원</h3> 
+				<ul>
+					<li><a target="templateFrame" href="templates/spt/SptTechSmnrProc.html">기업성장 지원계획서(보고서) 반려안내</a></li>
+					<li><a target="templateFrame" href="templates/spt/SptTechEducProc.html">교육실적반려안내</a></li>
+					<li><a target="templateFrame" href="templates/spt/SptTechSmnrProc2.html">세미나실적반려안내</a></li>
+					<li><a target="templateFrame" href="templates/spt/SptCtrInterviewLogMnt.html">면담일지 작성안내</a></li>
+					<li><a target="templateFrame" href="templates/spt/CnsnmtAdjstSlipReqMail.html">미수수탁정산 신청 요청</a></li>
+					<li><a target="templateFrame" href="templates/spt/SptRtlCusEndMail.html">렌탈랩 계약종료 안내 메일</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>재무관리</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/fin/ChkupComplete.html">소액물품 자산등재 요청</a></li>
+					<li><a target="templateFrame" href="templates/fin/BudStdntPayRollMnt.html">학생인건비종합현황</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinCardReq.html">카드신청</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinRcptPaySlipSendMail.html">개인지급안내</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinBillDetlsKwanSel.html">세금계산서미처리건</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinBillRegstSel2.html">매출계산서미처리건</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinCardDecsn.html">카드승인내역미처리건</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinCardDecsnAft.html">카드승인내역미처리건(관리자)</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinCardDecsnHoli.html">카드승인내역미처리건(휴일)</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinCardDecsnNight.html">카드승인내역미처리건(심야)</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinCardDecsnCtr.html">카드승인내역미처리건(출장)</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinCardDecsnCgs.html">카드승인내역미처리건(휴가)</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinFndSlipDecsnMnt.html">미결의건메일전송</a></li>
+					<li><a target="templateFrame" href="templates/fin/FinFndSlipDecsnAft.html">미결의건메일전송(관리자)</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>인사급여</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/hum/PaySlip.html">급여명세서</a></li>
+					<li><a target="templateFrame" href="templates/hum/RcmsMail.html">학·연·산 협동과정 추천서</a></li>
+					<li><a target="templateFrame" href="templates/hum/CertiIssueMail.html">증명서 발급안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/UandOrgEntr.html">연수신청 진행 통보메일</a></li>
+					<li><a target="templateFrame" href="templates/hum/UandOrgRetire.html">연수기간 종료 예정자 통보메일</a></li>
+					<li><a target="templateFrame" href="templates/hum/StuPaySlip.html">연수장려금 명세서</a></li>
+					<li><a target="templateFrame" href="templates/hum/RctCls1.html">비정규직계약종료안내메일(계약자)</a></li>
+					<li><a target="templateFrame" href="templates/hum/RctCls2.html">비정규직계약종료안내메일(활용자)</a></li>
+					<li><a target="templateFrame" href="templates/hum/AppontPruse.html">참여연구원 신규등록 요청 알림</a></li>
+					<li><a target="templateFrame" href="templates/hum/ReConctRct.html">재계약완료알림(계약자)</a></li>
+					<li><a target="templateFrame" href="templates/hum/ReConctRctPruse.html">재계약완료알림(활용책임자)</a></li>
+					<li><a target="templateFrame" href="templates/hum/SalPerForm.html">연구개발능률성과급 지급안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/SalPerForm01.html">연구개발능률성과급(우수연구자 외) 지급안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/TecContPayForm.html">기술이전 기여자 보상금 지급 안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/PayRiseForm.html">임금인상분(1차)지급안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/PayRiseForm2.html">임금인상분(2차)지급안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/PieceRateForm.html">능률성과급지급안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/RegPromoPreConfirm.html">정기승진심의기본사항확인안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/FamFriendlyCertiSurvey.html">가족친화인증을 위한 직원 만족도 설문조사 요청</a></li>
+					<li><a target="templateFrame" href="templates/hum/HumBasEducUserMngmt.html">교육훈련 미이수 안내메일</a></li>
+					<li><a target="templateFrame" href="templates/hum/HumBasInfoDeptValidChk.html">인사정보(소속부서) 오류 안내 메일</a></li>
+					<li><a target="templateFrame" href="templates/hum/HumApySvrMail.html">퇴직예정자에 대한 보안교육 안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/PieceRateGuide.html">연구수당 및 연구개발능률성과급 지급 기준 안내</a></li>
+					<li><a target="templateFrame" href="templates/hum/FamPayForm.html">가족수당 환수 안내1</a></li>
+					<li><a target="templateFrame" href="templates/hum/FamPayForm2.html">가족수당 환수 안내2</a></li>
+					<li><a target="templateFrame" href="templates/hum/PayRiseForm4.html">승진 인상분 지급 안내</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>구매조달</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/epu/ContrctComplete.html">내자계약완료 알림</a></li>
+					<li><a target="templateFrame" href="templates/epu/ForContrctComplete.html">외자계약완료 알림</a></li>
+					<li><a target="templateFrame" href="templates/epu/BidTechTransfer.html">기술평가 요청서 전송 안내</a></li>
+					<li><a target="templateFrame" href="templates/epu/ChkupReq.html">검수요청 알림</a></li>
+					<li><a target="templateFrame" href="templates/epu/ChkupComplete.html">자산등재요청</a></li>
+					<li><a target="templateFrame" href="templates/epu/BidNotiComplete.html">입찰공고 게시 안내</a></li>
+					<li><a target="templateFrame" href="templates/epu/EpuGuarantee.html">하자보증증권 만료 안내</a></li>
+					<li><a target="templateFrame" href="templates/epu/EpuComplete.html">e나라도움 결의완료 안내</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>자산관리</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/ass/AssRegDtl.html">자산(수량)등재</a></li>
+					<li><a target="templateFrame" href="templates/ass/AssRegEtube.html">E-tube 등록</a></li>
+					<li><a target="templateFrame" href="templates/ass/AssAppMoveAck.html">자산물품반출승인</a></li>
+					<li><a target="templateFrame" href="templates/ass/AssAppOutInstAck.html">자산외부설치승인</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>기술이전</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/tec/ResTechFeeUseReg.html">기술료 인센티브 계정오픈 안내</a></li>
+					<li><a target="templateFrame" href="templates/tec/ResTecTrnsMouReg.html">기술이전 계약체결 통보</a></li>
+					<li><a target="templateFrame" href="templates/tec/ResTecFeePayTimeMnt1.html">기술이전 미납기술료 납부요청</a></li>
+					<li><a target="templateFrame" href="templates/tec/ResTecFeePayTimeMnt2.html">기술이전 경상기술료 납부안내문</a></li>
+					<li><a target="templateFrame" href="templates/tec/ResTecFeePayTimeMnt3.html">기술이전 경상기술료 담당자확인</a></li>
+					<li><a target="templateFrame" href="templates/tec/ResSchdlMnt01.html">기술료 납부예정안내문</a></li>
+					<li><a target="templateFrame" href="templates/tec/ResSchdlMnt02.html">기술료 납부안내 담당자확인</a></li>
+					<li><a target="templateFrame" href="templates/tec/ResTecConsultInfoReg.html">기술자문 신청 안내문</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>지식재산권</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/pat/CostConfirm.html">청구서 안내 메일</a></li>
+					<li><a target="templateFrame" href="templates/pat/WorkFlow.html">업무 요청 메일</a></li>
+					<li><a target="templateFrame" href="templates/pat/WorkPiiFlow.html">발명인터뷰 완료 메일</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>도서관리</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/kbk/KbkBorrowMailSend.html">대출현황 메일발송</a></li>
+					<li><a target="templateFrame" href="templates/kbk/KbkOriginalCopyReg.html">원문복사신청 안내 메일</a></li>
+				</ul>
+			</li>
+			<li>
+				<h3>시스템</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/com/DemandComplete.html">시스템문의 처리완료 알림</a></li>
+					<li><a target="templateFrame" href="templates/com/DemandReject.html">시스템문의 반려 알림</a></li>
+					<li><a target="templateFrame" href="templates/com/SatisfactionRequest.html">시스템문의 만족도 조사</a></li>
+					<li><a target="templateFrame" href="templates/com/ComBasIPReq.html">신규IP 발급 신청</a></li>
+					<li><a target="templateFrame" href="templates/com/ComBasOpenFWReq.html">방화벽 오픈 신청</a></li>
+				</ul>
+			</li>
+		</ul>
+	</aside>
+
+	<section id="templateViewer">
+		<div id="moduleInfo">
+			템플릿 모듈명
+			<input id="templateModuleName" type="text" readonly>
+			<button id="btnCopy">복사</button>
+		</div>
+		<iframe id="templateFrame" name="templateFrame"></iframe>
+	</section>
+
+	<div class="main">
+		<a id="section1"></a>
+		<h2>개요</h2>
+
+		<p>메일발송 공통모듈 API 및 템플릿 연계 시스템은 업무시스템을 이용한 메일발송 기능의 구현에 있어서,
+			기존의 하드코딩 방식의 비효율적인 개발과 관리에서 탈피하고 체계화를 위하여 공통모듈 기능과 템플릿의 활용으로
+			개발과 유지보수의 효율성과 편의성을 증가시키는 것이 주요 목적이다.</p>
+		<p>공통 API와 템플릿을 이용한 메일발송 기능개발과 관리방식의 기대효과는 다음과 같다.</p>
+		<ul>
+			<li>메일발송 양식들을 독립적인 HTML 파일로 형상관리 서버를 통해 관리함으로써 관리 효율성 증대와 메일 품질의 향상</li>
+			<li>미리보기 기능을 통해 직관적인 템플릿의 양식 수정과 변수 설정이 가능함으로써 개발 편의성 증대 </li>
+			<li>관련 프로그램 내의 하드코딩을 배제하고 비즈니스 로직과 분리함으로써 프로그램 코드의 복잡도 경감</li>
+			<li>일관성 있는 API를 통한 메일발송 공통 모듈의 사용으로 개발 생산성 제고</li>
+			<li>공통 모듈 내에 구현된 기본 기능을 통해 메일발송 이력을 자동으로 기록관리</li>
+		</ul>
+		<p>메일발송 자동화를 위해 템플릿을 활용하는 것이 원칙이나, 내용이 매우 단순한 경우 템플릿을 별도로 구성하지 않고
+			직접 본문 내용을 사용하는 기능 또한 제공한다.</p>
+
+		<a id="section2"></a>
+		<h2>템플릿 작성과 관리</h2>
+
+		<p>메일 템플릿은 BizWebApp 프로젝트의 형상관리 내에서 관리한다. 템플릿 기본 디렉토리는 /cm/html/mail/templates 이며,
+			3자리의 업무별 시스템 구분코드의 서브 디렉토리 내에 HTML 템플릿 파일을 생성한다.</p>
+		<p>스타일 지정은 아래의 예시처럼 최대한 inline CSS로 작성한다.</p>
+		<pre class="prettyprint lang-html">&lt;div style="display:inline-block;font-color:red;width:20px;height:40px"&gt;비고&lt;/div&gt;</pre>
+		<p>이미지를 사용할 경우에는 아래의 예시처럼 전용 외부 이미지 서버를 이용하여 작성한다.</p>
+		<pre class="prettyprint lang-html">&lt;img src="http://img.kitech.re.kr/mail/templates/epu/sample.jpg" /&gt;</pre>
+		<p>템플릿 내에서 동적인 내용은 앳마크(@) 구분자로 감싼 형태의 템플릿 변수를 이용하여 지정한다.
+			(예시: @reqDate@, @syspayNo@ 등)</p>
+		<p>템플릿 내에서 동적인 내용이면서 HTML 태그가 들어가는 경우 두개의 앳마크가 연결된 형태(@@) 구분자로 감싼 형태의 템플릿 변수를 이용하여 지정한다.
+			(예시: @@attachFiles@@, @@links@@ 등)</p>
+		<p>작성한 템플릿은 /cm/html/mail/index.html 파일 내의 업무별 메일발송 템플릿 목록에 추가한다.</p>
+
+		<a id="section3"></a>
+		<h2>Websquare XML에서의 사용</h2>
+
+			<h3>Kitech Object</h3>
+			<p>Websquare 공통 라이브러리 파일로 메일발송 API import 하므로 추가 참조를 선언하지 않는다.</p>
+
+			<h3>패키지 정의</h3>
+			<pre class="prettyprint">@Deprecated Kitech.tools</pre>
+			<p>유틸리티성 라이브러리 패키지, 향 후 지속적인 기능 추가 예정.</p>
+			<pre class="prettyprint">@Deprecated Kitech.inner</pre>
+			<p>내부적으로 사용되는 라이브러리 패키지.</p>
+			<pre class="prettyprint">com.mail</pre>
+			<p>메일 발송 라이브러리 패키지</p>
+			<pre class="prettyprint">com.msg</pre>
+			<p>메시지 발송 라이브러리 패키지</p>
+
+			<h3>메소드 정의</h3>
+			<pre class="prettyprint">Boolean sendMessage(Object options, Function callback)</pre>
+			<p>기본적으로 ajax, asynchronous 모드로 호출된다.</p>
+			<p>결과가 성공이면 true, 실패하면 false를 반환한다.</p>
+			<p>파라미터는 자바스크립트 PlainObject 형태로 받으며, 세부 정보는 다음과 같다.</p>
+			<dl>
+				<dt>subject</dt>
+				<dd>필수, String. 메일 제목</dd>
+
+				<dt>fromAddr</dt>
+				<dd>String. 발신자 메일주소, 설정하지 않을 경우 eipadmin@kitech.re.kr</dd>
+
+				<dt>fromName</dt>
+				<dd>String. 발신자 이름, 설정하지 않을 경우 '시스템'</dd>
+
+				<dt>toAddress</dt>
+				<dd>필수, String. 수신자 메일주소, 다건일 경우 컴마로 구분한다.</dd>
+
+				<dt>ccAddr</dt>
+				<dd>String 또는 Vector. 참조자 메일주소, 다건일 경우 컴마로 구분한다.</dd>
+
+				<dt>bccAddr</dt>
+				<dd>String 또는 Vector. 숨은참조자 메일주소, 다건일 경우 컴마로 구분한다.</dd>
+
+				<dt>templatePath</dt>
+				<dd>필수, String. 템플릿 경로명</dd>
+
+				<dt>templateVars</dt>
+				<dd>필수, Hashtable 또는 Vector. 템플릿 변수</dd>
+
+				<dt>content</dt>
+				<dd>String. 메일 본문(템플릿 미사용) 내용</dd>
+
+				<dt>syspayno</dt>
+				<dd>필수, String. 발송자 사번 .세션의 사번을 자동 세팅하도록 처리되어 있다.</dd>
+
+				<dt>business</dt>
+				<dd>필수, enum. 업무구분 코드</dd>
+
+				<dt>savesent</dt>
+				<dd>Boolean. 보낸편지함 저장 여부. 기본 값은 true</dd>
+				
+				<dt>onesend</dt>
+				<dd>Boolean. 일괄발송 여부. 기본 값은 true</dd>
+				
+				<dt>logging</dt>
+				<dd>Boolean. 발송이력 저장 여부. 기본 값은 true</dd>
+			</dl>
+
+
+			<h3>기본 사용법</h3>
+
+<pre class="prettyprint lang-js">com.mail.sendMessage({
+	subject: '플랜 텍스트 일괄 발송 테스트',
+	content: '구매조달 시스템 관련 메일 내용입니다.',
+	fromAddr: '시스템 &lt;eipadmin@kitech.re.kr&gt;',
+	toAddr: 'eipparkji@kitech.re.kr, eipparkbm@kitech.re.kr',
+	// ccAddr: '참조',
+	// bccAddr: '숨은참조',	
+	savesent: true,	// 보낸편지함 저장 여부 (default: true)
+	onesend: true,	// 일괄발송 | 개별발송 (default: true)
+	logging: true,	// 로그 저장 여부 (default: true)
+	business: 'EPU',
+});</pre>
+
+			<h3>활용 예시</h3>
+
+			<h4>템플릿을 이용하여 동적으로 생성된 내용을 여러 수신자에게 발송 - 일괄 발송</h4>
+
+<pre class="prettyprint linenums lang-js">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+var templateVars = [];
+templateVars.push({
+	contentVar: {
+		"@message@": "템플릿 변수에 치환될 메시지",	
+	},				
+});
+// 발송 사전준비 데이터 끝(예시)
+
+com.mail.sendMessage({
+	subject: '템플릿 일괄 발송 테스트',
+	content: '내용',
+	fromAddr: '메일 시스템 &lt;eipadmin@kitech.re.kr&gt;',
+	toAddr: 'eipparkji@kitech.re.kr, eipparkbm@kitech.re.kr',
+	savesent: true,	// 보낸편지함 저장 여부 (default: true)
+	onesend: true,	// 일괄발송 | 개별발송 (default: true)
+	logging: true,	// 로그 저장 여부 (default: true)
+	business: 'CCS',
+	templatePath: 'ccs/CwsNoticeMissTagMail',
+	templateVars: templateVars,
+});</pre>
+
+			<h4>템플릿을 이용하여 동적으로 생성된 내용을 여러 수신자에게 발송 - 개별 발송</h4>
+
+<pre class="prettyprint linenums lang-js">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+var templateVars = [];
+templateVars.push({
+	toAddr: [eipparkji@kitech.re.kr, eipparkbm@kitech.re.kr],	// 수신자 설정
+	contentVar: {
+		"@message@": "템플릿 변수에 치환될 메시지",			
+	},
+});
+// 발송 사전준비 데이터 끝(예시)
+
+com.mail.sendMessage({
+	subject: '템플릿 일괄 발송 테스트',
+	content: '내용',
+	fromAddr: '메일 시스템 &lt;eipadmin@kitech.re.kr&gt;',
+	toAddr: 'abc@kitech.re.kr, def@kitech.re.kr',	// 개별 발송의 경우 무시됨
+	savesent: true,	// 보낸편지함 저장 여부 (default: true)
+	onesend: true,	// 일괄발송 | 개별발송 (default: true)
+	logging: true,	// 로그 저장 여부 (default: true)
+	business: 'CCS',
+	templatePath: 'ccs/CwsNoticeMissTagMail',
+	templateVars: templateVars,
+});</pre>
+
+			<h4>여러 수신자를 대상으로 각자 세부 내용(템플릿 변수)이 다른 메일을 발송 - 개별 발송</h4>
+
+<pre class="prettyprint linenums lang-js">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+// 임시 데이터
+var dataList = [{
+	toAddress: "eipparkji@kitech.re.kr",
+	reqTitle: "게시판에 글쓰기가 안됩니다.",
+	reqDate: "2021년2월15일",
+	reqContntTxt: "게시판에 !!@!#!$!$% 이런 글씨를 썼는데 안되네요",
+	rejectDate: "2021년3월30일",
+	actnPlanTxt: "명확히 알 수 없으므로 반려 처리합니다.",
+	actorName: "결재PL1",
+	actorDept: "전자결재1",					
+}, {
+	toAddress: "eipparkbm@kitech.re.kr",
+	reqTitle: "방명록에 글쓰기가 안됩니다.",
+	reqDate: "2021년2월15일",
+	reqContntTxt: "방명록이 막혀있어요",
+	rejectDate: "2021년3월30일",
+	actnPlanTxt: "기분이 나쁘니까 반려합니다.",
+	actorName: "결재PL2",
+	actorDept: "전자결재2",							
+}];
+
+// 템플릿 변수 설정
+var templateVars = [];
+dataList.forEach(function(data, index){
+	templateVars.push({
+		toAddr: data.toAddress,
+		subjectVar: {
+			"@index@": index.toString(),	
+		},
+		contentVar: {
+			"@reqTitle@": data.reqTitle,
+			"@reqDate@": data.reqDate,
+			"@reqContntTxt@": data.reqContntTxt,
+			"@rejectDate@": data.rejectDate,
+			"@@actnPlanTxt@": data.actnPlanTxt,
+			"@actorName@": data.actorName,
+			"@actorDept@": data.actorDept,					
+		},				
+	});
+});
+// 발송 사전준비 데이터 끝(예시)
+
+com.mail.sendMessage( {
+	subject: '@index@ 템플릿 개별 발송 테스트',
+	content: '내용',
+	fromAddr: '메일 시스템 <eipadmin@kitech.re.kr>',
+	toAddr: 'eipparkji@kitech.re.kr, eipparkbm@kitech.re.kr',
+	// ccAddr: '참조',
+	// bccAddr: '숨은참조',
+	savesent: true,	// 보낸편지함 저장 여부 (default: true)
+	onesend: false,	// 일괄발송 | 개별발송 (default: true)
+	logging: true,	// 로그 저장 여부 (default: true)
+	business: 'CCS',
+	templatePath: 'com/DemandReject',
+	templateVars: templateVars,
+});</pre>
+
+			<h4>전문형식</h4>
+<pre class="prettyprint linenums"><code class="language-xml">&lt;school&gt;
+	&lt;name&gt;James&lt;/name&gt;
+	&lt;age&gt;41&lt;/age&gt;
+&lt;/school&gt;</code>
+</pre>
+		<a id="section4"></a>
+		<h2>Java에서의 사용</h2>
+
+			<h3>MailSender 클래스</h3>
+
+			<p>Java에서 메일발송 API를 사용하기 위해서는 다음과 같이 클래스를 참조를 선언한다.</p>
+			<pre class="prettyprint lang-java">import kr.re.kitech.biz.xom.core.util.MailSender;
+import kr.re.kitech.biz.xom.base.enums.Business;
+import kr.re.kitech.biz.xom.core.model.BizMail;
+import kr.re.kitech.biz.xom.core.vo.MailTemplateVo;</pre>
+
+			<h3>생성자(Builder)</h3>
+
+<pre class="prettyprint lang-java">new BizMail.Builder(String syspayno, Business business, Boolean onesend)
+	.subject(String subject)
+	.content(String content)
+	.toAddr(String toAddr)	// String[] 
+	.ccAddr(String ccAddr)	// String[] 
+	.bccAddr(String bccAddr)	// String[] 
+	.senderEmail(String senderMail)
+	.senderName(String senderName)
+	.templatePath(String templatePath)
+	.templateVars(List&lt;MailTemplateVo&gt; templateVars)
+	.savesent(Boolean saveent)	// 받은 편지함 저장 여부
+	.logging(Boolean logging)	// 로그 저장 여부
+.build();</pre>
+
+			<p>생성자 파라미터 세부 정보는 순서에 따라 다음과 같다.</p>
+			<dl>
+				<dt>syspayno</dt>
+				<dd>필수, String. 발송자 사번</dd>
+
+				<dt>business</dt>
+				<dd>필수, String. 업무구분 코드</dd>
+				
+				<dt>onesend</dt>
+				<dd>필수, Boolean. 일괄발송 여부</dd>
+
+				<dt>subject</dt>
+				<dd>필수, String. 메일 제목</dd>
+				
+				<dt>content</dt>
+				<dd>필수, String. 메일 내용</dd>
+
+				<dt>toAddr</dt>
+				<dd>필수, String 또는 List&lt;String&gt;. 수신자 메일주소</dd>				
+				
+				<dt>ccAddress</dt>
+				<dd>String 또는 List&lt;String&gt;. 참조자 메일주소</dd>
+
+				<dt>bccAddress</dt>
+				<dd>String 또는 List&lt;String&gt;. 숨은참조자 메일주소</dd>
+
+				<dt>senderEmail</dt>
+				<dd>String. 발신자 메일주소</dd>
+
+				<dt>senderName</dt>
+				<dd>String. 발신자 성명</dd>
+
+				<dt>templatePath</dt>
+				<dd>String. 템플릿 경로</dd>
+
+				<dt>templateVars</dt>
+				<dd>Listt&lt;MailTemplateVo&gt;. 수신자별 템플릿 변수</dd>
+				
+				<dt>savesent</dt>
+				<dd>Boolean. 보낸편지함 저장 여부. 기본 값은 true</dd>
+				
+				<dt>logging</dt>
+				<dd>Boolean. 로그 저장 여부. 기본 값은 true</dd>
+			</dl>
+
+			<h3>템플릿 관련 메소드</h3>
+
+<pre class="prettyprint lang-java">@Deprecated public String parse(String templatePath) throws Exception
+@Deprecated public String parse(String templatePath, Map&lt;String, String&gt; templateVars) throws Exception
+@Deprecated public String[] parse(String templatePath, List&lt;Map&lt;String, String&gt;&gt; templateVars) throws Exception</pre>
+
+			<p>파라미터 세부 정보는 다음과 같다.</p>
+			<dl>
+				<dt>templatePath</dt>
+				<dd>필수, String. 템플릿 경로</dd>
+				<dt>templateVars</dt>
+				<dd>Map 또는 List. 템플릿 변수 정보</dd>
+			</dl>
+
+			<h3>메일발송 메소드</h3>
+
+<pre class="prettyprint lang-java">public void sendMessage(BizMail mail)</pre>
+			<p>파라미터 세부 정보는 다음과 같다.</p>
+			<dl>
+				<dt>mail</dt>
+				<dd>필수, BizMail 객체</dd>
+			</dl>
+
+			<h3>기타 메소드</h3>
+
+<pre class="prettyprint lang-java">public String buildSubject(String subject, Map&lt;String, String&gt; templateVar) throws Exception // 발신자 메일주소
+public String buildContent(String templatePath) // 발신자 성명
+public String buildContent(String templatePath, Map<String, String> templateVar) throws Exception // 수신자 메일주소
+</pre>
+			<p>메일 발송에 필요한 각 옵션 요소들을 참조/지정하는 기능 제공 메소드들이며, 자세한 사항은 JavaDoc을 참조</p>
+			<h3>기본 사용법</h3>
+
+<pre class="prettyprint lang-java">@Autowired
+private MailSender mailSender;
+
+
+private List<Boolean> testSendMessage(){
+	return mailSender.sendMessage(
+		String syspayno = KitechContextUtil.getSyspayno();
+		// 행위자 시스템 사번(세션사번), 비즈니스 타입(연구관리), 개별발송여부(true)는 고정 속성
+		new BizMail.Builder(syspayno, Business.RES, true)
+			.senderEmail("연구관리자 &lt;resadmin@kitech.re.kr&gt;")
+			.toAddr("박정일 &lt;eipparkji@kitech.re.kr&gt;")
+			.ccAddr("eip3doc@kitech.re.kr")
+			.bccAddr("eip3pm@kitech.re.kr")
+			.subject("테스트 제목")
+			.content("테스트 내용")
+			.savesent(false)	// 받은 편지함 저장 여부
+			.logging(true)	// 로그 저장 여부
+		.build());
+}</pre>
+			<h3>활용 예시</h3>
+			<h4>템플릿을 이용하여 동적으로 생성된 내용을 여러 수신자에게 발송- 일괄 발송</h4>
+
+<pre class="prettyprint linenums lang-java">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+Map&lt;String, String&gt; contentVar1 = new HashMap&lt;&gt;();
+contentVar1.put("@message@", "참석 바랍니다.");
+MailTemplateVo templateVo1 = new MailTemplateVo();
+templateVo1.setContentVar(contentVar1);
+
+List&lt;MailTemplateVo&gt; templateVars = new ArrayList&lt;&gt;();
+templateVars.add(templateVo1);
+// 발송 사전준비 데이터 끝(예시)
+
+List&lt;Boolean&gt; result = mailSender.sendMessage(
+	// 행위자 시스템 사번(세션사번), 비즈니스 타입(총무보안), 개별발송여부(false)는 필수 속성
+	// 단건의 템플릿이라 할지라도 개별 발송도 가능 함 (onesend = true)
+	new BizMail.Builder(KitechContextUtil.getSyspayno(), Business.CCS, true)
+		.senderEmail("연구관리자 &lt;resadmin@kitech.re.kr&gt;")
+		.toAddr("박정일 &lt;eipparkji@kitech.re.kr&gt;, 박병목 &lt;eipparkbm@kitech.re.kr&gt;")
+		.subject("탬플릿 일괄 발송 테스트")
+		.content("메일 본문입니다.")
+		.savesent(false)	// 받은 편지함 저장 여부
+		.logging(true)	// 로그 저장 여부
+		.templatePath("ccs/CwsNoticeMissTagMail")
+		.templatePath(templateVars)
+	.build());
+Applog.debug("싱글 탬플릿 일괄 발송 테스트 결과: " + result);</pre>
+
+			<h4>템플릿을 이용하여 동적으로 생성된 내용을 여러 수신자에게 발송- 개별 발송</h4>
+
+<pre class="prettyprint linenums lang-java">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+// 템플릿 변수 1
+Map&lt;String, String&gt; contentVar1 = new HashMap&lt;&gt;();
+contentVar1.put("@message@", "게시판에 글쓰기가 안됩니다.111");
+MailTemplateVo templateVo1 = new MailTemplateVo();
+templateVo1.setContentVar(contentVar1);
+templateVo1.setToAddr("eipparkji@kitech.re.kr");
+
+// 템플릿 변수 2
+Map&lt;String, String&gt; contentVar2 = new HashMap&lt;&gt;();
+contentVar2.put("@message@", "게시판에 글쓰기가 안됩니다.222");
+MailTemplateVo templateVo2 = new MailTemplateVo();
+templateVo2.setContentVar(contentVar2);
+templateVo2.setToAddr("eipparkbm@kitech.re.kr");		
+
+List&lt;MailTemplateVo&gt; templateVars = new ArrayList&lt;&gt;();
+templateVars.add(templateVo1);
+templateVars.add(templateVo2);
+// 발송 사전준비 데이터 끝(예시)
+
+List&lt;Boolean&gt; result = mailSender.sendMessage(
+	// 행위자 시스템 사번(세션사번), 비즈니스 타입(총무보안), 개별발송여부(false)는 필수 속성
+	new BizMail.Builder(KitechContextUtil.getSyspayno(), Business.CCS, false)
+		.senderEmail("연구관리자 &lt;resadmin@kitech.re.kr&gt;")
+		.ccAddr("결재PL &lt;eip3bz.pl@kitech.re.kr&gt;")
+		.bccAddr("eip3pm@kitech.re.kr")
+		.subject("탬플릿 개별 발송 테스트")
+		.content("메일 본문입니다.")
+		.savesent(false)	// 받은 편지함 저장 여부
+		.logging(true)	// 로그 저장 여부
+		.templatePath("ccs/CwsNoticeMissTagMail")
+		.templatePath(templateVars)
+	.build());
+Applog.debug("싱글 탬플릿 개별 발송 테스트 결과: " + result);</pre>
+
+			<h4>여러 수신자를 대상으로 각자 세부 내용(템플릿 변수)이 다른 메일을 발송 - 개별 발송</h4>
+
+<pre class="prettyprint linenums lang-java">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+// 첫번째 수신자용 템플릿 변수
+MailTemplateVo templateVo1 = new MailTemplateVo();
+Map&lt;String, String&gt; subjectVar1 = new HashMap&lt;&gt;();
+subjectVar1.put("@userName@", "박정일");
+Map&lt;String, String&gt; contentVar1 = new HashMap&lt;&gt;();
+contentVar1.put("@reqTitle@", "게시판에 글쓰기가 안됩니다.");
+contentVar1.put("@reqDate@", "2021년2월15일");
+contentVar1.put("@reqContntTxt@", "게시판에 !!@!#!$!$% 이런 글씨를 썼는데 안되네요");
+contentVar1.put("@rejectDate@", "2021년3월30일");
+contentVar1.put("@@actnPlanTxt@", "기분이 나쁘니까 반려합니다.");
+contentVar1.put("@actorName@", "결재PL");
+contentVar1.put("@actorDept@", "전자결재");
+
+templateVo1.setToAddr("eipparkji@kitech.re.kr");
+templateVo1.setContentVar(contentVar1);
+templateVo1.setSubjectVar(subjectVar1);
+
+// 두번째 수신자용 템플릿 변수
+MailTemplateVo templateVo2 = new MailTemplateVo();
+Map&lt;String, String&gt; subjectVar2 = new HashMap&lt;&gt;();
+subjectVar2.put("@userName@", "박병목");
+Map&lt;String, String&gt; contentVar2 = new HashMap&lt;&gt;();
+contentVar2.put("@reqTitle@", "게시판에 글쓰기가 안됩니다.");
+contentVar2.put("@reqDate@", "2021년2월15일");
+contentVar2.put("@reqContntTxt@", "게시판에 !!@!#!$!$% 이런 글씨를 썼는데 안되네요");
+
+contentVar2.put("@rejectDate@", "2021년3월30일");
+contentVar2.put("@@actnPlanTxt@", "명확히 알 수 없으므로 반려 처리합니다.");
+contentVar2.put("@actorName@", "결재PL");
+contentVar2.put("@actorDept@", "전자결재");
+
+templateVo2.setToAddr("eipparkbm@kitech.re.kr");
+templateVo2.setContentVar(contentVar2);
+templateVo2.setSubjectVar(subjectVar2);		
+
+List&lt;MailTemplateVo&gt; templateVars = new ArrayList&lt;&gt;();
+templateVars.add(templateVo1);
+templateVars.add(templateVo2);
+// 발송 사전준비 데이터 끝(예시)
+
+List&lt;Boolean&gt; result = mailSender.sendMessage(
+	// 행위자 시스템 사번(세션사번), 비즈니스 타입(시스템), 개별발송여부(false)는 필수 속성
+	// 이 경우 논리적으로 개별 발송만 가능 함 (onesend = false)
+	new BizMail.Builder(KitechContextUtil.getSyspayno(), Business.COM, false)
+		.subject("탬플릿 개별 발송 테스트 @userName@님에게")
+		.toAddr("박정일 &lt;eipparkji@kitech.re.kr&gt;")	// 이 경우 수신자는 무시되고 템플릿 변수에 설정된 수신자로 대체 됨
+		.content("메일 본문입니다.")	// 이 경우 메일 본문의 무시 되고 템플릿에 변수가 바인딩된 컨텐츠로 대체 됨
+		.savesent(false)	// 받은 편지함 저장 여부
+		.logging(true)	// 로그 저장 여부
+		.templatePath("com/DemandReject")
+		.templatePath(templateVars)
+	.build());
+Applog.debug("탬플릿 개별 발송 테스트 결과: " + result);</pre>
+
+		<a id="section5"></a>
+		<h2>발송이력관리 참고사항</h2>
+			<p>시스템을 통한 메일발송에서 발송이력 관리의 중요성에 따라 별도로 이력 저장 기능을 구현해야 하는 불편함을 해소하기 위하여,
+				API에서 호출된 내용은 자동으로 발송 시점에 이력 테이블에 저장하며, 자세한 사항은 다음과 같다.</p>
+			<ul>
+				<li>모든 메일 발송 호출에 대하여 모듈 내부적으로 이력 테이블에 저장된다.</li>
+				<li>수신자(참조자 및 숨은참조자 포함)가 여러 명인 경우 이력 테이블 상에서는
+					콤마(,)로 연결된 단일 문자열로 저장된다.</li>
+				<li>수신자가 여러 명이라도 템플릿 변수 파라미터가 단일 객체 형태라면
+					내부적으로 단건 전송으로 처리되며, 이력 또한 단건으로 저장된다. (예시: 수신자 목록이 노출된 공지성 안내메일)</li>
+				<li>템플릿 변수에 사용된 파라미터가 하나 이상의 객체를 가진 컬렉션 형태라면 API 상 단일 호출이더라도
+					내부적으로 다건 전송으로 처리되며, 개별 발송건 별로 이력이 저장된다. (예시: 급여메일)</li>
+				<li>시스템구분코드 항목은 공통코드 테이블(xodxcommst) 상의 시스템구분 분류(XAA)에 속한 코드 값을 저장한다.</li>
+				<li>작성자 항목은 로그인 세션 상의 개인번호(sn)를 저장한다.</li>
+			</ul>
+			<table>
+				<caption>표: 발송이력 테이블 스키마</caption>
+				<tr><th colspan="4">메일발송이력 MailSendLog</th></tr>
+				<tr><th>로그번호</th><td>＃</td><td>seq_no</td><td>SERIAL</td></tr>
+				<tr><th>메일제목</th><td>＊</td><td>subject</td><td>VARCHAR(255)</td></tr>
+				<tr><th>발신자</th><td>＊</td><td>from_address</td><td>VARCHAR(50)</td></tr>
+				<tr><th>수신자</th><td>＊</td><td>to_address</td><td>LVARCHAR</td></tr>
+				<tr><th>참조자</th><td>○</td><td>cc_address</td><td>LVARCHAR</td></tr>
+				<tr><th>숨은참조자</th><td>○</td><td>bcc_address</td><td>LVARCHAR</td></tr>
+				<tr><th>템플릿경로</th><td>○</td><td>template_path</td><td>VARCHAR(50)</td></tr>
+				<tr><th>로그구분</th><td>＊</td><td>log_type</td><td>CHAR(1) [I] (S(시작) | I(진행) | E(종료))</td></tr>
+				<tr><th>처리결과</th><td>＊</td><td>is_success</td><td>BOOLEAN(1) [false]</td></tr>
+				<tr><th>시스템구분코드</th><td>○</td><td>sysclsf_cd</td><td>CHAR(6)</td></tr>
+				<tr><th>작성자</th><td>＊</td><td>regst_syspayno</td><td>CHAR(8)</td></tr>
+				<tr><th>작성일</th><td>＊</td><td>regst_daytm</td><td>DATETIME [CURRENT YEAR TO SECOND]</td></tr>
+			</table>
+
+	</div>
+</body>
+</html>

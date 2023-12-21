@@ -1,0 +1,1100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="출장비기준등록">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<!-- 출장비기준등록 -->
+				<w2:dataMap baseNode="map" id="dma_insert">
+            		<w2:keyInfo>
+            			<w2:key id="biztrip_clsf" name="출장구분" dataType="text"></w2:key>
+            			<w2:key id="biztrip_expns_clsf" name="출장비용구분" dataType="text"></w2:key>
+            			<w2:key id="region_clsf" name="국외지역" dataType="text"></w2:key>
+            			<w2:key id="start_region" name="출발지역" dataType="text"></w2:key>
+            			<w2:key id="arriv_region" name="도착지역" dataType="text"></w2:key>
+            			<w2:key id="move_dist" name="이동거리" dataType="text"></w2:key>
+            			<w2:key id="grd_clsf" name="직급(코드)" dataType="text"></w2:key>
+            			<w2:key id="biztrip_daycnt" name="출장일수" dataType="text"></w2:key>
+            			<w2:key id="biztrip_fee" name="출장비" dataType="text"></w2:key>
+            			<w2:key id="rmk" name="비고" dataType="text"></w2:key>
+            			<w2:key id="week_biztrip_fee" name="주말출장비" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+            
+			<!-- 저장 -->
+           <xf:submission id="sbm_saveCgs" ref='data:json,dma_insert' action="SvcCCSCTRCTRMR02.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" mode="asynchronous" target="" instance="" replace="" errorHandler="" customHandler="" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+        
+	scwin.onpageload = function() {
+		//공통코드 셋팅
+		let codeOption = [
+			{ code : "FAR", compID : "sbx_expns"},
+			{ code : "FAT", compID : "sbx_startRegion"},
+			{ code : "FAU", compID : "sbx_arrivRegion"},
+			{ code : "FAS", compID : "sbx_regionClsf"},
+			{ code : "FBG", compID : "sbx_grdClsf"},
+		];
+		
+		inputMoveDist.setDisabled(true);
+		inputWeekBiztripFee.setDisabled(true);
+		
+		com.setCmnCd(codeOption, function() {
+		
+//			dma_search.set("biztrip_expns_clsf", biztrip_expns_clsf);
+//			dma_search.set("biztrip_clsf", biztrip_clsf);
+//			dma_search.set("region_clsf", region_clsf);
+//			dma_search.set("start_region", start_region);
+//			dma_search.set("arriv_region", arriv_region);
+//			dma_search.set("grd_clsf", grd_clsf);
+			dma_insert.set("biztrip_daycnt", "0");
+//			dma_search.set("arriv_city_nm", arriv_city_nm);
+//			dma_search.set("biztrip_fee", biztrip_fee);
+//			dma_search.set("week_biztrip_fee", week_biztrip_fee);
+//			dma_search.set("rmk", rmk);
+//			dma_search.set("move_dist", move_dist);
+//			dma_search.set("grd_clsf", grd_clsf);
+//			dma_search.set("biztrip_fee", biztrip_fee);
+//			dma_search.set("week_biztrip_fee", week_biztrip_fee);
+//			dma_search.set("regst_psn_syspayno", regst_psn_syspayno);
+			
+		});
+		
+		
+	};
+	
+	scwin.onpageunload = function() {
+
+	};
+	
+	
+	//저장클릭이벤트
+	scwin.btn_saveCgs_onclick = function() {
+		var tripKnd = dma_insert.get("biztrip_clsf");
+		var sbxExpns = dma_insert.get("biztrip_expns_clsf");
+		if(tripKnd == "FCA001" && sbxExpns == "FAR001") {
+			if(inputBiztripFee.getValue() < "0"){
+				alert("[알림] 주중금액은 0과 같거나 커야 합니다.");
+				inputBiztripFee.focus();
+			}else if(inputWeekBiztripFee.getValue() < "0"){
+				alert("[알림] 주말금액은 0과 같거나 커야 합니다.");
+  				inputWeekBiztripFee.focus();
+			}
+		}
+							
+		scwin.saveCgs();	
+	};
+	
+	//저장
+	scwin.saveCgs = function() {
+			com.execute(sbm_saveCgs, {
+			
+				successCallback : function(e) { // 성공 콜백
+				
+					com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function() {
+						com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+					});
+				}
+			});
+	};
+	
+
+	
+	
+	
+	
+	scwin.vaildCheck = function() {
+			if (dma_carUse.get("charg_syspayno") == com.getLoginInfo("sn") && dma_carUse.get("req_state") == "CGO004") return;
+			
+			var sYmd = selectboxUseOrignYmd.getValue();
+			var eYmd = selectboxUseClsYmd.getValue();
+			var sTime = selectboxUseOrignTime.getValue();
+			var eTime = selectboxUseClsTime.getValue();
+			sTime = sTime.replace(':', '');
+			eTime = eTime.replace(':', '');
+		   	sTime = Number(sTime);
+			eTime = Number(eTime);
+				
+			
+			if (sYmd < getDateStr(toDate) || eYmd < getDateStr(toDate)) {
+				alert("지난 날짜는 예약하실 수 없습니다.");
+				return "N";
+			}
+			
+			if (sYmd > eYmd) {
+				alert("시작일은 종료일보다 커야합니다.");
+				return "N";
+			}
+			
+			if (sYmd == eYmd) {
+				if(sTime >= eTime){
+					alert("시작시간은 종료시간보다 커야합니다.");
+					return "N";
+				}
+			}
+			
+			if(area_list_sel.getValue() == null || area_list_sel.getValue() == '')
+			{
+				alert("신청 지역은 반드시 입력해야 합니다.\n  확인해 주세요!!");	
+				return "N";
+			}
+			
+			if(inputDestin.getValue() == null || inputDestin.getValue() == '')
+			{
+				alert("행선지는 반드시 입력해야 합니다.\n  확인해 주세요!!");	
+				return "N";
+			}
+			
+			if(selectboxCarNm.getValue() == null || selectboxCarNm.getValue() == '')
+			{
+				alert("차량은 반드시 입력 해야 합니다.\n  확인해 주세요!!");	
+				return "N";
+			}
+			
+			if(inputCont.getValue() == null || inputCont.getValue() == '')
+			{
+				alert("사업 목적은 반드시 입력해야 합니다.\n  확인해 주세요!!");	
+				return "N";
+			}
+
+	}
+	
+	scwin.btn_close_onclick = function() {
+		com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+	};	
+	
+	//날짜구하기
+	function getDateStr(date) {
+	    var sYear = date.getFullYear();
+	    var sMonth = date.getMonth() + 1;
+	    var sDate = date.getDate();
+	
+	    sMonth = sMonth > 9 ? sMonth : "0" + sMonth;
+	    sDate  = sDate > 9 ? sDate : "0" + sDate;
+	    return String(sYear) + String(sMonth) + String(sDate);
+	}
+	
+	scwin.btn_return_onclick = function(e) {
+		if (!selectboxUseRtnYmd.getValue()) {
+			com.alert("반납일시는 필수값입니다.");
+			return;	
+		} else {
+			scwin.saveCgs();
+		}
+	};
+	
+	scwin.btn_rcpt_onclick = function(e) {
+		if (!selectboxUseRcvYmd.getValue()) {
+			com.alert("수령일시는 필수값입니다.");
+			return;	
+		} else {
+			scwin.saveCgs();
+		}
+	};
+	
+	scwin.btn_print_onclick = function(e) {
+		// 프린트 버튼은 정상 작동이 불가능 하기에 주척처리
+		var html = grp_printLocaion.render.innerHTML;
+		scwin.printHtml = html;
+		
+		var url = "/ui/com/pop/COM_Z019_00P.xml";
+		var option = { type: "browserPopup", width: 1350, height: 1480, id: "printPop", popupName: "프린트 팝업"};
+		var data = { type : 'print', parentID : scwin.$w.id};
+		com.openPopup(url, option, data);
+		
+//		window.orgDocument = "";
+//		var popupId = $p.getPopupId();
+//		
+//		window.onbeforeprint = function(e) {
+//			window.orgDocument = document.body.innerHTML;
+//			$("body").html(document.getElementById(popupId).innerHTML);
+//		};
+//		
+//		window.onafterprint = function(e) {
+//			$("body").html(window.orgDocument);
+//			window.orgDocument = "";
+//		};
+//		
+//		window.print();
+	};
+	
+	scwin.btn_carRpt_onclick = function(e) {
+		var vusage_dt_fr = selectboxUseOrignYmd.getValue().substr(0,6) + '%';
+		var vcar_no = dma_carUse.get('car_info');
+		
+		if (vcar_no == '') {
+			com.alert('차량을 선택하세요.');	
+			return;
+		} else {
+			var tmp = vcar_no.split(':');
+			var tmpCarNo = "";
+			
+			if (tmp[0].length > 10) {
+				tmpCarNo = tmp[0].substr(0,7);
+			} else {
+				tmpCarNo = tmp[0].substr(2,7);
+			}
+
+			tmpCarNo = tmp[0];
+			
+			var node = "use_orign_ymd=" + vusage_dt_fr + "&car_no=" + tmpCarNo.trim();
+			var reportObj = {
+				ozrCode : "C010",
+				param : node
+			};
+			
+			com.oz.openPopup(reportObj);
+		}
+	};
+	
+	scwin.getTotalAmt = function() {
+		var actualAmt =  Number(dma_carUse.get("arriv_meter")) - Number(dma_carUse.get("start_meter"));
+		
+		dma_carUse.set("mvmnt_dist",actualAmt);
+	};
+	
+	
+	/**
+	 * 출발유량 공백 입력시 0으로 치환
+	 */
+	scwin.start_flow_onchange = function(info) {
+		if(start_flow.getValue() == ""){
+			start_flow.setValue(0);
+		}
+	};
+	
+	/**
+	 * 도착유량 공백 입력시 0으로 치환
+	 */
+	scwin.arriv_flow_onchange = function(info) {
+		if(arriv_flow.getValue() == ""){
+			arriv_flow.setValue(0);
+		}
+	};
+	
+	
+	
+	/**
+	 * 구분 변경시 이벤트
+	 */
+	scwin.ibx_biztrip_expns_clsf_onchange = function(info) {
+		var sbxExpns = dma_insert.get("biztrip_expns_clsf");
+		var tripKnd = dma_insert.get("biztrip_clsf");
+		
+		// 1.운임
+		if(sbxExpns == "FAR001") {			
+			if(tripKnd == "FCA001"){									// 1)국내		
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(false);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(false);							// 도착지(t)
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(false);								// 직급(t)
+				biztripDaycnt.setDisabled(false);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액(t)
+				rmk.setDisabled(false);										// 비고(t)
+				inputWeekBiztripFee.setDisabled(false);						// 주말금액
+			}else if(tripKnd == "FCA002"){								// 2)국외
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(false);							// 국외지역
+				sbx_startRegion.setDisabled(true);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_startRegion.setValue("");
+				sbx_arrivRegion.setValue("");
+				inputMoveDist.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA003"){								// 3)근거리
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}
+		}
+		
+		// 2.일비
+		else if(sbxExpns == "FAR002"){
+			if(tripKnd == "FCA001"){									// 1) 국내
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				inputMoveDist.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA002"){								// 2) 국외
+				sbx_tripKnd.setDisabled(false);								// 출장구분 
+				sbx_regionClsf.setDisabled(false);							// 국외지역
+				sbx_startRegion.setDisabled(true);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_startRegion.setValue("");
+				sbx_arrivRegion.setValue("");
+				inputMoveDist.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA003"){								// 3) 근거리
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}
+		}
+		
+		// 3.숙박비
+		else if(sbxExpns == "FAR003"){
+			if(tripKnd == "FCA001"){									// 1) 국내
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				inputMoveDist.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA002"){								// 2) 국외
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(false);							// 국외지역
+				sbx_startRegion.setDisabled(true);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			}else if(tripKnd == "FCA003"){								// 3) 근거리
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				biztripDaycnt.setValue("0");
+				inputWeekBiztripFee.setValue("");
+			}
+		}
+		
+		// 4.식비
+		else if(sbxExpns == "FAR004"){
+			if(tripKnd == "FCA001"){									// 1) 국내
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				biztripDaycnt.setValue("0");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA002"){								// 2) 국외
+				sbx_regionClsf.setDisabled(false);							// 국외지역
+				sbx_startRegion.setDisabled(true);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_startRegion.setValue("");
+				sbx_arrivRegion.setValue("");
+				sbx_grdClsf.setValue("");
+				biztripDaycnt.setValue("0");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA003"){								// 3) 근거리
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				biztripDaycnt.setValue("0");
+				inputWeekBiztripFee.setValue("");
+			}
+		}
+		
+		// 5.국외준비금
+		else if(sbxExpns == "FAR005"){								
+			sbx_tripKnd.setDisabled(true);								// 출장구분
+			sbx_regionClsf.setDisabled(false);							// 국외지역
+			sbx_startRegion.setDisabled(true);							// 출발지(t)
+			sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+			inputMoveDist.setDisabled(true);							// 이동거리(t)
+			sbx_grdClsf.setDisabled(false);								// 직급
+			biztripDaycnt.setDisabled(false);							// 출장일수
+			inputBiztripFee.setDisabled(false);							// 금액
+			rmk.setDisabled(false);										// 비고
+			inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+			sbx_tripKnd.setValue("FCA002");
+			sbx_startRegion.setValue("");
+			sbx_arrivRegion.setValue("");
+			inputMoveDist.setValue("");
+			inputWeekBiztripFee.setValue("");
+		}
+		
+		// 6.운임(실비), 7. 통행료
+		else if(sbxExpns == "FAR020" || sbxExpns == "FAR021"){		
+			sbx_regionClsf.setDisabled(false);							// 국외지역
+			sbx_startRegion.setDisabled(false);							// 출발지
+			sbx_arrivRegion.setDisabled(false);							// 도착지
+			inputMoveDist.setDisabled(true);							// 이동거리(t)
+			sbx_grdClsf.setDisabled(false);								// 직급
+			biztripDaycnt.setDisabled(false);							// 출장일수
+			inputBiztripFee.setDisabled(false);							// 금액
+			rmk.setDisabled(false);										// 비고
+			inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+			inputMoveDist.setValue("");
+			inputWeekBiztripFee.setValue("");
+		}
+		
+		// 8. 여비(근거리)
+		else if(sbxExpns == "FAR010"){								
+			sbx_tripKnd.setDisabled(true);								// 출장구분
+			sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+			sbx_startRegion.setDisabled(true);							// 출발지(t)
+			sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+			inputMoveDist.setDisabled(true);							// 이동거리(t)
+			sbx_grdClsf.setDisabled(true);								// 직급(t)
+			biztripDaycnt.setDisabled(true);							// 출장일수(t)
+			inputBiztripFee.setDisabled(false);							// 금액
+			rmk.setDisabled(false);										// 비고
+			inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+			sbx_tripKnd.setValue("FCA003");
+			sbx_regionClsf.setValue("");
+			sbx_startRegion.setValue("");
+			sbx_arrivRegion.setValue("");
+			inputMoveDist.setValue("");
+			sbx_grdClsf.setValue("");
+			biztripDaycnt.setValue("0");
+			inputWeekBiztripFee.setValue("");
+		}
+		
+		// 9. 연료비단가(국내)
+		else if(sbxExpns == "FAR015"){								
+			sbx_tripKnd.setDisabled(true);								// 출장구분
+			sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+			sbx_startRegion.setDisabled(true);							// 출발지(t)
+			sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+			inputMoveDist.setDisabled(true);							// 이동거리(t)
+			sbx_grdClsf.setDisabled(true);								// 직급(t)
+			biztripDaycnt.setDisabled(true);							// 출장일수(t)
+			inputBiztripFee.setDisabled(false);							// 금액
+			rmk.setDisabled(false);										// 비고
+			inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+			sbx_tripKnd.setValue("FCA001");
+			sbx_regionClsf.setValue("");
+			sbx_startRegion.setValue("");
+			sbx_arrivRegion.setValue("");
+			inputMoveDist.setValue("");
+			sbx_grdClsf.setValue("");
+			biztripDaycnt.setValue("0");
+			inputWeekBiztripFee.setValue("");
+		}
+	};	
+	
+	
+	/**
+	 * 출장구분 변경시 이벤트
+	 */
+	scwin.ibx_empno_onchange = function(info) {
+		var sbxExpns = dma_insert.get("biztrip_expns_clsf");
+		var tripKnd = dma_insert.get("biztrip_clsf");
+		
+		// 1.운임
+		if(sbxExpns == "FAR001") {			
+			if(tripKnd == "FCA001"){									// 1)국내		
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(false);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(false);							// 도착지(t)
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(false);								// 직급(t)
+				biztripDaycnt.setDisabled(false);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액(t)
+				rmk.setDisabled(false);										// 비고(t)
+				inputWeekBiztripFee.setDisabled(false);						// 주말금액
+			}else if(tripKnd == "FCA002"){								// 2)국외
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(false);							// 국외지역
+				sbx_startRegion.setDisabled(true);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_startRegion.setValue("");
+				sbx_arrivRegion.setValue("");
+				inputMoveDist.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA003"){								// 3)근거리
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}
+		}
+		
+		// 2.일비
+		else if(sbxExpns == "FAR002"){
+			if(tripKnd == "FCA001"){									// 1) 국내
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				inputMoveDist.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA002"){								// 2) 국외
+				sbx_tripKnd.setDisabled(false);								// 출장구분 
+				sbx_regionClsf.setDisabled(false);							// 국외지역
+				sbx_startRegion.setDisabled(true);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_startRegion.setValue("");
+				sbx_arrivRegion.setValue("");
+				inputMoveDist.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA003"){								// 3) 근거리
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}
+		}
+		
+		// 3.숙박비
+		else if(sbxExpns == "FAR003"){
+			if(tripKnd == "FCA001"){									// 1) 국내
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(false);							// 출장일수
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				inputMoveDist.setValue("");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA002"){								// 2) 국외
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(false);							// 국외지역
+				sbx_startRegion.setDisabled(true);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+				inputMoveDist.setDisabled(true);							// 이동거리(t)
+				sbx_grdClsf.setDisabled(false);								// 직급
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			}else if(tripKnd == "FCA003"){								// 3) 근거리
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				biztripDaycnt.setValue("0");
+				inputWeekBiztripFee.setValue("");
+			}
+		}
+		
+		// 4.식비
+		else if(sbxExpns == "FAR004"){
+			if(tripKnd == "FCA001"){									// 1) 국내
+				sbx_tripKnd.setDisabled(false);								// 출장구분
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				biztripDaycnt.setValue("0");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA002"){								// 2) 국외
+				sbx_regionClsf.setDisabled(false);							// 국외지역
+				sbx_startRegion.setDisabled(true);							// 출발지(t)
+				sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_startRegion.setValue("");
+				sbx_arrivRegion.setValue("");
+				sbx_grdClsf.setValue("");
+				biztripDaycnt.setValue("0");
+				inputWeekBiztripFee.setValue("");
+			}else if(tripKnd == "FCA003"){								// 3) 근거리
+				sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+				sbx_startRegion.setDisabled(false);							// 출발지
+				sbx_arrivRegion.setDisabled(false);							// 도착지
+				inputMoveDist.setDisabled(false);							// 이동거리
+				sbx_grdClsf.setDisabled(true);								// 직급(t)
+				biztripDaycnt.setDisabled(true);							// 출장일수(t)
+				inputBiztripFee.setDisabled(false);							// 금액
+				rmk.setDisabled(false);										// 비고
+				inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+				
+				sbx_regionClsf.setValue("");
+				sbx_grdClsf.setValue("");
+				biztripDaycnt.setValue("0");
+				inputWeekBiztripFee.setValue("");
+			}
+		}
+		
+		// 5.국외준비금
+		else if(sbxExpns == "FAR005"){								
+			sbx_tripKnd.setDisabled(true);								// 출장구분
+			sbx_regionClsf.setDisabled(false);							// 국외지역
+			sbx_startRegion.setDisabled(true);							// 출발지(t)
+			sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+			inputMoveDist.setDisabled(true);							// 이동거리(t)
+			sbx_grdClsf.setDisabled(false);								// 직급
+			biztripDaycnt.setDisabled(false);							// 출장일수
+			inputBiztripFee.setDisabled(false);							// 금액
+			rmk.setDisabled(false);										// 비고
+			inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+			sbx_tripKnd.setValue("FCA002");
+			sbx_startRegion.setValue("");
+			sbx_arrivRegion.setValue("");
+			inputMoveDist.setValue("");
+			inputWeekBiztripFee.setValue("");
+		}
+		
+		// 6.운임(실비), 7. 통행료
+		else if(sbxExpns == "FAR020" || sbxExpns == "FAR021"){		
+			sbx_regionClsf.setDisabled(false);							// 국외지역
+			sbx_startRegion.setDisabled(false);							// 출발지
+			sbx_arrivRegion.setDisabled(false);							// 도착지
+			inputMoveDist.setDisabled(true);							// 이동거리(t)
+			sbx_grdClsf.setDisabled(false);								// 직급
+			biztripDaycnt.setDisabled(false);							// 출장일수
+			inputBiztripFee.setDisabled(false);							// 금액
+			rmk.setDisabled(false);										// 비고
+			inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+			inputMoveDist.setValue("");
+			inputWeekBiztripFee.setValue("");
+		}
+		
+		// 8. 여비(근거리)
+		else if(sbxExpns == "FAR010"){								
+			sbx_tripKnd.setDisabled(true);								// 출장구분
+			sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+			sbx_startRegion.setDisabled(true);							// 출발지(t)
+			sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+			inputMoveDist.setDisabled(true);							// 이동거리(t)
+			sbx_grdClsf.setDisabled(true);								// 직급(t)
+			biztripDaycnt.setDisabled(true);							// 출장일수(t)
+			inputBiztripFee.setDisabled(false);							// 금액
+			rmk.setDisabled(false);										// 비고
+			inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+			sbx_tripKnd.setValue("FCA003");
+			sbx_regionClsf.setValue("");
+			sbx_startRegion.setValue("");
+			sbx_arrivRegion.setValue("");
+			inputMoveDist.setValue("");
+			sbx_grdClsf.setValue("");
+			biztripDaycnt.setValue("0");
+			inputWeekBiztripFee.setValue("");
+		}
+		
+		// 9. 연료비단가(국내)
+		else if(sbxExpns == "FAR015"){								
+			sbx_tripKnd.setDisabled(true);								// 출장구분
+			sbx_regionClsf.setDisabled(true);							// 국외지역(t)
+			sbx_startRegion.setDisabled(true);							// 출발지(t)
+			sbx_arrivRegion.setDisabled(true);							// 도착지(t)
+			inputMoveDist.setDisabled(true);							// 이동거리(t)
+			sbx_grdClsf.setDisabled(true);								// 직급(t)
+			biztripDaycnt.setDisabled(true);							// 출장일수(t)
+			inputBiztripFee.setDisabled(false);							// 금액
+			rmk.setDisabled(false);										// 비고
+			inputWeekBiztripFee.setDisabled(true);						// 주말금액(t)
+			
+			sbx_tripKnd.setValue("FCA001");
+			sbx_regionClsf.setValue("");
+			sbx_startRegion.setValue("");
+			sbx_arrivRegion.setValue("");
+			inputMoveDist.setValue("");
+			sbx_grdClsf.setValue("");
+			biztripDaycnt.setValue("0");
+			inputWeekBiztripFee.setValue("");
+		}
+		
+	}
+	
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="grp_contentAll" class="pop_contents">
+    	<xf:group id="grp_printLocaion">
+		    <xf:group class="titleSection pt0" id="" style="">
+		    		<xf:group class="le" id="">
+		    			<w2:textbox class="tit_tbl" id="" label="신청정보" style="" tagname="h3"></w2:textbox>
+		    		</xf:group>
+		    	</xf:group>
+		    	<xf:group class="w2tb tbl" id="" style="" tagname="table">
+		    		<w2:attributes>
+		    			<w2:summary></w2:summary>
+		    		</w2:attributes>
+							<xf:group tagname="caption" text="차량배차신청서 신청정보 상세정보입력"></xf:group>
+		    		<xf:group tagname="colgroup">
+		    			<xf:group style="width:120px;" tagname="col"></xf:group>
+		    			<xf:group style="width: 200px" tagname="col"></xf:group>
+		    			<xf:group style="width:120px;" tagname="col"></xf:group>
+		    			<xf:group style="width: 200px" tagname="col"></xf:group>
+		    			<xf:group style="width:120px;" tagname="col"></xf:group>
+		    			<xf:group style="" tagname="col"></xf:group>
+		    		</xf:group>
+
+		    		<xf:group style="" tagname="tr">
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+		    				<w2:textbox id="" label="구분" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 전체 -" class="sel req"
+		    					direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_expns" ref="data:dma_insert.biztrip_expns_clsf" style="width:190px;"
+		    					submenuSize="auto" title="신청지역" ev:onviewchange="scwin.ibx_biztrip_expns_clsf_onchange">
+		    					<xf:choices>
+<!--		    						<xf:itemset nodeset="data:dlt_carList">-->
+<!--		    							<xf:label ref="rpt"></xf:label>-->
+<!--		    							<xf:value ref="car_no"></xf:value>-->
+<!--		    						</xf:itemset>-->
+		    					</xf:choices>
+		    				</xf:select1>
+		    				
+		    			</xf:group>
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+		    				<w2:textbox id="" label="출장구분" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				
+		    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel req" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_tripKnd" ref="data:dma_insert.biztrip_clsf" style="width:190px;"
+    								submenuSize="auto" title="참석유형" visibleRowNum="10" chooseOptionLabel="- 전체 -" ev:onviewchange="scwin.ibx_empno_onchange" >
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[국내]]></xf:label>
+    										<xf:value><![CDATA[FCA001]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[국외]]></xf:label>
+											<xf:value><![CDATA[FCA002]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[근거리]]></xf:label>
+											<xf:value><![CDATA[FCA003]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+		    				
+		    			</xf:group>
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+		    				<w2:textbox id="" label="국외지역" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 전체 -" class="sel req"
+		    					direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_regionClsf" ref="data:dma_insert.region_clsf"
+		    					style="width:185px;" submenuSize="auto" title="신청지역">
+		    					<xf:choices>
+		    						<xf:itemset nodeset="data:dlt_carList">
+		    							<xf:label ref="rpt"></xf:label>
+		    							<xf:value ref="car_no"></xf:value>
+		    						</xf:itemset>
+		    					</xf:choices>
+		    				</xf:select1>
+		    			</xf:group>
+		    		</xf:group> 
+		    		
+		    		<xf:group style="" tagname="tr">
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+		    				<w2:textbox id="" label="출발지" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 전체 -" class="sel  req"
+		    					direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_startRegion" ref="data:dma_insert.start_region" style="width:190px;"
+		    					submenuSize="auto" title="신청지역">
+		    					<xf:choices>
+		    						<xf:itemset nodeset="data:dlt_carList">
+		    							<xf:label ref="rpt"></xf:label>
+		    							<xf:value ref="car_no"></xf:value>
+		    						</xf:itemset>
+		    					</xf:choices>
+		    				</xf:select1>
+		    			</xf:group>
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+		    				<w2:textbox id="" label="도착지" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 전체 -" class="sel req"
+		    					direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_arrivRegion" ref="data:dma_insert.arriv_region"
+		    					style="width:190px;" submenuSize="auto" title="신청지역">
+		    					<xf:choices>
+		    						<xf:itemset nodeset="data:dlt_carList">
+		    							<xf:label ref="rpt"></xf:label>
+		    							<xf:value ref="car_no"></xf:value>
+		    						</xf:itemset>
+		    					</xf:choices>
+		    				</xf:select1>
+		    			</xf:group>
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:textbox id="" label="이동거리" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<xf:input adjustMaxLength="false" class="inp full" id="inputMoveDist" style="width:185px;" title="신청상태" readOnly="" ref="data:dma_insert.move_dist"></xf:input>
+		    			</xf:group>
+		    		</xf:group> 
+		    		
+		    		
+		    		<xf:group style="" tagname="tr">
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+		    				<w2:textbox id="" label="직급" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 전체 -" class="sel req"
+		    					direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_grdClsf" ref="data:dma_insert.grd_clsf" style="width:190px;"
+		    					submenuSize="auto" title="신청지역">
+		    					<xf:choices>
+		    						<xf:itemset nodeset="data:dlt_carList">
+		    							<xf:label ref="rpt"></xf:label>
+		    							<xf:value ref="car_no"></xf:value>
+		    						</xf:itemset>
+		    					</xf:choices>
+		    				</xf:select1>
+		    			</xf:group>
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:textbox id="" label="출장일수" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<xf:input adjustMaxLength="false" class="inp full" id="biztripDaycnt" readOnly="" ref="data:dma_insert.biztrip_daycnt"
+		    					style="width:190px;" title="신청상태">
+		    				</xf:input>
+		    			</xf:group>
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:textbox id="txt_inputBiztripFee" label="금액" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<xf:input adjustMaxLength="false" class="inp full" id="inputBiztripFee" style="width:185px;" title="신청상태" readOnly="" ref="data:dma_insert.biztrip_fee"></xf:input>
+		    			</xf:group>
+		    		</xf:group> 
+		    		
+		    		
+		    		<xf:group style="" tagname="tr">
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:textbox id="" label="비고" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<w2:attributes>
+		    					<w2:colspan>3</w2:colspan>
+		    					<w2:rowspan>1</w2:rowspan>
+		    				</w2:attributes>
+		    				<xf:input adjustMaxLength="false" class="inp full" id="rmk" readOnly="" ref="data:dma_insert.rmk"
+		    					style="width:510px;" title="신청상태">
+		    				</xf:input>
+		    			</xf:group>
+		    			<xf:group class="w2tb_th" style="" tagname="th">
+		    				<w2:attributes>
+		    					<w2:scope>row</w2:scope>
+		    				</w2:attributes>
+		    				<w2:textbox id="" label="주말금액" style="" tagname="span"></w2:textbox>
+		    			</xf:group>
+		    			<xf:group class="w2tb_td" style="" tagname="td">
+		    				<xf:input adjustMaxLength="false" class="inp full" id="inputWeekBiztripFee" readOnly="" ref="data:dma_insert.week_biztrip_fee"
+		    					style="width:185px;" title="신청상태">
+		    				</xf:input>
+		    			</xf:group>
+		    		</xf:group>
+
+		    	</xf:group>
+		    	
+   	    	</xf:group>
+	    	<xf:group style="" id="" class="btnGroup">
+	    		<xf:group style="" id="" class="le"></xf:group>
+	    		<xf:group id="" class="ri">
+	    			<xf:trigger class="btn pro icon print" id="btn_print" style="display:none;" type="button" ev:onclick="scwin.btn_print_onclick">
+	    				<xf:label><![CDATA[화면인쇄]]></xf:label>
+	    			</xf:trigger>
+	    			<xf:trigger style="" id="btn_saveCgs" type="button" class=" btn pro conf" ev:onclick="scwin.btn_saveCgs_onclick">
+	    				<xf:label><![CDATA[저장]]></xf:label>
+	    			</xf:trigger>
+	    		</xf:group>
+	    	</xf:group>
+    </xf:group></body>
+</html>

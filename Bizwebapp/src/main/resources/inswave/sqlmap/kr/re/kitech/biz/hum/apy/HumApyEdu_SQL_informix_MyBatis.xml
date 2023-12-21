@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<select id="selectHumApyEduList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyEduInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyEduList */ 
+		 a.req_no      --신청번호
+ , a.syspayno
+ , a.req_ymd 
+  , b.empno     --개인번호
+  , b.nm        --성명
+  , b.dept_cd   --부서코드
+  , b.dept_nm   --부서명
+  , b.posi_cd   --직급코드
+  , b.posi_nm   --직급   
+  , a.rmk       --비고
+  , c.apr_state  --결재상태
+  , d.cd_nm AS apr_state_nm --결재상태이름
+FROM 
+     humapybasic a   --기본신청 (학력사항 신청)
+     ,v_humbasicinfo b   --인사정보
+     ,xomxintfatab c
+     , xodxcommst d 
+WHERE a.syspayno = b.syspayno
+      AND a.req_typ='H0A'
+      AND a.req_no = c.req_no
+      AND c.apr_state=d.cd
+      AND c.state_inform_flag = '1'
+        <if test="syspayno != null and syspayno != ''">
+	 and a.syspayno  = #{syspayno}
+</if>
+        <if test="req_no != null and req_no != ''">
+	 and a.req_no LIKE #{req_no}
+</if>
+        <if test="dept_cd != null and dept_cd != ''">
+	 and b.dept_cd  = #{dept_cd}
+</if>
+        <if test="apr_state != null and apr_state != ''">
+	 and c.apr_state  = #{apr_state}
+</if>
+        <if test="req_ymd_from != null and req_ymd_from != ''">
+	 and a.req_ymd  <![CDATA[>=]]>  #{req_ymd_from}
+</if>
+        <if test="req_ymd_to != null and req_ymd_to != ''">
+	 and a.req_ymd   <![CDATA[<=]]>   #{req_ymd_to}
+</if>
+ORDER BY a.req_no DESC
+</select>
+<select id="selectHumApyEduInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyEduInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyEduInfo */ 
+		 a.req_no -- 신청번호
+ , a.req_typ -- 기본신청유형
+ , a.req_ymd -- 신청일
+ , d.nm ||'(' || d.empno ||')' AS req_psn_nm
+ , d.nm
+ , d.empno
+ , fun_posi_nm(d.posi_cd) AS posi_nm
+ , a.syspayno -- 시스템개인번호
+ , a.dept_cd -- 부서코드
+ , a.dept_new_ymd -- 부서신설일
+ , fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm
+ , a.depthed_syspayno -- 부서장시스템개인번호
+ , a.divsn_rspns_syspayno -- 본부장시스템개인번호
+ , a.map_prof_syspayno AS map_prof
+ , a.map_prof_syspayno
+ , fun_emp_nm(a.map_prof_syspayno) AS map_prof_nm
+ , fun_emp_no(a.map_prof_syspayno) AS map_prof_emp_no
+ , a.attach_file_no -- 첨부파일번호
+ , a.attach_file_no_01 -- 첨부파일번호
+ , a.unslip_no
+ , a.regst_syspayno -- 등록시스템개인번호
+ , a.regst_daytm -- 등록일시
+ , a.updt_syspayno -- 수정시스템개인번호
+ , a.updt_daytm -- 수정일시
+ , fun_xodxcommst_cd_nm(b.apr_state,0 ) apr_state_nm
+ , b.apr_state
+ , rmk
+ , secure_plan -- 확보계획
+ , DECODE(NVL(c.cnt, 0), 0, '미생성', '생성') AS plan_yn
+ , e.entr_ymd AS map_prof_entr_ymd
+FROM humapybasic a
+INNER JOIN humbasicinfo d ON a.syspayno = d.syspayno
+INNER JOIN xomxintfatab b ON a.req_no = b.req_no
+LEFT OUTER JOIN (SELECT req_no, count(*) AS cnt FROM humapyarcost WHERE req_no = #{req_no} GROUP BY 1) c ON a.req_no = c.req_no
+LEFT OUTER JOIN humbasicinfo e ON a.map_prof_syspayno = e.syspayno
+WHERE a.req_no = #{req_no}
+AND b.state_inform_flag = '1'
+</select>
+<select id="selectHumApyEduInfoBefore" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduSrchVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyEduInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyEduInfoBefore */ 
+		   educ  
+        ,entsch_yrmon
+        ,gradt_yrmon
+        ,schl_nm
+        ,major
+        ,gradt_state    
+        ,decode(apprvl_educ_yn, 'Y', '1', '0') apprvl_educ_yn
+        ,apprvl_educ_yn apprvl_educ_yn_org
+        ,degr
+        ,lpnt
+         ,loc
+        ,paper_nm
+    FROM humeducinfo
+   WHERE syspayno = #{syspayno}
+   ORDER BY entsch_yrmon desc
+</select>
+<select id="selectHumApyEduInfoAfter" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyEduInfoVo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduSrchVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumRctEduc */ 
+		   educ  
+        ,entsch_yrmon
+        ,gradt_yrmon
+        ,schl_nm
+        ,major
+        ,gradt_state    
+        ,decode(apprvl_educ_yn, 'Y', '1', '0') apprvl_educ_yn
+        ,degr
+        ,paper_nm
+        ,req_no
+        ,lpnt
+        ,loc
+    FROM humrcteduc
+   WHERE req_no = #{req_no}
+   ORDER BY entsch_yrmon DESC
+</select>
+<delete id="deleteHumApyEdu" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduSrchVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyEdu */ 
+  FROM humapybasic
+ WHERE req_no = #{req_no}
+</delete>
+<delete id="deleteHumApyEduAfter" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduSrchVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumRctEduc */ 
+  FROM humrcteduc
+ WHERE req_no = #{req_no}
+<if test="entsch_yrmon != null and entsch_yrmon != ''">
+	 and entsch_yrmon= #{entsch_yrmon}
+</if>
+</delete>
+<insert id="insertHumApyEduInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyEduInfo */ 
+		 INTO humapybasic
+(
+ req_no              -- 신청번호      
+,req_typ                      -- 기본신청유형        
+,req_ymd                      -- 신청일              
+,syspayno                      -- 시스템개인번호      
+,dept_cd                      -- 부서코드            
+,dept_new_ymd                  -- 부서신설일          
+,depthed_syspayno              -- 부서장시스템개인번호
+,divsn_rspns_syspayno          -- 본부장시스템개인번호
+,attach_file_no              -- 첨부파일번호        
+,attach_file_no_01              -- 첨부파일번호        
+,map_prof_syspayno
+,rmk
+,secure_plan                   -- 확보계획
+,regst_syspayno                -- 등록시스템개인번호  
+,regst_daytm   -- 등록일시            
+) VALUES
+(  
+ #{req_no}   
+,#{req_typ}       
+,#{req_ymd}       
+,#{syspayno}       
+,#{dept_cd}       
+,#{dept_new_ymd}       
+,#{depthed_syspayno}
+,#{divsn_rspns_syspayno}       
+,#{attach_file_no}       
+,#{attach_file_no_01}       
+,#{map_prof_syspayno}       
+,#{rmk}
+,#{secure_plan}
+,#{regst_syspayno}
+,current
+)
+</insert>
+<insert id="insertHumApyEduAfter" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyEduAfter */ 
+		 INTO humrcteduc 
+(
+ req_no                       -- 신청번호
+,entsch_yrmon             -- 입학연월
+,gradt_yrmon             -- 졸업연월
+,educ                                 -- 학력
+,schl_nm                           -- 학교명
+,major                              -- 전공
+,gradt_state          -- 졸업상태
+,apprvl_educ_yn      -- 인정학력여부
+,degr                          -- 학위
+,lpnt                          -- 학점
+,loc                          -- 소재지
+,paper_nm                             -- 논문명
+,attach_file_no                  -- 첨부파일번호
+,regst_syspayno           -- 등록시스템개인번호
+,regst_daytm   -- 등록일시
+) VALUES
+(
+ #{req_no}
+,#{entsch_yrmon}
+,#{gradt_yrmon}
+,#{educ}
+,#{schl_nm}
+,#{major}
+,#{gradt_state}
+,decode(#{apprvl_educ_yn}, '1', 'Y', 'N')
+,#{degr}
+,#{lpnt}
+,#{loc}
+,#{paper_nm}
+,#{attach_file_no}
+,#{regst_syspayno}
+,current
+)
+</insert>
+<update id="updateHumApyEduInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyEduInfo */ 
+		 humapybasic SET
+req_ymd = #{req_ymd},
+rmk = #{rmk},
+attach_file_no = #{attach_file_no},
+updt_syspayno = #{updt_syspayno},
+updt_daytm = current
+WHERE req_no = #{req_no}
+</update>
+<delete id="deleteHumApyEduInfoBefore" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyEduInfoBefore */ 
+		 FROM humeducinfo WHERE syspayno = #{syspayno}
+</delete>
+<update id="insertHumApyEduInfoBefore" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyEduInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyEduInfoBefore */ 
+		 INTO humeducinfo( 
+ syspayno             , --시스템개인번호    
+ entsch_yrmon  , --입학연월          
+ gradt_yrmon  , --졸업연월          
+ educ   ,          --학력              
+ schl_nm   , --학교명            
+ major   , --전공              
+ gradt_state  , --졸업상태          
+ apprvl_educ_yn  , --인정학력여부      
+ degr   , --학위   
+ lpnt   , --학점           
+ loc   , --소재지              
+ paper_nm  , --논문명
+ ref_tab,
+ ref_data,            
+ regst_syspayno  , --등록시스템개인번호  
+ regst_daytm   --등록일시 
+)VALUES(
+ #{syspayno}  , --시스템개인번호    
+ #{entsch_yrmon}  , --입학연월          
+ #{gradt_yrmon}  , --졸업연월          
+ #{educ}  ,       --학력              
+ #{schl_nm}  , --학교명            
+ #{major}  , --전공              
+ #{gradt_state}  , --졸업상태            
+decode(#{apprvl_educ_yn}, '1', 'Y', 'N'), --인정학력여부    
+ #{degr}  , --학위   
+ #{lpnt}  , --학점           
+ #{loc}  , --소재지              
+ #{paper_nm}  , --논문명  
+ #{ref_tab}  ,    --참조테이블
+ #{ref_data}  ,    --참조데이터        
+ #{regst_syspayno}  , --등록시스템개인번호  
+ CURRENT  --등록일시 
+)
+</update>
+</mapper>

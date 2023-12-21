@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.ass.com">
+<!-- 자산 사용자 부서 및 관리주체 조회 -->
+<select id="selectAssMngmtBody" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.ass.com.selectAssMngmtBody */
+       DECODE(SUBSTR(t2.dept_cd, 1, 2)
+              , 'C0', 'ARB010'					/* 사업지원실(융합생산) */
+              , 'E0', 'ARB020'					/* 사업지원실(서남) */
+              , 'D0', 'ARB030'					/* 사업지원실(청정생산) */
+              , 'B0', 'ARB040', 'N0', 'ARB040'	/* 사업지원실(뿌리산업) */
+              , 'L0', 'ARB050'					/* 사업운영실(국가청정) */
+              , 'G0', 'ARB070'					/* 사업지원실(동남) */
+              , 'F0', 'ARB080'					/* 사업지원실(대경) */
+              , 'K0', 'ARB100'					/* 사업운영실(국가뿌리) */
+              , 'J0', 'ARB110'					/* 사업지원실(강원) */
+              , 'M0', 'ARB120', 'P0', 'ARB120'	/* 사업운영실(국가산업) */
+              , 'R0', 'ARB130'					/* 사업지원실(울산) */
+              , 'S0', 'ARB140'					/* 사업지원실(전북) */
+              , 'V0', 'ARB001'					/* 사업지원실(제주) */
+              , 'ARB900') AS mngmt_mbody
+FROM humbasicinfo t1
+JOIN xodhdeptinfo t2 ON t1.dept_cd = t2.dept_cd AND t1.dept_new_ymd = t2.dept_new_ymd
+WHERE t1.syspayno = #{syspayno}
+</select>
+<select id="selectBuilding" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ass.com.vo.AssCommVo">
+SELECT /* kr.re.kitech.biz.ass.com.selectBuilding */
+	cd,             
+	cd_nm,
+	mngmt_no_1,     /* 지상 최저 층 */
+	mngmt_no_2,     /* 지상 최고 층 */
+	mngmt_no_3,     /* 지하 최고 층 */
+	mngmt_no_4,     /* 지하 최저 증 */
+	mngmt_no_5      /* 옥상 정보    */
+FROM xodxcommst
+WHERE cd_clsf = 'APA'
+AND mngmt_item_1 = #{mngmt_item_1}
+AND use_ex = 'Y'
+ORDER BY cd
+</select>
+</mapper>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.kbk.lib">
+<!-- MyLivrary 도서구입신청 목록 조회 -->
+<select id="selectLibBookPurcList" resultType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurListSrcVo" parameterType="kr.re.kitech.biz.kbk.lib.vo.LibBookPurListInpVo">
+SELECT /* QueryID : kr.re.kitech.biz.kbk.lib.selectLibBookPurcList */
+      a.req_no
+    , a.centr_cd
+    , t1.cd_nm AS centr_nm
+    , a.ymd
+    , a.book_pur_typ
+    , t2.cd_nm AS book_pur_typ_nm 
+    , a.book_info_url
+    , a.req_qty
+    , a.tot_expns
+    , c.book_nm
+    , a.prcs_state
+    , a.req_psn_syspayno
+    , b.apr_state
+    , t3.cd_nm AS apr_state_nm 	
+    , t4.cd_nm AS prcs_state_nm
+    , t7.nm AS req_psn_syspaynm 
+ FROM kbkbookpurreq a
+ LEFT JOIN xomxintfatab b ON state_inform_flag = '1' AND a.req_no = b.req_no
+ LEFT JOIN kbkbookpurreqlist c ON a.req_no = c.req_no
+ JOIN xodxcommst t1 ON t1.cd = a.centr_cd
+ JOIN xodxcommst t2 ON t2.cd = a.book_pur_typ
+ JOIN xodxcommst t3 ON t3.cd = b.apr_state
+ JOIN xodxcommst t4 ON t4.cd = a.prcs_state
+ JOIN humbasicinfo t7 ON t7.syspayno = a.req_psn_syspayno
+WHERE a.req_psn_syspayno = #{req_psn_syspayno}
+<if test="prcs_state != null and prcs_state != ''"> AND a.prcs_state = #{prcs_state} </if>
+<if test="book_pur_typ != null and book_pur_typ != ''"> AND a.book_pur_typ = #{book_pur_typ} </if>
+<if test="book_nm != null and book_nm != ''">
+   AND a.req_no IN( SELECT req_no 
+                      FROM kbkbookpurreqlist 
+                     WHERE REPLACE(UPPER(book_nm),' ','') LIKE DECODE(#{book_nm},'','%',CONCAT(CONCAT('%',REPLACE(UPPER(#{book_nm}),' ','')),'%'))
+                  )
+</if>   
+ORDER BY req_no DESC
+</select>
+</mapper>

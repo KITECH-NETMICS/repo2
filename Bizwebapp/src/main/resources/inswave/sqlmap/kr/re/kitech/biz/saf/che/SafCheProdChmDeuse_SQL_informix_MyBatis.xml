@@ -1,0 +1,937 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.saf.che">
+
+  <!-- 화학제품폐기관리 리스트 조회 -->
+  <!-- kitech.ccs.csf.xda.SfcDsuseReqstInfoMS01 -->
+  <select id="selectSfaCheProdDsuseReqstList" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSfaCheProdDsuseReqstList */ 
+    sp1.dsuse_req_no,
+    sp2.use_req_no,
+    cs1.lab_nm,
+    cs1.space_cd,
+    cs1.lab_no,
+    sp1.wste_clsf,
+    x1.cd_nm AS wste_clsf_nm,
+    sp1.reqst_syspayno,
+    h1.nm AS reqst_nm,
+    h1.email,
+    sp1.reqst_ymd,
+    sp1.wste_exhst_ymd,
+    xi1.apr_state AS deuse_apr_state,
+     x2.cd_nm AS deuse_apr_state_nm,
+    sp1.dcsn_no,
+    (CASE WHEN his.disposal_state = 'SFI003' THEN sp4.dcsn_daytm
+               ELSE NULL
+    END) AS dcsn_daytm,
+    sp1.unslip_no,
+    sp1.unslip_write_ymd,
+    sp3.prduct_nm,
+    his.disposal_state,
+    (CASE 
+         WHEN his.disposal_state = 'SFI002' AND xi1.apr_state = 'XAD013' THEN '폐기신청 회수' 
+         WHEN his.disposal_state = 'SFI002' AND xi1.apr_state = 'XAD015' THEN '폐기신청 반려'
+         WHEN his.disposal_state = 'SFI002' AND xi1.apr_state = 'XAD010' THEN '폐기신청 작성중' 
+         WHEN his.disposal_state = 'SFI001' THEN '폐기신청 저장'  
+         WHEN his.disposal_state = 'SFI002' THEN '폐기신청 결재중'  
+         WHEN his.disposal_state = 'SFI003' THEN '폐기확정' 
+         WHEN his.disposal_state = 'SFI005' THEN '폐기확정 반려' 
+     END ) AS disposal_state_nm,
+    his.companion_rs,
+    xi1.apr_state as deuse_apr_state,
+    x2.cd_nm as deuse_apr_state_nm   
+ FROM sfcdsusereqstinfo sp1
+JOIN csfspace cs1
+ON sp1.space_cd = cs1.space_cd
+LEFT OUTER JOIN xodxcommst x1
+ON sp1.wste_clsf = x1.cd 
+LEFT OUTER JOIN humbasicinfo h1
+ON sp1.reqst_syspayno = h1.syspayno
+LEFT OUTER JOIN sfcdsuseprductdetail sp2
+ON sp1.dsuse_req_no = sp2.dsuse_req_no
+LEFT OUTER JOIN sfcprductinfo sp3
+ON sp2.prduct_cd = sp3.prduct_cd
+LEFT OUTER JOIN xomxintfatab xi1
+ON sp1.dsuse_req_no = xi1.req_no
+LEFT OUTER JOIN xodxcommst x2
+ON xi1.apr_state = x2.cd AND x2.cd_clsf = 'XAD'
+LEFT OUTER JOIN sfcmakrinfo sm 
+ON sp3.makr_cmpny = sm.makr_cd
+LEFT JOIN sfcprductqyinfo sp4
+ON sp2.use_req_no = sp4.use_req_no
+JOIN xodhdeptinfo d1 
+ON cs1.dept_cd = d1.dept_cd AND cs1.dept_new_ymd = d1.dept_new_ymd
+LEFT OUTER JOIN 
+(
+    SELECT
+        t1.dsuse_req_no , t1.use_req_no, t1.disposal_state, t1.companion_rs
+      FROM sfcdisposalapphistory t1
+      JOIN ( SELECT dsuse_req_no , use_req_no, MAX(regst_daytm) AS regst_daytm
+               FROM sfcdisposalapphistory GROUP BY 1,2
+            ) t2
+        ON t1.use_req_no = t2.use_req_no
+       AND t1.dsuse_req_no = t2.dsuse_req_no
+       AND t1.regst_daytm = t2.regst_daytm
+) his
+ON sp2.dsuse_req_no = his.dsuse_req_no
+AND sp2.use_req_no = his.use_req_no
+WHERE 1 = 1
+AND  ('regist' = #{search_date} AND (sp1.reqst_ymd BETWEEN #{start_ymd} AND #{end_ymd} ) OR ('dcsn' = #{search_date} AND (sp4.dcsn_daytm BETWEEN to_date(#{start_ymd},'%Y%m%d') AND to_date(#{end_ymd},'%Y%m%d') )))
+AND ('' = #{prduct_nm} OR sp3.prduct_nm like '%'||#{prduct_nm}||'%' )
+AND ('' = #{lab_nm} OR cs1.lab_nm like '%'||#{lab_nm}||'%' )
+AND ('' = #{centr_cd} OR cs1.centr_cd = #{centr_cd} ) --센터
+AND ('' = #{req_syspayno} OR sp1.reqst_syspayno = #{req_syspayno} ) --신청자
+AND ('' = #{main_syspayno} OR cs1.main_secrt_rspns_syspayno = #{main_syspayno} ) --연구실책임자
+AND ('' = #{makr_cmpny} OR sm.mark_nm like '%'||#{makr_cmpny}||'%' )
+AND ('' = #{dsuse_req_no} OR sp1.dsuse_req_no = #{dsuse_req_no})
+AND 
+( 'A' = #{manager_yn} OR 
+    (
+        sp1.regst_psn_syspayno = #{syspayno}
+            OR
+        cs1.dept_cd IN (
+            SELECT 
+                DISTINCT dept_cd
+            FROM xodrdeptpurman  
+            WHERE role_type = 'D02'
+            AND syspayno = #{syspayno}
+        )
+    )
+)
+AND ( '' = #{use_req_no} OR sp4.use_req_no like  '%'|| #{use_req_no} ||'%' )
+AND ('' = #{disposal_state} OR his.disposal_state = #{disposal_state})
+<if test="disposal_state =='SFI002'">
+	<choose>
+		<when test="apr_state =='XAD100'">
+AND xi1.apr_state = #{apr_state}
+		</when>
+		<otherwise>
+AND ( xi1.apr_state > 'XAD015' AND xi1.apr_state != 'XAD100')		
+		</otherwise>
+	</choose>
+</if>
+AND ('' = #{wste_exhst_ymd} OR sp1.wste_exhst_ymd = #{wste_exhst_ymd})
+ORDER BY 1,2 DESC,3
+</select>
+
+  <!-- 바코드 입력시 사용번호 상태 조회 -->
+  <!-- kitech.ccs.csf.xda.SfcDsuseInfoSS01 -->
+  <select id="selectSafCheDsuseInfo" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheDsuseInfo */ 
+    sp1.dsuse_req_no,
+    sp2.use_req_no,
+    cs1.lab_nm,
+    cs1.space_cd,
+    cs1.lab_no,
+    sp1.wste_clsf,
+    sp1.reqst_syspayno,
+    sp1.reqst_ymd,
+    sp1.wste_exhst_ymd,
+    xi1.apr_state AS deuse_apr_state,
+    sp4.dcsn_daytm,
+    sp3.prduct_nm,
+    sp4.disposal_state,
+    (CASE 
+         WHEN sp4.disposal_state = 'SFI002' AND xi1.apr_state = 'XAD013' THEN '폐기신청 회수' 
+         WHEN sp4.disposal_state = 'SFI002' AND xi1.apr_state = 'XAD015' THEN '폐기신청 반려'
+         WHEN sp4.disposal_state = 'SFI002' AND xi1.apr_state = 'XAD010' THEN '폐기신청 작성중' 
+         WHEN sp4.disposal_state = 'SFI001' THEN '폐기신청 저장'  
+         WHEN sp4.disposal_state = 'SFI002' THEN '폐기신청 결재중'  
+         WHEN sp4.disposal_state = 'SFI003' THEN '폐기확정' 
+         WHEN sp4.disposal_state = 'SFI005' THEN '폐기확정 반려' 
+     END ) AS disposal_state_nm
+ FROM sfcdsusereqstinfo sp1
+JOIN csfspace cs1
+ON sp1.space_cd = cs1.space_cd
+LEFT OUTER JOIN sfcdsuseprductdetail sp2
+ON sp1.dsuse_req_no = sp2.dsuse_req_no
+LEFT OUTER JOIN sfcprductinfo sp3
+ON sp2.prduct_cd = sp3.prduct_cd
+LEFT OUTER JOIN xomxintfatab xi1
+ON sp1.dsuse_req_no = xi1.req_no
+LEFT JOIN sfcprductqyinfo sp4
+ON sp2.use_req_no = sp4.use_req_no
+WHERE 1 = 1
+AND sp4.use_req_no = #{use_req_no}
+  </select>
+  
+ <!-- 사용자의 부서 유형조회 -->
+ <!-- kitech.ccs.csf.xda.SfcUserDeptTypSS01 -->
+  <select id="selectSfcUserDeptTyp" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSfcUserDeptTyp */ 
+      x2.dept_typ
+  FROM v_humbasicinfo x1
+  JOIN xodhdeptinfo x2
+    ON x1.divsn_dept = x2.dept_cd
+   AND nvl(x2.abol_ymd,'') = ''
+ WHERE syspayno = #{syspayno}
+  </select>
+
+<!-- 폐기신청 상태 정보 수정 -->
+<!-- kitech.ccs.csf.xda.SfcDsuseReqstInfoMU01 -->
+  <update id="updateSfaCheDsuseProdQyStateDynamic" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.saf.che.updateSfaCheDsuseProdQyStateDynamic */ 
+		 sfcprductqyinfo 
+SET disposal_state = #{prdu_state_new}
+<if test="prdu_state_new !=null and prdu_state_new !=''">
+<choose>
+	<when test="prdu_state_new =='SFI005'">
+	, prdu_state = 'SFB010' </when>
+	<when test="prdu_state_new =='SFI003'">
+	, prdu_state = 'SFB020' </when>
+</choose>
+</if>
+ WHERE use_req_no = #{use_req_no} 
+AND space_cd = #{space_cd}
+  </update>
+  
+<!-- 폐기신청 이력관리 저장 (반려/확정에서 호출)-->
+<!-- kitech.ccs.csf.xda.SfcDisposalAppHistorySI01 -->
+  <insert id="insertSafCheDisposalAppHistory" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+insert /* QueryID : kr.re.kitech.biz.saf.che.insertSafCheDisposalAppHistory */ 
+		 into sfcdisposalapphistory values(#{dsuse_req_no},#{space_cd},#{use_req_no},#{prdu_state_new},#{disposal_state_nm},#{companion_rs},#{syspayno},sysdate)
+  </insert>
+ 
+<!-- 폐기등록/변경 -->
+<!-- kitech.ccs.csf.xda.SfcDsuseReqstInfoSI01 -->
+  <update id="insertSfaCheDsuseRequestInfo" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+MERGE /* QueryID : kr.re.kitech.biz.saf.che.insertSfaCheDsuseRequestInfo */ 
+		 INTO  sfcdsusereqstinfo A
+USING DUAL  B
+ON (    A.dsuse_req_no = #{dsuse_req_no} )
+WHEN MATCHED THEN 
+UPDATE
+SET     
+    lab_no =  #{lab_no}, space_cd = #{space_cd}, reqst_ymd = #{reqst_ymd}
+    , reqst_syspayno = #{reqst_syspayno}  , wste_exhst_ymd = #{wste_exhst_ymd} , odr = #{odr} , deuse_gubun = #{deuse_gubun} 
+    , req_no = #{req_no}, wste_clsf = #{wste_clsf} , updt_psn_syspayno = #{regst_psn_syspayno} , 
+     updt_daytm = CURRENT
+WHEN NOT MATCHED THEN 
+INSERT 
+(
+       dsuse_req_no, lab_no, space_cd, reqst_ymd, reqst_syspayno,
+       wste_exhst_ymd, odr , deuse_gubun, req_no, wste_clsf, regst_psn_syspayno, 
+       regst_daytm
+)
+VALUES
+(
+        #{dsuse_req_no}, #{lab_no}, #{space_cd}, #{reqst_ymd}, #{reqst_syspayno},
+        #{wste_exhst_ymd}, #{odr}, #{deuse_gubun}, #{req_no}, #{wste_clsf}, #{regst_psn_syspayno}, 
+        CURRENT
+)
+  </update>
+  
+<!-- 폐기 제품 등록 detail -->
+<!-- kitech.ccs.csf.xda.SfcDsusePrductDetailSI01 -->
+  <insert id="insertSafCheDsusePrductDetail" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.saf.che.insertSafCheDsusePrductDetail */ 
+		 INTO sfcdsuseprductdetail
+    (
+        dsuse_req_no, prduct_knd, req_no, prduct_cd, use_req_no, dsuse_qy, dsuse_attach_file_no, 
+        regst_psn_syspayno , regst_daytm
+    ) 
+ VALUES
+    (   
+        #{dsuse_req_no}, #{prduct_knd}, #{req_no}, #{prduct_cd}, #{use_req_no}, #{dsuse_qy}, #{dsuse_attach_file_no},
+        #{regst_psn_syspayno}, CURRENT
+    )
+  </insert>  
+  
+  
+<!-- 폐기완료 시 업데이트 처리 -->
+<!-- kitech.ccs.csf.xda.SfcDsuseReqstInfoMU03 -->
+  <update id="updateSafChePrductQyComplete" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.saf.che.updateSafCheDsuseReqstInfo */ 
+		 sfcprductqyinfo
+SET 
+    dcsn_daytm = CURRENT,
+    disposal_state = 'SFI003' ,
+    prdu_state = 'SFB020',
+    updt_psn_syspayno= #{updt_psn_syspayno} ,
+    updt_daytm = CURRENT
+WHERE use_req_no = #{use_req_no}
+  </update>
+       
+  <!-- 폐기신청 상태는 다시 처음상태로 복구, 폐기상태 => 사용중으로 변경 (SFB010 => 사용중 , SFB020 => 폐기) -->
+  <!-- kitech.ccs.csf.xda.sfcPrductQyInfoSU01 -->
+  <update id="updateSafChePrductQyState" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.saf.che.updateSafChePrductQyState */ 
+		 sfcprductqyinfo
+SET disposal_state = #{prdu_state_new} , prdu_state = #{prdu_state}
+ WHERE use_req_no = #{use_req_no} 
+AND space_cd = #{space_cd}
+  </update>  
+
+<!-- 폐기 등록 detail-->
+<!-- kitech.ccs.csf.xda.SfcDsuseReqstDetailSI01 -->
+  <insert id="insertSafCheDsuseReqstDetail" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.saf.che.insertSafCheDsuseReqstDetail */ 
+		 INTO sfcdsusereqstdetail
+    (
+        dsuse_req_no, seq, wste_clsf, exhst_reqst_cpcty, unit_clsf, 
+        wste_knd, partclr_matter, attach_file_no, regst_psn_syspayno, regst_daytm
+    ) 
+ VALUES
+    ( 
+        #{dsuse_req_no}, #{seq}, #{wste_clsf}, #{exhst_reqst_cpcty}, #{unit_clsf},
+        #{wste_knd}, #{partclr_matter}, #{attach_file_no}, #{regst_psn_syspayno},CURRENT
+    )
+  </insert>
+  
+   <!-- 폐기신청 메인 정보 삭제(신청삭제시수행)--> 
+   <!-- kitech.ccs.csf.xda.SfcDsuseReqstInfoSD01 -->
+  <delete id="deleteSafCheDsuseReqstInfo" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.saf.che.deleteSafCheDsuseReqstInfo */ 
+		 FROM sfcdsusereqstinfo WHERE dsuse_req_no = #{dsuse_req_no}
+  </delete>  
+  
+   <!-- 폐기신청 상세 정보 삭제(신청삭제시수행)--> 
+   <!-- kitech.ccs.csf.xda.SfcDsuseReqstDetailMD01 -->
+  <delete id="deleteSafCheDsuseReqstDetail" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.saf.che.deleteSafCheDsuseReqstDetail */ 
+		 FROM sfcdsusereqstdetail  WHERE dsuse_req_no = #{dsuse_req_no}
+  </delete>
+  
+  <!-- 폐기신청 화학제품 상세 정보 삭제(신청삭제시수행)-->
+  <!-- kitech.ccs.csf.xda.SfcDsusePrductDetailMD01 -->
+  <delete id="deleteSafCheDsusePrductDetail" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.saf.che.deleteSafCheDsusePrductDetail */ 
+		 FROM sfcdsuseprductdetail  WHERE dsuse_req_no = #{dsuse_req_no}
+  </delete>
+ 
+  <!-- 연구실 상세보기 -->
+  <!-- kitech.ccs.csf.xda.CsfSpaceSS01 --> 
+  <select id="selectSafCheSpace" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafCheProdDsuseSpaceVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheSpace */ 
+              a.space_cd
+            , a.region_cd
+            , x2.cd_nm AS region_nm
+            , a.centr_cd
+            , x1.cd_nm  as centr_nm
+            , a.divsn_cd
+            , a.dept_cd
+            , a.dept_new_ymd
+            , xd3.dept_nm AS dept_nm
+            , xd4.dept_nm  as hsect_nm
+            , a.build_nm
+            , a.build_smal_clsf_nm
+            , a.lab_nm
+            , a.eng_lab_nm
+            , a.roomno
+            , a.area
+            , a.main_secrt_rspns_syspayno
+            , h1.nm AS main_secrt_rspns_nm
+            , h1.empno AS main_secrt_rspns_empno
+            , h1.dept_cd AS main_dept_cd
+            , h1.dept_new_ymd AS main_dept_new_ymd
+            , xd1.dept_nm AS main_dept_nm
+            , a.main_secrt_rspns_ymd
+            , a.sub_secrt_rspns_syspayno
+            , h2.nm AS sub_secrt_rspns_nm
+            , h2.empno AS sub_secrt_rspns_empno
+            , a.sub_secrt_rspns_ymd
+            , h2.dept_cd AS sub_dept_cd
+            , h2.dept_new_ymd AS sub_dept_new_ymd
+            , xd2.dept_nm AS sub_dept_nm
+            , a.space_usg_clsf
+            , fun_xodxcommst_cd_nm(a.space_usg_clsf, 0) as space_usg_clsf_nm
+            , a.aloc_ymd
+            , a.retrn_ymd
+            , a.risk_equip
+            , a.lab_grd
+            , fun_xodxcommst_cd_nm(a.lab_grd, 0) as lab_grd_nm
+            , a.pecu_medexm_yn
+            , fun_xodxcommst_cd_nm(a.pecu_medexm_yn, 0) as pecu_medexm_yn_nm
+            , a.lab_state AS  lab_state
+            , a.attach_file_no
+            , a.rmk
+            , a.regst_psn_syspayno
+            , a.regst_daytm
+            , a.updt_psn_syspayno
+            , a.updt_daytm
+            , nvl(b.user_count, 0) as user_count
+            , a.lab_no
+            , a.lab_chng_rsn
+            , a.address
+            , a.lab_gubun
+            , a.lab_no_arr
+            , a.lab_rmk_arr
+            , h1.mobile AS main_secrt_rspns_mobile
+            , h2.mobile AS sub_secrt_rspns_mobile
+FROM   csfspace a
+JOIN humbasicinfo h1 
+ON a.main_secrt_rspns_syspayno = h1.syspayno
+JOIN xodhdeptinfo xd1
+ON h1.dept_cd = xd1.dept_cd AND h1.dept_new_ymd = xd1.dept_new_ymd
+LEFT OUTER JOIN humbasicinfo h2
+ON a.sub_secrt_rspns_syspayno = h2.syspayno
+LEFT OUTER JOIN xodhdeptinfo xd2
+ON h2.dept_cd = xd2.dept_cd AND h2.dept_new_ymd = xd2.dept_new_ymd
+LEFT OUTER JOIN xodhdeptinfo xd3 
+ON a.dept_cd = xd3.dept_cd AND a.dept_new_ymd = xd3.dept_new_ymd
+LEFT OUTER JOIN xodhdeptinfo xd4
+ON xd3.divsn_dept = xd4.dept_cd AND xd3.divsn_dept_new_ymd = xd4.dept_new_ymd
+LEFT OUTER  JOIN (SELECT count(space_cd) as user_count, space_cd        FROM   csfspaceuser       GROUP BY space_cd ) b ON      a.space_cd = b.space_cd
+LEFT OUTER JOIN xodxcommst x1
+ON a.centr_cd = x1.cd AND x1.cd_clsf = 'HCF'
+LEFT OUTER JOIN xodxcommst x2
+ON a.region_cd = x2.cd AND x2.cd_clsf = 'CSU'
+WHERE   1=1
+AND a.space_cd = #{space_cd}
+  </select>
+
+  <!-- 사용번호 폐기 시 제품 정보 리스트  -->
+  <!-- kitech.ccs.csf.xda.sfcPrductQyInfoMS05 -->
+  <select id="selectSafCheUsePrductQyList" parameterType="kr.re.kitech.biz.saf.che.vo.SafCheSearchVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheUsePrductQyInfo */ 
+    sp1.use_req_no,
+    sp1.req_no,
+    sp1.prduct_cd,
+    sp1.space_cd,
+    sp1.disposal_state,
+    sp2.prduct_nm,
+    sp3.mark_nm as makr_cmpny,
+    sp4.unit_qty as item_unit,
+    SUM(sp1.item_qty) AS item_qty,
+    MAX(sp2.msds_url)  AS msds_url
+FROM sfcprductqyinfo sp1
+JOIN sfcprductinfo sp2
+ON sp1.prduct_cd = sp2.prduct_cd
+LEFT JOIN sfcmakrinfo sp3
+ON sp2.makr_cmpny = sp3.makr_cd
+LEFT JOIN sfcprductinfo sp4
+ON sp1.prduct_cd = sp4.prduct_cd
+WHERE (''= #{infoVo.req_no_chk} OR sp1.use_req_no IN <foreach collection="useReqNoList" item="item" open="(" separator="," close=")"> #{item.use_req_no} </foreach>)
+AND sp1.prdu_state = 'SFB010'
+GROUP BY 1,2,3,4,5,6,7,8
+ORDER BY 1,2,3,4
+  </select>
+  
+  
+  <!-- 제품코드 기준 화학 제품 별 화학물질 -->
+  <!-- kitech.ccs.csf.xda.SfcChmstryInfoMS01 -->
+  <select id="selectSafCheProductChmstryList" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafCheChmstryInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheProductChmstryList */ 
+DISTINCT 
+    sci.chmcls_nm_kr,
+    sci.chmcls_nm_en,
+    sci.cas_no,
+    scsi.specl_manage_mttr
+FROM sfcprductdetail spd 
+JOIN sfcchmclsinfo sci
+ON spd.cas_no = sci.cas_no
+JOIN sfcchmclssafeinfo scsi
+ON sci.cas_no = scsi.cas_no
+WHERE spd.prduct_cd = #{prduct_cd}
+</select>
+   
+  <!--사용번호 기준 화학 제품 별 화학물질 -->
+  <!-- kitech.ccs.csf.xda.SfcChmstryInfoMS05 -->
+  <select id="selectSafCheUseProdChmstryList" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheUseProdChmstryList */ 
+    A.req_no, 
+    A.space_cd, 
+    A.cstdy_lc, 
+    A.prduct_cd, 
+    B.prduct_nm,
+    C.mark_nm as makr_cmpny,
+    A.seq,
+    A.item_qty, 
+    A.item_unit,
+    A.prdu_state,
+    A.use_daytm
+FROM 
+     sfcprductqyinfo A
+JOIN sfcprductinfo B
+ON A.prduct_cd = B.prduct_cd
+LEFT JOIN sfcmakrinfo C
+ON B.makr_cmpny = C.makr_cd
+WHERE 1 = 1
+AND A.use_req_no = #{use_req_no}
+AND A.prdu_state = 'SFB010'
+ORDER BY 1
+  </select>  
+
+  <!-- 폐기 내역 -->
+  <!-- kitech.ccs.csf.xda.SfcDsuseReqstInfoSS01 -->
+  <select id="selectSafCheProdDsuseReqstInfo" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheProdDsuseReqstInfo */ 
+    sd1.dsuse_req_no,
+    sd1.lab_no,
+    sd1.space_cd,
+    cs.lab_nm,
+    sd1.reqst_syspayno,
+    h1.nm AS reqst_nm,
+    h1.mobile AS reqst_mobile,
+    h1.empno AS reqst_empno,
+    xd1.dept_nm AS reqst_dept_nm,
+    xd1.dept_cd AS reqst_dept_cd,
+    xd1.dept_new_ymd AS reqst_dept_new_ymd,
+    sd1.reqst_ymd,
+    sd1.wste_exhst_ymd,
+    sd1.odr,
+    cs.main_secrt_rspns_syspayno,
+    h2.nm AS main_secrt_rspns_nm,
+    h2.mobile AS  main_mobile,
+    h2.empno AS  main_empno,
+    cs.sub_secrt_rspns_syspayno,
+    h3.nm  AS sub_secrt_rspns_nm,
+    h3.mobile AS  sub_mobile,
+    h3.empno AS sub_empno,
+    cs.address,
+    sd1.deuse_gubun,
+    cs.centr_cd,
+    x2.cd_nm AS centr_nm,
+    xd2.dept_nm,
+    cs.dept_cd,
+    cs.dept_new_ymd,
+    sd1.wste_clsf,
+    sd1.req_no,
+    x3.apr_state
+FROM sfcdsusereqstinfo sd1
+JOIN csfspace cs 
+ON sd1.space_cd = cs.space_cd
+LEFT OUTER JOIN xodxcommst xc1
+ON cs.region_cd = xc1.cd
+LEFT OUTER JOIN xodxcommst xc2
+ON cs.build_nm = xc2.cd
+JOIN humbasicinfo h1
+ON sd1.reqst_syspayno = h1.syspayno
+JOIN xodhdeptinfo xd1
+ON h1.dept_cd = xd1.dept_cd
+AND h1.dept_new_ymd = xd1.dept_new_ymd
+JOIN humbasicinfo h2
+ON cs.main_secrt_rspns_syspayno = h2.syspayno
+LEFT OUTER JOIN humbasicinfo h3
+ON cs.sub_secrt_rspns_syspayno = h3.syspayno
+JOIN xodhdeptinfo xd2
+ON cs.dept_cd = xd2.dept_cd
+AND cs.dept_new_ymd = xd2.dept_new_ymd
+JOIN xodxcommst x2 
+ON cs.centr_cd = x2.cd AND x2.cd_clsf = 'HCF'
+JOIN xomxintfatab x3 
+ON sd1.dsuse_req_no = x3.req_no
+WHERE sd1.dsuse_req_no = #{dsuse_req_no}
+  </select>
+  
+  
+  <!-- 폐기 상세 내역 -->
+  <!-- kitech.ccs.csf.xda.SfcDsuseReqstDetailMS01 -->
+  <select id="selectSafCheProdDsuseReqstDetail" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheProdDsuseReqstDetail */ 
+    sd1.dsuse_req_no,
+    sd1.seq,
+    sd1.wste_clsf ,
+    sd1.exhst_reqst_cpcty,
+    sd1.unit_clsf,
+    sd1.wste_knd,
+    sd1.partclr_matter,
+    sd1.attach_file_no
+FROM sfcdsusereqstdetail sd1
+WHERE dsuse_req_no = #{dsuse_req_no}
+ORDER BY sd1.seq
+  </select>
+  
+  
+  <!-- 폐기신청 제품 상세 내역 -->
+  <!-- kitech.ccs.csf.xda.SfcDsusePrductDetailMS01 -->
+  <select id="selectSafCheDsusePrductDetailList" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheDsusePrductDetailList */ 
+		 DISTINCT
+    sd1.use_req_no,
+    sd1.req_no,
+     sd1.dsuse_req_no,
+    sd1.prduct_knd,
+    x2.cd_nm AS  prduct_knd_nm,
+    sd1.prduct_cd,
+    sp2.prduct_nm,
+    sp3.mark_nm as makr_cmpny,
+    x1.cd_nm AS item_unit_nm,
+    sd1.dsuse_attach_file_no,
+    (sd1.dsuse_qy) AS dsuse_qy,
+     SUM(sp2.cpcty_qty) AS cpcty_qty,
+     SUM(sp1.item_qty) AS item_qty,
+    sp2.unit_qty AS item_unit,
+    MAX(sp2.attach_file_no)  AS msds_attach_file_no,
+    sp1.disposal_state AS disposal_state,
+    sp4.companion_rs,
+    x3.apr_state,
+    sp2.msds_url
+FROM sfcdsuseprductdetail  sd1
+JOIN sfcdsusereqstinfo sd2
+ON sd1.dsuse_req_no = sd2.dsuse_req_no
+JOIN sfcprductqyinfo sp1
+ON sd1.use_req_no = sp1.use_req_no
+JOIN sfcprductinfo sp2
+ON sp1.prduct_cd = sp2.prduct_cd
+LEFT OUTER JOIN xodxcommst x1
+ON sp1.item_unit = x1.cd
+LEFT OUTER JOIN xodxcommst x2
+ON sd1.prduct_knd = x2.cd
+LEFT JOIN sfcmakrinfo sp3
+ON sp2.makr_cmpny = sp3.makr_cd
+LEFT JOIN sfcdisposalapphistory sp4
+ON sp4.use_req_no = sd1.use_req_no
+AND sp4.dsuse_req_no = sd1.dsuse_req_no
+AND sp4.regst_daytm  = ( select max(regst_daytm) from sfcdisposalapphistory where use_req_no = sd1.use_req_no AND disposal_state = 'SFI005')
+JOIN xomxintfatab x3
+ON x3.req_no = sd1.dsuse_req_no
+WHERE sd1.dsuse_req_no =  #{dsuse_req_no}
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,14,16,17,18,19
+ORDER BY 1,3,4
+  </select>  
+  
+  <!-- 폐기 기간 설정 조회 -->
+  <!-- kitech.ccs.csf.xda.SfcDsuseDeManageMS02 -->
+  <select id="selectSafCheDsuseDateManage" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheDsuseDateManage */ 
+    A.req_no,
+    A.req_start_ymd,
+    A.req_cls_ymd,
+    A.exhst_ymd,
+    A.odr
+ FROM sfcdsusedemanage A
+JOIN sfcdsusedelablist B
+ON A.req_no = B.req_no
+WHERE B.space_cd = #{space_cd}
+<if test='aprChk == "Y"'> AND
+  a.exhst_ymd >= (SELECT wste_exhst_ymd FROM sfcdsusereqstinfo WHERE dsuse_req_no = #{dsuse_req_no})
+</if>
+<if test='aprChk == "N"'> AND
+  A.exhst_ymd >= TO_CHAR(CURRENT,'%Y%m%d')
+</if>
+  AND #{req_ymd} BETWEEN req_start_ymd AND req_cls_ymd
+ORDER BY 3
+  </select>
+  
+  <!-- 구매, 검수 권한 담당자 조회 -->
+  <!-- kitech.epu.com.xda.XodrEpuManSS02 -->
+  <select id="selectDeptToManager" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectDeptToManager */ 
+    A.syspayno AS syspayno,
+    C.empno AS empno,
+    C.nm AS nm
+FROM xodrdeptpurman A
+JOIN humbasicinfo B
+ON A.dept_cd = B.dept_cd 
+AND A.dept_new_ymd = B.dept_new_ymd
+JOIN humbasicinfo C
+ON A.syspayno = C.syspayno
+WHERE A.role_type = #{role_type}
+AND B.syspayno = #{syspayno}
+  </select>
+  
+  <!-- 화학물질 -->
+  <!-- kitech.ccs.csf.xda.SfcChmclsInfoSS01 -->
+  <select id="selectSafCheLawData" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafCheChmstryInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheLawData */ 
+    sci.cas_no,
+    DECODE(LENGTH(TRIM(sci.chmcls_nm_kr)) , 0, sci.chmcls_nm_en, sci.chmcls_nm_kr) AS chmcls_nm_kr,
+    sci.chmcls_nm_en,
+    sci.dgst_clssf_cl,
+    sci.chmcls_se,
+    sci.regst_psn_syspayno AS regist_syspayno,
+    h1.nm AS regist_nm,
+    h1.empno AS regist_empno,
+    scsi.chmcls_manage_law,
+    scsi.indust_safhel_law,
+    scsi.cl,
+    scsi.cl_detail,
+    scsi.cl_detail2,
+    scsi.specl_manage_mttr    
+FROM sfcchmclsinfo sci
+LEFT OUTER JOIN humbasicinfo h1
+ON sci.regst_psn_syspayno = h1.syspayno
+LEFT OUTER JOIN sfcchmclssafeinfo scsi
+ON sci.cas_no = scsi.cas_no
+WHERE ('' = #{cas_no} OR sci.cas_no = #{cas_no})
+  </select>
+  
+  <!-- 스냅샷용 화학물질 정보 리스트 조회 -->
+  <!-- kitech.ccs.csf.xda.SfcDsusePrductListMS01 -->
+  <select id="selectSafCheDeusePrductSnapList" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafCheChmstryInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheDeusePrductSnapList */ 
+ x4.prduct_nm
+,x3.chmcls_nm_kr
+,x3.chmcls_nm_en
+,x2.cas_no
+,y.prduct_cd
+,y.use_req_no
+FROM sfcdsusereqstinfo x 
+JOIN sfcdsuseprductdetail y
+ON x.dsuse_req_no = y.dsuse_req_no
+JOIN sfcprductdetail x2
+ON y.prduct_cd = x2.prduct_cd
+JOIN sfcchmclsinfo x3
+ON x2.cas_no = x3.cas_no
+JOIN sfcprductinfo x4
+ON y.prduct_cd = x4.prduct_cd
+WHERE 1=1
+and x.dsuse_req_no = #{dsuse_req_no}
+order by 6
+  </select>
+  
+  
+  <!-- 폐기일자 정보 조회 -->
+  <!-- kitech.ccs.csf.xda.SfcDsuseDeManageInfoChkMS01 -->
+  <select id="selectSafCheDsuseDeManageInfoList" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheDsuseDeManageInfoList */ 
+    a.req_start_ymd,
+    a.req_cls_ymd,
+    a.exhst_ymd,
+    a.odr,
+    a.req_no,
+    a.regst_syspayno,
+    a.guidance_matter,
+    c.nm
+  FROM sfcdsusedemanage a
+  JOIN sfcdsusedelablist b
+    ON a.req_no = b.req_no
+  JOIN humbasicinfo c
+    ON a.regst_syspayno = c.syspayno
+ WHERE b.space_cd = #{space_cd}
+   AND a.exhst_ymd = #{exhst_ymd}
+   AND ( #{odr} = '' OR a.odr = #{odr})
+  </select>
+  
+  <!-- 바코드 인식으로 세팅하는 경우 연구실 정보 조회 -->
+  <!-- kitech.ccs.csf.xda.SfcSpaceInfoMS01 -->
+  <select id="selectSafCheSpaceUseReqNoList" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafCheProdDsuseSpaceVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafCheSpaceUseReqNoList */ 
+    c1.space_cd,
+    c1.lab_no,
+    c1.lab_nm,
+    c1.address,
+    c1.centr_cd,
+    x1.cd_nm as centr_nm,
+    x2.dept_nm,
+    c2.user_syspayno,
+    h1.nm as reqst_nm, --소속인원
+    h2.nm as main_secrt_rspns_nm, --연구실책임자
+    h2.empno as main_empno,  --연구실책임자
+    h3.nm as sub_secrt_rspns_nm, --안전관리 담당자
+    h3.empno as sub_empno --안전관리 담당자
+  FROM sfcprductqyinfo s1
+  JOIN csfspace c1
+    ON s1.space_cd = c1.space_cd
+  JOIN csfspaceuser c2
+    ON c1.space_cd = c2.space_cd
+  JOIN xodxcommst x1   --소속
+    ON c1.centr_cd = x1.cd AND x1.cd_clsf = 'HCF' 
+  JOIN xodhdeptinfo x2 --부서
+    ON c1.dept_cd = x2.dept_cd
+   AND c1.dept_new_ymd = x2.dept_new_ymd
+  JOIN humbasicinfo h1 --소속 인원
+    ON c2.user_syspayno = h1.syspayno
+  JOIN humbasicinfo h2 --연구실책임자
+    ON c1.main_secrt_rspns_syspayno = h2.syspayno
+  JOIN humbasicinfo h3 --안전관리담당자
+    ON c1.sub_secrt_rspns_syspayno = h3.syspayno
+WHERE use_req_no = #{use_req_no}
+ORDER BY req_no
+  </select>  
+
+  <!-- 연구실 제품 사용 목록 -->
+  <!-- kitech.ccs.csf.xda.sfcPrductQyInfoMS03 -->
+  <select id="selectSafChePrductQyInfoPopup" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectSafChePrductQyInfoPopup */ 
+		 DISTINCT
+    sp1.req_no,
+    sp1.prduct_cd,
+    sp1.use_req_no,
+    sp1.disposal_state,
+    sp2.prduct_nm,
+    sp1.item_qty,
+    sp1.item_unit,
+    sp1.item_unit AS item_unit_nm,
+    sp2.attach_file_no AS msds_attach_file_no,
+    sm.mark_nm AS makr_cmpny,
+    TRIM(sp2.mixtr_mttr_cd) AS mixtr_mttr_cd,
+    sp2.cpcty_qty,
+    sp2.unit_qty,
+    sp2.purchs_date,
+    sp2.regist_syspayno,
+    h1.nm AS regist_nm,
+    h1.empno AS regist_empno
+FROM sfcprductqyinfo sp1
+JOIN sfcprductinfo sp2
+ON sp1.prduct_cd = sp2.prduct_cd
+LEFT OUTER JOIN sfcprductdetail se2
+ON sp2.prduct_cd = se2.prduct_cd
+LEFT OUTER  JOIN sfcmakrinfo sm
+ON sp2.makr_cmpny = sm.makr_cd
+LEFT OUTER JOIN humbasicinfo h1
+ON sp2.regist_syspayno = h1.syspayno
+LEFT OUTER JOIN sfcchmclsinfo sc
+ON se2.cas_no = sc.cas_no
+WHERE  1 = 1
+AND ('' = #{space_cd} OR sp1.space_cd = #{space_cd})
+AND sp1.prdu_state = 'SFB010'
+AND ( '' = #{prduct_nm} OR sp2.prduct_nm like '%'||#{prduct_nm}||'%')
+AND ( '' = #{makr_cmpny} OR UPPER(sm.mark_nm) like '%'||UPPER(#{makr_cmpny})||'%')
+AND ( '' = #{cas_no} OR se2.cas_no like '%'||#{cas_no}||'%')
+AND ( '' = #{synonm} OR  se2.cas_no in (
+    SELECT cas_no FROM sfcsynonm WHERE synonm like '%'||#{synonm}|| '%'
+))
+AND ('' = #{chmcls_nm} OR UPPER(sc.chmcls_nm_kr) like '%'||UPPER(#{chmcls_nm})||'%' OR UPPER(sc.chmcls_nm_en) like '%'||UPPER(#{chmcls_nm})||'%' )
+AND ( '' = #{use_req_no} OR sp1.use_req_no = #{use_req_no})
+ORDER BY sp1.prduct_cd, sp1.item_qty
+  </select>  
+  
+  <!-- 공통코드 조회 -->
+  <select id="selectListComCode" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.res.com.vo.XodxCommstVo">
+SELECT /* QueryID : kr.re.kitech.biz.saf.che.selectListComCode */ 
+		 cd
+      ,cd_nm
+      ,cd_desc
+      ,cd_clsf
+      ,sys_clsf
+      ,seq
+      ,use_ex
+      ,mngmt_item_1
+      ,mngmt_item_2
+      ,mngmt_item_3
+      ,mngmt_item_4
+      ,mngmt_item_5
+      ,mngmt_item_6
+      ,mngmt_item_7
+      ,mngmt_no_1
+      ,mngmt_no_2
+      ,mngmt_no_3
+      ,mngmt_no_4
+      ,mngmt_no_5
+      ,mngmt_no_6
+      ,mngmt_no_7
+      ,regst_psn_syspayno
+      ,TO_CHAR(regst_daytm,'%Y%m%d%H%M%S') regst_daytm
+      ,updt_psn_syspayno
+      ,TO_CHAR(updt_daytm,'%Y%m%d%H%M%S') updt_daytm
+FROM  xodxcommst
+WHERE 1=1
+<if test="cd != null and cd != ''">
+	 and cd = #{cd}
+</if>
+<if test="cd_clsf != null and cd_clsf != ''">
+	 and cd_clsf = #{cd_clsf}
+</if>
+<if test="mngmt_item_1 != null and mngmt_item_1 != ''">
+	 and mngmt_item_1 = #{mngmt_item_1}
+</if>
+<if test="mngmt_item_1_none != null and mngmt_item_1_none != ''">
+	 and mngmt_item_1 NOT IN (#{mngmt_item_1_none})
+</if>
+<if test="mngmt_item_1_in != null and mngmt_item_1_in != ''">
+	 and mngmt_item_1 IN (#{mngmt_item_1_in})
+</if>
+<if test="mngmt_item_2 != null and mngmt_item_2 != ''">
+	 AND mngmt_item_2 = #{mngmt_item_2}
+</if>
+<if test="mngmt_item_3 != null and mngmt_item_3 != ''">
+	 AND mngmt_item_3 = #{mngmt_item_3}
+</if>
+<if test="mngmt_item_3_null != null and mngmt_item_3_null != ''">
+	 AND mngmt_item_3 IS NOT NULL
+</if>
+<if test="mngmt_item_4 != null and mngmt_item_4 != ''">
+	 AND mngmt_item_4 = #{mngmt_item_4}
+</if>
+<if test="mngmt_item_5 != null and mngmt_item_5 != ''">
+	 AND mngmt_item_5 = #{mngmt_item_5}
+</if>
+<if test="mngmt_item_6 != null and mngmt_item_6 != ''">
+	 AND mngmt_item_6 = #{mngmt_item_6}
+</if>
+<if test="mngmt_item_7 != null and mngmt_item_7 != ''">
+	 AND mngmt_item_7 = #{mngmt_item_7}
+</if>
+<if test="mngmt_item_4_5_between != null and mngmt_item_4_5_between != ''">
+	 AND #{mngmt_item_4_5_between} BETWEEN mngmt_item_4 AND mngmt_item_5
+</if>
+ ORDER BY seq 
+  </select>  
+
+  <!-- 연구실조회 팝업 검색 -->
+  <select id="selectSafCheSpacePopupList" parameterType="kr.re.kitech.biz.saf.che.vo.SafChePrdDsuseInfoVo" resultType="kr.re.kitech.biz.saf.che.vo.SafCheSpaceInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.csf.selectSafCheSpacePopupList */ 
+             a.space_cd
+            ,a.region_cd
+            ,fun_xodxcommst_cd_nm(a.region_cd, 0) region_nm
+            ,a.centr_cd
+            ,fun_xodxcommst_cd_nm(a.centr_cd, 0) as centr_nm
+            ,a.divsn_cd
+            ,a.dept_cd
+            ,a.dept_new_ymd
+            ,d1.dept_nm AS dept_nm
+            ,fun_xodhdeptinfo_divsn_info(a.dept_cd, a.dept_new_ymd) as hsect_nm
+            ,DECODE(LEFT(a.build_nm,3) , 'APA' , x1.cd_nm , a.build_nm) AS build_nm
+            ,a.build_smal_clsf_nm
+            ,a.lab_nm
+            ,a.eng_lab_nm
+            ,a.roomno
+            ,a.area
+            ,a.main_secrt_rspns_syspayno
+            ,h1.nm AS main_secrt_rspns_nm
+            ,a.main_secrt_rspns_ymd
+            ,a.sub_secrt_rspns_syspayno
+            ,h2.nm AS sub_secrt_rspns_nm
+            ,a.sub_secrt_rspns_ymd
+            ,a.space_usg_clsf
+            ,fun_xodxcommst_cd_nm(a.space_usg_clsf, 0) as space_usg_clsf_nm
+            ,a.aloc_ymd
+            ,a.retrn_ymd
+            ,a.risk_equip
+            ,a.lab_grd
+            ,fun_xodxcommst_cd_nm(a.lab_grd, 0) as lab_grd_nm
+            ,a.pecu_medexm_yn
+            ,fun_xodxcommst_cd_nm(a.pecu_medexm_yn, 0) as pecu_medexm_yn_nm
+            ,fun_xodxcommst_cd_nm(a.lab_state, 0) as lab_state
+            ,a.attach_file_no
+            ,a.rmk
+            ,a.regst_psn_syspayno
+            ,a.regst_daytm
+            ,a.updt_psn_syspayno
+            ,a.updt_daytm
+            ,lab_no
+            ,GROUP_CONCAT(cs.user_syspayno) AS user_syspayno_arr
+            ,COUNT(user_syspayno) AS user_count
+FROM   csfspace a
+JOIN humbasicinfo h1 
+ON a.main_secrt_rspns_syspayno = h1.syspayno
+LEFT OUTER JOIN humbasicinfo h2
+ON a.sub_secrt_rspns_syspayno = h2.syspayno
+JOIN xodhdeptinfo d1 
+ON a.dept_cd = d1.dept_cd AND a.dept_new_ymd = d1.dept_new_ymd
+LEFT OUTER JOIN csfspaceuser cs
+ON a.space_cd = cs.space_cd
+LEFT OUTER JOIN xodxcommst x1
+ON a.build_nm = x1.cd AND x1.cd_clsf = 'APA'
+WHERE   1=1
+AND        ('' = #{centr_cd} OR a.centr_cd = #{centr_cd} )
+AND        ('' = #{dept_cd} OR a.dept_cd = #{dept_cd} )
+AND        ('' = #{lab_nm} OR a.lab_nm  LIKE '%'||#{lab_nm}||'%' )
+AND       ('' = #{main_secrt_rspns_syspayno} OR a.main_secrt_rspns_syspayno  = #{main_secrt_rspns_syspayno} )
+AND       ('' = #{lab_grd} OR a.lab_grd  = #{lab_grd} )
+AND       ('' = #{lab_state} OR a.lab_state  = #{lab_state} )
+AND 
+( 'A' = #{manager_yn} OR 
+    (
+        cs.user_syspayno = #{syspayno}
+            OR
+        a.dept_cd IN (
+            SELECT 
+                DISTINCT dept_cd
+            FROM xodrdeptpurman  
+            WHERE role_type = 'D02'
+            AND syspayno = #{syspayno}
+        )
+    )
+)
+AND      a.del_yn != 'Y'
+AND      ('' = #{lab_no} OR a.lab_no LIKE '%'||#{lab_no}||'%' )
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39
+ORDER BY centr_cd, lab_no
+  </select>  
+</mapper>

@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="기타소득 등록">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dlt_data">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="mngmt_yrmon" name="관리연월"></w2:key>
+            			<w2:key dataType="text" id="mngmt_no" name="관리번호"></w2:key>
+            			<w2:key id="resid_no" name="주민번호" dataType="text"></w2:key>
+            			<w2:key id="nm" name="성명" dataType="text"></w2:key>
+            			<w2:key id="addr" name="주소" dataType="text"></w2:key>            		
+            			<w2:key id="resid_clsf" name="거주구분" dataType="text"></w2:key>
+            			<w2:key id="foctr_psn_clsf" name="내국인구분" dataType="text"></w2:key>
+            			<w2:key id="resid_natn_cd" name="국적" dataType="text"></w2:key>
+            			<w2:key id="incom_clsf" name="소득구분코드" dataType="text"></w2:key>
+            			<w2:key id="incom_clsf_nm" name="소득구분" dataType="text"></w2:key>
+            			<w2:key id="pay_ymd" name="지급일자" dataType="text"></w2:key>
+            			<w2:key id="incom_belng_month" name="귀속연월" dataType="text"></w2:key>
+            			<w2:key id="pay_tot_liq" name="지급총액" dataType="text"></w2:key>
+            			<w2:key id="need_expns" name="필요경비" dataType="text"></w2:key>
+            			<w2:key id="incom_amt" name="소득금액" dataType="text"></w2:key>
+            			<w2:key id="incomtax" name="소득세" dataType="text"></w2:key>
+            			<w2:key id="corptax" name="" dataType="text"></w2:key>
+            			<w2:key id="residtax" name="주민세" dataType="text"></w2:key>
+            			<w2:key id="rmk" name="비고" dataType="text"></w2:key>
+            			<w2:key id="req_no" name="적요" dataType="text"></w2:key>
+            			<w2:key id="regst_syspayno" name="등록자" dataType="text"></w2:key>
+            			<w2:key id="regst_daytm" name="등록일시" dataType="text"></w2:key>
+            			<w2:key id="updt_syspayno" name="수정자" dataType="text"></w2:key>
+            			<w2:key id="updt_daytm" name="수정일시" dataType="text"></w2:key>            			
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="mngmt_yrmon" name="관리연월"></w2:key>
+            			<w2:key dataType="text" id="mngmt_no" name="관리번호"></w2:key>
+            			<w2:key id="resid_no" name="주민번호" dataType="text"></w2:key>            			            			            			            	
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>            
+            <!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='data:json,dlt_data' 
+        	    action="SvcFINETCINCOMR02.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	 <!-- 삭제 -->
+    		<xf:submission id="sbm_deleteData" ref='data:json,dma_search'
+    			target='' action="SvcFINETCINCOMD01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+    			processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+    		</xf:submission>    
+    		 <!-- 수정 -->
+    		<xf:submission id="sbm_updateData" ref='data:json,dlt_data'
+    			target='' action="SvcFINETCINCOMU01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+    			processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+    		</xf:submission>  	
+    		<xf:submission id="sbm_insertData" ref='data:json,dlt_data'
+    			target='' action="SvcFINETCINCOMI01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+    			processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+    		</xf:submission> 	
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+	
+		var param = com.getParameter();
+		dma_search.setJSON(param);
+		
+		var codeOptions = [ { code : "FDA", compID :"sbx_natd_cd"},
+							{ code : "FCF", compID :"sbx_etc_cd"}];
+		
+		com.setCmnCd(codeOptions, function() {
+		});
+			
+		if(dma_search.get("mngmt_yrmon") != ""){
+			scwin.search();							
+		}else
+		{
+			var today = com.getServerDateTime();
+			var yrmon = today.substring(0, 8);			
+			ica_mngtyrmon.setValue(yrmon);
+			
+			//sbx_natd_cd.setDisabled(true);	//거주자인경우 대한민국 고정
+			sbx_natd_cd.setValue("FDA001");
+			sbx_etc_cd.setValue("FCF062");
+			rd_infor_clsf.setValue("1");
+			rd_resdns_clsf.setValue("1");
+			btn_delete.hide();		
+			
+		}
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+				
+		com.closePopup(); 
+	};
+	
+	/**
+	 * 조회
+	 */
+
+	scwin.search = function(){
+		com.execute(sbm_selectData, {			
+			successCallback : function(e){
+				if(dlt_data.get("mngmt_no") != ""){
+					ica_mngtyrmon.setDisabled(true);
+				}else{
+					ica_mngtyrmon.setDisabled(false);
+				}
+				
+			}		
+		});
+	};
+	
+	/*
+     * 세액계산
+     */
+	scwin.calTax = function() {
+		if(dlt_data.get("pay_tot_liq") > 125000){
+			dlt_data.set("need_expns", dlt_data.get("pay_tot_liq") *0.6); //필요경비
+			dlt_data.set("incom_amt", dlt_data.get("pay_tot_liq") - dlt_data.get("need_expns"));
+			dlt_data.set("incomtax", dlt_data.get("incom_amt") *0.2);  //소득세
+			dlt_data.set("residtax", dlt_data.get("incomtax") *0.1); //주민세
+		}else{
+			
+			dlt_data.set("need_expns", dlt_data.get("pay_tot_liq") *0.6); //필요경비
+			dlt_data.set("incom_amt", dlt_data.get("pay_tot_liq") - dlt_data.get("need_expns"));
+			dlt_data.set("incomtax", 0);  //소득세
+			dlt_data.set("residtax", 0); //주민세
+			
+		}
+	};
+	
+	/*
+     * 필수항목 체크
+     */
+	scwin.saveCheck = function() {
+		debugger;
+		var validData = [
+			{dataObj : dlt_data
+			   , valInfoArr :[
+				    { id : "mngmt_yrmon", mandatory : true}
+				   ,{ id : "resid_no", mandatory : true } 
+				   ,{ id : "nm", mandatory : true } 
+				   ,{ id : "addr", mandatory : true }
+				   ,{ id : "incom_clsf", mandatory : true } 
+				   ,{ id : "resid_natn_cd", mandatory : true }  
+				   ,{ id : "pay_ymd", mandatory : true } 
+				   ,{ id : "incom_belng_month", mandatory : true }
+				   ,{ id : "pay_tot_liq", mandatory : true }
+				   ,{ id : "need_expns", mandatory : true } 
+				   ,{ id : "incom_amt", mandatory : true } 
+				   ,{ id : "incomtax", mandatory : true } 
+				   ,{ id : "residtax", mandatory : true } 
+				   
+				]
+			  , isCheckModified : false
+			}
+		];
+		
+		
+		if (!com.validateData(validData)) return false;
+		
+		if(dlt_data.get("pay_tot_liq") <= 0){
+			alert("지급총액은 0원 이하힐 수 없습니다.");
+			return false;			
+		}		
+		
+		if(dlt_data.get("resid_clsf") == "1"){
+			if(dlt_data.get("foctr_psn_clsf") == "1"){
+				if(dlt_data.get("resid_no").trim().length < 13){
+					alert("주민등록번호 13자리 입력하시기 바랍니다.");
+					return false;
+				}
+			}
+			if(dlt_data.get("foctr_psn_clsf") == "9"){
+				if(dlt_data.get("resid_no").trim().length < 5){
+					alert("외국인인경우 여권번호 5자리 이상 입력하시기 바랍니다.");
+					return false;
+				}
+			}
+		}else{
+			if(dlt_data.get("resid_no").trim().length < 5){
+					alert("비거주인경우 여권번호 5자리 이상 입력하시기 바랍니다.");
+					return false;
+			}			
+		}
+	
+		if(dlt_data.get("foctr_psn_clsf") == "9"){
+			if(dlt_data.get("resid_natn_cd") == "FDA001"){
+				alert("외국인의 경우 국가코드를 대한민국으로 선택할 수 없습니다.");
+				return false;
+			}			
+		}
+		
+		return true;
+	};
+	
+	/**
+	 * 저장버튼
+	 */
+	scwin.btn_save_onclick = function(e) {
+		scwin.save();
+	};
+	
+	/*
+	* 저장함수
+	*/	
+    scwin.save = function(e) {
+	    
+	   if(!scwin.saveCheck()) return;	
+	    
+	   var mnmgtNo = dlt_data.get("mngmt_no");
+	    
+       com.confirm("message.xom.wq.017"/*저장하시겠습니까?*/, function(ret){
+			if(ret){  
+				if(mnmgtNo != ""){
+					com.execute(sbm_updateData, {
+						successCallback : function(e) {
+							com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function(){
+								//scwin.search();
+								var data ={
+									
+								};
+								com.closePopup(data); 
+							});
+						}						
+					});
+				}
+				else{ 
+					com.execute(sbm_insertData, {
+						successCallback : function(e) {
+							com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function(){
+								//scwin.search();
+								var data ={
+									
+								};
+								com.closePopup(data); 
+							});
+						}						
+					});
+				}
+				
+			}
+		});    	
+    };
+	
+	/**
+	 * 총액입력시 자동계산로직
+	 */
+	scwin.ibx_pay_tot_liq_onviewchange = function(info) {
+		scwin.calTax();
+	};
+	
+	/**
+	 * 삭제
+	 */
+	scwin.btn_delete_onclick = function(e) {		
+		com.confirm("message.xom.wq.022"/*삭제하시겠습니까?*/, function(ret){
+			if(ret){
+				com.execute(sbm_deleteData, {			
+					successCallback : function(e){
+						var data ={
+									
+								};
+						com.closePopup(data); 
+						
+					}
+				});
+			}
+		});
+	};
+	/*
+	* 거주/비거주 이벤트 거주인경우 대한민국 고정
+	*/
+	scwin.rd_resdns_clsf_onviewchange = function(info) {
+		if(dlt_data.get("resid_clsf") == "1"){
+			sbx_natd_cd.setValue("FDA001");
+		//	sbx_natd_cd.setDisabled(true);
+		}else{
+		//	sbx_natd_cd.setDisabled(false);	
+		}	
+	};
+	/*
+	* 주민등록 번호 입력하는 경우
+	*/
+	scwin.ibx_resid_no_onviewchange = function(info) {
+		if(dlt_data.get("mngmt_no") == ""){		
+			dma_search.set("resid_no", dlt_data.get("resid_no"));
+			com.confirm("message.xom.ui.tax.008"/*데이터불러올까요?*/, function(ret){
+				if(ret){
+					scwin.search();
+				}
+			});
+		}
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pop_contents" id="" style="">
+    		<xf:group class="titleSection mt0" id="" style="">
+    			<xf:group class="le" id="">
+    				<w2:textbox class="tit_tbl" id="" label="지급내역" style="" tagname="h3"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    			</xf:group>
+    		</xf:group>
+    		<xf:group tagname="table" style="width:100%;" id="" class="w2tb tbl">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group tagname="col" style="width:180px;"></xf:group>
+    				<xf:group tagname="col" style=""></xf:group>
+    				<xf:group tagname="col" style="width:180px;"></xf:group>
+    				<xf:group tagname="col" style=""></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="관리년월-번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<w2:attributes>
+    						<w2:colspan>1</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonth" class="inpcal  req" focusOnDateSelect="false" footerDiv="false"
+    						id="ica_mngtyrmon" ref="data:dlt_data.mngmt_yrmon" renderDiv="true" rightAlign="false" style="" title="관리년월">
+    					</w2:inputCalendar>
+    					<xf:input adjustMaxLength="false" class="inp full" disabled="true" id="" ref="data:dlt_data.mngmt_no"
+    						style="max-width: 50px;" title="지급대상자">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_th">
+    					<w2:attributes></w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="귀속년월" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonth" class="inpcal  req" focusOnDateSelect="false" footerDiv="false"
+    						id="" ref="data:dlt_data.incom_belng_month" renderDiv="true" rightAlign="false" style="" title="작성일자">
+    					</w2:inputCalendar>
+    				</xf:group></xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="성명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="max-width: 200px;" title="지급대상자" ref="data:dlt_data.nm"></xf:input>
+    				</xf:group>
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="주민(여권)번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input adjustMaxLength="false" class="inp full" id="ibx_resid_no" style="max-width: 200px;" title="주민(여권)번호" ref="data:dlt_data.resid_no" dataType="number" ev:onviewchange="scwin.ibx_resid_no_onviewchange"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="소득구분" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_etc_cd" ref="data:dlt_data.incom_clsf"
+    						style="max-width: 200px;" submenuSize="auto" title="국가코드">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="지급일자" style="" tagname="span" class="blue"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal  req" focusOnDateSelect="false" footerDiv="false"
+    						id="" ref="data:dlt_data.pay_ymd" renderDiv="true" rightAlign="false" style="" title="작성일자">
+    					</w2:inputCalendar>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="주소" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="주소" ref="data:dlt_data.addr"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="지급총액" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input adjustMaxLength="false" class="inp full ri" id="ibx_pay_tot_liq" style="max-width: 200px;" title="지급총액" ref="data:dlt_data.pay_tot_liq" dataType="number" displayFormat="#,###" ev:onviewchange="scwin.ibx_pay_tot_liq_onviewchange"></xf:input>
+    				</xf:group>
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="필요경비" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input adjustMaxLength="false" class="inp full ri" id="" style="max-width: 200px;" title="출장비" ref="data:dlt_data.need_expns" dataType="number" displayFormat="#,###"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="소득금액" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full ri" id="" style="max-width: 200px;" title="지급총액" ref="data:dlt_data.incom_amt" dataType="number" displayFormat="#,###"></xf:input>
+    				</xf:group>
+    				<xf:group tagname="th" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="소득세" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" class="w2tb_td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full ri" id="" style="max-width: 200px;" title="출장비" ref="data:dlt_data.incomtax" dataType="number" displayFormat="#,###"></xf:input>
+    				</xf:group></xf:group><xf:group tagname="tr">
+	<xf:group tagname="th" class="w2tb_th">
+		<w2:attributes>
+			<w2:scope>row</w2:scope>
+		</w2:attributes>
+		<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+		<w2:textbox class="blue" id="" label="주민세" style="" tagname="span"></w2:textbox>
+	</xf:group>
+	<xf:group tagname="td" class="w2tb_td">
+		<w2:attributes></w2:attributes>
+		<xf:input adjustMaxLength="false" class="inp full ri" id="" style="max-width: 200px;" title="지급총액" ref="data:dlt_data.residtax" dataType="number" displayFormat="#,###"></xf:input>
+	</xf:group>
+	<xf:group tagname="th" class="w2tb_th"><w2:attributes><w2:scope>row</w2:scope></w2:attributes></xf:group><xf:group tagname="td" class="w2tb_td"><w2:attributes></w2:attributes></xf:group></xf:group><xf:group tagname="tr">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="국가코드" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-선택-" class="sel"
+    						direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_natd_cd" ref="data:dlt_data.resid_natn_cd" style="max-width: 200px;"
+    						submenuSize="auto" title="국가코드">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox class="blue" id="" label="내/외국인" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:select1 appearance="full" class="radioGroup" cols="" id="rd_infor_clsf" ref="data:dlt_data.foctr_psn_clsf"
+    						renderType="radiogroup" rows="" selectedIndex="-1" style="">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[내국인]]></xf:label>
+    								<xf:value><![CDATA[1]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[외국인]]></xf:label>
+    								<xf:value><![CDATA[9]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="거주/비거주" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:select1 appearance="full" class="radioGroup" cols="" id="rd_resdns_clsf" ref="data:dlt_data.resid_clsf" renderType="radiogroup" rows=""
+    						selectedIndex="-1" style="" ev:onviewchange="scwin.rd_resdns_clsf_onviewchange">
+    						<xf:choices>
+    							<xf:item>
+    								<xf:label><![CDATA[거주]]></xf:label>
+    								<xf:value><![CDATA[1]]></xf:value>
+    							</xf:item>
+    							<xf:item>
+    								<xf:label><![CDATA[비거주]]></xf:label>
+    								<xf:value><![CDATA[2]]></xf:value>
+    							</xf:item>
+    						</xf:choices>
+    					</xf:select1>
+    				</xf:group>
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group tagname="th" style="" class="w2tb_th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="비고" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" style="" title="비고" ref="data:dlt_data.rmk"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="helparea" id="" style="">
+    			<xf:group id="" style="" tagname="ol">
+    				<xf:group id="" tagname="li"></xf:group>
+    			</xf:group>
+    			<xf:group id="" tagname="li" style="">
+    				<w2:textbox class="red" escape="false" id=""
+    					label="거주인경우 국가코드는 대한민국으로 자동 설정됩니다." style="" tagname="span">
+    				</w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="btnGroup" id="" style="">
+    			<xf:group class="le" id="" style=""></xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class=" btn pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro blue" id="btn_delete" style="" type="button" ev:onclick="scwin.btn_delete_onclick">
+    					<xf:label><![CDATA[삭제]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro blue" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

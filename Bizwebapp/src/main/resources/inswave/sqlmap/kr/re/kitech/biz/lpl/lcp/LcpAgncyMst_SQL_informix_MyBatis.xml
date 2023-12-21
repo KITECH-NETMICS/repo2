@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.lpl.lcp">
+  <select id="selectLcpAgncyMst" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpAgncyMstVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpAgncyMstVo">
+/* XDA : kitech.lpl.lcp.xda.LcpAgncyMstMS08 대외협력조회 기관목록조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpAgncyMst */ 
+    cust_no, natn_nm, cmpy_nm_krchar||'<![CDATA[<br/><font color=#4682b4>'||cmpy_nm_eng||'</font>']]>   as cmpy_nm   
+from sptcustbaseinfo
+where cmpy_typ = 'RZB100'
+and natn_cd like '%' || #{natn_cd} || '%' 
+and agncy_clsf like '%' || #{agncy_clsf} || '%' 
+and (cmpy_nm_krchar like '%' || #{agncy_nm} || '%' or cmpy_nm_krchar_odr like '%' || #{agncy_nm} || '%' or cmpy_nm_eng like '%' || #{agncy_nm} || '%' or cmpy_nm_eng_short like '%' || #{agncy_nm} || '%')
+<if test='mou_cntnt != null and mou_cntnt != ""'> and
+ cust_no in (
+            select agncy_cd 
+            from lcpmoudomagency
+            where mou_no in (
+                            select mou_no 
+                            from lcpmoudom
+                            where mou_subj like '%' || #{mou_cntnt} || '%' 
+                            union
+                            select mou_no 
+                            from lcpmouintrn
+                            where mou_subj like '%' || #{mou_cntnt} || '%' or mou_contnt like '%' || #{mou_cntnt} || '%'
+                            )
+            )
+</if>
+<if test='gubun == "MOU"'> and 
+ cust_no in (select agncy_cd from lcpmoudomagency)
+ </if>
+<if test='gubun == "RES"'> and 
+ cust_no in (select distinct a.cust_no from sptcustbaseinfo a, resinppaco b where a.relat_vend_cd = b.vend_cd)
+ </if>
+<if test='gubun == "TRIP"'> and 
+ cust_no in (select agncy_cd_1 from ctrover where trim(agncy_cd_1) != ''
+        union
+        select agncy_cd_2 from ctrover where trim(agncy_cd_2) != ''
+        union
+        select agncy_cd_3 from ctrover where trim(agncy_cd_3) != '')
+ </if>
+<if test='gubun == "VIP"'> and 
+ cust_no in (select distinct agncy_cd from lcpvipaudencagncy)
+ </if>
+<if test='gubun == "EVNT"'> and 
+ cust_no in (select distinct agncy_cd from lcpeventagncy)
+ </if>
+order by natn_nm, cmpy_nm_krchar
+  </select>
+  <select id="selectLcpAgncyMstForm" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpAgncyMstFormVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpAgncyMstFormVo">
+/* XDA : kitech.lpl.lcp.xda.LcpAgncyMstSS01 대외협력조회 기관헤더조회 및 목록별 건수조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpAgncyMstForm */ 
+    a.cust_no, a.agncy_nm, a.natn_nm, a.cmpy_nm_krchar, a.cmpy_nm_eng, a.cmpy_nm_eng_short, a.addr, a.homepg, a.rmk,
+    b.moucnt, b.rescnt, b.tripcnt, b.vipcnt, b.eventcnt, b.suptcnt, b.studycnt
+from
+    (
+    select  --기관헤더정보
+        cust_no, 
+        fun_xodxcommst_cd_nm(agncy_clsf, 0) as agncy_nm,
+        nvl(natn_nm, '') as natn_nm,
+        nvl(cmpy_nm_krchar, '') as cmpy_nm_krchar,
+        nvl(cmpy_nm_eng, '') as cmpy_nm_eng,
+        nvl(cmpy_nm_eng_short, '') as cmpy_nm_eng_short,
+        nvl(cmpy_addr, '')||' '||nvl(cmpy_addr_detls, '') as addr,
+        nvl(homepg, '') as homepg,
+        nvl(rmk, '') as rmk
+    from sptcustbaseinfo
+    where cmpy_typ = 'RZB100'
+    and cust_no = #{agncy_cd}
+    ) a, 
+    (
+    select
+        sum(moucnt) as moucnt, sum(rescnt) as rescnt, sum(tripcnt) as tripcnt, 
+        sum(vipcnt) as vipcnt, sum(eventcnt) as eventcnt, sum(suptcnt) as suptcnt, sum(studycnt) as studycnt 
+    from
+        (
+        select  --국내협약
+            '' as cust_no, '' as agncy_nm, '' as natn_nm, '' as cmpy_nm_krchar, '' as cmpy_nm_eng, 
+            '' as cmpy_nm_eng_short, '' as addr, '' as homepg, '' as rmk,
+            count(mou_no) as moucnt,
+            0 as rescnt, 0 as tripcnt, 0 as vipcnt, 0 as eventcnt, 0 as suptcnt, 0 as studycnt 
+        from lcpmoudom
+        where mou_no in (
+                         select mou_no from lcpmoudomagency
+                         where agncy_cd = #{agncy_cd}
+                         )
+        union all
+        select   --국제협약
+            '' as cust_no, '' as agncy_nm, '' as natn_nm, '' as cmpy_nm_krchar, '' as cmpy_nm_eng, 
+            '' as cmpy_nm_eng_short, '' as addr, '' as homepg, '' as rmk,
+            count(mou_no) as moucnt,
+            0 as rescnt, 0 as tripcnt, 0 as vipcnt, 0 as eventcnt, 0 as suptcnt, 0 as studycnt 
+        from lcpmouintrn
+        where mou_no in (
+                        select mou_no from lcpmoudomagency
+                        where agncy_cd = #{agncy_cd}
+                        )
+        union all
+        select  --공동연구
+            '' as cust_no, '' as agncy_nm, '' as natn_nm, '' as cmpy_nm_krchar, '' as cmpy_nm_eng, 
+            '' as cmpy_nm_eng_short, '' as addr, '' as homepg, '' as rmk,
+            0 as moucnt,
+            count(a.prj_no) as prj_no,
+            0 as tripcnt, 0 as vipcnt, 0 as eventcnt, 0 as suptcnt, 0 as studycnt 
+        from resinpmast a, outer resinppare b, outer resbgacctm c
+        where a.prj_no = b.prj_no
+        and a.prj_no = c.prj_no
+        and a.prj_no in (
+                        select distinct prj_no from resinppaco
+                        where vend_cd in ( 
+                                   select relat_vend_cd  --운영필드추가후 수정필요
+                                   from sptcustbaseinfo
+                                   where cust_no = #{agncy_cd}
+                                  )
+                         )
+        and a.prj_state != 'RBA005'  --과제상태 : 취소
+        and b.reschr_clsf = 'RAL001' --과제책임자
+        and c.accnt_clsf = 'RAR001'  --메인계정
+        union all
+        select  --귀빈접견
+            '' as cust_no, '' as agncy_nm, '' as natn_nm, '' as cmpy_nm_krchar, '' as cmpy_nm_eng, 
+            '' as cmpy_nm_eng_short, '' as addr, '' as homepg, '' as rmk,
+            0 as moucnt, 0 as prj_no, 0 as tripcnt, 
+            count(audenc_no) as vipcnt, 
+            0 as eventcnt, 0 as suptcnt, 0 as studycnt 
+        from lcpvipaudenc
+        where audenc_no in (select audenc_no from lcpvipaudencagncy where agncy_cd = #{agncy_cd})
+        union all
+        select  --해외출장
+            '' as cust_no, '' as agncy_nm, '' as natn_nm, '' as cmpy_nm_krchar, '' as cmpy_nm_eng, 
+            '' as cmpy_nm_eng_short, '' as addr, '' as homepg, '' as rmk,
+            0 as moucnt, 0 as prj_no, 
+            count(req_no) as tripcnt, 
+            0 as vipcnt, 0 as eventcnt, 0 as suptcnt, 0 as studycnt 
+        from ctrover
+        where agncy_cd_1 = #{agncy_cd} or agncy_cd_2 = #{agncy_cd} or agncy_cd_3 = #{agncy_cd}
+        and req_no not in (select biztrip_req_no from ctroverrep where chng_resn = 'FBQ020')
+        )
+    ) b
+  </select>
+  <select id="selectLcpMouDomTab" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpAgncyMstVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpMouDomTabVo">
+/* XDA : kitech.lpl.lcp.xda.LcpMouDomMS03 대외협력기관조회 (국내협약조회) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpMouDomTab */ 
+    mou_no, type, mou_contrct_ymd, mou_subj, mou_cls_ymd, valitation_yn, mou_term, mou_contnt, rmk, krchar_agncy_nm, mou_knd
+from
+    (
+    SELECT    
+        d.mou_no
+        ,'국내협약' as type
+        ,d.mou_contrct_ymd
+        ,d.mou_subj
+        ,d.mou_cls_ymd 
+        , case when d.mou_cls_ymd <![CDATA[ >= ]]>  to_char(sysdate, '%Y%m%d') then '유효' 
+                        when d.mou_cls_ymd  == "" then '유효' 
+                        when d.mou_cls_ymd <![CDATA[ < ]]> to_char(sysdate, '%Y%m%d')  then '만료' end as valitation_yn       
+        ,trim(substr(d.mou_contrct_ymd, 1, 4)||'-'||substr(d.mou_contrct_ymd, 5, 2)||'-'||substr(d.mou_contrct_ymd, 7, 2) || ' ~ ' ||
+             case when d.mou_cls_ymd != '' then substr(d.mou_cls_ymd, 1, 4)||'-'||substr(d.mou_cls_ymd, 5, 2)||'-'||substr(d.mou_cls_ymd, 7, 2)
+             else ' - - ' end)  as mou_term
+        ,d.mou_contnt 
+        ,d.rmk 
+        ,b.cmpy_nm_krchar as krchar_agncy_nm
+        ,fun_xodxcommst_cd_nm(mou_knd, 0) as mou_knd
+    FROM lcpmoudom d  JOIN 
+         (SELECT a.mou_no,a.agncy_cd, c.cmpy_nm_krchar, c.agncy_clsf, c.cmpy_nm_eng
+          FROM   lcpmoudomagency a 
+          JOIN (SELECT cust_no, cmpy_nm_krchar, agncy_clsf, cmpy_nm_eng
+                FROM sptcustbaseinfo
+                WHERE natn_cd ='FDA001'
+                and cust_no = #{agncy_cd}
+                ) c ON a.agncy_cd = c.cust_no                             
+         ) b ON d.mou_no = b.mou_no
+    WHERE d.mou_no in (
+                  select mou_no from lcpmoudomagency
+                  where agncy_cd = #{agncy_cd}
+                  )
+    UNION ALL
+    SELECT    
+        a.mou_no
+        ,'국제협약' as type
+        ,a.mou_contrct_ymd
+        ,a.mou_subj
+        ,a.mou_cls_ymd 
+        ,fun_xodxcommst_cd_nm(a.contrct_state, 0) as valitation_yn 
+        ,  trim(substr(a.mou_contrct_ymd, 1, 4)||'-'||substr(a.mou_contrct_ymd, 5, 2)||'-'||substr(a.mou_contrct_ymd, 7, 2) || ' ~ ' ||
+             case when a.mou_cls_ymd != '' then substr(a.mou_cls_ymd, 1, 4)||'-'||substr(a.mou_cls_ymd, 5, 2)||'-'||substr(a.mou_cls_ymd, 7, 2) 
+             else ' - - ' end) as mou_term
+        ,a.mou_contnt 
+        ,a.rmk 
+        ,b.cmpy_nm_krchar as krchar_agncy_nm
+        ,fun_xodxcommst_cd_nm(mou_knd, 0) as mou_knd
+    FROM lcpmouintrn a  
+         JOIN (SELECT a.mou_no,a.agncy_cd, c.cmpy_nm_krchar, c.agncy_clsf, c.cmpy_nm_eng
+               FROM lcpmoudomagency a 
+                JOIN (SELECT cust_no, cmpy_nm_krchar, agncy_clsf, cmpy_nm_eng
+                      FROM sptcustbaseinfo    
+                      WHERE natn_cd != 'FDA001'
+                      and cust_no = #{agncy_cd}                                                                 
+                     ) c ON a.agncy_cd = c.cust_no
+              ) b ON a.mou_no = b.mou_no
+    WHERE a.mou_no in (
+                   select mou_no from lcpmoudomagency
+                   where agncy_cd = #{agncy_cd}
+                   )
+    )
+order by mou_contrct_ymd desc, mou_subj
+  </select>
+  <select id="selectResinpMastTab" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpAgncyMstVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.ResinpMastTabVo">
+/* XDA : kitech.lpl.lcp.xda.ResinpMastMS01 대외기관협력(공동연구) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectResinpMastTab */ 
+    a.prj_no,
+    a.tot_resch_prd_orign_ymd,
+    a.tot_resch_prd_cls_ymd,
+    c.start_ymd,
+    c.cls_ymd,
+    a.prj_nm,
+    a.prj_eng_nm,
+    a.mou_ymd,
+    CAST((
+        SELECT group_concat(CASE t2.dom_excpt_clsf
+            WHEN 'RFK001' THEN t2.cmpy_nm_krchar
+            WHEN 'RFK002' THEN t2.cmpy_nm_eng || '(' || t2.cmpy_nm_eng_short || ')'
+            ELSE t1.vend_nm
+        END) FROM resinppaco AS t1
+        LEFT JOIN sptcustbaseinfo AS t2 ON t2.cust_no = t1.vend_cd
+        WHERE t1.prj_no = a.prj_no
+    ) AS VARCHAR(250)) AS agncy_nm,
+    x.cd_nm AS prj_clsf,
+    b.syspayno,
+    b.nm,
+    TRIM(nm) AS res_repsn
+FROM resinpmast AS a
+JOIN xodxcommst AS x ON x.cd = a.bsns_cd_inout
+LEFT JOIN resinppare AS b ON b.prj_no = a.prj_no AND b.reschr_clsf = 'RAL001' -- 과제책임자
+LEFT JOIN resbgacctm AS c ON c.prj_no = a.prj_no AND c.accnt_clsf = 'RAR001' -- 메인계정
+WHERE
+    a.prj_state != 'RBA005'  -- 취소과제 제외
+    AND a.prj_no IN (
+        SELECT prj_no FROM resinppaco AS p WHERE p.vend_cd IN
+        (SELECT relat_vend_cd FROM sptcustbaseinfo WHERE cust_no = #{agncy_cd})
+    )
+ORDER BY a.tot_resch_prd_orign_ymd DESC
+  </select>
+  <select id="selectCtrOverTab" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpAgncyMstVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.CtrOverTabVo">
+/* XDA : kitech.lpl.lcp.xda.CtrOverMS01 대외기관협력(해외, 주재국 출장조회) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectCtrOverTab */ 
+    a.req_no, 
+    fun_get_trip_compn_list(a.req_no, 'FQ') as biztrip_nms,
+    a.biztrip_start_ymd[1,4]||'-'||a.biztrip_start_ymd[5,6]||'-'||a.biztrip_start_ymd[7,8]||' ~ '||a.biztrip_cls_ymd[1,4]||'-'||a.biztrip_cls_ymd[5,6]||'-'||a.biztrip_cls_ymd[7,8] as biztrip_period,
+    '('||trim(fun_xodxcommst_cd_nm(a.biztrip_region, 0))||') '||a.biztrip_land_info as biztrip_land, 
+    '('||trim(fun_xodxcommst_cd_nm(a.biztrip_goal_clsf, 0))||') '||a.biztrip_goal as biztrip_goal,
+    a.agncy_cd_1, a.agncy_cd_2, a.agncy_cd_3,
+    a.agncy_cd_nm_1||', '||a.agncy_cd_nm_2||', '||a.agncy_cd_nm_3 as agncy_nm,
+    nvl(b.rep_req_no, '') as rep_req_no
+from ctrover a, outer ctroverrep b
+where a.req_no = b.biztrip_req_no
+and (a.agncy_cd_1 = #{agncy_cd} or a.agncy_cd_2 = #{agncy_cd} or a.agncy_cd_3 = #{agncy_cd})
+and a.req_no not in (select biztrip_req_no from ctroverrep where chng_resn = 'FBQ020')
+order by a.biztrip_start_ymd desc
+  </select>
+  <select id="selectLosVipTab" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpAgncyMstVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LosVipTabVo">
+/* XDA : kitech.lpl.lcp.xda.LosVipMS01 대외협력기관조회 (귀빈조회) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLosVipTab */ 
+    a.audenc_no
+   ,a.visit_start_ymd
+   ,a.visit_cls_ymd
+   ,substr(to_date(a.visit_start_ymd, '%Y%m%d'), 0, 10) || ' ~ '||case when a.visit_cls_ymd != "" then substr(to_date(a.visit_cls_ymd, '%Y%m%d'), 0, 10) else '' end as visit_term
+   ,a.visit_clsf
+   ,fun_xodxcommst_cd_nm(a.visit_clsf, 0) as visit_clsf_nm
+   ,a.visit_subj
+   ,a.charg_syspayno
+   ,a.charg_dept
+   ,a.visit_goal
+   ,a.visit_plc
+   ,a.audenc_psn
+   ,a.rmk
+   ,a.attach_file_no
+   ,b.natn_cd
+   ,fun_xodxcommst_cd_nm(b.natn_cd, 0) as natn_nm
+   ,b.odr
+   ,b.reprs_psn_nm
+   ,b.cmpy_nm_krchar
+FROM  lcpvipaudenc a  
+      LEFT JOIN (SELECT c.audenc_no, c.odr , c.natn_cd, c.reprs_psn_nm, d.cmpy_nm_eng, d.cmpy_nm_krchar
+                 FROM lcpvipaudencagncy c 
+                  JOIN (SELECT cust_no, cmpy_nm_krchar, cmpy_nm_eng 
+                        FROM sptcustbaseinfo 
+                        WHERE cust_no = #{agncy_cd}
+                        ) d ON c.agncy_cd = d.cust_no
+                 ) b on a.audenc_no = b.audenc_no
+WHERE a.audenc_no IN (select audenc_no from lcpvipaudencagncy where agncy_cd = #{agncy_cd})
+GROUP BY a.audenc_no,a.visit_start_ymd,a.visit_cls_ymd,a.visit_clsf,a.visit_subj
+      ,a.charg_syspayno,a.charg_dept,a.visit_goal,a.visit_plc,a.audenc_psn
+      ,a.rmk,a.attach_file_no,b.natn_cd,b.odr,b.reprs_psn_nm,b.cmpy_nm_krchar
+ORDER BY a.audenc_no, b.odr
+  </select>
+  <select id="selectLcpEventTab" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpAgncyMstVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventTabVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventMS03 대외협력기관조회 (행사조회) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpEventTab */ 
+     a.event_no
+    ,a.charg
+    ,a.charg_syspayno
+    ,a.event_nm
+    ,a.event_supvis
+    ,a.event_open
+    ,a.event_start_ymd
+    ,a.attach_file_no
+    ,a.event_cls_ymd
+    ,a.event_plc
+    ,a.event_contnt
+    ,b.cr
+    ,c.krchar_agncy_nm
+    ,c.cmpy_nm_eng 
+FROM  lcpevent a 
+      LEFT JOIN  (SELECT event_no, sum(cr) as cr 
+                  FROM lcpeventexpns  GROUP BY event_no
+                 ) b on a.event_no = b.event_no
+      LEFT JOIN (select   a.event_no, a.agncy_cd, b.cmpy_nm_krchar as krchar_agncy_nm, b.cmpy_nm_eng
+                 from lcpeventagncy a  JOIN sptcustbaseinfo b ON a.agncy_cd = b. cust_no
+                 where a.event_no in (select event_no from lcpeventagncy where agncy_cd = #{agncy_cd})
+                 and b.cust_no = #{agncy_cd}
+                 ) c ON a.event_no = c.event_no
+WHERE a.event_no in (select event_no from lcpeventagncy where agncy_cd = #{agncy_cd})
+ORDER BY event_no
+  </select>            
+</mapper>

@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="대출내역조회">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="syspayno" name="syspayno" dataType="text"></w2:key>
+				       <w2:key id="start_ymd" name="start_ymd" dataType="text"></w2:key>
+				       <w2:key id="end_ymd" name="end_ymd" dataType="text"></w2:key>
+				  </w2:keyInfo>
+				</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="syspayno" name="시스템개인번호" dataType="text"></w2:column>
+				       <w2:column id="req_nm" name="신청자" dataType="text"></w2:column>
+				       <w2:column id="loan_cd" name="대출코드" dataType="text"></w2:column>
+				       <w2:column id="loan_nm" name="대출명" dataType="text"></w2:column>
+				       <w2:column id="loan_ymd" name="대출일자" dataType="text"></w2:column>
+				       <w2:column id="loan_tot_liq" name="대출총액" dataType="text"></w2:column>
+				       <w2:column id="tot_repay_amt" name="총상환금액" dataType="text"></w2:column>
+				       <w2:column id="tot_repay_intrst" name="총상환이자" dataType="text"></w2:column>
+				       <w2:column id="tot_midway_repay_amt" name="총중도상환금액" dataType="text"></w2:column>
+				       <w2:column id="tot_midway_repay_intrst" name="총중도상환이자" dataType="text"></w2:column>
+				       <w2:column id="sum_repay_amt" name="대출상환총액" dataType="text"></w2:column>
+				       <w2:column id="loan_ramt" name="대출잔액" dataType="text"></w2:column>
+				       <w2:column id="loan_rts" name="대출이율" dataType="text"></w2:column>
+				       <w2:column id="pre_midway_repay_ymd" name="중도상환일자" dataType="text"></w2:column>
+				       <w2:column id="midway_repay_times" name="중도상환회수" dataType="text"></w2:column>
+				       <w2:column id="req_no" name="신청번호" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+            <!-- 입금현황 조회 -->
+            <xf:submission id="sbm_selectData" ref='data:json,dma_search'
+				target='' action="SvcCCSPOPCWLR01.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<!-- 계좌번호 리스트 -->
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /***********************************************************
+ 	 * 화면 설명 : 대출내역조회
+	 * 변경 이력 : 2022-09-13	lsh		최초 작성
+ 	 ***********************************************************/    
+ 	scwin.data={};
+ 	/*
+     * 페이지 열기
+     */   
+	scwin.onpageload = function() {
+		// 엔터키 입력시 제외할 컴포넌트 설정
+		const excludeComponents = [ibx_empno];
+		 
+		// 검색조건 영역내의 컴포넌트에 엔터키 이벤트 발생시 조회 수행
+		com.setEnterKeyEvent(grp_search, scwin.btn_search_onclick, excludeComponents);
+		com.setEnterKeyEvent(grp_usr, scwin.btn_userSearch_onclick);
+		
+		var today = com.getServerDateTime();
+		var firstDate = "20000101";
+		
+		// 기간역전 체크
+		com.checkPeriod(ica_startDate, ica_endDate);
+		
+		// 조회조건(대출일자) 셋팅
+		ica_startDate.setValue(firstDate); 
+		ica_endDate.setValue(today);
+		
+		//전산담당자만 개인조회조건 수정 가능
+		if (com.getLoginInfo("sn") != "99999990") {			
+			ibx_empno.setValue(com.getLoginInfo("empno"));
+			ibx_nm.setValue(com.getLoginInfo("cn"));
+			ibx_empno.setDisabled(true);		
+			btn_userSearch.setDisabled(true);		
+			dma_search.set("syspayno", com.getLoginInfo("sn"));
+		}
+		
+		scwin.search();		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 사용자검색 팝업 실행
+	 */
+	scwin.openHumUserPop = function(){
+		var vNm = ibx_empno.getValue().trim(); 
+		var data = { empno : vNm, work_clsf : "HAG010" };
+		
+		if (!vNm) return;
+		
+		com.pop.open(com.pop.TYPE.HUM, data, function(ret){
+			ibx_empno.setValue(ret.empno);
+			tbx_nm.setValue(ret.nm);
+			dma_search.set("syspayno", ret.syspayno);
+		});
+	}
+	
+	/**
+	 * 조회 실행
+	 */
+	scwin.search = function () {
+		com.execute(sbm_selectData, {
+			successCallback : function(e) {
+				dlt_list.setJSON(e.responseJSON.cwlLoanPopVoList);
+				tbx_result.setValue(dlt_list.getRowCount());
+			}
+		});
+	}		
+	
+	//------------------------------------------------ event -----------------------------------------//
+	/**
+	 * 조회버튼 클릭
+	 */
+	scwin.btn_search_onclick = function() {
+		scwin.search();
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**
+	 * 그리드 더블클릭 이벤트
+	 */ 
+	scwin.grd_list_oncelldblclick = function(row,col,colId) {
+		var reqNo = dlt_list.getCellData(row, dlt_list.getColumnIndex("req_no"));
+		if(reqNo.trim() == ""){
+			com.closePopup(dlt_list.getRowJSON(row));
+		}else{
+			com.alert("[알림] 해당 대출건으로 확정되지 않은 중도상환신청서 또는\n미상신 신청서가 존재합니다.\n 확인 바랍니다.");
+		}		
+	};
+
+	/**
+	 * 엑셀다운로드
+	 */
+	scwin.btn_down_excel_onclick = function(e) {
+		if (dlt_list.getTotalRow() == 0) {
+			com.alert("조회된 내역이 없습니다.");
+		} else {
+			var name = '대출내역조회.xlsx';
+			var option = {
+					fileName : name,
+					removeColumns : "0"
+			};
+			com.downloadGridExcel(grd_list, option);
+		}
+	};
+	
+	/**
+	 * 사용자 검색 버튼 클릭 이벤트
+	 */	
+	scwin.btn_userSearch_onclick = function(e) {
+		scwin.openHumUserPop();
+	};
+	
+	/**
+	 * 대출자 값 변경시 이벤트
+	 */	
+	scwin.ibx_empno_onchange = function(info) {
+		if(info.newValue == ""){
+			tbx_nm.setValue("");
+			dma_search.set("syspayno", "");
+		}
+	};	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group style="" id="grp_search" class="searchSection">
+    		<xf:group id="" class="schbox">
+    			<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    				<w2:attributes>
+    					<w2:summary></w2:summary>
+    				</w2:attributes>
+    				<xf:group tagname="caption"></xf:group>
+    				<xf:group tagname="colgroup">
+    					<xf:group tagname="col" style="width:60px;"></xf:group>
+    					<xf:group tagname="col" style="width: 270px"></xf:group>
+    					<xf:group tagname="col" style="width:60px;"></xf:group>
+    					<xf:group tagname="col" style=""></xf:group>
+    				</xf:group>
+    				<xf:group tagname="tr" style="">
+    					<xf:group tagname="th" style="" class="w2tb_th">
+    						<w2:attributes>
+    							<w2:scope>row</w2:scope>
+    						</w2:attributes>
+    						<w2:textbox tagname="span" style="" id="" label="대출일자"></w2:textbox>
+    					</xf:group>
+    					<xf:group tagname="td" style="" class="w2tb_td">
+    						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false"
+    							id="ica_startDate" placeholder="시작일" renderDiv="true" rightAlign="false" style="" title="대출시작일 " ref="data:dma_search.start_ymd">
+    						</w2:inputCalendar>
+    						<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false"
+    							id="ica_endDate" placeholder="종료일" renderDiv="true" rightAlign="false" style="" title="기간 중 종료일" ref="data:dma_search.end_ymd">
+    						</w2:inputCalendar>
+    					</xf:group>
+    					<xf:group class="w2tb_th" tagname="th" style="">
+    						<w2:attributes></w2:attributes>
+    						<w2:textbox id="spn_accnt_rspns" label="대출자" style="" tagname="span"></w2:textbox>
+    					</xf:group>
+    					<xf:group class="w2tb_td" id="grp_empno" tagname="td" style="">
+    						<w2:attributes></w2:attributes>
+    						<xf:group class="inpSch" id="grp_usr" style="width: 120px;">
+    							<xf:input adjustMaxLength="false" class="inp" ev:onchange="scwin.ibx_empno_onchange" id="ibx_empno" style=""
+    								title="대출자명">
+    							</xf:input>
+    							<xf:trigger class="btn" ev:onclick="scwin.btn_userSearch_onclick" id="btn_userSearch" style="" title="대출자 조회 "
+    								type="button">
+    								<xf:label><![CDATA[검색]]></xf:label>
+    							</xf:trigger>
+    						</xf:group>
+    						<xf:input adjustMaxLength="false" class="inp" disabled="true" id="ibx_nm" readOnly="true" style="width: 150px;"
+    							title="계정책임자 상세">
+    						</xf:input>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" class="schbtn">
+    			<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    				<xf:label><![CDATA[조회]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group class="titleSection" id="" style="margin-top:3px;">
+    		<xf:group class="le" id="">
+    			<xf:group class="result" id="" style="">
+    				<w2:span id="" label="*조회결과 " style=""></w2:span>
+    				<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    				<w2:span id="" label="건" style=""></w2:span>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="ri" id="">
+    			<xf:group class="btnarea" id="" style="">
+    				<xf:trigger class="btn icon down" id="btn_down_excel" style="" type="button" ev:onclick="scwin.btn_down_excel_onclick">
+    					<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_list" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    		id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    		rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    		scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    		visibleRowNum="7" summaryAuto="true" ev:oncelldblclick="scwin.grd_list_oncelldblclick" sortable="true" filterFocusMode="outfocus"
+    		readOnly="true">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="대출명" width="100"></w2:column>
+    				<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="대출일자" width="100"></w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="column10" value="대출금액" displayMode="label"></w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="column12" value="상환총액" displayMode="label"></w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="column16" value="대출잔액" displayMode="label"></w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="column18" value="상환신청번호" displayMode="label"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column displayMode="label" id="loan_nm" inputType="text" readOnly="true" style="height:28px;" width="100">
+    				</w2:column>
+    				<w2:column class="" displayMode="label" id="loan_ymd" inputType="text" readOnly="true" style="height:28px;" width="100" displayFormat="####-##-##">
+    				</w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="loan_tot_liq" value="" displayMode="label" readOnly="true"
+    					class="ri" dataType="number" displayFormat="#,###">
+    				</w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="sum_repay_amt" value="" displayMode="label" readOnly="true"
+    					class="ri" dataType="number" displayFormat="#,###">
+    				</w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="loan_ramt" value="" displayMode="label" readOnly="true"
+    					class="ri" dataType="number" displayFormat="#,###">
+    				</w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="req_no" value="" displayMode="label"
+    					readOnly="true" class="">
+    				</w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group class="helparea" id="" style="">
+    		<xf:group id="" style="" tagname="ul">
+    			<xf:group id="" style="" tagname="li">
+    				<w2:textbox class="" id="" label="중도상환하고자 하는 대출건을 더블클릭하세요." style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group style="padding-top:5px;" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.seq">
+  <select id="selectFinAccntBsnsSel" parameterType="kr.re.kitech.biz.fin.seq.vo.FinAccntBsnsSelVo" resultType="kr.re.kitech.biz.fin.seq.vo.FinAccntBsnsSelVo">
+select /* QueryID : kr.re.kitech.biz.fin.seq.selectFinAccntBsnsSel */ 
+		 substr(a.accnt_no, 1, 2) as accnt_gu, --소계용
+ a.accnt_no as accnt_no, --계정번호
+ a.accnt_no_nm as accnt_no_nm, --연구제목
+ fun_emp_nm(a.accnt_rspns) as accnt_respn_nm, --연구책임자
+ a.accnt_rspns as accnt_respn_no, --연구책임자사번
+ a.start_ymd||'-'||a.cls_ymd as period, --계약기간
+      sum(b.bugt_amt) as bugt_amt, --예산액
+      fun_fin_proj_sum(a.accnt_no,2,substr(#{accnt_ymd},  1, 6)) as lyear_amt, --전년도집행액
+      fun_fin_proj_sum(a.accnt_no,3,substr(#{accnt_ymd},  1, 6)) as year_amt, --금년도집행액
+      fun_fin_proj_sum(a.accnt_no,2,substr(#{accnt_ymd},  1, 6))  + fun_fin_proj_sum(a.accnt_no,3,substr(#{accnt_ymd},  1, 6)) as tot_amt, --집행계
+      sum(b.bugt_amt) - (fun_fin_proj_sum(a.accnt_no,2,substr(#{accnt_ymd},  1, 6))  + fun_fin_proj_sum(a.accnt_no,3,substr(#{accnt_ymd},  1, 6))) as res_amt --잔액
+from resbgacctm a, bblbugtactrslt b
+where a.mngmt_clsf = 'R'
+and substr(a.cls_ymd, 1, 4) <![CDATA[ >= ]]> substr(#{accnt_ymd},  1, 4)
+and substr(a.start_ymd, 1, 4) <![CDATA[ <= ]]> substr(#{accnt_ymd},  1, 4)
+and a.accnt_no = b.accnt_no
+group by 1,2,3,4,5,6 
+order by 2
+  </select>
+</mapper>

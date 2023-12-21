@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="지명업체 추가 팝업" meta_author="이대훈" meta_date="2023.07.27.">
+    	<w2:type>DEFAULT</w2:type>
+    	<w2:buildDate />
+    	<xf:model>
+    		<xf:instance>
+    			<data xmlns="" />
+    		</xf:instance>
+    		<w2:dataCollection baseNode="map">
+    			<w2:dataMap baseNode="map" id="dma_search">
+    				<w2:keyInfo>
+    					<w2:key id="vend_nm" name="업체명" dataType="text"></w2:key>
+    					<w2:key id="bsns_psn_regst_no" name="사업자번호" dataType="text"></w2:key>
+    					<w2:key id="ceo_nm" name="대표자명" dataType="text"></w2:key>
+    					<w2:key id="bid_nomi_yn" name="지명업체등록여부" dataType="text"></w2:key>
+    					<w2:key id="bid_ord_no" name="발주번호" dataType="text"></w2:key>
+    				</w2:keyInfo>
+    			</w2:dataMap>
+    			<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+    				<w2:columnInfo>
+    					<w2:column id="chk" name="선택" dataType="text"></w2:column>
+    					<w2:column id="vend_nm" name="거래처명" dataType="text"></w2:column>
+    					<w2:column id="bsns_psn_regst_no" name="사업자번호" dataType="text"></w2:column>
+    					<w2:column id="ceo_nm" name="대표자" dataType="text"></w2:column>
+    					<w2:column id="vend_addr" name="업체주소" dataType="text"></w2:column>
+    					<w2:column id="tel_no" name="전화번호" dataType="text"></w2:column>
+    					<w2:column id="fax" name="팩스번호" dataType="text"></w2:column>
+    					<w2:column id="vend_cd" name="거래처코드" dataType="text"></w2:column>
+    				</w2:columnInfo>
+    			</w2:dataList>
+    			<w2:dataList baseNode="list" repeatNode="map" id="dlt_location_list" saveRemovedData="true">
+    				<w2:columnInfo>
+    					<w2:column id="chk" name="chk" dataType="text"></w2:column>
+    					<w2:column id="bid_ord_no" name="bid_ord_no" dataType="text"></w2:column>
+    					<w2:column id="chg_no" name="chg_no" dataType="text"></w2:column>
+    					<w2:column id="vend_nm" name="vend_nm" dataType="text"></w2:column>
+    					<w2:column id="vend_addr" name="vend_addr" dataType="text"></w2:column>
+    					<w2:column id="bsns_psn_regst_no" name="bsns_psn_regst_no" dataType="text"></w2:column>
+    					<w2:column id="ceo_nm" name="ceo_nm" dataType="text"></w2:column>
+    				</w2:columnInfo>
+    			</w2:dataList>
+
+    		</w2:dataCollection>
+    		<w2:workflowCollection />
+    		<!-- 업체조회 -->
+    		<xf:submission id="sbm_selectData" ref='data:json,dma_search' target='' action="SvcEPUORDPOPR03.pwkjson" ev:submitdone=""
+    			method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    	</xf:model>
+    	<script src="/cm/js/biz/pur.js" cache ="false"/>
+    	<script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 지명업체 추가 팝업
+ 	 * 변경 이력 : 2023-07-27	이대훈	최초 작성
+ 	 ****************************************************/ 	  	  
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */ 
+	scwin.onpageload = function() {
+		com.setEnterKeyEvent(grp_src, scwin.search);
+		
+		dma_search.setJSON(com.getParameter());
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(e) {
+		if(dma_search.get("vend_nm") == "" && dma_search.get("bsns_psn_regst_no") == "" && dma_search.get("reprs_psn_nm") == "" && dma_search.get("bid_ord_no") == ""){
+			alert("조회조건 중 적어도 하나를 입력하세요.");
+			return;
+		}
+		com.execute(sbm_selectData, {
+			successCallback : function(e) {
+				dlt_grd.setJSON(e.responseJSON.epuOrnomVendVoList);
+			}
+		});			
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+
+	/**
+	 * 확인버튼 클릭 이벤트
+	 */
+	scwin.btn_conf_onclick = function(e) {
+	
+		const data = grd_list.getCheckedJSON('chk');
+		if(data.length < 1){
+			com.warn('선택된 행이 없습니다.');
+			return;
+		}
+		com.closePopup(data);
+	};		
+
+	/**
+	 * 업체추가 버튼 클릭 이벤트
+	 */
+	scwin.btn_vend_onclick = function(e) {
+		var data={
+			bsns_psn_regst_no : dma_search.get("bsns_psn_regst_no")
+		};
+		
+		biz.epu.pop.open(biz.epu.pop.TYPE.VEND_G2B_REG, data, function(ret){
+			if(ret){
+				scwin.search();
+			}
+		});
+		
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group class="pop_contents">
+    		<xf:group class="searchSection">
+    			<xf:group class="schbox" id="grp_src">
+    				<xf:group class="w2tb tbl" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="width:180px;" tagname="col"></xf:group>
+    						<xf:group style="width:100px;" tagname="col"></xf:group>
+    						<xf:group style="width:180px;" tagname="col"></xf:group>
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="거래처명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input class="inp" ref="data:dma_search.vend_nm" style="width: 150px;" title="거래처명" adjustMaxLength="false">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="사업자등록번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input class="inp" ref="data:dma_search.bsns_psn_regst_no" style="width: 150px;" title="사업자등록번호" adjustMaxLength="false">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="대표자명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input class="inp" ref="data:dma_search.ceo_nm" style="width: 120px;" title="대표자명" adjustMaxLength="false">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.search">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group><w2:gridView id="grd_list" class="grid" dataList="data:dlt_grd" style="height: 280px;" defaultCellHeight="28" evenRowBackgroundColor="#f7faff" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue=" " rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" summaryAuto="true" visibleRowNum="9" tooltipDisplay="true" autoFit="allColumn" ev:oncellclick="scwin.grd_oncellclick">
+	    			<w2:caption id="caption1" value="this is a grid caption."></w2:caption>
+	    			<w2:header id="header1">
+	    				<w2:row id="row1">
+	    					<w2:column id="hChk" checkboxLabel="전체선택" displayMode="label" fixColumnWidth="true" inputType="checkbox" value="chk" width="37" sortable="false" style="height:28px;"></w2:column>
+	    					<w2:column width="150" inputType="text" id="vend_nm" value="거래처명" displayMode="label"></w2:column>
+							<w2:column width="100" inputType="text" id="bsns_psn_regst_no" value="사업자등록번호" displayMode="label"></w2:column>
+							<w2:column width="80" inputType="text" id="ceo_nm" value="대표자명" displayMode="label"></w2:column>
+							<w2:column width="70" inputType="text" id="vend_no" value="업체코드" displayMode="label"></w2:column>
+	    				</w2:row>
+	    			</w2:header>
+	    			<w2:gBody id="gBody1">
+	    				<w2:row id="row2">
+	    					<w2:column id="chk" inputType="checkbox"></w2:column>
+	    					<w2:column inputType="text" id="vend_nm" readOnly="true" class="le"></w2:column>
+							<w2:column inputType="text" id="bsns_psn_regst_no" readOnly="true"></w2:column>
+							<w2:column inputType="text" id="ceo_nm" readOnly="true"></w2:column>
+							<w2:column inputType="text" id="vend_cd" readOnly="true"></w2:column>
+	    				</w2:row>
+	    			</w2:gBody>
+	    		</w2:gridView>
+    		
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le">
+    				<xf:trigger class=" btn pro" id="btn_vend" style="" type="button" ev:onclick="scwin.btn_vend_onclick">
+    					<xf:label><![CDATA[업체추가]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="btn_conf" style="" type="button" ev:onclick="scwin.btn_conf_onclick">
+    					<xf:label><![CDATA[확인]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

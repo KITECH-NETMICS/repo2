@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="관리번호생성" meta_author="이영희" meta_date="2023.03.16.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_crt">
+            		<w2:keyInfo>
+            			<w2:key id="req_no" name="발명신고서번호" dataType="text"></w2:key>
+            			<w2:key id="pat_clsf" name="지재권구분" dataType="text"></w2:key>
+            			<w2:key id="dom_oversea_clsf" name="국내외구분" dataType="text"></w2:key>
+            			<w2:key id="smitapp_hope_natn_nm" name="출원희망국가명" dataType="text"></w2:key>
+            			<w2:key id="smitapp_hope_natn_cd" name="출원희망국가코드" dataType="text"></w2:key>
+            			<w2:key id="cnt" name="건수" dataType="text"></w2:key>
+            			<w2:key id="patofic_nm" name="특허사무소이름" dataType="text"></w2:key>
+            			<w2:key id="patofic_cd" name="특허사무소" dataType="text"></w2:key>
+            			<w2:key id="patofic_charg_id" name="특허사무소담당자ID" dataType="text"></w2:key>
+            			<w2:key id="patofic_charg_nm" name="특허사무소담당자명" dataType="text"></w2:key>
+            			<w2:key id="patofic_contac_loc" name="특허사무소담당자연락처" dataType="text"></w2:key>
+            			<w2:key id="pct_chk" name="pct진입여부" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+			<!-- 관리번호 생성 -->
+			<xf:submission id="sbm_saveData" ref='data:json,dma_crt' 
+				target='' action="/SvcPATINVDCRM03.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>        		
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+	 * 화면 설명 : 관리번호 생성
+	 * 변경 이력 : 2023-03-16 이영희 최초생성
+	 * serviceId : ID01
+	 ****************************************************/     
+	/**
+	 * 페이지 로딩 이벤트
+	 */  
+	scwin.onpageload = function() {		
+		// 공통코드
+		var codeOptions = [ { code : "PAT", compID :"sbx_pat_clsf" } // 지재권구분
+			];
+		com.setCmnCd(codeOptions, function() {	
+			var param = com.getParameter();
+			dma_crt.setJSON(param);		
+			
+			ibx_old_smitapp_hope_natn_cd.setValue(param.old_smitapp_hope_natn_cd);
+			ibx_old_smitapp_hope_natn_nm.setValue(param.old_smitapp_hope_natn_nm);		
+			
+			if(param.pat_clsf == "PAT070"){
+				ibx_cnt.setDisabled(true);
+			}else{
+				ibx_cnt.setDisabled(false);
+				rdo_dom_oversea_clsf.setValue("PNT010");		
+			}
+		});
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */ 
+	scwin.search = function(){
+		com.execute(sbm_selectData, {
+			successCallback : function(e){
+							
+			}
+		});
+	};
+	
+	/**
+	 * 닫기버튼 클릭 이벤트
+	 */ 
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**
+	 * 저장 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_save_onclick = function(e) {		
+		if(!com.validateData(dma_crt, [
+			{id : "req_no", mandatory : true},
+			{id : "dom_oversea_clsf", mandatory : true},
+			{id : "patofic_cd", mandatory : true},
+			{id : "req_no", mandatory : true},
+			{id : "smitapp_hope_natn_cd", mandatory : true}		
+		], false)) return;		
+		
+		com.execute(sbm_saveData, {
+			successCallback : function(e){				
+				com.alert("message.xom.wq.023" /*정상적으로 처리되었습니다.*/, function () {
+					com.closePopup({});	
+				});				
+			}
+		});
+		
+	};
+	
+	/**
+	 * 국내/외구분 변경 이벤트
+	 */	
+	scwin.rdo_dom_oversea_clsf_onchange = function(info) {
+		if(this.getValue() == "PNT010"){
+			dma_crt.set("smitapp_hope_natn_cd", "KR");
+			dma_crt.set("smitapp_hope_natn_nm", "대한민국");
+			dma_crt.set("cnt", 1);
+			
+			ibx_smitapp_hope_natn_cd.setDisabled(true);
+			btn_natn.setDisabled(true);
+		}else{
+			dma_crt.set("smitapp_hope_natn_cd", "");
+			dma_crt.set("smitapp_hope_natn_nm", "");
+			dma_crt.set("cnt", "");
+			
+			ibx_smitapp_hope_natn_cd.setDisabled(false);
+			btn_natn.setDisabled(false);
+		}
+	};
+	
+	/**
+	 * 국가코드 검색 버튼 클릭 이벤트
+	 */	
+	scwin.btn_natn_onclick = function(e) {
+		biz.pat.pop.open(biz.pat.pop.TYPE.SMITAPP_NATN, {}, function(ret){
+			dma_crt.set("smitapp_hope_natn_nm", ret.smitapp_hope_natn_nm);
+			dma_crt.set("smitapp_hope_natn_cd", ret.smitapp_hope_natn_cd);
+		});
+	};
+	
+	/**
+	 * 특허사무소 검색 버튼 클릭 이벤트
+	 */	
+	scwin.btn_patofic_onclick = function(e) {
+		var data ={
+			mou_ex : "Y",
+			patofic_nm : ibx_patofic_nm.getValue()	
+		};
+		
+		biz.pat.pop.open(biz.pat.pop.TYPE.PAT_OFFICE, data, function(ret) {
+			dma_crt.set("patofic_cd", ret.patofic_cd);
+			dma_crt.set("patofic_nm", ret.patofic_nm);
+			dma_crt.set("patofic_charg_id", ret.charg_id);
+			dma_crt.set("patofic_charg_nm", ret.charg_nm);
+			dma_crt.set("patofic_contac_loc", ret.patofic_contac_loc);
+		});
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    		<w2:attributes>
+    			<w2:summary></w2:summary>
+    		</w2:attributes>
+    		<xf:group tagname="caption" text="관리번호생성"></xf:group>
+    		<xf:group tagname="colgroup">
+    			<xf:group style="width:140px;" tagname="col"></xf:group>
+    			<xf:group style="width:250px;" tagname="col"></xf:group>
+    			<xf:group style="width:100px;" tagname="col"></xf:group>
+    			<xf:group style="" tagname="col"></xf:group>
+    		</xf:group>
+    		<xf:group tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="발명신고서번호" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:textbox class="txt" id="" label="000" style="" tagname="span" ref="data:dma_crt.req_no"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th" style="">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="지재권구분" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td" style="">
+    				<w2:attributes></w2:attributes>
+    				<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="- 전체 -" class="sel"
+    					direction="auto" disabled="true" disabledClass="w2selectbox_disabled" id="sbx_pat_clsf" ref="data:dma_crt.pat_clsf"
+    					style="width:150px;" submenuSize="auto" title="권리구분" visibleRowNum="10">
+    					<xf:choices></xf:choices>
+    				</xf:select1>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" tagname="tr" id="">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="기존국가코드정보" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes>
+    					<w2:colspan>3</w2:colspan>
+    					<w2:rowspan>1</w2:rowspan>
+    				</w2:attributes>
+    				<xf:input adjustMaxLength="false" class="inp" id="ibx_old_smitapp_hope_natn_cd" readOnly="true" style="width:140px;"
+    					title="국가코드">
+    				</xf:input>
+    				<xf:input adjustMaxLength="false" class="inp" id="ibx_old_smitapp_hope_natn_nm" readOnly="true" style="width:200px;"
+    					title="국가코드">
+    				</xf:input>
+    				<xf:select appearance="full" class="chkGroup" cols="" disabled="true" id="chk_pct" ref="data:dma_crt.pct_chk"
+    					renderType="checkboxgroup" rows="" selectedindex="-1" style="">
+    					<xf:choices>
+    						<xf:item>
+    							<xf:label><![CDATA[PCT]]></xf:label>
+    							<xf:value><![CDATA[P]]></xf:value>
+    						</xf:item>
+    					</xf:choices>
+    				</xf:select>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" style="" tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    				<w2:textbox id="" label="국내/외 구분" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<xf:select1 appearance="full" class="radioGroup  req" cols="" id="rdo_dom_oversea_clsf" ref="data:dma_crt.dom_oversea_clsf" renderType="radiogroup" rows="" selectedIndex="" style=""
+    					title="국내외구분" disabled="true" ev:onchange="scwin.rdo_dom_oversea_clsf_onchange">
+    					<xf:choices>
+    						<xf:item>
+    							<xf:label><![CDATA[국내]]></xf:label>
+    							<xf:value><![CDATA[PNT010]]></xf:value>
+    						</xf:item>
+    						<xf:item>
+    							<xf:label><![CDATA[국외]]></xf:label>
+    							<xf:value><![CDATA[PNT020]]></xf:value>
+    						</xf:item>
+    					</xf:choices>
+    				</xf:select1>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th" style="">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="건수" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td" style="">
+    				<w2:attributes></w2:attributes>
+    				<xf:input adjustMaxLength="false" class="inp ri" dataType="number" displayFormat="#,###" id="ibx_cnt" ref="data:dma_crt.cnt" style="" title="건수">
+    				</xf:input>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" style="" tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="국가코드" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes><w2:colspan>3</w2:colspan><w2:rowspan>1</w2:rowspan></w2:attributes>
+    			<xf:group id="" class="flex"><xf:group style="width: 190px;" id="" class="inpSch">
+    					<xf:input ref="data:dma_crt.smitapp_hope_natn_cd" adjustMaxLength="false" readOnly="true" style="" disabled="true" id="ibx_smitapp_hope_natn_cd" title="출원희망국" class="inp">
+    					</xf:input>
+    					<xf:trigger ev:onclick="scwin.btn_natn_onclick" disabled="true" style="" id="btn_natn" title="출원희망국 조회" type="button" class="btn">
+    						<xf:label><![CDATA[검색]]></xf:label>
+    					</xf:trigger>
+    				</xf:group><xf:input ref="data:dma_crt.smitapp_hope_natn_nm" adjustMaxLength="false" readOnly="true" style="" disabled="true" id="ibx_smitapp_hope_natn_nm" title="출원희망국 상세" class="inp">
+    				</xf:input></xf:group></xf:group>
+    		</xf:group>
+    		<xf:group id="" style="" tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    				<w2:textbox id="" label="특허사무소" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<xf:group class="inpSch full" id="" style="">
+    					<xf:input adjustMaxLength="false" class="inp req" id="ibx_patofic_nm" readOnly="true" ref="data:dma_crt.patofic_nm"
+    						style="" title="특허사무소">
+    					</xf:input>
+    					<xf:trigger class="btn" ev:onclick="scwin.btn_patofic_onclick" id="btn_patofic" style="" title="특허사무소 조회"
+    						type="button">
+    						<xf:label><![CDATA[검색]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="w2tb_th" style="" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="담당자" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" style="" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<xf:input adjustMaxLength="false" class="inp full" id="" readOnly="true" ref="data:dma_crt.patofic_charg_nm"
+    					style="width:150px;" title="담당자">
+    				</xf:input>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group id="" style="" tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="연락처" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes><w2:colspan>3</w2:colspan><w2:rowspan>1</w2:rowspan></w2:attributes>
+    				<xf:input adjustMaxLength="false" class="inp" id="" readOnly="true"
+    					ref="data:dma_crt.patofic_contac_loc" style="width:210px;" title="연락처">
+    				</xf:input>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group class="helparea " id="" style="">
+    		<xf:group id="" style="" tagname="ol">
+    			<xf:group id="" tagname="li">
+    				<w2:textbox class="blue" id="" label='국내/외 구분이 국외인 경우만 국가코드를 검색합니다.' style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group id="" tagname="li" style="">
+    				<w2:textbox class="blue" id="" label="프로그램, 디자인, 실용신안의 경우에는 생성할 건수를 입력합니다." style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class=" btn pro " ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger class=" btn pro conf" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    				<xf:label><![CDATA[저장]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

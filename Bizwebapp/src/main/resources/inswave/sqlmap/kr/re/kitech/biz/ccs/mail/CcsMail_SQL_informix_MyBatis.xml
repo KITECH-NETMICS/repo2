@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.ccs.mail">
+<!-- 학술대회 부실학회 알림메일 내용 조회 -->
+<select id="selectCtrOverRepMail" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ccs.mail.vo.CtrOverTripMailVo">
+SELECT /* kr.re.kitech.ccs.mail.selectCtrOverRepMail */
+       x0.biztrip_psn_syspayno --출장자시스템번호
+     , x0.biztrip_psn_nm --출장자성명
+     , x1.biztrip_req_no --해외출장신청번호
+     , x1.rep_req_no --해외출장복명서번호
+     , x2.rcpt_no --pool등록번호
+     , x3.conf_nm --학술대회명
+     ,'('  ||TRIM(x7.cd_nm)||  ')' || x1.truth_biztrip_goal AS biztrip_region_nm
+     , TRIM(TO_CHAR(TO_DATE(x0.biztrip_orign_ymd, '%Y%m%d'), '%Y-%m-%d')) || ' ~ ' || TRIM(TO_CHAR(TO_DATE(x0.biztrip_cls_ymd, '%Y%m%d'), '%Y-%m-%d')) biztrip_days
+  FROM ctroverrepcompn AS x0
+  JOIN ctroverrep AS x1 ON x1.rep_req_no = x0.req_no
+  LEFT JOIN resconfpoolreq AS x2  ON x2.req_no = x1.biztrip_req_no
+  LEFT JOIN resconfpoolmaster AS x3  ON x3.rcpt_no = x2.rcpt_no
+  LEFT JOIN xodxcommst AS x7 ON x7.cd = x1.truth_biztrip_region
+ WHERE x0.biztrip_psn_clsf = 'FBH010' --출장
+   AND (NVL(x1.chk_1,'') != '' AND NVL(x1.chk_2,'') != '' AND NVL(x1.chk_3,'') != '' AND NVL(x1.chk_4,'') != '') --자가점검 체크리스트 선택된 복명서
+   AND x1.rep_req_no = #{reqNo}
+</select>
+</mapper>

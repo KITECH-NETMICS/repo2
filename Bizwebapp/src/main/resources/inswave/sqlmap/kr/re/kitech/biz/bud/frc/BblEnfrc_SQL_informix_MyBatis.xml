@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.bud.frc">
+<!-- 일반예산신청 상세 조회 -->
+<select id="selectBblEnfrc" parameterType="kr.re.kitech.biz.bud.frc.vo.BblEnfrcReqVo" resultType="kr.re.kitech.biz.bud.frc.vo.BblEnfrcReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.bud.frc.selectBblEnfrc */ 
+	 a.req_clsf, --신청구분
+	 a.req_no, --신청번호
+	 a.req_seq, --신청번호
+	 a.req_ymd, -- 신청일자
+	 a.ctrl_no, -- 통제번호
+	 a.accnt_no, -- 계정번호
+	 e.accnt_no_nm, -- 계정번호명
+	 e.itm_solve_base, -- 비목해소기준
+	 a.accnt_cd, -- 회계코드
+	 f.accnt_cd_abbr, -- 회계코드명
+	 a.vend_nm, -- 거래처
+	 a.vend_cd, -- 거래처코드
+	 a.req_amt, -- 신청금액
+	 a.enfrc_amt_cause, -- 원인행위
+	 a.ctrl_state, --통제상태
+	 a.req_dept, -- 신청부서
+	 d.dept_nm req_dept_nm, -- 신청부서
+	 a.req_dept_new_ymd, -- 신청부서신설일
+	 a.req_psn, -- 신청자
+	 b.nm req_psn_nm, -- 신청자명
+	 a.expns_cd, -- 비용코드
+	 g.expns_cd_nm, -- 비용코드
+	 a.unslip_no, -- 결의번호
+	 a.unslip_amt, -- 결의금액
+	 a.rmk, -- 비고
+	 CASE WHEN a.ctrl_no != '' THEN a.ctrl_ymd ELSE '' END AS ctrl_ymd, -- 통제일자
+	 a.ctrl_psn, -- 통제자
+	 a.bugt_ctrl_way, -- 통제방법
+	 CASE WHEN a.ctrl_no != '' THEN c.nm ELSE '' END AS ctrl_psn_nm, -- 통제자명
+	 a.fomat_unit, -- 편성단위
+	 h.apr_state, -- 신청상태
+	 a.relat_no, -- 통제자
+	 TRIM(a.attach_file_no) AS attach_file_no, -- 첨부파일
+	 'U' AS cud_type
+FROM bblenfrc a
+JOIN humbasicinfo b ON a.req_psn = b.syspayno
+LEFT JOIN humbasicinfo c ON a.ctrl_psn = c.syspayno
+JOIN xodhdeptinfo d ON a.req_dept = d.dept_cd AND a.req_dept_new_ymd = d.dept_new_ymd
+JOIN resbgacctm e ON a.accnt_no = e.accnt_no
+JOIN xodfaccnt f ON a.accnt_cd = f.accnt_cd
+JOIN xodfexpns g ON a.expns_cd = g.expns_cd
+JOIN xomxintfatab h ON a.req_no = h.req_no
+WHERE a.req_no = #{req_no}
+</select>
+  
+  <select id="selectBblEnfrcList" parameterType="kr.re.kitech.biz.bud.frc.vo.BblEnfrcReqVo" resultType="kr.re.kitech.biz.bud.frc.vo.BblEnfrcReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.bud.frc.selectBblEnfrcList */ 
+		 DECODE(a.req_clsf,'FBJ011','결의서','신청서') as req_clsf_nm, --신청구분
+       a.req_clsf,
+       a.req_no, --신청번호
+       a.req_seq, --신청번호
+       a.req_ymd, -- 신청일자
+       a.ctrl_no, -- 통제번호
+       a.accnt_no,-- 계정번호
+       e.accnt_no_nm,--(계정번호명)
+       a.accnt_cd, -- 회계코드
+       f.accnt_cd_abbr, --(회계코드명)
+       a.vend_nm, -- 거래처
+       a.vend_cd, -- (거래처코드)
+       a.req_amt, -- 신청금액
+       a.enfrc_amt_cause, -- 원인행위
+       a.ctrl_state, --통제상태
+       a.req_dept, -- (신청부서)
+       fun_dept_nm(a.req_dept) req_dept_nm, -- (신청부서)d.dept_nm
+       a.req_dept_new_ymd, -- (신청부서신설일)
+       a.req_psn, -- (신청자)
+       b.nm req_psn_nm, --(신청자명)
+       a.expns_cd, -- (비용코드)
+       g.expns_cd_nm, -- (비용코드)
+       a.unslip_no, --( 결의번호)
+       a.unslip_odr, --( 결의순번)
+       a.unslip_amt, --( 결의금액)
+       a.rmk, -- (비고)
+       a.ctrl_ymd, --(통제일자)
+       a.ctrl_psn, --(통제자)
+       c.nm ctrl_psn_nm, --(통제자명)
+       a.fomat_unit, --(편성단위)
+       a.relat_no --(편성단위)
+FROM bblenfrc a
+JOIN humbasicinfo b ON a.req_psn = b.syspayno
+LEFT JOIN humbasicinfo c ON a.ctrl_psn = c.syspayno
+JOIN resbgacctm e ON a.accnt_no = e.accnt_no
+JOIN xodfaccnt f ON a.accnt_cd = f.accnt_cd
+JOIN xodfexpns g ON a.expns_cd = g.expns_cd
+WHERE a.req_ymd BETWEEN #{start_ymd} AND #{cls_ymd}
+AND   a.req_clsf = #{req_clsf}
+<if test='ctrl_state != null and ctrl_state != ""'> AND a.ctrl_state = #{ctrl_state} </if>
+<if test='req_no != null and req_no != ""'> AND a.req_no LIKE #{req_no} ||'%' </if>
+<if test='ctrl_no != null and ctrl_no != ""'> AND a.ctrl_no LIKE #{ctrl_no} ||'%' </if>
+<if test='req_psn != null and req_psn != ""'> AND a.req_psn =#{req_psn} </if>
+ORDER BY a.req_clsf, --신청구분
+       a.req_no, --신청번호
+       a.req_seq, --신청번호
+       a.req_ymd -- 신청일자
+  </select>  
+</mapper>

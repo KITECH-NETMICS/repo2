@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="공통코드 팝업용 wframe">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:aliasDataMap scope="" id="adm_temp"></w2:aliasDataMap>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+		</xf:model>
+		<script lazy="false" type="text/javascript"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 공통코드 팝업용 wframe
+ 	 * 변경 로그 : 2021-12-01	문철주	최초 작성
+ 	 ****************************************************/
+ 
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		// 영역내의 컴포넌트에 엔터키 이벤트 발생시 팝업
+		com.setEnterKeyEvent(grp_cmnCd, scwin.btn_search_onclick);
+	};
+
+	/**
+	 * 공통코드 팝업용 wframe을 설정한다. (부모 창에서 com.setCmnCdPop 호출)
+	 */
+	scwin.setCmnCdPop = function(option) {
+		scwin.option = option;
+		// displayMode 설정
+		if (option.displayMode == "value") {
+			sbx_label.hide();
+		} else if (option.displayMode == "label") {
+			ibx_value.hide();
+		}
+		// 바인딩 설정
+		if (!com.isEmpty(option.ref)) {
+			var scope = "../" + option.ref.substr(0, option.ref.indexOf("."));
+			adm_temp.setScope(scope);
+			var ref = "data:adm_temp" + option.ref.substr(option.ref.indexOf("."));
+			ibx_value.setRef(ref);
+		}
+	};
+
+	/**
+	 * 공통코드 팝업
+	 */
+	scwin.btn_search_onclick = function(e) {
+		var data = scwin.option;
+		data.value = ibx_value.getValue();
+		data.srchWord = sbx_label.getValue();
+		var options = {
+				  id: "cmnCdPop"
+				, popupName : "공통 코드 선택"
+				, width : 600, height : 500
+		};
+		com.openPopup("/cm/xml/cmnCdPop.xml", options, data, function(retObj) {
+			// 팝업 콜백
+			ibx_value.setValue(retObj.values);
+			sbx_label.setValue(retObj.labels);
+			if (typeof scwin.option.selectCallback == "function") {
+				// 선택 콜백이 있으면 선택 콜백 실행
+				scwin.option.selectCallback(retObj);
+			} 
+		});
+	};
+	
+	/**
+	 * 레이블 reset시 value 초기화
+	 */
+	scwin.sbx_label_onresetclick = function(e) {
+		ibx_value.setValue("");
+	};
+	]]></script>
+	<style type="text/css"><![CDATA[
+	.filebox .btn_del{width:11px;height:11px;border:0;margin-left: 5px;margin-bottom:3px;background:url(/cm/images/btn_file_del.png) no-repeat center;}
+	.filebox .del{text-decoration:line-through;color:red;}
+	.upbox{position:relative;padding:10px;border:1px solid #d2d0d0;background-color:#fff;-moz-box-sizing:border-box;box-sizing:border-box;}
+	.upbox:after{display:block;visibility:hidden;clear:both;height:0;font-size:0;line-height:0;content: '.'}
+	.upbox .file_opt{float:left;margin-left:20px;}
+	.upbox .file_opt a{display:inline-block;height:21px;line-height:21px;padding:0 10px 0 23px;border:1px solid #d2d0d0;font-size:13px;vertical-align:middle;}
+	.upbox .file_opt a.file_up{border-top-left-radius:2px;border-bottom-left-radius:2px;background:#f5f5f5 url(/cm/images/btn_file_up.png) no-repeat 10px center;}
+	.upbox .file_opt a.file_del{margin-left:-1px;border-top-right-radius:2px;border-bottom-right-radius:2px;background:#f5f5f5 url(/cm/images/btn_file_del.png) no-repeat 10px center;}
+	.upbox .file_opt ul{margin-top:7px;}
+	.upbox .file_opt ul li{display:block !important;position:relative;padding-left:8px;line-height:18px;font-size:13px;color:#2f2f2f;}
+	.upbox .file_opt ul li:before{content:"";position:absolute;top:7px;left:0;width:2px;height:2px;background-color:#2f2f2f;}
+	.upbox .btn_cm.write{position:absolute;top:50%;right:10px;margin-top:-28px;}
+	]]></style>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group class="ly_form  fn" id="grp_cmnCd" style="">
+			<xf:input class="" id="ibx_value" placeholder="" readOnly="true" style="width:80px;"></xf:input>
+			<w2:searchbox ev:onblur="scwin.sbx_label_onblur" ev:onresetclick="scwin.sbx_label_onresetclick" id="sbx_label" readOnly="" style="width:150px;" ev:onkeydown="">
+			</w2:searchbox>
+			<xf:trigger anchorWithGroupClass="" class="btn_search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+				<xf:label></xf:label>
+			</xf:trigger>
+		</xf:group>
+		
+	</body>
+</html>

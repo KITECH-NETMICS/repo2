@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.res.exc">
+<!-- 연구비입금의뢰 또는 결재완료 후 입금상태 업데이트 -->
+<update id="updateResBgRectlDepstState" parameterType="kr.re.kitech.biz.fin.spa.vo.FinSpaSlipUpdVo">
+UPDATE  /* kr.re.kitech.biz.res.exc.updateResBgRectlDepstState */
+        resbgrectl
+SET <if test='unslip_no != null '> unslip_no = #{unslip_no}, /*결의번호초기화 하는경우가 있어서 null이 아닌경우만 */</if> 
+    <if test='depst_state != null and depst_state !=""'> depst_state = #{depst_state}, </if>
+     updt_syspayno = #{updt_syspayno},
+     updt_daytm = SYSDATE
+WHERE req_no = #{req_no}
+</update>
+
+<!-- 연구비청구결의취소 시 결의번호 초기화 -->
+<update id="updateResDemndReqDel" parameterType="kr.re.kitech.biz.fin.spa.vo.FinSpaSlipUpdVo">
+UPDATE /* kr.re.kitech.biz.res.exc.updateResDemndReqDel */
+         resdemndreq
+SET unslip_no = '', 
+      unslip_odr = null,
+      updt_syspayno = #{updt_syspayno},
+      updt_daytm = CURRENT
+WHERE unslip_no = #{unslip_no}
+</update>
+
+<!-- 기술료입금결의취소 시 결의번호 초기화 -->
+<update id="updateResCrtPsRectlDel" parameterType="kr.re.kitech.biz.fin.spa.vo.FinSpaSlipUpdVo">
+UPDATE /* kr.re.kitech.biz.res.exc.updateResCrtPsRectlDel */
+      rescrtpsrectl
+SET   unslip_no = ''
+    , unslip_odr = null
+<if test='depst_state != null and depst_state !=""'>, depst_state = #{depst_state} </if>
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = current
+WHERE unslip_no = #{unslip_no}
+</update>
+
+<!-- 입금구분 조회 -->
+<select id="selectDepstClsf" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.res.exc.selectDepstClsf */
+          MAX(depst_clsf) AS depst_clsf
+FROM   fcpdepstreq
+WHERE  unslip_no = #{unslip_no}
+</select>
+
+<!-- 기업부담금 결의번호 초기화 -->
+<update id="updateSptTltDepstDetlsDel" parameterType="kr.re.kitech.biz.fin.spa.vo.FinSpaSlipUpdVo">
+UPDATE /* kr.re.kitech.biz.res.exc.updateSptTltDepstDetlsDel */
+       spttltdepstdetls
+SET    depst_state = #{depst_state}, 
+       unslip_no = '',
+       updt_syspayno = #{updt_syspayno}, 
+       updt_daytm = SYSDATE
+WHERE req_no = #{req_no}
+</update>
+
+<!-- 결의생성후 청구의뢰 결의번호 업데이트 -->
+<update id="updateResDemndReqUnslipNo" parameterType="kr.re.kitech.biz.res.exc.vo.ResDemndSlipVo">
+UPDATE /* kr.re.kitech.biz.res.exc.updateResDemndReqUnslipNo */
+      resdemndreq
+   SET unslip_no = #{unslip_no}
+     , unslip_odr = #{unslip_odr}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+
+<!-- 연구비 미수반제 결의생성(대변)을 위한 조회 -->
+<select id="selectResDemndForRepaySlip" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.exc.vo.ResRepaySlipVo">
+SELECT DISTINCT /* kr.re.kitech.biz.res.exc.selectResDemndForRepaySlip */
+       d.req_no
+     , d.req_psn
+     , a.accnt_no
+     , a.vend_cd
+     , a.vend_abbr
+     , c.slip_no 
+     , c.slip_odr 
+     , c.accnt_ymd
+     , c.unslip_amt AS demnd_liq
+     , d.depst_odr
+    -- , d.odr
+FROM resbgrectl d
+JOIN resdemndreq a ON d.demnd_req_no = a.req_no
+JOIN fspslipdecsnd c ON a.unslip_no = c.unslip_no AND a.unslip_odr = c.unslip_odr
+WHERE d.req_no = #{req_no}
+ORDER BY d.depst_odr
+</select>
+
+<!-- 연구비 입금결의 대변생성을 위한 조회 -->
+<select id="selectFcpDepstReqForSlip" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.com.vo.FcpDepstReqVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectFcpDepstReqForSlip */
+       d.req_no 
+     , a.accnt_no 
+     , a.bankaccnt_no
+     , a.depst_clsf
+     , c.cd_nm AS depst_clsf_nm
+     , CASE WHEN a.vend_abbr = '' THEN b.vend_abbr ELSE a.vend_abbr END AS vend_abbr
+     , a.recv_bill_no
+     , f.suply_value
+     , f.taxamt
+     , SUM(a.depst_liq) AS depst_liq  -- 입금금액 
+     , MAX(a.acct_txday) AS acct_txday
+FROM resbgrectl d
+JOIN fcpdepstreq a ON d.depst_req_no = a.req_no
+JOIN xodxcommst c ON a.depst_clsf = c.cd
+LEFT JOIN xodfvend b ON a.vend_cd = b.vend_cd
+LEFT JOIN ftxbillh f ON a.recv_bill_no = f.tax_bill_no
+WHERE d.req_no = #{req_no}
+GROUP BY 1,2,3,4,5,6,7,8,9
+</select>
+</mapper>

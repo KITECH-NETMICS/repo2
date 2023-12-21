@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.res.exa">
+  <!-- RCMS 이월금 조회 -->
+  <!-- kitech.res.exa.xda.ResRCMSCryOvrMoneyMS01 -->
+  <select id="selectResExaRCMSCryOvrMoney" parameterType="kr.re.kitech.biz.res.exa.vo.ResExaCryOvrMoneyInfoVo" resultType="kr.re.kitech.biz.res.exa.vo.ResExaCryOvrMoneyInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exa.selectResExaRCMSCryOvrMoney */ 
+		 t4.crmt_use_apv_lim_amt
+        ,t4.crmt_exec_amt
+        ,t4.crmt_use_apv_lim_amt - t4.crmt_exec_amt AS crmt_bal
+        ,t4.use_apv_cash_lim_amt
+        ,t4.exctn_exec_amt
+        ,t4.use_apv_cash_lim_amt - t4.exctn_exec_amt AS apv_bal
+FROM resbgacctm t1
+JOIN resinpmast t2 ON t1.prj_no = t2.prj_no
+JOIN resinpyear t3 ON t1.prj_no = t3.prj_no AND t1.accnt_no = t3.accnt_no
+JOIN if_rnd_abem_l_a t4 ON t4.agrmt_seq_no = t3.reschamt_card_prj_no
+WHERE t1.accnt_no = #{accnt_no}
+AND t1.prj_no = #{prj_no}
+GROUP BY 1,2,3,4,5,6
+  </select>
+
+  <!-- 통합이지바로 이월금 조회 -->
+  <!-- kitech.res.exa.xda.ResEzbaroCryOvrMoneyMS01 -->
+  <select id="selectResExaEzbaroCryOvrMoney" parameterType="kr.re.kitech.biz.res.exa.vo.ResExaCryOvrMoneyInfoVo" resultType="kr.re.kitech.biz.res.exa.vo.ResExaCryOvrMoneyInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exa.selectResExaEzbaroCryOvrMoney */ 
+		 t6.bmname
+       ,t4.bfyrcrovamt
+       ,t4.plcsamt
+       ,t4.plthamt
+FROM resbgacctm t1
+JOIN resinpmast t2 ON t1.prj_no = t2.prj_no
+JOIN resinpyear t3 ON t1.prj_no = t3.prj_no AND t1.accnt_no = t3.accnt_no
+JOIN ezbaro_budgetinfo t4 ON t3.reschamt_card_prj_no = t4.prjno AND SUBSTR(t1.start_ymd,0,4) = SUBSTR(t4.frcvdate,0,4)
+JOIN ezbaro_prjinfo t5 ON t4.prjno = t5.prjno AND t5.agreestep = t3.agreestep AND t5.agreedegr = t3.agreedegr
+JOIN ezbaro_ofvsbm t6 ON t6.bmgrp = t5.bmgrp AND t6.bmseusecd = t4.bmcode
+WHERE t1.accnt_no = #{accnt_no}
+AND t1.prj_no = #{prj_no}
+AND t4.rndbizno = '1198201008'
+  </select>  
+</mapper>

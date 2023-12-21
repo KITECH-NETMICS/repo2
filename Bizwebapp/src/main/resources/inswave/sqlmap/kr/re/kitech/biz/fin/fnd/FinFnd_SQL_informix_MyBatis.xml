@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.fnd">
+<!-- 결재신청 또는 반려시 입금요청확정 수정 -->
+<update id="updateFcpDepstReqDecsn" parameterType="kr.re.kitech.biz.fin.fnd.vo.FcpDepstUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.fnd.updateFcpDepstReqDecsn */
+       fcpdepstreq
+SET    depst_req_decsn = #{depst_req_decsn},
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = current
+WHERE  req_no = #{req_no}
+</update>
+
+<!-- 법인카드신청 등록 -->
+<insert id="insertItemFndCard" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndCardVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.fnd.insertListItemFndCard */ 
+  INTO fndcardissreq ( req_no,
+                       req_ymd,
+                       req_psn,
+                       req_dept,
+                       posi_cd,
+                       mobile,
+                       eng_nm,
+                       addr,
+                       issu_clsf,
+                       accnt_no,
+                       issu_cause,
+                       card_no,
+                       rmk,
+                       agrmt_yn,
+                       attach_file_no,
+                       card_use_yn,
+                       card_return_yn,
+                       regst_syspayno,
+                       regst_daytm)
+VALUES ( #{req_no},
+         #{req_ymd},
+         #{req_psn},
+         #{req_dept},
+         #{posi_cd},
+         #{mobile},
+         #{eng_nm},
+         #{addr},
+         #{issu_clsf},
+         #{accnt_no},
+         #{issu_cause},
+         #{card_no},
+         #{rmk},
+         #{agrmt_yn},
+         #{attach_file_no},
+         #{card_use_yn},
+         #{card_return_yn},
+         #{regst_syspayno},
+         CURRENT)
+</insert>
+
+<!-- 법인카드신청 수정 -->
+<update id="updateItemFndCard" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndCardVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.fnd.updateListItemFndCard */ 
+      fndcardissreq
+  SET <if test="mobile != null"> mobile = #{mobile}, </if>
+      <if test="eng_nm != null"> eng_nm = #{eng_nm}, </if> 
+      <if test="addr != null"> addr = #{addr}, </if> 
+      <if test="issu_clsf != null"> issu_clsf = #{issu_clsf}, </if>
+      <if test="accnt_no != null"> accnt_no = #{accnt_no}, </if>
+      <if test="card_no != null"> card_no = #{card_no}, </if>
+      <if test="issu_cause != null"> issu_cause = #{issu_cause}, </if>
+      <if test="rmk != null"> rmk = #{rmk}, </if>
+      <if test="agrmt_yn != null"> agrmt_yn = #{agrmt_yn}, </if>
+      <if test="card_use_yn != null"> card_use_yn = #{card_use_yn}, </if>
+      <if test="card_return_yn != null"> card_return_yn = #{card_return_yn}, </if>
+      <if test="attach_file_no != null"> attach_file_no = #{attach_file_no}, </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+
+<delete id="deleteItemFndCard" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndCardVo">
+DELETE /* QueryID : kr.re.kitech.biz.fin.fnd.deleteListItemFndCard */ 
+ FROM fndcardissreq
+WHERE  req_no = #{req_no}
+</delete>
+	
+<select id="selectListItemFndCard" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndCardVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FndCardVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.fnd.selectListItemFndCard */ 
+       a.req_no,
+       a.req_ymd,    
+       a.req_psn,
+       a.card_no,
+       b.empno,  
+       b.nm AS req_emp_nm,   
+       b.nm_eng AS eng_nm,
+       b.resid_no,
+       b.email,    
+       fun_dept_nm(a.req_dept) AS req_dept_nm,
+       c.posi_nm AS req_posi_nm,
+       a.mobile,   
+       b.ext_no,
+       a.issu_clsf,
+       a.accnt_no,
+       a.issu_cause,
+       a.rmk,
+       a.agrmt_yn,
+       e.apr_state,
+       fun_xodxcommst_cd_nm(e.apr_state, 0) AS apr_state_nm,
+       DECODE(NVL(a.mail_yn, '') , '', '', '발송') AS mail_yn 
+  FROM fndcardissreq a
+  JOIN humbasicinfo b ON a.req_psn = b.syspayno
+  JOIN xodhposiinfo c ON a.posi_cd = c.posi_cd  
+  JOIN xodxcommst d ON a.issu_cause = d.cd
+  JOIN xomxintfatab e ON a.req_no = e.req_no  
+ WHERE a.req_ymd BETWEEN #{req_ymd_from} AND #{req_ymd_to}  
+ <if test="req_no != null and req_no != ''"> AND a.req_no = #{req_no} </if>
+ <if test="req_dept != null and req_dept != ''"> AND a.req_dept = #{req_dept} </if>
+ <if test="req_psn != null and req_psn != ''"> AND a.req_psn = #{req_psn} </if>
+ <if test="issu_clsf != null and issu_clsf != ''"> AND a.issu_clsf = #{issu_clsf} </if>
+ <if test="apr_state != null and apr_state != ''"> AND e.apr_state = #{apr_state} </if>
+ ORDER BY a.req_ymd
+</select>
+  
+<select id="selectItemFndCard" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndCardVo" resultType="kr.re.kitech.biz.fin.fnd.vo.FndCardVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.fnd.selectItemFndCard */ 
+       a.req_no,
+       a.req_ymd,  
+       a.req_psn,    
+       b.empno,
+       b.nm   AS req_nm,
+       b.nm_eng,
+       a.addr,
+       substr(replace(b.resid_no, '-', ''), 1, 6) AS resid_no_1,
+       substr(replace(b.resid_no, '-', ''), 7, 13) AS resid_no_2,
+       b.email,
+       a.req_dept,       
+       fun_dept_nm(a.req_dept) AS req_dept_nm,
+       c.posi_nm,
+       a.mobile,    
+       b.ext_no,   
+       a.issu_clsf,
+       a.accnt_no,
+       replace(a.card_no, '-', '') AS card_no,
+       a.issu_cause,
+       a.rmk,
+       a.agrmt_yn,
+       a.card_use_yn,
+       a.card_return_yn,
+       a.attach_file_no,
+       e.apr_state
+  FROM fndcardissreq a
+  JOIN humbasicinfo b ON a.req_psn = b.syspayno
+  JOIN xodhposiinfo c ON a.posi_cd = c.posi_cd 
+  JOIN xodxcommst d ON a.issu_cause = d.cd
+  JOIN xomxintfatab e ON a.req_no = e.req_no 
+WHERE a.req_no = #{req_no}
+</select>
+  
+<update id="updateItemFndCardMailYn" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndCardVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.fnd.updateListItemFndCard */ 
+      fndcardissreq
+   SET mail_yn = 'Y',
+      updt_syspayno = #{updt_syspayno},
+      updt_daytm = SYSDATE
+WHERE req_no = #{req_no}
+</update>
+	
+<!-- 신청번호가 있을 경우 입금일자 조회 -->
+<select id="selectFibkAcctHisForDepst" parameterType="java.lang.String" resultType="kr.re.kitech.biz.com.vo.FibkAccntHisVo">
+SELECT /* kr.re.kitech.biz.fin.fnd.selectFibkAcctHisForDepst */
+       acct_txday
+     , acct_txday_seq
+     , bankaccnt_no
+  FROM fcpdepstreq 
+ WHERE req_no = #{req_no}
+</select>
+
+<!-- 입금의뢰팝업 및 예금입금의뢰2 상세화면 (조회) -->
+<select id="selectFcpDepstReq" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndDepstSrcVo" resultType="kr.re.kitech.biz.fin.com.vo.FcpDepstReqVo">
+SELECT /* kr.re.kitech.biz.fin.fnd.selectFcpDepstReq */
+       a.req_no
+     , b.acct_txday
+     , b.acct_txday_seq
+     , b.unslip_no AS depst_unslip_no
+     , b.unslip_seq AS depst_unslip_odr
+     , b.tx_amt
+     , b.remark
+     , e.slip_no
+     , e.slip_odr
+     , c.won_occr_amt - (c.won_adjst_amt + c.unslip_repay_amt) AS ramt
+     , h.bankaccnt_no
+     , h.bank AS bank_cd
+     , fun_xodxcommst_cd_nm(h.bank, 0) AS bank_nm
+     , a.depst_schdl_seq
+     , a.depst_schdl_detls_seq
+     , a.req_dept
+     , fun_dept_nm(a.req_dept) AS req_dept_nm
+     , a.req_dept_new_ymd
+     , a.req_psn
+     , fun_emp_nm(a.req_psn) AS req_psn_nm
+     , a.depst_ymd
+     , a.depst_liq 
+     , a.depst_liq AS bf_depst_liq
+     , a.accnt_no
+     , r.accnt_no_nm
+     , r.tax_cd
+     , r.accnt_rspns
+     , r.fomat_unit
+     , TRIM(a.recv_bill_no) AS recv_bill_no
+     , a.vend_cd
+     , g.vend_abbr
+     , a.rmk 
+     , a.depst_clsf
+     , TRIM(a.attach_file_no) AS attach_file_no
+     , a.req_ymd
+     , TRIM(a.unslip_no) AS unslip_no
+     , d.slip_ymd
+     , d.decsn_ex
+     , DECODE(#{biz_clsf}, 'R', f.req_no, a.req_no) AS apr_req_no
+     , x.apr_state
+     , tx.suply_value
+     , tx.taxamt
+    <if test='biz_clsf != null and biz_clsf == "S"'>, k.depst_mngmt_no </if>
+     , 'U' AS cud_type
+  FROM fibk_acct_his b
+  JOIN fspslipdecsnd e ON b.unslip_no = e.unslip_no AND b.unslip_seq = e.unslip_odr
+  JOIN fspramtcreat c ON c.slip_no = e.slip_no AND c.slip_odr = e.slip_odr
+  JOIN fcpdepst h ON b.acct_no = REPLACE(h.bankaccnt_no,'-','')
+  LEFT JOIN fcpdepstreq a ON b.acct_txday = a.acct_txday AND b.acct_txday_seq = a.acct_txday_seq AND b.acct_no = REPLACE(a.bankaccnt_no, '-', '')
+  LEFT JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+  LEFT JOIN xodfvend g ON a.vend_cd = g.vend_cd
+  LEFT JOIN resbgrectl f ON a.req_no = f.depst_req_no
+  LEFT JOIN ftxbillh tx ON a.recv_bill_no = tx.tax_bill_no
+ <if test='biz_clsf != null and biz_clsf == "S"'> JOIN spttecrcptdepst k ON a.req_no = k.req_no </if>
+  LEFT JOIN xomxintfatab x ON DECODE(#{biz_clsf}, 'R', f.req_no, a.req_no) = x.req_no
+  LEFT JOIN fspsliph d ON a.unslip_no = d.unslip_no
+ WHERE 1=1
+ <choose>
+  <when test='req_no != null and req_no != ""'> AND a.req_no = #{req_no} </when>
+  <when test='biz_clsf != null and biz_clsf == "R" and apr_req_no != null and apr_req_no != ""'> AND f.req_no = #{apr_req_no} </when>
+  <when test='biz_clsf != null and biz_clsf == "S" and depst_mngmt_no != null and depst_mngmt_no != ""'> AND k.depst_mngmt_no = #{depst_mngmt_no} </when>
+  <otherwise>
+   AND b.acct_txday = #{acct_txday}
+   AND b.acct_txday_seq = #{acct_txday_seq}
+   AND b.acct_no = #{acct_no}
+  </otherwise>
+ </choose>
+ ORDER BY req_no
+</select>
+
+<!-- 예금입금의뢰2 목록 조회 -->
+<select id="selectFibkAcctHisList" parameterType="kr.re.kitech.biz.fin.fnd.vo.FndDepstSrcVo" resultType="kr.re.kitech.biz.com.vo.FibkAccntHisVo">
+SELECT /* kr.re.kitech.biz.fin.fnd.selectFibkAcctHisList */
+      NVL(d.req_no, '') AS req_no
+     , a.acct_no
+     , a.acct_txday
+     , a.acct_txday_seq
+     , a.remark
+     , a.tx_amt -- 입금액
+     , NVL(d.depst_liq, 0) AS depst_liq --의뢰금액
+     , NVL(g.won_adjst_amt, 0) AS won_adjst_amt
+     , a.tx_amt - NVL(g.unslip_repay_amt, 0) - NVL(g.won_adjst_amt, 0) AS ramt -- 의뢰잔액
+     , a.branch -- 지점
+     , CASE WHEN NVL(a.unslip_no, '') = '' THEN 'N'
+            ELSE DECODE(NVL(f.unslip_no,''), '', 'N', 'Y') END AS depst_yn
+     , a.unslip_no AS depst_unslip_no
+     , a.unslip_seq AS depst_unslip_odr
+     , a.vacct_no
+     , b.depst_clsf
+     , c.slip_no || '-' ||ROUND(c.slip_odr) AS slip_no
+     , c.accnt_ymd
+     , e.accnt_no
+  FROM fibk_acct_his a
+  LEFT JOIN fspslipdecsnd f ON a.unslip_no = f.unslip_no AND a.unslip_seq = f.unslip_odr
+  LEFT JOIN fspramtcreat g ON f.slip_no = g.slip_no AND f.slip_odr = g.slip_odr
+  LEFT JOIN ( SELECT acct_txday,
+                     acct_txday_seq,
+                     REPLACE(bankaccnt_no, '-', '') AS acct_no,
+                     MAX(req_no) AS req_no,
+                     SUM(depst_liq) AS depst_liq
+                FROM fcpdepstreq
+               WHERE acct_txday BETWEEN #{acct_txday_st} AND #{acct_txday_ed}
+                 AND REPLACE(bankaccnt_no, '-', '') LIKE '%' || #{acct_no}
+               GROUP BY 1, 2, 3
+        )d ON a.acct_no = d.acct_no AND a.acct_txday = d.acct_txday AND a.acct_txday_seq = d.acct_txday_seq
+  LEFT JOIN fcpdepstreq b ON d.req_no = b.req_no
+  LEFT JOIN fspslipdecsnd c ON b.unslip_no = c.unslip_no AND b.unslip_odr = c.unslip_odr
+  LEFT JOIN ( SELECT a.vacct_no,
+                     a.bsns_req_no,
+                     c.accnt_no
+                FROM ffnvacct a
+                JOIN resinpmast b ON a.bsns_req_no = B.bsns_req_no
+                JOIN resbgacctm c ON b.prj_no = c.prj_no AND c.accnt_clsf = 'RAR001'
+               WHERE a.bankaccnt_state = '1'
+                 AND a.sgroup_cd1 = 'FDU001'
+         ) e ON a.vacct_no = e.vacct_no
+ WHERE a.acct_no LIKE '%' || #{acct_no}
+   AND a.acct_txday BETWEEN #{acct_txday_st} AND #{acct_txday_ed} 
+   AND a.inout_gubun = '2'
+  <if test='tx_amt_from != null and tx_amt_from !=""'> AND a.tx_amt >= #{tx_amt_from} </if>
+  <if test='tx_amt_to != null and tx_amt_to !=""'> AND a.tx_amt <![CDATA[ <=]]> #{tx_amt_to} </if>
+  <if test='remark != null and remark !=""'> AND a.remark LIKE '%'||#{remark}||'%' </if> 
+  <if test='vacct_no != null and vacct_no !=""'> AND NVL(a.vacct_no, '') LIKE '%' ||#{vacct_no} </if>
+  <if test='depst_yn != null and depst_yn =="Y"'> AND NVL(d.req_no, '') != '' </if>
+  <if test='depst_yn != null and depst_yn =="N"'> AND NVL(d.req_no, '') = '' </if>
+ ORDER BY 2, 3, 4
+</select>
+<select id="selectAccntNoInfoForDepst" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.fin.fnd.selectAccntNoInfoForDepst */
+      a.prj_no
+     , a.start_ymd
+     , a.cls_ymd
+     , TRIM(b.nm ||'(' || b.empno ||')') AS emp_nm
+     , c.dept_nm
+     , d.posi_nm
+  FROM resbgacctm a
+  JOIN humbasicinfo b ON a.accnt_rspns = b.syspayno
+  JOIN xodhdeptinfo c ON b.dept_cd = c.dept_cd AND b.dept_new_ymd = c.dept_new_ymd
+  LEFT JOIN xodhposiinfo d ON b.posi_cd = d.posi_cd
+ WHERE a.accnt_no = #{accnt_no}
+</select>
+</mapper>

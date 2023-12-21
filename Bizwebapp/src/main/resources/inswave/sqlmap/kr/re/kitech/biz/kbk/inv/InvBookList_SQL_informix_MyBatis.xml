@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.kbk.inv">	
+<!-- 단행본 관리 조회 -->	
+<select id="selectBookList" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvBookSearchVo" resultType="kr.re.kitech.biz.kbk.inv.vo.InvBookVo">
+SELECT  /* kr.re.kitech.biz.kbk.inv.selectBookList */
+     fun_xodxcommst_cd_nm(a.centr_cd,0) as centr_cd,
+     a.regst_no,
+     a.isbn,
+     a.book_nm,
+     a.auth_nm,
+     a.regst_ymd,
+     a.publ_yr,
+     a.clsfsgn,
+     a.authcd,
+     a.copy,
+     a.publ_vend,
+     decode(b.retrn_ymd,'','대출중','대출가능') as loan_yn_nm,
+     decode(b.retrn_ymd,'',c.nm,'') as loan_psn_nm,
+     b.retrn_schdl_ymd as retrn_schdl_ymd
+FROM kbkbook a
+LEFT JOIN kbkbookloan b ON a.regst_no = b.loan_book_no AND b.valid_yn  = '0'
+LEFT JOIN humbasicinfo c ON b.loan_psn_syspayno = c.syspayno
+WHERE regst_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+<if test='regst_no != null and regst_no != ""'> AND a.regst_no LIKE #{regst_no} ||'%' </if>
+<if test='clsfsgn != null and clsfsgn != ""'> AND a.clsfsgn LIKE '%' || #{clsfsgn} || '%' </if>
+<if test='centr_cd != null and centr_cd != ""'> AND a.centr_cd  = #{centr_cd} </if>
+<if test='auth_nm != null and auth_nm != ""'> AND a.auth_nm  LIKE '%' || #{auth_nm} || '%' </if>
+<if test='kwd != null and kwd != ""'> AND a.kwd LIKE '%' || #{kwd} || '%' </if>
+<if test='publ_vend != null and publ_vend != ""'> AND a.publ_vend LIKE '%' || #{publ_vend} || '%' </if>
+<if test='book_nm != null and book_nm != ""'> AND REPLACE(UPPER(a.book_nm),' ','') LIKE '%' || REPLACE(UPPER(#{book_nm}),' ', '') || '%'</if>
+ORDER BY a.regst_no DESC
+</select>
+	
+<select id="selectTransBookList" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvTransBookVo" resultType="kr.re.kitech.biz.kbk.inv.vo.InvTransBookVo">
+SELECT /* kr.re.kitech.biz.kbk.inv.selectTransBookList */
+      regst_no,
+       fun_xodxcommst_cd_nm(centr_cd,0) as centr_cd,
+       regst_ymd,
+       book_nm,
+       auth_nm,
+       publ_yr,
+       pur_amt,
+       abol_trans_resn,
+       trans
+  FROM kbkbooktrans
+ WHERE 1 = 1
+ <if test="regst_no != null and regst_no != ''" > AND regst_no LIKE '%' || #{regst_no} || '%' </if>
+ <if test="book_nm != null and book_nm != ''" > AND book_nm LIKE '%' || #{book_nm} || '%' </if>
+ <if test="auth_nm != null and auth_nm != ''" > AND auth_nm LIKE '%' || #{auth_nm} || '%' </if>
+ <if test="abol_trans_fr_ymd != null and abol_trans_fr_ymd != ''" > AND abol_trans_ymd   BETWEEN #{abol_trans_fr_ymd} AND #{abol_trans_to_ymd} </if>
+ <if test="abol_trans_clsf != null and abol_trans_clsf != ''" > AND abol_trans_clsf  LIKE '%' || #{abol_trans_clsf} || '%' </if>
+ <if test="trans != null and trans != ''" > AND trans LIKE '%' || #{trans} || '%' </if>
+ORDER BY abol_trans_ymd DESC
+</select>
+</mapper>

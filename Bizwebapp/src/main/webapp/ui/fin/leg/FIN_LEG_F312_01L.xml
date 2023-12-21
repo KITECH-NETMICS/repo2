@@ -1,0 +1,543 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare"
+	xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="각계정정보조회" meta_programId="F312" meta_author="전재우" meta_date="2023.08.03.">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="accnt_no" name="accnt_no" dataType="text"></w2:key>
+				       <w2:key id="accnt_rspns" name="accnt_rspns" dataType="text"></w2:key>
+				       <w2:key id="relat_no" name="relat_no" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataMap baseNode="map" id="dma_accnt_search">
+				  <w2:keyInfo>
+				       <w2:key id="accnt_no" name="accnt_no" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="accnt_no" name="accnt_no" dataType="text"></w2:column>
+				       <w2:column id="tax_cd" name="tax_cd" dataType="text"></w2:column>
+				       <w2:column id="accnt_clsf" name="accnt_clsf" dataType="text"></w2:column>
+				       <w2:column id="syspayno" name="syspayno" dataType="text"></w2:column>
+				       <w2:column id="accnt_no_nm" name="accnt_no_nm" dataType="text"></w2:column>
+				       <w2:column id="accnt_state" name="accnt_state" dataType="text"></w2:column>
+				       <w2:column id="date" name="date" dataType="text"></w2:column>
+				       <w2:column id="nm" name="nm" dataType="text"></w2:column>
+				       <w2:column id="progress_tmp" name="progress_tmp" dataType="text"></w2:column>
+				       <w2:column id="progress" name="progress" dataType="text"></w2:column>
+				       <w2:column id="start_ymd" name="start_ymd" dataType="text"></w2:column>
+				       <w2:column id="cls_ymd" name="cls_ymd" dataType="text"></w2:column>
+				       <w2:column id="attnce_agncy" name="attnce_agncy" dataType="text"></w2:column>
+				       <w2:column id="bsns_cd_exclsv_agncy" name="bsns_cd_exclsv_agncy" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>
+			</w2:dataCollection>
+			<w2:workflowCollection />
+			<!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' action="SvcFINFINRESMR01.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			
+			<!-- 계정정보조회 -->
+			<xf:submission id="sbm_selectbgacctmData" ref="data:json,dma_accnt_search" target='' action="SvcFINFINRESMR02.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 각계정정보조회
+ 	 * 변경 이력 : 2023-08-03	전재우	최초 작성
+ 	 * 서비스아이디 : F312
+ 	 ****************************************************/  
+	/*
+     *  날짜 설정
+     */
+	var now = new Date();
+	var defalutday = gcm.date.formatDateTime(now, "yyyyMMddHHmm"); // yyyyMMddHHmm
+	var day = gcm.date.formatDateTime(now); // yyyyMMdd 
+	var year = now.getFullYear(); // yyyy
+	
+	var syspayno = com.getLoginInfo("sn");
+	scwin.service_id = "";
+	
+    /*
+     * 페이지 열기
+     */          
+	scwin.onpageload = function() {
+		scwin.service_id = com.getParameter("menuObj").serviceID;
+		com.setEnterKeyEvent(grp_accnt_no_rspns, scwin.btn_search_hum_onclick);
+		com.setEnterKeyEvent(grp_accnt_no, scwin.btn_accnt_no_onclick);
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/*
+     *  조회버튼 클릭 이벤트
+     */
+	scwin.btn_search_onclick = function(e) {
+		
+		if (dma_search.get("accnt_rspns") == "" && (dma_search.get("accnt_no") == "" || dma_search.get("accnt_no").length < 4)) {
+			alert("계정책임자와 계정번호(4자리 이상) 중 하나를 \n입력하고 조회해주시기 바랍니다.");
+			return;
+		}
+		
+		scwin.search();
+	};
+	
+	/*
+    *  조회
+    */
+	scwin.search = function() {		
+		dma_search.set("relat_no", inp_empno.getValue());
+		com.execute(sbm_selectData, {
+			successCallback : function(e){
+				dlt_grd.setJSON(e.responseJSON.finBgaCctmDetlVoList);
+				tbx_result.setValue(dlt_grd.getRowCount());
+				
+				for (var i=0 ; i < dlt_grd.getRowCount() ; i++) {
+					var process = dlt_grd.getCellData(i, "progress");
+					
+					if (process.trim() == "진행") {
+						grd_list.setCellBackgroundColor(i, "progress", "#ff8000");
+					}
+				}
+			}
+		});
+	};
+	
+	/*
+     *  계정번호 변경 이벤트
+     */
+	scwin.ibx_accnt_no_onchange = function(info) {
+		if (this.getValue() == "") {
+			ibx_accnt_no_nm.setValue("");
+		}
+	};
+	
+	/*
+     *  계정번호 검색 버튼 클릭 이벤트
+     */
+	scwin.btn_accnt_no_onclick = function(e) {
+		var data = {
+			accnt_no : ibx_accnt_no.getValue().toUpperCase(),
+			ref_yn : (ibx_accnt_no.getValue() == "")? "Y" : "N"
+		};
+		
+		com.pop.open(com.pop.TYPE.ACNNO, data, function(ret){
+			ibx_accnt_no.setValue(ret.accnt_no);
+			ibx_accnt_no_nm.setValue(ret.accnt_no_nm);
+		});
+	};
+	
+	/*
+     *  사원번호 변경 이벤트
+     */
+	scwin.ibx_search_hum_onchange = function(info) {
+		if (this.getValue() == "") {
+			tb_nm.setValue("");
+			dma_search.set("accnt_rspns", "");
+		}
+	};
+	
+	/*
+     *  사원검색 검색 버튼 클릭 이벤트
+     */
+	scwin.btn_search_hum_onclick = function(e) {
+		scwin.selectHumBtn(inp_empno.getValue());
+	};
+	
+	/*
+     *  직원검색 팝업 호출
+     */
+	scwin.selectHumBtn = function(empNo) {
+		var data = {
+			empno : empNo,
+			work_clsf : "HAG010",
+			ref_yn : (empNo == "")? "Y" : "N"
+		};
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			if (ret) {
+				inp_empno.setValue(ret.empno);
+				tb_nm.setValue(ret.nm);
+				dma_search.set("accnt_rspns", ret.syspayno);
+				dma_search.set("relat_no", ret.empno);
+			}
+		});
+	};
+	
+	/*
+     *  출력 그리드 클릭 이벤트
+     */
+	scwin.grd_list_oncellclick = function(row,col,colId) {
+		if(col == 11){ //예실
+			scwin.search_bgacctm(grd_list.getCellData(row, "accnt_no"), row);
+		}else if(col == 12){ //원장
+			scwin.fin_accnt_info_sel_print(row, col);
+		}else if(col == 13){ //원인
+			scwin.fin_accnt_info_sel_print(row, col);
+		}
+	};
+	
+	/*
+    *  계정정보 조회
+    */
+	scwin.search_bgacctm = function(accntNo, row) {		
+		dma_accnt_search.set("accnt_no", accntNo);
+		com.execute(sbm_selectbgacctmData, {
+			successCallback : function(e){
+				var inputSysNo = grd_list.getCellData(row, "syspayno");
+				var accntNo = e.responseJSON.elData.accnt_no;
+				var accntClsf = e.responseJSON.elData.accnt_clsf;
+				var accntNoClsf = accntNo.substring(0, 2);
+				var accntNoClsfYear = accntNo.substring(0, 4);
+				var accntNoYear = accntNo.substring(2, 4);
+				var itmSolveBase = e.responseJSON.elData.itm_solve_base;
+				var p_res_type = ""; // 1이면 서브계정포함
+				
+				if (accntNoClsf != "PA" && accntNoClsf != "PD" && accntNoClsf != "PL" && accntNoClsf != "PQ") { // PA,PD,PL,PQ외에만 일반예실대비표조회
+					if ((rdo_sub_yn.getValue() == "Y" || rdo_sub_yn.getValue() == "Z") && accntClsf == "RAR001") {
+						p_res_type = '1';
+					} else {
+						p_res_type = '0';
+					}
+					
+					// 이월계정 분리
+					var accntDiv = "";
+					if (rdo_sub_yn.getValue() == "Z") {
+						accntDiv = "Z";
+					}
+					
+					var node = "accnt_no=" + accntNo + "&itm_solve_base=" + itmSolveBase + "&res_type=" + p_res_type + "&accnt_div=" + accntDiv + "&barcode_1=" + defalutday 
+								+ "&barcode_2=" + inputSysNo + "&barcode_3=" + day + "&scrn_id=" + scwin.service_id  + "&relat_no=" + inputSysNo + "&bugt_yr=" + year;
+					$l("node = " + node);
+					
+					var reportObj = {
+						ozrCode : "F006", // /fin/fin/leg/FinAccntInfo01Sel.ozr
+						param : node
+					};
+				} else if (accntNoClsf == "PA" || accntNoClsf == "PD") { // 2019년부터 PA, PD 계정 일반예실 적용
+					if (accntNoYear > "18") {
+						if ((rdo_sub_yn.getValue() == "Y" || rdo_sub_yn.getValue() == "Z") && accntClsf == "RAR001") {
+							p_res_type = '1';
+						} else {
+							p_res_type = '0';
+						}
+						// 이월계정 분리
+						var accntDiv = "";
+						if (rdo_sub_yn.getValue() == "Z") {
+							accntDiv = "Z";
+						}
+						
+						var node = "accnt_no=" + accntNo + "&itm_solve_base=" + itmSolveBase + "&res_type=" + p_res_type + "&accnt_div=" + accntDiv
+									+ "&barcode_1=" + defalutday + "&barcode_2=" + inputSysNo + "&barcode_3=" + day + "&scrn_id=" + scwin.service_id + "&relat_no=" + inputSysNo + "&bugt_yr=" + year;
+						$l("node = " + node);
+						
+						var reportObj = {
+							ozrCode : "F006", // /fin/fin/leg/FinAccntInfo01Sel.ozr
+							param : node
+						};
+					} else {
+						var node = "accnt_fr_ymd=" + year + "&accnt_to_ymd=" + year + "&accnt_no=" + accntNo;
+						$l("node = " + node);
+						
+						var reportObj = {
+							ozrCode : "F007", // /fin/bud/frc/BudTrustDetlsSel.ozr
+							param : node
+						};
+					}
+				} else { // PA,PD,PL,PQ 계정은 수탁집행내역 출력 2012.08.01 김기탁 팀장님 요청
+					var node = "accnt_fr_ymd=" + year + "&accnt_to_ymd=" + year + "&accnt_no=" + accntNo;
+					$l("node = " + node);
+					
+					var reportObj = {
+						ozrCode : "F007", // /fin/bud/frc/BudTrustDetlsSel.ozr
+						param : node
+					};
+				}
+				
+				let option = {
+					id : "1"
+				};
+				
+				com.oz.open(reportObj, option);
+			}
+		});
+	};
+	
+	/*
+     *  오즈 리포트 출력 (원장, 원인)
+     */
+	scwin.fin_accnt_info_sel_print = function(row, col) {
+		var startYmd = grd_list.getCellData(row, "start_ymd");
+		var clsYmd = day;
+		var accntNo = grd_list.getCellData(row, "accnt_no");
+		var accntNoNm = grd_list.getCellData(row, "accnt_no_nm");
+		var accntClsf = grd_list.getCellData(row, "accnt_clsf");
+		var accntPsn = grd_list.getCellData(row, "syspayno");
+	
+		if (col == 12) {
+			if (accntNo == "FF030004") {
+				var node = "accnt_no=" + accntNo + "&accnt_clsf=" + accntClsf + "&accnt_rspns=%" + inp_empno.getValue() + "&start=" + startYmd + "&end=" + clsYmd +
+						   "&barcode_1=" + defalutday + "&barcode_2=" + syspayno + "&barcode_3=" + day + "&scrn_id=" + scwin.service_id;
+				
+				var reportObj = {
+					ozrCode : "F008", // /fin/fin/leg/FinAccntInfo02Sel.ozr
+					param : node
+				};
+				
+				let option = {
+					id : "2",     // default ""
+				    width : 1400,       // defualt 1012
+				    height : 800        // default 712
+				};
+				
+				com.oz.open(reportObj, option);
+			} else {
+				var subYn = rdo_sub_yn.getValue();
+				var srcType = "N";
+				if ((subYn == "Y" || subYn == "Z") && accntClsf == "RAR001") {
+					srcType = 'Y';
+				}
+				
+				// 이월계정 분리
+				var accntDiv = "";
+				if (subYn == "Z") {
+					accntDiv = "Z";
+				}
+				
+				var node = "accntNo=" + accntNo + "&startYmd=" + startYmd + "&endYmd=" + clsYmd + "&expnsCd=%&reschAccntClsf=%&src_type=" + srcType + "&accnt_div=" + accntDiv;
+				$l("node = " + node);
+				
+				var reportObj = {
+					ozrCode : "F009", // /fin/fin/leg/FinAccntLedger2Sel.ozr
+					param : node
+				};
+				
+				let option = {
+					id : "2",     // default ""
+				    width : 1400,       // defualt 1012
+				    height : 800        // default 712
+				};
+				
+				com.oz.open(reportObj, option);
+			}
+		} else {
+			if (accntNo == "FF030004") {
+				var node = "accnt_no=" + accntNo + "&relat_no=" + accntPsn + "&barcode_1=" + defalutday + "&barcode_2=" + syspayno + "&barcode_3=" + day + "&scrn_id=" + scwin.service_id;
+				var reportObj = {
+					ozrCode : "F082", // /fin/fin/leg/FinAccntInfo03Sel01.ozr
+					param : node
+				};
+				
+				let option = {
+					id : "3"
+				};
+				
+				com.oz.open(reportObj, option);
+			} else {
+				var subYn = rdo_sub_yn.getValue();
+				var srcType = "N";
+				if ((subYn == "Y" || subYn == "Z") && accntClsf == "RAR001") {
+					srcType = "Y";
+				}
+				
+				// 이월계정 분리
+				var accntDiv = "";
+				if (subYn == "Z") {
+					accntDiv = "Z";
+				}
+				
+				var node = "accnt_no=" + accntNo + "&src_type=" + srcType + "&accnt_div=" + accntDiv + "&barcode_1=" + defalutday + "&barcode_2=" + syspayno + "&barcode_3=" + day + "&scrn_id=" + scwin.service_id;;
+				$l("node = " + node);
+				
+				var reportObj = {
+					ozrCode : "F081", // /fin/fin/leg/FinAccntInfo03Sel.ozr
+					param : node
+				};
+				
+				let option = {
+					id : "3"
+				};
+				
+				com.oz.open(reportObj, option);
+			}
+		}
+	}
+	
+	scwin.btn_excel_onclick = function(e) {
+		if(dlt_grd.getRowCount() == 0) return;
+		
+		var option = {
+			    fileName : "각계정정보조회.xlsx"
+			  , useDataFormat : true
+//			  , hiddenVisible : true
+		};
+		com.downloadGridExcel(grd_list, option);
+	};
+	]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+		<xf:group id="" class="pageWrap">
+			<xf:group style="" id="" class="searchSection">
+				<xf:group id="grp_search" class="schbox">
+					<xf:group tagname="table" style="" id="" class="w2tb tbl">
+						<w2:attributes>
+							<w2:summary></w2:summary>
+						</w2:attributes>
+						<xf:group tagname="caption" text="조회조건"></xf:group>
+						<xf:group tagname="colgroup">
+							<xf:group tagname="col" style="width:70px;"></xf:group>
+							<xf:group tagname="col" style="width:250px;"></xf:group>
+							<xf:group tagname="col" style="width:70px;"></xf:group>
+							<xf:group tagname="col" style="width:350px;"></xf:group>
+							<xf:group style="width:70px;" tagname="col"></xf:group>
+							<xf:group style="" tagname="col"></xf:group>
+						</xf:group>
+						<xf:group style="" tagname="tr">
+							<xf:group class="w2tb_th" style="" tagname="th"><w2:attributes></w2:attributes><w2:textbox id="" label="계정책임자" style="" tagname="span"></w2:textbox></xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td"><w2:attributes></w2:attributes><xf:group class="inpSch" id="grp_accnt_no_rspns" style="width: 120px;">
+									<xf:input adjustMaxLength="false" class="inp" ev:onchange="scwin.ibx_search_hum_onchange" id="inp_empno"
+										style="vertical-align:middle;" title="계정책임자" maxlength="8">
+									</xf:input>
+									<xf:trigger class="btn" ev:onclick="scwin.btn_search_hum_onclick" id="btn_accnt_rspns" style="" title="계정번호 조회" type="button">
+										<xf:label><![CDATA[검색]]></xf:label>
+									</xf:trigger>
+								</xf:group><xf:input adjustMaxLength="false" class="inp" disabled="true" id="tb_nm" style="width:90px;" title="계정책임자">
+								</xf:input></xf:group>
+							<xf:group class="w2tb_th" style="" tagname="th"><w2:attributes></w2:attributes><w2:textbox id="" label="계정번호" style="" tagname="span"></w2:textbox></xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td"><w2:attributes></w2:attributes><xf:group class="inpSch" id="grp_accnt_no" style="width: 120px;">
+									<xf:input adjustMaxLength="false" class="inp" ev:onchange="scwin.ibx_accnt_no_onchange" id="ibx_accnt_no"
+										ref="data:dma_search.accnt_no" style="vertical-align:middle;text-transform:uppercase;" title="계정번호" allowChar="0-9A-Za-z" maxlength="8">
+									</xf:input>
+									<xf:trigger class="btn" ev:onclick="scwin.btn_accnt_no_onclick" id="btn_accnt_no" style="" title="계정번호 조회" type="button">
+										<xf:label><![CDATA[검색]]></xf:label>
+									</xf:trigger>
+								</xf:group><xf:input adjustMaxLength="false" class="inp" disabled="true" id="ibx_accnt_no_nm" style="width:200px;" title="계정책임자">
+								</xf:input></xf:group>
+							<xf:group class="w2tb_th" style="" tagname="th"><w2:attributes></w2:attributes><w2:textbox id="" label="서브계정" style="" tagname="span"></w2:textbox></xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+								<w2:attributes>
+									<w2:colspan>1</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes>
+								<xf:select1 appearance="full" class="radioGroup" cols="" ev:onviewchange="" id="rdo_sub_yn"
+									ref="data:dma_search.sub_yn" renderType="radiogroup" rows="" selectedIndex="0" style="" title="서브계정여부">
+									<xf:choices>
+										<xf:item>
+											<xf:label><![CDATA[포함]]></xf:label>
+											<xf:value><![CDATA[Y]]></xf:value>
+										</xf:item>
+										<xf:item>
+											<xf:label><![CDATA[포함(이월계정제외)]]></xf:label>
+											<xf:value><![CDATA[Z]]></xf:value>
+										</xf:item>
+										<xf:item>
+											<xf:label><![CDATA[미포함]]></xf:label>
+											<xf:value><![CDATA[N]]>
+											</xf:value>
+										</xf:item>
+									</xf:choices>
+								</xf:select1>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+				<xf:group id="" class="schbtn">
+					<xf:trigger style="" id="btn_search" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+						<xf:label><![CDATA[조회]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			<xf:group class="titleSection" id="" style="margin-top:5px;">
+				<xf:group class="le" id="" style="">
+					<xf:group class="result" id="">
+						<w2:span id="" label="*조회결과 " style=""></w2:span>
+						<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+						<w2:span id="" label="건" style=""></w2:span>
+						<w2:span class="helptxt red full" id="" label="* [예실] 또는 [원장]은 서브계정을 포함하여 출력가능합니다." style="margin-left:10px;">
+						</w2:span>
+					</xf:group>
+				</xf:group>
+				<xf:group class="ri" id="" style="">
+					<xf:trigger class="btn icon down" ev:onclick="scwin.btn_excel_onclick" id="btn_excel" style="" type="button">
+						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			<w2:gridView class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff" id="grd_list"
+				noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+				rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+				scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 100px;"
+				summaryAuto="true" fixedColumn="8" sortable="true" readOnly="true" ev:oncellclick="scwin.grd_list_oncellclick" autoFit="allColumn" visibleRowNum="21">
+				<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+				<w2:header id="header1" style="">
+					<w2:row id="row1" style="">
+						<w2:column width="70" inputType="text" style="height:28px" id="column1" value="과세구분" displayMode="label">
+						</w2:column>
+						<w2:column displayMode="label" id="column2" inputType="text" style="height:28px" value="계정번호" width="80"></w2:column>
+						<w2:column width="110" inputType="text" style="height:28px" id="column115" value="과제참여유형" displayMode="label"></w2:column>
+						<w2:column width="100" inputType="text" style="height:28px" id="column97" value="전담기관" displayMode="label" />
+						<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="계정명" width="260"></w2:column>
+						<w2:column width="80" inputType="text" style="height:28px" id="column118" value="계정상태" displayMode="label"></w2:column>
+						<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="과제기간" width="170">
+						</w2:column>
+						<w2:column width="80" inputType="text" style="height:28px" id="column109" value="계정책임자" displayMode="label"></w2:column>
+						<w2:column width="70" inputType="text" style="height:28px" id="column121" value="계정책임자 시스템번호" displayMode="label"></w2:column>
+						<w2:column width="90" inputType="text" style="height:28px" id="column124" value="진행" displayMode="label"></w2:column>
+						<w2:column width="70" inputType="text" style="height:28px" id="column127" value="과제구분" displayMode="label"></w2:column>
+						<w2:column width="305" inputType="text" style="height:28px;" id="column50" value="출력" displayMode="label"
+							colSpan="3">
+						</w2:column>
+						<w2:column width="70" inputType="text" style="height:28px" id="column133" value="시작일자" displayMode="label"></w2:column>
+						<w2:column width="70" inputType="text" style="height:28px" id="column63" value="종료일자" displayMode="label"></w2:column>
+					</w2:row>
+				</w2:header>
+				<w2:gBody id="gBody1" style="">
+					<w2:row id="row2" style="">
+						<w2:column inputType="text" style="height:28px" id="tax_cd" displayMode="label" width="70"></w2:column>
+						<w2:column displayMode="label" id="accnt_no" inputType="text" style="height:28px" width="80"></w2:column>
+						<w2:column inputType="text" style="height:28px" id="attnce_agncy" displayMode="label" width="110"></w2:column>
+						<w2:column inputType="text" style="height:28px" id="bsns_cd_exclsv_agncy" displayMode="label" width="100">
+						</w2:column>
+						<w2:column displayMode="label" id="accnt_no_nm" inputType="text" style="height:28px;" width="260"
+							textAlign="left">
+						</w2:column>
+						<w2:column inputType="text" style="height:28px" id="accnt_state" displayMode="label" width="80"
+							textAlign="center">
+						</w2:column>
+						<w2:column displayMode="label" id="date" inputType="text" style="height:28px;" width="170" textAlign="center"></w2:column>
+						<w2:column inputType="text" style="height:28px" id="nm" displayMode="label" width="80"></w2:column>
+						<w2:column inputType="text" style="height:28px" id="syspayno" displayMode="label" width="70" hidden="true"></w2:column>
+						<w2:column inputType="text" style="height:28px" id="progress" displayMode="label" width="90" textAlign="center"></w2:column>
+						<w2:column inputType="text" style="height:28px" id="accnt_clsf" displayMode="label" width="70" hidden="true"></w2:column>
+						<w2:column inputType="button" style="height:28px" id="column19" value="예실" displayMode="label" width="100"
+							textAlign="center">
+						</w2:column>
+						<w2:column inputType="button" style="height:28px" id="column17" value="원장" displayMode="label" width="100"
+							textAlign="center">
+						</w2:column>
+						<w2:column inputType="button" style="height:28px" id="column15" value="원인" displayMode="label" width="100"
+							textAlign="center">
+						</w2:column>
+						<w2:column width="70" inputType="text" style="height:28px" id="start_ymd" displayMode="label" hidden="true"></w2:column>
+						<w2:column width="70" inputType="text" style="height:28px" id="cls_ymd" displayMode="label" hidden="true"></w2:column>
+					</w2:row>
+				</w2:gBody>
+			</w2:gridView>
+		</xf:group>
+	</body>
+</html>

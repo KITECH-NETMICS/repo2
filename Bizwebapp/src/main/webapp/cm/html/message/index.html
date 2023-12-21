@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>메시지발송 템플릿 개발자 가이드</title>
+<link rel="stylesheet" href="support/css/index.css">
+<script src="/cm/ext/google-code-prettify/run_prettify.js?autoload=true&amp;skin=desert"></script>
+<script src="/websquare/externalJS/jquery/jquery-1.10.2.min.js"></script>
+<script>
+	$(document).ready(function() {
+		$("aside ul h3").click(function() {
+			$("aside ul h3").removeClass("selected");
+			$("aside ul ul").hide("fast");
+			$(this).addClass("selected");
+			$(this).siblings("ul").show("fast");
+		});
+		$("aside ol a").click(function() {
+			$("div.main").show();
+			$("#templateViewer").hide();
+		});
+		$("aside ul a").click(function() {
+			$("div.main").hide();
+			$("#templateViewer").show();
+			var href = $(this).attr("href");
+			$("#templateModuleName").val( href.match(/^templates\/(.*)\.html$/)[1] );
+		});
+		$("#btnCopy").click(function() {
+			$("#templateModuleName").select();
+			try { document.execCommand('copy'); } catch(e) {}
+		});
+	});
+</script>
+</head>
+<body>
+	<header>
+		<h1>메시지 발송 개발자 가이드</h1>
+	</header>
+
+	<aside>
+		<h2>기본 API 사용법</h2>
+		<ol>
+			<li><a href="#section1">개요</a></li>
+			<li><a href="#section2">템플릿 작성과 관리</a></li>
+			<li><a href="#section3">Websquare XML에서의 사용</a></li>
+			<li><a href="#section4">Java에서의 사용</a></li>
+			<li><a href="#section5">발송이력관리 참고사항</a></li>
+		</ol>
+		<h2>업무별 메시지 발송 템플릿</h2>
+		<ul>
+			<li>
+				<h3>시스템</h3>
+				<ul>
+					<li><a target="templateFrame" href="templates/com/RegistIdComplete.html">LDAP ID발급 배치 완료 MMS</a></li>
+				</ul>
+			</li>
+		</ul>
+	</aside>
+
+	<section id="templateViewer">
+		<div id="moduleInfo">
+			템플릿 모듈명
+			<input id="templateModuleName" type="text" readonly>
+			<button id="btnCopy">복사</button>
+		</div>
+		<iframe id="templateFrame" name="templateFrame"></iframe>
+	</section>
+
+	<div class="main">
+		<a id="section1"></a>
+		<h2>개요</h2>
+
+		<p>메시지 발송 공통모듈 API 및 템플릿 연계 시스템은 업무시스템을 이용한 메시지 발송 기능의 구현에 있어서,
+			기존의 하드코딩 방식의 비효율적인 개발과 관리에서 탈피하고 체계화를 위하여 공통모듈 기능과 템플릿의 활용으로
+			개발과 유지보수의 효율성과 편의성을 증가시키는 것이 주요 목적이다.</p>
+		<p>공통 API와 템플릿을 이용한 메시지 발송 기능개발과 관리방식의 기대효과는 다음과 같다.</p>
+		<ul>
+			<li>메시지 발송 양식들을 독립적인 HTML 파일로 형상관리 서버를 통해 관리함으로써 관리 효율성 증대와 메시지 품질의 향상</li>
+			<li>미리보기 기능을 통해 직관적인 템플릿의 양식 수정과 변수 설정이 가능함으로써 개발 편의성 증대 </li>
+			<li>관련 프로그램 내의 하드코딩을 배제하고 비즈니스 로직과 분리함으로써 프로그램 코드의 복잡도 경감</li>
+			<li>일관성 있는 API를 통한 메시지 전송 공통 모듈의 사용으로 개발 생산성 제고</li>
+			<li>공통 모듈 내에 구현된 기본 기능을 통해 메일전송 이력을 자동으로 기록관리</li>
+		</ul>
+		<p>메시지 발송 자동화를 위해 템플릿을 활용하는 것이 원칙이나, 내용이 매우 단순한 MMS나 SMS 메시지의 경우 템플릿을 별도로 구성하지 않고
+			직접 본문 내용을 사용하는 기능 또한 제공한다.</p>
+
+		<a id="section2"></a>
+		<h2>템플릿 작성과 관리</h2>
+
+		<p>메시지 템플릿은 (구)EIP 업무 시스템의 정보시스템운영 -> 메시지관리 메뉴 내에서 관리한다.</br>
+			메시지가 없는 경우 담당자에게 요청한다. (담당자: 배소연, 041-5898-092))</p>
+		
+		<p>템플릿 내에서 동적인 내용은 중괄호({})로 감싼 형태의 템플릿 변수를 이용하여 지정한다.
+			(예시: {성명}, {전화번호} 등)</p>
+		
+		<a id="section3"></a>
+		<h2>Websquare XML에서의 사용</h2>
+
+			<h3>Kitech Object</h3>
+			<p>Websquare 공통 라이브러리 파일로 메일발송 API import 하므로 추가 참조를 선언하지 않는다.</p>
+
+			<h3>패키지 정의</h3>
+			<pre class="prettyprint">@Deprecated Kitech.tools</pre>
+			<p>유틸리티성 라이브러리 패키지, 향 후 지속적인 기능 추가 예정.</p>
+			<pre class="prettyprint">@Deprecated Kitech.inner</pre>
+			<p>내부적으로 사용되는 라이브러리 패키지.</p>
+			<pre class="prettyprint">com.mail</pre>
+			<p>메일 발송 라이브러리 패키지</p>
+			<pre class="prettyprint">com.msg</pre>
+			<p>메시지 발송 라이브러리 패키지</p>
+
+			<h3>메소드 정의</h3>
+			<pre class="prettyprint">sendMessage(Object options, Function func)</pre>
+			<p>기본적으로 ajax, asynchronous 모드로 호출된다.</p>
+			<p>결과가 성공이면 true, 실패하면 false를 반환한다.</p>
+			<p>파라미터는 맵으로 구성된 자바스크립트 PlainObject 형태로 받으며, 맵의 세부 정보는 다음과 같다.</p>
+			<dl>
+				<dt>subject</dt>
+				<dd>필수, String. 메시지 제목</dd>
+
+				<dt>sendPhone</dt>
+				<dd>String, 발신자 핸드폰, 하이픈(-)은 API 내에서 자동으로 replace 된다.</dd>
+				<dt>sendName</dt>
+				<dd>String, 발신자 이름</dd>
+				<dt>sendSyspayno</dt>
+				<dd>String, 발신자 사번</dd>
+
+				<dt>content</dt>
+				<dd>String, 메시지 본문 본문(템플릿 미사용) 내용</dd>
+
+				<dt>business</dt>
+				<dd>필수, String. 업무구분 코드 (예시: "XOM", "CCS", "EPU" ...)</dd>
+
+				<dt>messages</dt>
+				<dd>필수, String. 메시지 종류 코드 (예시: "SMS_MSG", "LMS_MSG", "AT_MSG" ...)</dd>
+
+				<dt>businessYn</dt>
+				<dd>String, 업무 메시지 여부. 기본 값은 N</dd>
+
+				<dt>templatePath</dt>
+				<dd>필수, String. 템플릿 경로명</dd>
+
+				<dt>templateVars</dt>
+				<dd>Javascript Object, 템플릿 변수</dd>
+				<dt>receiver</dt>
+				<dd>템플릿 변수 속성에 배열 오브젝트 형태로 세부 내역은 아래 5개의 필드로 구성된다.</dd>
+				<dt>&nbsp;&nbsp;phone</dt>
+				<dd>String, 개별 수신자 핸드폰, 하이픈(-)은 API 내에서 자동으로 replace 된다.</dd>
+				<dt>&nbsp;&nbsp;name</dt>
+				<dd>String, 개별 수신자 이름</dd>
+				<dt>&nbsp;&nbsp;syspayno</dt>
+				<dd>String, 개별 수신자 사번</dd>
+				<dt>&nbsp;&nbsp;subject</dt>
+				<dd>String, 개별 제목</dd>
+				<dt>&nbsp;&nbsp;contentVar</dt>
+				<dd>템플릿 변수 속성에 오브젝트 형태로 세부 내역은 동적인 필드로 구성된다.</dd>
+				<dt>&nbsp;&nbsp;&nbsp;&nbsp;장소</dt>
+				<dd>String, 동적인 변수, 단어</dd>
+				<dt>&nbsp;&nbsp;&nbsp;&nbsp;위치</dt>
+				<dd>String, 동적인 변수, 단어</dd>							
+			</dl>
+		<h3>기본 사용법</h3>
+
+<pre class="prettyprint lang-js">// 단건 메시지 발송
+com.msg.sendMessage({
+	messages: 'SMS_MSG',				// 공통업무
+	business: 'XOM',					// SMS 메시지 발송					
+	subject: 'SMS 메시지 발송 테스트 제목',	// SMS 의 경우 제목 무시 됨
+	msgBody: 'SMS 메시지 발송 테스트 본문',
+	
+	sendName: '한국생산기술연구원',
+	sendPhone: '0415898114',
+	sendSyspayno: '99999999',
+
+	destName: '박정일',
+	destPhone: '01092546288',
+	destSyspayno: '99999995',
+	
+	logging: true,	// 로그 저장 여부 (default: true)
+	businessYn: 'Y'
+});</pre> 39P/ 23P
+
+			<h3>활용 예시</h3>
+
+			<h4>정적인 템플릿을 여러 수신자에게 발송 - 개별 발송</h4>
+
+<pre class="prettyprint linenums lang-js">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+var dataList = [{
+	destName: '박정일',
+	destPhone: '01092546288',
+	destSyspayno: '99999995',
+	subject: '법인카드 한도 대폭 증액',
+}, {
+	destName: '박병목',
+	destPhone: '01030511942',
+	destSyspayno: '99997994',
+	subject: '법인카드 한도 소폭 증액',					
+}];
+
+// 템플릿 변수 구성
+var templateVars = [];
+dataList.forEach(function(data, index){
+	templateVars.push({
+		destName: data.destName,
+		destPhone: data.destPhone,
+		destSyspayno: data.destSyspayno,
+		subject: data.subject,		
+	});
+});	
+
+// 메시지 발송
+com.msg.sendMessage({
+	templateCode: 'bizp_2019121423321030063559493',	// 템플릿: 법인카드증액한도
+	templateVars: templateVars,					
+	messages: 'LMS_MSG',				// LMS 메시지 발송
+	business: 'FIN',					// 재무 업무					
+	subject: 'LMS 메시지 발송 테스트 제목',	// 제목 템플릿변수 내의 제목으로 대체
+	msgBody: 'LMS 메시지 발송 테스트 본문',	// 내용 템플릿변수 바인딩된 내용으로 대체
+	logging: true,						// 로그 저장 여부 (default: true)
+	businessYn: 'Y',
+});</pre>
+
+
+<h4>여러 수신자를 대상으로 각자 세부 내용(템플릿 변수)이 다른 메시지를 발송</h4>
+<h5 style="color:blue;margin:10px;font-weight:bold;">※ 메시지 관리 페이지의 템플릿 코드를 이용하여 처리하는 방법</h5>
+<pre class="prettyprint linenums lang-js">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+var dataList = [{
+	destName: '박정일',
+	destPhone: '01092546288',
+	destSyspayno: '99999995',
+	nickName: "James",		
+}, {
+	destName: '박병목',
+	destPhone: '01030511942',
+	destSyspayno: '99997994',
+	nickName: "Jack",							
+}];
+
+// 템플릿 변수 구성
+var templateVars = [];
+dataList.forEach(function(data, index){
+	templateVars.push({
+		destName: data.destName,
+		destPhone: data.destPhone,
+		destSyspayno: data.destSyspayno,
+		contentVar: {
+			"성명": data.nickName,				
+		},				
+	});
+});
+
+// 메시지 발송
+com.msg.sendMessage({
+	messages: 'AT_MSG',				// LMS 메시지 발송
+	business: 'FIN',				// 재무 업무					
+	logging: true,					// 로그 저장 여부 (default: true)
+	businessYn: 'Y',
+	templateCode: 'bizp_2019121500241118033664447',	// 템플릿: 방화벽 오픈 신청
+	templateVars: templateVars,
+});</pre>
+		<a id="section4"></a>
+		<h2>Java에서의 사용</h2>
+
+			<h3>MessageSender 클래스</h3>
+
+			<p>Java에서 메시지 발송 API를 사용하기 위해서는 다음과 같이 클래스를 참조를 선언한다.</p>
+			<pre class="prettyprint lang-java">import kr.re.kitech.biz.xom.core.util.MessageSender;
+import kr.re.kitech.biz.xom.base.enums.Business;
+import kr.re.kitech.biz.xom.core.model.BizMsg;
+import kr.re.kitech.biz.xom.core.vo.MsgTemplateVo;</pre>
+
+
+			<h3>생성자(Builder)</h3>
+
+<pre class="prettyprint lang-java">new BizMsg.Builder(syspayno, Business.XOM, Messages.LMS_MSG)
+	.templateCode("bizp_2019121423321030063559493")
+	.templateVars(null)
+	.subject("SMS 단건 발송 테스트 제목")
+	.msgBody("SMS 단건 발송 테스트 본문")
+	.sender(sender)
+	.reciever(reciever)
+	.businessYn("Y")
+.build();</pre>
+
+			<p>생성자 파라미터 세부 정보는 순서에 따라 다음과 같다.</p>
+			<dl>
+				<dt>subject</dt>
+				<dd>String, 메시지 제목</dd>
+
+				<dt>content</dt>
+				<dd>필수, String. 메시지 내용</dd>
+
+				<dt>receiver</dt>
+				<dd>Map&lt;String, String&gt;. 발신자 정보</dd>
+				<dt>&nbsp;&nbsp;sendPhone</dt>
+				<dd>String, 발신저 전화번호</dd>
+				<dt>&nbsp;&nbsp;sendName</dt>
+				<dd>String, 발신자 성명</dd>
+				<dt>&nbsp;&nbsp;sendSyspayno</dt>
+				<dd>String, 발신자 사번</dd>
+				
+				<dt>sender</dt>
+				<dd>Map&lt;String, String&gt;. 수신자 정보</dd>
+				<dt>&nbsp;&nbsp;destPhone</dt>
+				<dd>String, 수신자 전화번호</dd>
+				<dt>&nbsp;&nbsp;destName</dt>
+				<dd>String, 수신자 성명</dd>
+				<dt>&nbsp;&nbsp;destSyspayno</dt>
+				<dd>String, 수신자 사번</dd>				
+
+				<dt>messages</dt>
+				<dd>enum; 메시지 종류 열거형</dd>
+				<dt>business</dt>
+				<dd>enum; 업무 구분 열거형</dd>
+
+				<dt>businessYn</dt>
+				<dd>String, 비즈니스 메시지 여부. 기본 값은 Y</dd>
+				
+				<dt>logging</dt>
+				<dd>Boolean. 로그 저장 여부. 기본 값은 true</dd>				
+			</dl>
+
+			<h3>메시지 전송 메소드</h3>
+
+<pre class="prettyprint lang-java">public void sendMessage(BizMsg message)</pre>
+			<p>파라미터 세부 정보는 다음과 같다.</p>
+			<dl>
+				<dt>message</dt>
+				<dd>필수, BizMsg 객체</dd>
+			</dl>
+			<h3>기타 메소드</h3>
+
+<pre class="prettyprint lang-java">
+</pre>
+			<p>메시지 전송에 필요한 각 옵션 요소들을 참조/지정하는 기능 제공 메소드들이며, 자세한 사항은 JavaDoc을 참조</p>
+
+			<h3>기본 사용법</h3>
+
+<pre class="prettyprint lang-java">// 발신자 맵
+Map&lt;String,String&gt; sender = new HashMap&lt;&gt;();
+sender.put( MsgKeys.SEND_NAME.getCode(), "");
+sender.put( MsgKeys.SEND_PHONE.getCode(), "");
+sender.put( MsgKeys.SEND_SYSPAYNO.getCode(), "");
+// 수신자 맵
+Map&lt;String,String&gt; reciever = new HashMap&lt;&gt;();
+reciever.put( MsgKeys.DEST_NAME.getCode(), "");
+reciever.put( MsgKeys.DEST_PHONE.getCode(), "");
+reciever.put( MsgKeys.DEST_SYSPAYNO.getCode(), "");		
+
+// 메시지 발송
+messageSender.sendMessage(
+	new BizMsg.Builder(syspayno, Business.XOM, Messages.LMS_MSG)
+		.templateCode("bizp_2019121423321030063559493")
+		.templateVars(null)
+		.subject("SMS 단건 발송 테스트 제목")
+		.msgBody("SMS 단건 발송 테스트 본문")
+		.sender(sender)
+		.reciever(reciever)
+		.businessYn("Y")
+		.logging(true)		
+	.build());</pre>
+
+			<h3>활용 예시</h3>
+
+			<h4>정적인 템플릿을 여러 수신자에게 발송 - 개별 발송</h4>
+
+<pre class="prettyprint linenums lang-java">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+
+Map&lt;String,String&gt; data1 = new HashMap&lt;&gt;();
+data1.put("name", "박정일");
+data1.put("tel", "01092546288");
+data1.put("syspayno", "99999995");
+data1.put("subject", "James");
+
+Map&lt;String,String&gt; data2 = new HashMap&lt;&gt;();
+data2.put("name", "박병목");
+data2.put("tel", "01030511942");
+data2.put("syspayno", "99997994");
+data2.put("subject", "Monky");
+
+List&lt;Map&lt;String,String&gt;&gt; dataSamples = new ArrayList&lt;&gt;();
+dataSamples.add(data1);
+dataSamples.add(data2);
+
+// 템플릿 변수 설정
+List&lt;MsgTemplateVo&gt;templateVars = new ArrayList&lt;&gt;();
+for (Map&lt;String,String&gt; data : dataSamples){
+	MsgTemplateVo templateVar = new MsgTemplateVo();
+	// 수신자 처리
+	templateVar.setDestName( data.get("name"));
+	templateVar.setDestPhone( data.get("tel"));
+	templateVar.setDestSyspayno( data.get("syspayno"));
+	// 제목 처리
+	templateVar.setSubject( data.get("subject"));
+	templateVars.add(templateVar);
+}
+
+// 메시지 발송
+messageSender.sendMessage(
+	// 비즈니스 타입, 행위자 시스템 사번, 개별발송여부는 고정 속성
+	new BizMsg.Builder(syspayno, Business.XOM, Messages.LMS_MSG)
+		.templateCode("bizp_2019121500241118033664447")
+		.templateVars(templateVars)
+		.businessYn("N")
+	.build());</pre>
+
+
+	<h4>여러 수신자를 대상으로 각자 세부 내용(템플릿 변수)이 다른 메시지 내용을 전송</h4>
+	<h5 style="color:blue;margin:10px;font-weight:bold;">※ 메시지 관리 페이지의 템플릿 코드를 이용하여 처리하는 방법</h5>
+<pre class="prettyprint linenums lang-java">// 발송 사전준비 데이터 시작(예시)
+// 데이터 구조는 예시를 위해 간단히 구성한 것임. 반드시 이런 형태일 필요는 없음
+
+Map&lt;String,String&gt; data1 = new HashMap&lt;&gt;();
+data1.put("name", "박정일");
+data1.put("tel", "01092546288");
+data1.put("syspayno", "99999995");
+data1.put("var", "James");
+
+Map&lt;String,String&gt; data2 = new HashMap&lt;&gt;();
+data2.put("name", "박병목");
+data2.put("tel", "01030511942");
+data2.put("syspayno", "99997994");
+data2.put("var", "Monky");
+
+List&lt;Map&lt;String,String&gt;&gt; dataSamples = new ArrayList&lt;&gt;();
+dataSamples.add(data1);
+dataSamples.add(data2);
+
+// 템플릿 변수 설정
+List&lt;MsgTemplateVo&gt;templateVars = new ArrayList&lt;&gt;();
+for (Map&lt;String,String&gt; data : dataSamples){
+	MsgTemplateVo templateVar = new MsgTemplateVo();
+
+	// 수신자 처리
+	templateVar.setDestName( data.get("name"));
+	templateVar.setDestPhone( data.get("tel"));
+	templateVar.setDestSyspayno( data.get("syspayno"));		
+
+	// 템플릿 변수 처리
+	Map&lt;String, String&gt; contentVar = new HashMap&lt;&gt;();
+	contentVar.put("성명", data.get("var"));		
+	templateVar.setContentVar( contentVar);
+	templateVars.add(templateVar);
+}
+
+// 메시지 발송
+messageSender.sendMessage(
+	// 비즈니스 타입, 행위자 시스템 사번, 개별발송여부는 고정 속성
+	new BizMsg.Builder(syspayno, Business.XOM, Messages.AT_MSG)
+		.templateCode("bizp_2019121500241118033664447")
+		.templateVars(templateVars)
+		.businessYn("N")
+	.build());</pre>
+
+		<a id="section5"></a>
+		<h2>전송이력관리 참고사항</h2>
+
+			<p>시스템을 통한 메시지 전송에서 발송이력 관리의 중요성에 따라 별도로 이력 저장 기능을 구현해야 하는 불편함을 해소하기 위하여,
+				API에서 호출된 내용은 자동으로 발송 시점에 이력 테이블에 저장하며, 자세한 사항은 다음과 같다.</p>
+			<ul>
+				<li>모든 메시지 발송 호출에 대하여 모듈 내부적으로 MYSQL 이력 테이블에 저장된다.</li>
+				<li>수신자별 하나의 로우 데이터가 생성된다.</li>
+				<li>시스템구분코드 항목은 공통코드 테이블(xodxcommst) 상의 시스템구분 분류(XAA)에 속한 코드 값을 저장한다.</li>
+				<li>작성자 항목은 로그인 세션 상의 개인번호(sn)를 저장한다.</li>
+			</ul>
+
+			<table>
+				<caption>표: 전송이력 테이블 스키마</caption>
+				<tr><th colspan="4">메시지 발송이력 MsgSendLog</th></tr>
+				<tr><th>메시지 ID</th><td>＃</td><td>CMID</td><td>varchar(32)</td></tr>
+				<tr><th>다우메시지 ID</th><td>○</td><td>UMID</td><td>varchar(32)</td></tr>
+				<tr><th>메시지 타입(SMS 0/MMS 5)</th><td>○</td><td>MSG_TYPE</td><td>int(11)</td></tr>
+				<tr><th>발송상태</th><td>○</td><td>STATUS</td><td>int(11)</td></tr>
+				<tr><th>요청시간</th><td>＊</td><td>REQUEST_TIME</td><td>datetime</td></tr>
+				<tr><th>발송(예약)시간</th><td>*</td><td>SEND_TIME</td><td>datetime</td></tr>
+				<tr><th>발송완료시간</th><td>○</td><td>REPORT_TIME</td><td>datetime</td></tr>
+				<tr><th>수신자 핸드폰번호</th><td>*</td><td>DEST_PHONE</td><td>varchar(16)</td></tr>
+				<tr><th>수신자 이름</th><td>○</td><td>DEST_NAME</td><td>varchar(32)</td></tr>
+				<tr><th>발신자 핸드폰번호</th><td>○</td><td>SEND_PHONE</td><td>varchar(16)</td></tr>
+				<tr><th>발신자 이름</th><td>○</td><td>SEND_NAME</td><td>varchar(32)</td></tr>
+				<tr><th>(MMS)제목</th><td>○</td><td>SUBJECT</td><td>varchar(60)</td></tr>
+				<tr><th>내용</th><td>○</td><td>MSG_BODY</td><td>varchar(2000)</td></tr>
+				<tr><th>(WAP)URL 주소</th><td>○</td><td>WAP_URL</td><td>varchar(80)</td></tr>
+				<tr><th>(FAX)표지 발송 옵션</th><td>○</td><td>COVER_FLAG</td><td>int(11)</td></tr>
+				
+				<tr><th>(PHONE) 실패시 문자 전송 옵션</th><td>○</td><td>SMS_FLAG</td><td>int(11)</td></tr>
+				<tr><th>(PHONE) 응답 받기 선택</th><td>○</td><td>REPLY_FLAG</td><td>int(11)</td></tr>
+				<tr><th>(PHONE/FAX) 재시도 횟수</th><td>○</td><td>RETRY_CNT</td><td>int(11)</td></tr>
+				<tr><th>(PHONE/FAX/MMS) 전송시 파일 이름</th><td>○</td><td>FAX_FILE</td><td>varchar(128)</td></tr>
+				<tr><th>(PHONE) 음성 시나리오 파일 이름</th><td>○</td><td>VXML_FILE</td><td>varchar(64)</td></tr>
+				<tr><th>데이터 결과 리포트</th><td>○</td><td>CALL_STATUS</td><td>int(11)</td></tr>
+				<tr><th>(FAX) 발송 페이지 수</th><td>○</td><td>USE_PAGE</td><td>int(11)</td></tr>
+				<tr><th>(PHONE) 발송 소요 시간</th><td>○</td><td>USE_TIME</td><td>int(11)</td></tr>
+				<tr><th>(PHONE) 설문 조사 응답 값</th><td>○</td><td>SN_RESULT</td><td>int(11)</td></tr>
+				<tr><th>통신사 정보(SKT/KTF/LGT)</th><td>○</td><td>WAP_INFO</td><td>varchar(10)</td></tr>
+				<tr><th>Client Indexed Info( \/:*?“&lt;&gt;|.사용못함)</th><td>○</td><td>CINFO</td><td>varchar(32)</td></tr>
+				
+				<tr><th>수신자 사번</th><td>○</td><td>dest_syspayno</td><td>varchar(8)</td></tr>
+				<tr><th>발신자 사번</th><td>○</td><td>send_syspayno</td><td>varchar(8)</td></tr>
+				<tr><th>비즈니스여부</th><td>○</td><td>regst_daytm</td><td>varchar(1)</td></tr>
+			</table>
+
+	</div>
+</body>
+</html>

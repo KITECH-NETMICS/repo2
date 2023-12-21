@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="국내출장 검증팝업" meta_author="이영희" meta_date="2022.06.30.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_prdDup" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="gbn" name="출장구분" dataType="text"></w2:column>
+        				<w2:column id="req_no" name="출장신청번호" dataType="text"></w2:column>
+        				<w2:column id="biztrip_psn_syspayno" name="출장자" dataType="text"></w2:column>
+        				<w2:column id="biztrip_psn_empno" name="개인번" dataType="text"></w2:column>
+        				<w2:column id="biztrip_psn_nm" name="출장자성명" dataType="text"></w2:column>
+        				<w2:column id="biztrip_region" name="출장지역" dataType="text"></w2:column>
+        				<w2:column id="biztrip_start_ymd" name="출장출발일" dataType="text"></w2:column>
+        				<w2:column id="biztrip_cls_ymd" name="출장종료일" dataType="text"></w2:column>
+        				<w2:column id="rmk" name="상태" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_pare" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="accnt_no" name="계정번호" dataType="text"></w2:column>
+        				<w2:column id="start_ymd" name="계정시작일자" dataType="text"></w2:column>
+        				<w2:column id="cls_ymd" name="계정종료일자" dataType="text"></w2:column>
+        				<w2:column id="attnce_nm" name="참여연구원여부" dataType="text"></w2:column>
+        				<w2:column id="attnce_prd_orign_ymd" name="참여시작일자" dataType="text"></w2:column>
+        				<w2:column id="attnce_prd_cls_ymd" name="참여종료일자" dataType="text"></w2:column>
+        				<w2:column id="biztrip_psn_nm" name="출장자" dataType="text"></w2:column>
+        				<w2:column id="man_yn" name="기간 적합여부" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_searchRecntAccnt" ref="data:json,dma_recntAccnt" target='data:json,dlt_recntAccnt' action="SvcCCSCTRLPRR01.pwkjson" method="post" mediatype="application/json" encoding="UTF-8"
+        		instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+        		ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 국내출장 결재전 검증팝업
+ 	 * 변경 이력 : 2022-06-30	이영희	최초 작성
+ 	 * serviceId : 
+ 	 ****************************************************/
+    /*
+     * 페이지 열기
+     */
+	scwin.onpageload = function() {
+		var type = com.getParameter("type");
+		grp_caution.hide();
+		if(type == "PRD_DUP"){
+			tbx_title.setValue("출장기간중복검증결과");
+			dlt_prdDup.setJSON(com.getParameter("rstData"), false);
+			grd_prdDup.show("");
+			grd_othrWrk.hide();
+			grd_pare.hide();
+			grp_caution.show("");
+		}else if(type == "NO_REP"){
+			tbx_title.setValue("출장복명 미작성 검증결과");
+			dlt_prdDup.setJSON(com.getParameter("rstData"), false);
+			grd_prdDup.show("");
+			grd_othrWrk.hide();
+			grd_pare.hide();
+			
+		}else if(type == "OTHR_WRK"){
+			tbx_title.setValue("타업종사 등록여부 확인");
+			dlt_prdDup.setJSON(com.getParameter("rstData"), false);
+			grd_prdDup.hide();
+			grd_othrWrk.show("");
+			grd_pare.hide();
+		}else if(type == "NO_JOIN"){
+			tbx_title.setValue("정부수탁과제계정사용검증결과");
+			dlt_pare.setJSON(com.getParameter("rstData"), false);
+			grd_prdDup.hide();
+			grd_othrWrk.hide();
+			grd_pare.show("");
+		}
+		
+		scwin.type = type;
+	};
+	
+	/*
+     * 페이지 닫기
+     */
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	/*************************************************************************************************************
+     *
+     *	컴포넌트 이벤트 함수
+     *
+     *************************************************************************************************************/
+    /*
+     * 닫기
+     */
+	scwin.btn_close_onclick = function(e) {
+		if(scwin.type == "OTHR_WRK"){
+			com.confirm("message.xom.ui.ccs.019"/*타업 종사신청서화면으로 이동하시겠습니까?*/, function(ret){
+				
+				if(ret){
+					// TODO
+					//gfnSetLocationBySvrId("H541", "");
+				}else{
+					com.closePopup();
+				}
+			});
+		}else{
+			com.closePopup();
+		}
+	};
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="titleSection pt0" id="" style="">
+    			<w2:textbox class="tit_tbl" id="tbx_title" label="출장신청검증결과" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_prdDup" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_prdDup" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb"
+    			rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태"
+    			rowStatusVisible="false" rowStatusWidth="40" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    			selectedRowColor="#fbf2cd" style="height: 85px;" summaryAuto="true" visibleRowNum="10"
+    			ev:oncelldblclick="scwin.grd_recntAccnt_oncelldblclick" readOnly="true">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="출장구분" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="출장신청번호" width="100"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column23" value="개인번호" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="출장자" width="70"></w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="column14" value="출장지역" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column15" value="출장출발일" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column17" value="출장종료일" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column19" value="상태" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column class="" displayMode="label" id="gbn" inputType="text" readOnly="true" style="height:28px;" width="70">
+    					</w2:column>
+    					<w2:column class="le" displayMode="label" escape="false" id="req_no" inputType="text" readOnly="true"
+    						style="height:28px;" width="100">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="biztrip_psn_empno" value="" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" escape="false" id="biztrip_psn_nm" inputType="text" readOnly="true"
+    						style="height:28px;" width="70">
+    					</w2:column>
+    					<w2:column width="120" inputType="text" style="height:28px" id="biztrip_region" value="" displayMode="label"
+    						readOnly="true" class="le">
+    					</w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="biztrip_start_ymd" value="" displayMode="label"
+    						class="" dataType="date">
+    					</w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="biztrip_cls_ymd" value="" displayMode="label"
+    						dataType="date">
+    					</w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="rmk" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_prdDup" defaultCellHeight="28"
+    			ev:oncelldblclick="scwin.grd_recntAccnt_oncelldblclick" evenRowBackgroundColor="#f7faff" id="grd_othrWrk"
+    			noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" readOnly="true" rowMouseOverColor="#e7f0fb"
+    			rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태"
+    			rowStatusVisible="false" rowStatusWidth="40" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    			selectedRowColor="#fbf2cd" style="height: 85px;" summaryAuto="true" visibleRowNum="10">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column23" inputType="text" style="height:28px" value="개인번호" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="성명" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column19" inputType="text" style="height:28px" value="타업종사신청" width="90"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" id="biztrip_psn_empno" inputType="text" style="height:28px" value="" width="70"></w2:column>
+    					<w2:column displayMode="label" escape="false" id="biztrip_psn_nm" inputType="text" readOnly="true"
+    						style="height:28px;" width="70">
+    					</w2:column>
+    					<w2:column displayMode="label" id="rmk" inputType="text" style="height:28px" value="" width="90"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_pare" defaultCellHeight="28"
+    			ev:oncelldblclick="scwin.grd_recntAccnt_oncelldblclick" evenRowBackgroundColor="#f7faff" id="grd_pare" noResultMessage="조회 결과가 없습니다."
+    			noResultMessageClass="noResult" readOnly="true" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff" rowNumHeaderValue="No."
+    			rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="40" scrollByColumn="false"
+    			scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;" summaryAuto="true"
+    			visibleRowNum="10">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="계정번호" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="계정시작일" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column23" inputType="text" style="height:28px" value="계정종료일" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="출장자" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column14" inputType="text" style="height:28px" value="참여여부" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column15" inputType="text" style="height:28px" value="참여기간여부" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column17" inputType="text" style="height:28px" value="과제참여시작일" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column19" inputType="text" style="height:28px" value="과제참여종료일" width="90"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column class="" displayMode="label" id="accnt_no" inputType="text" readOnly="true" style="height:28px;"
+    						width="90">
+    					</w2:column>
+    					<w2:column class="le" displayMode="label" escape="false" id="start_ymd" inputType="text" readOnly="true"
+    						style="height:28px;" width="90" dataType="date">
+    					</w2:column>
+    					<w2:column displayMode="label" id="cls_ymd" inputType="text" style="height:28px" value="" width="90"
+    						dataType="date">
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="biztrip_psn_nm" inputType="text" readOnly="true"
+    						style="height:28px;" width="70">
+    					</w2:column>
+    					<w2:column class="le" displayMode="label" id="attnce_nm" inputType="text" readOnly="true" style="height:28px"
+    						value="" width="80">
+    					</w2:column>
+    					<w2:column class="" dataType="date" displayMode="label" id="man_yn" inputType="text" style="height:28px" value=""
+    						width="80">
+    					</w2:column>
+    					<w2:column dataType="date" displayMode="label" id="attnce_prd_orign_ymd" inputType="text" style="height:28px"
+    						value="" width="90">
+    					</w2:column>
+    					<w2:column displayMode="label" id="attnce_prd_cls_ymd" inputType="text" style="height:28px" value="" width="90"
+    						dataType="date">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group class="helparea" id="grp_caution" style="">
+    			<xf:group id="" style="" tagname="ol">
+    				<xf:group id="" tagname="li">
+    					<w2:textbox class="red" id="" label="※ 출장신청 기간내에 다른지역 출장 신청이 존재합니다. 확인해주세요." style=""
+    						tagname="span">
+    					</w2:textbox>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

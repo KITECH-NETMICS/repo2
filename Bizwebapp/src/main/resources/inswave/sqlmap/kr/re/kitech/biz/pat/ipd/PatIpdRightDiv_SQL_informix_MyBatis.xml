@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.ipd">
+  <select id="selectPatIpdLst01" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo" resultType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdLst01 우선권/분할 신청서 목록 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.ipd.selectPatIpdLst01 */
+		 pdp.dp_req_no
+     , pdap.req_no
+     , pdap.mngmt_no
+     , xif.apr_state
+     , pdp.dp_clsf
+     , xdc.cd_nm AS apr_state_nm
+     , (CASE WHEN pdp.dp_clsf = 'PPT030'
+             THEN '우선권주장 출원'
+             WHEN pdp.dp_clsf = 'PPT040'
+             THEN '분할 출원'
+        END) AS dp_clsf_nm
+     , pdp.dp_resn
+     , TRIM(pdp.draft_syspayno) AS draft_syspayno
+     , hbi.nm AS draft_syspaynm
+     , CASE xdc.cd WHEN 'XAD010' THEN ''
+                   ELSE TRIM(pdp.draft_ymd)
+                   END AS draft_ymd
+     , pdp.apprvl_complt_ymd
+     , pdp.reject_ymd
+FROM patdvsprr pdp
+     INNER JOIN xomxintfatab xif
+       ON xif.req_no = pdp.dp_req_no
+     INNER JOIN xodxcommst xdc
+       ON xdc.cd = xif.apr_state
+     LEFT JOIN humbasicinfo hbi
+       ON hbi.syspayno = pdp.draft_syspayno
+     INNER JOIN patdvsprrapp pdap
+       ON pdap.dp_req_no = pdp.dp_req_no
+     INNER JOIN patmastr pmst
+       ON pmst.req_no = pdap.req_no
+WHERE 1 = 1
+<if test="draft_syspayno != null and draft_syspayno != ''">
+  AND pdp.draft_syspayno = #{draft_syspayno}
+</if>
+<if test="dp_clsf != null and dp_clsf != ''">
+  AND pdp.dp_clsf = #{dp_clsf}
+</if>
+<if test="apr_state != null and apr_state != ''">
+  AND xif.apr_state = #{apr_state}
+</if>
+<if test="start_draft_ymd != null and start_draft_ymd != ''">
+  AND pdp.draft_ymd  <![CDATA[ >= ]]> #{start_draft_ymd}
+</if>
+<if test="end_draft_ymd != null and end_draft_ymd != ''">
+  AND pdp.draft_ymd  <![CDATA[ <= ]]> #{end_draft_ymd}
+</if>
+<if test="no_type != null and no_type == 'A'.toString()">
+  AND pmst.req_no LIKE '%'|| #{ref_no} || '%'
+</if>
+<if test="no_type != null and no_type == 'B'.toString()">
+  AND pdap.mngmt_no   LIKE '%'|| #{ref_no} || '%'
+</if>
+<if test="no_type != null and no_type == 'C'.toString()">
+  AND pdap.smitapp_no  LIKE '%'|| #{ref_no} || '%'
+</if>
+<if test="no_type != null and no_type == 'D'.toString()">
+  AND pmst.regst_no LIKE '%'|| #{ref_no} || '%'
+</if>
+<if test="no_type != null and no_type == 'E'.toString()">
+  AND pmst.patofic_mng_no LIKE '%'|| #{ref_no} || '%'
+</if>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
+ORDER BY 11 DESC
+  </select>
+  <select id="selectPatIpdSS01" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo" resultType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdSS01 우선권/분할 신청서 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.ipd.selectPatIpdSS01 */
+		 pdp.dp_req_no
+     , pdp.req_no
+     , pdp.mngmt_no
+     , xdc.cd_nm AS apr_state_nm
+     , xif.apr_state
+     , pdp.draft_syspayno
+     , hum.nm AS draft_syspaynm
+     , pdp.dp_clsf
+     , (CASE WHEN pdp.dp_clsf = 'PPT030'
+             THEN '우선권주장 출원'
+             WHEN pdp.dp_clsf = 'PPT040'
+             THEN '분할 출원'
+        END) AS dp_clsf_nm
+     , CASE xdc.cd WHEN 'XAD010' THEN ''
+                   ELSE TRIM(pdp.draft_ymd)
+                   END AS draft_ymd
+     , pdp.attach_file_no
+     , pdp.dp_resn
+FROM patdvsprr pdp
+     INNER JOIN xomxintfatab xif
+        ON xif.req_no = pdp.dp_req_no
+     INNER JOIN xodxcommst xdc
+        ON xdc.cd = xif.apr_state
+     LEFT JOIN humbasicinfo hum
+        ON hum.syspayno = pdp.draft_syspayno
+WHERE 1 = 1
+AND dp_req_no = #{dp_req_no}
+  </select>
+  <update id="updatePatIpdTempSaveSU01" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdTempSaveSU01 우선권/분할 신청서 업데이트 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ipd.updatePatIpdTempSaveSU01 */
+		 patdvsprr
+SET dp_clsf = #{dp_clsf}
+  , dp_resn = #{dp_resn}
+  , attach_file_no = #{attach_file_no}
+  , updt_syspayno = #{syspayno}
+  , updt_daytm = CURRENT
+WHERE 1 = 1
+AND dp_req_no = #{dp_req_no}
+  </update>
+  <select id="selectPatIpdSS02" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo" resultType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdSS02 우선권/분할 신청서 선출물 목록 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.ipd.selectPatIpdSS02 */
+		 dp_req_no
+     , mngmt_no
+     , req_no
+     , syspayno AS invnt_syspayno
+     , empno AS invnt_empno
+     , nm AS invnt_nm
+     , invnt_krn_nm
+     , smitapp_no
+     , smitapp_ymd
+FROM patdvsprrapp
+WHERE 1 = 1
+AND dp_req_no = #{dp_req_no}
+ORDER BY smitapp_ymd ASC
+  </select>
+  <update id="updatePatIpdTempSaveSU02" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdTempSaveSU02 기안자 정보 업데이트 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.ipd.updatePatIpdTempSaveSU02 */
+		 patdvsprr
+SET  draft_syspayno = #{syspayno}
+  , draft_dept_cd = (SELECT dept_cd FROM humbasicinfo WHERE syspayno = #{syspayno})
+  , draft_dept_new_ymd = (SELECT dept_new_ymd FROM humbasicinfo WHERE syspayno = #{syspayno})
+  , draft_ymd = TO_CHAR(CURRENT, '%Y%m%d')
+WHERE 1 = 1
+AND dp_req_no = #{dp_req_no}
+  </update>
+  <insert id="insertPatIpdTempSaveSI01" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdTempSaveSI01 우선권/분할 신청서 마스터 저장 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.ipd.insertPatIpdTempSaveSI01 */
+		 INTO patdvsprr (
+    dp_req_no
+  , dp_clsf
+  , dp_resn
+  , draft_syspayno
+  , draft_dept_cd
+  , draft_dept_new_ymd
+  , draft_ymd
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{dp_req_no}
+  , #{dp_clsf}
+  , #{dp_resn}
+  , #{draft_syspayno}
+  , #{draft_dept_cd}
+  , #{draft_dept_new_ymd}
+  , #{draft_ymd}
+  , #{syspayno}
+  , CURRENT
+)
+  </insert>
+  <insert id="insertPatIpdTempSaveSI02" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdTempSaveSI02 우선권/분할 신청서 선출물 목록 저장 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.ipd.insertPatIpdTempSaveSI02 */
+		 INTO patdvsprrapp (
+    dp_req_no
+  , mngmt_no
+  , req_no
+  , syspayno
+  , empno
+  , nm
+  , invnt_krn_nm
+  , smitapp_no
+  , smitapp_ymd
+  , regst_syspayno
+  , regst_daytm
+) VALUES (
+    #{dp_req_no}
+  , #{mngmt_no}
+  , #{req_no}
+  , #{invnt_syspayno}
+  , #{invnt_empno}
+  , #{invnt_nm}
+  , #{invnt_krn_nm}
+  , #{smitapp_no}
+  , #{smitapp_ymd}
+  , #{syspayno}
+  , CURRENT
+)
+  </insert>
+  <delete id="deletePatIpdTempSaveSD01" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdTempSaveSD01 우선권/분할 신청서 선출물 목록 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.ipd.deletePatIpdTempSaveSD01 */
+		 FROM patdvsprrapp
+WHERE dp_req_no = #{dp_req_no}
+  </delete>
+  <delete id="deletePatGiveUpSD01" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.app.xda.PatGiveUpSD01 지식재산권 포기 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.ipd.deletePatGiveUpSD01 */
+FROM    patgiveup
+WHERE   giveup_req_no   = #{giveup_req_no}
+  </delete>
+  <delete id="deletePatPrityEvalReqSD01" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.app.xda.PatPrityEvalReqSD01 우선심사신청 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.ipd.deletePatPrityEvalReqSD01 */
+FROM    patprityevalreq
+WHERE   prity_eval_req_no = #{prity_eval_req_no}
+  </delete>
+  <delete id="deletePatIpdTempSaveSD02" parameterType="kr.re.kitech.biz.pat.ipd.vo.PatIpdRightDivVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdTempSaveSD02 우선권/분할 신청서 목록 삭제 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.ipd.deletePatIpdTempSaveSD02 */
+FROM    patdvsprr
+WHERE   dp_req_no = #{dp_req_no}
+  </delete>
+</mapper>

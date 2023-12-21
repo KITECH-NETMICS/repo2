@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.com.mlr">
+  <select id="selectListItemMailRetrieveApiLog" parameterType="kr.re.kitech.biz.com.mlr.vo.MailRetrieveApiLogVo" resultType="kr.re.kitech.biz.com.mlr.vo.MailRetrieveApiLogVo">
+    SELECT /* QueryID : kr.re.kitech.biz.com.mlr.selectListItemMailRetrieveApiLog */ 
+   x0.seq_no
+ , x0.subject
+ , x0.from_address
+ , x0.to_address
+ , x0.cc_address
+ , x0.bcc_address
+ , x0.template_path
+ , x0.is_success
+ , x0.sysclsf_cd
+ , x0.regst_syspayno
+ , x0.regst_daytm
+ , x0.mimemessageid
+ , DECODE(x1.is_success, NULL, 'false', 't', 'true') AS retrieve_is_success
+ FROM mailsendlog x0
+ LEFT JOIN mailretrievelog AS x1 ON x1.mimemessageid = x0.mimemessageid
+ WHERE x0.regst_daytm BETWEEN TO_DATE(#{ymd_start}, '%Y%m%d') AND TO_DATE(#{ymd_close}, '%Y%m%d') + 1 UNITS DAY
+ AND x0.mimemessageid != ''
+ <if test="mail_subject != null and mail_subject != ''">
+ AND subject LIKE '%' || #{mail_subject} || '%'
+ </if>
+ <if test="is_mail_retrieve != null and is_mail_retrieve != ''">
+ AND DECODE(x1.is_success, NULL, 'f', 't', 't') = #{is_mail_retrieve}
+ </if>
+  </select>
+<insert id="insertListItemMailRetrieveApiLog" parameterType="kr.re.kitech.biz.com.mlr.vo.MailRetrieveApiLogVo">
+    INSERT /* QueryID : kr.re.kitech.biz.com.mlr.insertListItemMailRetrieveApiLog */ 
+         INTO mailretrievelog(
+          subject
+        , from_address
+        , to_address
+        , cc_address
+        , bcc_address
+        , template_path
+        , is_success
+        , sysclsf_cd
+        , regst_syspayno
+        , regst_daytm
+        , mimemessageid
+        )
+        VALUES(
+          #{subject}
+        , #{from_address}
+        , #{to_address}
+        , #{cc_address}
+        , #{bcc_address}
+        , #{template_path}
+        , #{is_success}
+        , #{sysclsf_cd}
+        , #{regst_syspayno}
+        , CURRENT
+        , #{mimemessageid}
+        )
+  </insert>
+</mapper>

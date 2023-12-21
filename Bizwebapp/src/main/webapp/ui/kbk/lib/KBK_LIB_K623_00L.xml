@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="원문복사신청">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_copyList" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="regst_no" name="등록번호" dataType="text"></w2:column>
+        				<w2:column id="ymd" name="ymd" dataType="text"></w2:column>
+        				<w2:column id="origntxt_copy_typ" name="origntxt_copy_typ" dataType="text"></w2:column>
+        				<w2:column id="paper_nm_pat" name="paper_nm_pat" dataType="text"></w2:column>
+        				<w2:column id="jurnl_nm" name="jurnl_nm" dataType="text"></w2:column>
+        				<w2:column id="std_pat_no" name="std_pat_no" dataType="text"></w2:column>
+        				<w2:column id="auth_nm" name="저자명" dataType="text"></w2:column>
+        				<w2:column id="publ_yr" name="출간일" dataType="text"></w2:column>
+        				<w2:column id="prcs_state" name="prcs_state" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataMap baseNode="map" id="dma_copySearch">
+        			<w2:keyInfo>
+        				<w2:key id="origntxt_copy_typ" name="origntxt_copy_typ" dataType="text"></w2:key>
+        				<w2:key id="paper_nm_pat" name="paper_nm_pat" dataType="text"></w2:key>
+        				<w2:key id="prcs_state" name="prcs_state" dataType="text"></w2:key>
+        				<w2:key id="req_psn_syspayno" name="req_psn_syspayno" dataType="text"></w2:key>
+        				<w2:key id="ymd_fr" name="ymd_fr" dataType="text"></w2:key>
+        				<w2:key id="ymd_to" name="ymd_to" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectCopyList" ref="data:json,dma_copySearch" target='data:json,{"id":"dlt_copyList","key":"libCopyVoList"}' action="SvcKBKLIBCOPY01.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script src="/cm/js/biz/kbk.js" cache="false" />
+        <script type="text/javascript" lazy="false"><![CDATA[
+     
+	//ServiceID : K623
+	var sysPayNo = com.getLoginInfo("sn");
+	
+    /**
+	 * 페이지 로딩 이벤트
+	 */   
+	scwin.onpageload = function() {
+		
+		//selectBox
+		var codeOptions = [ { code : "BEF", compID : "selectboxOrigntxtCopyTyp"},
+							{ code : "BED", compID : "selectboxPrcsState"} ];
+							
+		com.setCmnCd(codeOptions);
+		
+		
+		//날짜 셋팅
+		var today = gcm.date.getServerDateTime();
+		
+		dma_copySearch.set("ymd_fr", com.addDate(today, -30));
+		dma_copySearch.set("ymd_to", today);
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+		
+	/**
+	 * 조회 버튼 클릭 이벤트
+	 */ 
+	scwin.triggerSearch_onclick = function(e) {
+		scwin.search();
+	};
+	
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(e) {
+		
+		if(scwin.validationCheck() == "N") return;
+		
+		//자신이 신청한 원문복사신청만 조회하도록 함
+		dma_copySearch.set("req_psn_syspayno", sysPayNo);
+		//dma_copySearch.set("req_psn_syspayno", "%"); //테스트
+		com.execute(sbm_selectCopyList);
+    	
+    };
+    
+    
+    /**
+	 * 신규 버튼 클릭 이벤트
+	 */ 
+	scwin.triggerInsert_onclick = function(e) {
+		scwin.copyPop("In", "");
+	};
+
+			
+	/**
+	 * 날짜 포맷
+	 */  
+	scwin.dateFormat = function(ret) {
+		var ymd = ret.trim();
+		
+		if(ymd)
+			return ymd.substr(0, 4) + "-" + ymd.substr(4, 2) + "-" + ymd.substr(6);
+		else
+			return ymd;
+	};
+	
+
+	/**
+	 * validationCheck
+	 */ 
+	scwin.validationCheck = function(){
+		
+		var frYmd = inputCalendarFrYmd.getValue();
+		var toYmd = inputCalendarToYmd.getValue();
+		
+		if(com.isEmpty(frYmd) || com.isEmpty(toYmd))
+		{
+			com.alert("신청일자를 입력하세요.");
+			return "N";
+		}if(frYmd > toYmd)
+		{
+			com.alert("시작일은 종료일보다 작아야 합니다.");
+			return "N";
+		}
+	};	
+	
+
+	/**
+	 * 그리드 링크 클릭 이벤트
+	 */
+	scwin.gridOrglTxtCopy_oncellclick = function(row,col,colId) {		
+		if(colId == "regst_no"){		
+   			scwin.copyPop("Vw", dlt_copyList.getCellData(row, "regst_no"));  			
+  		}
+	};	
+	
+	/**
+	 * 팝업 연결
+	 */  	
+    scwin.copyPop = function(flag, regstno){
+	    var data = {
+		    serviceid : "K626",
+			cmd : flag,
+			regst_no : regstno
+		};
+	    
+	    biz.kbk.pop.open(biz.kbk.pop.TYPE.REG_COPY, data, function(ret){
+	    	scwin.search();
+	    });
+   	};
+	
+	
+	/**
+	 * 원문명 key event
+	 */ 
+	scwin.inputPaperNm_onkeypress = function(e) {
+		if(inputPaperNm.getValue().length > 0)
+		{		
+			if(event.keyCode == "13"){
+				dma_copySearch.set("paper_nm_pat", inputPaperNm.getValue())
+				scwin.search();
+			}
+		}	
+	};
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="검색조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:160px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width: 340px"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="신청종류" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="inpcalWrap" id="" style=""></xf:group>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="selectboxOrigntxtCopyTyp" ref="data:dma_copySearch.origntxt_copy_typ"
+    								style="width:120px;" submenuSize="auto" title="신청종류" visibleRowNum="10" chooseOptionLabel="-전체-">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="원문명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="inputPaperNm" style="width:300px;" title="원문명" ref="data:dma_copySearch.paper_nm_pat" ev:onkeypress="scwin.inputPaperNm_onkeypress"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="진행상태" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="selectboxPrcsState" ref="data:dma_copySearch.prcs_state"
+    								style="width:120px;" submenuSize="auto" title="진행상태" visibleRowNum="10" chooseOptionLabel="-전체-">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="신청일자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:colspan>5</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="inputCalendarFrYmd" placeholder="년,월" renderDiv="true" rightAlign="false" style="" ref="data:dma_copySearch.ymd_fr" ev:onchange="scwin.inputCalendarFrYmd_onchange">
+    							</w2:inputCalendar>
+    							<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="inputCalendarToYmd" placeholder="년,월" renderDiv="true" rightAlign="false" style="" ref="data:dma_copySearch.ymd_to" ev:onchange="scwin.inputCalendarToYmd_onchange">
+    							</w2:inputCalendar>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="triggerSearch" type="button" class="btn search" ev:onclick="scwin.triggerSearch_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="margin-top:5px;">
+    			<xf:group class="le" id="">
+    			</xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:trigger class="btn" id="triggerInsert" style="" type="button" ev:onclick="scwin.triggerInsert_onclick">
+    					<xf:label><![CDATA[신규]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_copyList" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="gridOrglTxtCopy"
+    			visibleRowNum="20" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.gridOrglTxtCopy_oncellclick">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column9" value="등록번호" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column7" value="신청일자" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column5" value="신청종류" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:28px;" id="column20" value="원문명" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column29" value="저널명" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column27" value="처리상태" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="70" inputType="link" readOnly="true" style="height:28px;" id="regst_no" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="ymd" displayMode="label" displayFormatter="scwin.dateFormat">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="origntxt_copy_typ" escape="false"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="300" inputType="text" readOnly="true" style="height:28px;" id="paper_nm_pat" displayMode="label"
+    						class="le" dataType="number">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="jurnl_nm" displayMode="label" readOnly="true" class="le"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="prcs_state" displayMode="label" readOnly="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

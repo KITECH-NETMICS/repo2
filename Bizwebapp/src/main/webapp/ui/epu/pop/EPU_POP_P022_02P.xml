@@ -1,0 +1,720 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="계정내역" meta_programDesc="구매요구서 계정 추가 팝업" meta_author="이영희" meta_date="2022.12.08.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_accnt">
+            		<w2:keyInfo>
+            			<w2:key id="pur_req_no" name="구매요구번호" dataType="text"></w2:key>
+            			<w2:key id="accnt_odr" name="계정순번" dataType="text"></w2:key>
+            			<w2:key id="accnt_no" name="계정번호" dataType="text"></w2:key>
+            			<w2:key id="mngmt_clsf" name="관리구분" dataType="text"></w2:key>
+            			<w2:key id="accnt_no_nm" name="계정명" dataType="text"></w2:key>
+            			<w2:key id="accnt_cd" name="회계코드" dataType="text"></w2:key>
+            			<w2:key id="accnt_cd_abbr" name="회계코드명" dataType="text"></w2:key>
+            			<w2:key id="expns_cd" name="비용코드" dataType="text"></w2:key>
+            			<w2:key id="expns_cd_nm" name="비용코드명" dataType="text"></w2:key>
+            			<w2:key id="accnt_respn_psn_syspayno" name="계정책임자시스템개인번호" dataType="text"></w2:key>
+            			<w2:key id="accnt_respn_psn_empno" name="계정책임자개인번호" dataType="text"></w2:key>
+            			<w2:key id="accnt_respn_psn_nm" name="계정책임자성명" dataType="text"></w2:key>
+            			<w2:key id="accnt_demnd_amt" name="계정요구금액" dataType="text"></w2:key>
+            			<w2:key id="equip_odr" name="기자재순번" dataType="text"></w2:key>
+            			<w2:key id="equip_nm" name="기자재명" dataType="text"></w2:key>
+            			<w2:key id="consttn_no" name="심의번호" dataType="text"></w2:key>
+            			<w2:key id="consttn_clsf" name="심의구분" dataType="text"></w2:key>
+            			<w2:key id="attach_file_no" name="첨부파일번호" dataType="text"></w2:key>
+            			<w2:key id="incidntl_expns" name="부대비" dataType="text"></w2:key>
+            			<w2:key id="tax_cd" name="과세여부" dataType="text"></w2:key>
+            			<w2:key id="card_use_ex" name="카드사용구분" dataType="text"></w2:key>
+            			<w2:key id="cls_ymd" name="계정종료일" dataType="text"></w2:key>
+            			<w2:key id="add_tax" name="부가세" dataType="text"></w2:key>
+            			<w2:key id="sum_amt" name="공급가액" dataType="text"></w2:key>
+            			<w2:key id="ntis_reg_no" name="NTIS장비번호" dataType="text"></w2:key>
+            			<w2:key id="bsns_cd_inout" name="사업구분" dataType="text"></w2:key>
+            			<w2:key id="date_between" name="잔여일수" dataType="text"></w2:key>
+            			<w2:key id="apply_cls_ymd" name="계정종료일(마감적용)" dataType="text"></w2:key>
+            			<w2:key id="cud_type" name="cud타입" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="accnt_no" name="계정번호" dataType="text"></w2:key>
+            			<w2:key id="date_between" name="잔여일수" dataType="text"></w2:key>
+            			<w2:key id="ctrl_gbn" name="구매마감일조정여부" dataType="text"></w2:key>
+            			<w2:key id="inout_psn_clsf_cd" name="내외자구분" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+            <!-- 조회 -->
+            <xf:submission id="sbm_selectRemainDay" ref="data:json,dma_search" target='data:json,dma_search' 
+            	action="SvcEPUREQPOPR09.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 구매요구 계정추가 팝업
+ 	 * 변경 이력 : 2022-12-08	이영희	최초 작성
+ 	 ****************************************************/
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */   
+	scwin.data={};
+	scwin.onpageload = function() {	
+		var param = com.getParameter();
+		dma_accnt.setJSON(param);	
+				
+		dma_search.set("inout_psn_clsf_cd", param.inout_psn_clsf_cd);
+		
+		// enter key event
+		com.setEnterKeyEvent(grp_accnt, scwin.btn_accnt_onclick);
+		com.setEnterKeyEvent(grp_accnt_rspns, scwin.btn_emp_onclick);
+		com.setEnterKeyEvent(grp_expns_cd, scwin.btn_expns_onclick);
+		
+		scwin.data.req_ymd = param.req_ymd;
+		
+		if(param.apr_state >= "XAD020"){
+			btn_save.setDisabled(true);
+		}else{
+			// 20160314 비용코드 148추가 (연구관리 2016-1차 코칭 TF회의) 
+			// 20230908 비용코드 148제거 (임수연 요청사항)
+			if(/141|142/.test(dma_accnt.get("expns_cd"))){
+				btn_equip.setDisabled(false);
+			}	
+		}		
+		
+		// zeus 장비조회
+		if(dma_accnt.get("accnt_no") != "" && dma_accnt.get("accnt_no").substring(0, 4) == "FF21"){
+			grp_equip.show("");
+			spn_equip.show("");
+			
+			if(dma_accnt.get("accnt_no") == "FF210001"){
+				btn_emp.setDisabled(false);
+			}
+		}else{
+			grp_equip.hide();
+			spn_equip.hide();
+		}
+		
+		if(param.inout_psn_clsf_cd == "2"){
+			scwin.data.add_tax_rts = param.add_tax_rts;
+			
+			spn_incidntl_expns.hide();
+			ibx_incidntl_expns.hide();
+		}
+		
+		if(param.cud_type == "U"){
+			dma_search.set("accnt_no", dma_accnt.get("accnt_no"));
+			// 잔여일수 조회
+			com.execute(sbm_selectRemainDay, {
+				successCallback : function(e){
+					dma_accnt.set("date_between", dma_search.get("date_between"));
+					scwin.data.ctrl_gbn = dma_search.get("ctrl_gbn");
+				}
+			});
+		}	
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};	
+	
+	/**
+	 * 닫기 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};	
+	
+	/**
+	 * 적용 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_save_onclick = function(e) {	
+		com.closePopup(dma_accnt.getJSON());
+	};
+	
+	/**
+	 * 계정번호 검색 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_accnt_onclick = function(e) {
+		var data = {
+			accnt_no : ibx_accnt_no.getValue(),
+			inout_psn_clsf_cd : dma_search.get("inout_psn_clsf_cd"),
+			clsf : "pur"	
+		};
+		
+		if(ibx_accnt_no.getValue() == ""){
+			data.ref_yn = "Y";	
+		}
+		
+		com.pop.open(com.pop.TYPE.ACNNO, data, function(ret) {
+			if(dma_search.get("accnt_no") != ret.accnt_no){
+				dma_accnt.set("expns_cd", "");
+				dma_accnt.set("expns_cd_nm", "");
+				dma_accnt.set("accnt_cd", "");
+				dma_accnt.set("accnt_cd_abbr", "");
+				
+				// 계정통제해제 미적용 계정일 경우(2012.11.19) : Y이면 통제해제 적용 계정
+				// 2011-12-05 잔여일이 내자 20일, 외자 40일 미만 계정에 대해서는 선택할 수 없도록 함. BG계정은 제외.
+				if(ret.ctrl_gbn == "N" && ret.accnt_no.substring(0,2) != "BG"){
+					if(dma_search.get("inout_psn_clsf_cd") == "1" && Number(ret.date_between) < 25){
+						alert("내자구매시 잔여일이 25일 미만인 계정은 선택하실 수 없습니다.");
+						dma_accnt.set("accnt_no", "");
+						return;
+					}else if(dma_search.get("inout_psn_clsf_cd") == "2" && Number(ret.date_between) < 60){
+						alert("외자구매시 잔여일이 60일 미만인 계정은 선택하실 수 없습니다.");
+						dma_accnt.set("accnt_no", "");
+						return;
+					}
+				}
+				
+				dma_accnt.setJSON(ret);
+				dma_accnt.set("accnt_respn_psn_syspayno", ret.accnt_rspns);
+				dma_accnt.set("accnt_respn_psn_empno", ret.accnt_rspns_empno);
+				dma_accnt.set("accnt_respn_psn_nm", ret.accnt_rspns_nm);
+				scwin.data.ctrl_gbn = ret.ctrl_gbn;
+				dma_search.set("accnt_no", ret.accnt_no);
+				
+				// 구매요구 금액 셋팅
+				scwin.getAccntDemndAmt();
+				
+				// 연구비 통합계정인 경우
+				if(dma_accnt.get("accnt_no").substring(0, 4) == "FF21"){
+					grp_equip.show("");
+					
+					if(dma_accnt.get("accnt_no") == "FF210001"){
+						btn_emp.setDisabled(false);
+						
+						dma_accnt.set("accnt_respn_psn_syspayno", "");
+						dma_accnt.set("accnt_respn_psn_empno", "");
+						dma_accnt.set("accnt_respn_psn_nm", "");
+					}
+				}else{
+					grp_equip.hide();
+				}
+			}			
+			
+		});
+	};
+	
+	/**
+	 * 구매요구금액 계산
+	 */ 
+	scwin.getAccntDemndAmt = function(){
+		var reqAmtSum = Number(dma_accnt.get("sum_amt")); // 공급가액
+		var addTaxAmt = Number(dma_accnt.get("add_tax")); // 부가세
+		var incidntlExpns = WebSquare.util.getNumber(dma_accnt.get("incidntl_expns")); // 부대비용
+		
+		// 비과세 또는 외자인 경우 구매요구금액은 합계금액
+		if(dma_accnt.get("tax_cd") == "FTX002" || dma_search.get("inout_psn_clsf_cd") == "2"){
+			dma_accnt.set("accnt_demnd_amt", reqAmtSum + addTaxAmt + incidntlExpns);
+		}else{
+			// 과세인경우 구매요구금액 = 공급가액 + 부대비
+			dma_accnt.set("accnt_demnd_amt", reqAmtSum + incidntlExpns);
+		}
+	};
+	
+	/**
+	 * 비용코드 검색 버튼 클릭 이벤트
+	 */
+	scwin.btn_expns_onclick = function(e) {		
+		if (dma_accnt.get("accnt_no") == "") {
+			com.alert(com.getMsg("message.xom.co.com.0001", "계정번호"));
+			return;
+		}
+		
+		if(dma_accnt.get("accnt_no") == "FF210001" && dma_accnt.get("accnt_respn_psn_syspayno") == ""){
+			alert("계정책임자를 확인하세요.");
+			return;
+		}
+
+		var data = {
+			accnt_no : dma_accnt.get("accnt_no"),
+			expns_cd : ibx_expns_cd.getValue()
+		};
+
+		com.pop.open(com.pop.TYPE.EXPNS, data, function(retObj) {
+			if (retObj) {
+				// 비용코드 체크(소액물품, 이지바로과제, 증빙여부 )
+				if (dma_accnt.get("accnt_no").substring(0, 4) == "FF21"){
+					if(!/262|322|431/.test(retObj.expns_cd)){
+						alert("연구장비통합계정일 경우 [262,322,431]중에서 선택가능합니다.");
+						return;
+					}
+				}
+				
+				if(dma_accnt.get("mngmt_clsf") == "R"){
+					if(/141|142/.test(retObj.expns_cd)){
+						alert("연구기자재 및 시작품을 입력해야하는 비용코드입니다. 연구기자재검색버튼을 클릭하여 입력하여 주세요.");
+						btn_equip.setDisabled(false);
+					}else{
+						btn_equip.setDisabled(true);
+					}
+				}
+
+				dma_accnt.set("expns_cd", retObj.expns_cd);
+				dma_accnt.set("expns_cd_nm", retObj.expns_cd_nm);
+				dma_accnt.set("accnt_cd", retObj.accnt_cd);
+				dma_accnt.set("accnt_cd_abbr", retObj.accnt_cd_abbr);
+				
+				// 일반예실, 기타예실 잔액체크
+				var data = {
+					bugt_yr : scwin.data.req_ymd.substring(0, 4),
+					accnt_no : dma_accnt.get("accnt_no"),
+					accnt_cd : retObj.accnt_cd,
+					expns_cd : retObj.expns_cd,
+					relat_no : dma_accnt.get("accnt_respn_psn_syspayno").substring(2, 8)
+				};
+				
+				com.biz.checkBugtRamt(data, function(ret){
+					ibx_bugt_amt.setValue(WebSquare.util.parseInt(ret.bugt_amt, 0));
+					ibx_cause_amt.setValue(WebSquare.util.parseInt(ret.cause_amt, 0));
+					ibx_enfrc_amt.setValue(WebSquare.util.parseInt(ret.enfrc_amt, 0));					
+					ibx_remidr_amt.setValue(Number(ret.bugt_amt) - Number(ret.cause_amt) - Number(ret.enfrc_amt));
+				});
+			}
+		});
+	};
+	
+	/**
+	 *ZEUS 장비조회 검색 버튼 클릭 이벤트
+	 */
+	scwin.btn_zeus_onclick = function(e) {
+		com.pop.open(com.pop.TYPE.ZEUS, {ref_yn:"Y"}, function(ret){
+			dma_accnt.set("ntis_reg_no", ret.ntis_reg_no);
+		});
+	};
+	
+	/**
+	 * 적용 버튼 클릭 이벤트
+	 */
+	scwin.btn_save_onclick = function(e) {
+		if(!com.validateData(dma_accnt, [
+			{id:"accnt_no", mandatory : true},
+			{id:"accnt_cd", mandatory : true},
+			{id:"expns_cd", mandatory : true},
+			{id:"accnt_demnd_amt", mandatory : true, allowChar : "0-9"},
+		], false)) return;
+		
+		var reaminTerm = Number(dma_accnt.get("date_between"));
+		if(dma_accnt.get("accnt_no").substring(0,2) != "BG" && dma_accnt.get("accnt_no").substring(0,4) != "FF21"){
+			if(/141|142/.test(dma_accnt.get("expns_cd"))){
+				if ( reaminTerm >= 60 && reaminTerm < 90 && dma_accnt.get("accnt_no").substring(0,3) != "PIR" && dma_accnt.get("accnt_no").substring(0,3) != "PUR" ) {
+					//계정잔여기간 60~90일은 경고 메시지를 보여주고 적용은 되도록 함(2011.10.31)
+					alert("본과제는 종료 잔여기간이 90일 미만입니다\n연구기자재구입은 과제종료 3개월 전에 구매의뢰 되어야 합니다");
+				}else if ( reaminTerm < 60 ){ // 계정 잔여기간 60일 미만은 통제(2011.10.31)
+					alert("본과제는 종료 잔여기간이 60일 미만입니다\n연구기자재구입은 과제종료 2개월 전에 입고되어야 합니다");
+				}
+				
+				if(dma_accnt.get("mngmt_clsf") == "R"){
+					if(!ibx_equip_odr.getValue().trim().match(/^[0-9]+$/)){
+						alert("연구기자재 선택은 필수입니다.");//메시지 변경(2012.02.22) - 팀장님
+						ibx_equip_odr.focus();
+						return;
+					}
+					
+					if(ibx_equip_odr.getValue().trim() == ""){
+						alert("연구기자재 선택은 필수입니다.");
+						ibx_equip_odr.focus();
+						return;
+					}
+				}
+			}else if(/221|223/.test(dma_accnt.get("expns_cd"))){
+				 //60일에서 20일로 변경, 과제종료 1개월전에서 일주일로 변경(2011.10.31)
+				 //계정통제해제 적용건은 제외(2012.11.19) : Y이면 통제해제 적용 계정
+				if(scwin.data.ctrl_gbn == "N"){
+					if ( reaminTerm < 20 ) {
+						alert("본과제는 종료 잔여기간이 20일 미만입니다\n시작품 및 재료비는 과제종료 일주일전에 입고되어야 합니다");
+						return;	//해제(2011.10.31)
+					}
+				}
+			}
+		}
+		
+		if(dma_accnt.get("accnt_no") == "FF210001" && dma_accnt.get("accnt_respn_psn_syspayno") == ""){
+			alert("계정책임자를 입력하세요.");
+			return;
+		}
+		
+		com.closePopup(dma_accnt.getJSON());
+	};
+	
+	/**
+	 * 계정책임자 검색 버튼 클릭 이벤트
+	 */
+	scwin.btn_emp_onclick = function(e) {
+		var data={
+			empno : ibx_accnt_rspns.getValue(),
+			work_clsf : "HAG010"	
+		};
+		
+		if(ibx_accnt_rspns.getValue() == ""){
+			data.ref_yn = "Y";	
+		}
+		
+		com.pop.open(com.pop.TYPE.HUM, data, function(ret) {
+			dma_accnt.set("accnt_respn_psn_syspayno", ret.syspayno);
+			dma_accnt.set("accnt_respn_psn_empno", ret.empno);
+			dma_accnt.set("accnt_respn_psn_nm", ret.nm);
+		});
+	};
+	
+	/**
+	 * 연구기자재/시작품 검색 버튼 클릭 이벤트
+	 */
+	scwin.btn_equip_onclick = function(e) {
+		var data = {
+			accnt_no : ibx_accnt_no.getValue(),
+			ref_yn : "Y"
+		};
+		com.pop.open(com.pop.TYPE.RES_EQUIP, data, function(ret) {
+			dma_accnt.set("equip_odr", ret.equip_odr);
+			dma_accnt.set("equip_nm", ret.gdnm);
+			dma_accnt.set("consttn_no", ret.consttn_no);
+			dma_accnt.set("consttn_clsf", ret.consttn_clsf);
+			dma_accnt.set("attach_file_no", ret.attach_file_no);
+		});
+	};
+	
+	/**
+	 * 공급가액 변경 이벤트
+	 */
+	scwin.ibx_sum_amt_onviewchange = function(info) {
+		var amt = WebSquare.util.parseInt(info.newValue, 0);
+		if(amt == 0){
+			dma_accnt.set("add_tax", 0);
+		}else{
+			if(dma_search.get("inout_psn_clsf_cd") == "1"){
+				dma_accnt.set("add_tax", Math.ceil(amt * 0.1));
+				ibx_add_tax.setValue(dma_accnt.get("add_tax"));
+			}else{
+				var addTaxRts = Number(scwin.data.add_tax_rts);
+				dma_accnt.set("add_tax", Math.ceil(amt * addTaxRts /100));
+				ibx_add_tax.setValue(dma_accnt.get("add_tax"));
+			}
+		}
+		
+		scwin.calAccntDemndAmt();
+	};
+	
+	/**
+	 * 구매요구금액 구하기
+	 */
+	scwin.calAccntDemndAmt = function(){
+		debugger;
+		var sumAmt = com.parseInt(dma_accnt.get("sum_amt")); // 공급가액
+		
+		var incidntlExpns = 0;
+		var addTax = com.parseInt(ibx_add_tax.getValue()); // 부가세
+		if(dma_search.get("inout_psn_clsf_cd") == "1"){
+			incidntlExpns = WebSquare.util.parseInt(ibx_incidntl_expns.getValue(), 0); // 부대비용
+		}
+		
+		var accntDemndAmt = sumAmt;
+		if(dma_search.get("inout_psn_clsf_cd") == "1"){
+			accntDemndAmt = sumAmt + incidntlExpns;
+		}
+		
+		// 비과세이거나 외자이면 구매요구금액 = 공급가 + 부가세(부대비용)
+		if(dma_accnt.get("tax_cd") != "FTX001" || dma_search.get("inout_psn_clsf_cd") == "2"){
+			accntDemndAmt += addTax;
+		}
+		
+		dma_accnt.set("accnt_demnd_amt", accntDemndAmt);
+	};
+	
+	/**
+	 * 부가세 변경 이벤트
+	 */
+	scwin.ibx_add_tax_onviewchange = function(info) {
+		scwin.calAccntDemndAmt();
+	};
+	
+	/**
+	 * 부대비 변경 이벤트
+	 */
+	scwin.ibx_incidntl_expns_onviewchange = function(info) {
+		scwin.calAccntDemndAmt();
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    		<w2:attributes>
+    			<w2:summary></w2:summary>
+    		</w2:attributes>
+    		<xf:group tagname="caption" text="계속연차확인서"></xf:group>
+    		<xf:group tagname="colgroup">
+    			<xf:group style="width:120px;" tagname="col"></xf:group>
+    			<xf:group style="" tagname="col"></xf:group>
+    			<xf:group style="width:140px;" tagname="col"></xf:group>
+    			<xf:group style="" tagname="col"></xf:group>
+    		</xf:group>
+    		<xf:group tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="계정번호" style="" tagname="span"></w2:textbox>
+    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<xf:group class="flex" id="" style="">
+    					<xf:group class="inpSch" id="grp_accnt" style="width: 180px;">
+    						<xf:input adjustMaxLength="false" class="inp req" id="ibx_accnt_no" style="" title="계정번호"
+    							ref="data:dma_accnt.accnt_no">
+    						</xf:input>
+    						<xf:trigger class="btn" id="btn_accnt" style="" title="사용자(정) 조회" type="button"
+    							ev:onclick="scwin.btn_accnt_onclick">
+    							<xf:label><![CDATA[검색]]></xf:label>
+    						</xf:trigger>
+    					</xf:group>
+    					<xf:input adjustMaxLength="false" class="inp full" disabled="true" id="" style="" title="계정명"
+    						ref="data:dma_accnt.accnt_no_nm">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="계정책임자" style="" tagname="span"></w2:textbox>
+    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    			<xf:group id="" class="flex"><xf:group style="width:120px;" id="grp_accnt_rspns" class="inpSch">
+    					<xf:input ref="data:dma_accnt.accnt_respn_psn_empno" adjustMaxLength="false" style="" id="ibx_accnt_rspns" title="계정책임자 개인번호" class="inp req">
+    					</xf:input>
+    					<xf:trigger ev:onclick="scwin.btn_emp_onclick" style="" disabled="true" id="btn_emp" title="사용자(정) 조회" type="button" class="btn">
+    						<xf:label><![CDATA[검색]]></xf:label>
+    					</xf:trigger>
+    				</xf:group><xf:input ref="data:dma_accnt.accnt_respn_psn_nm" adjustMaxLength="false" disabled="true" style="width:120px;" id="" title="계정책임자명" class="inp">
+    				</xf:input></xf:group></xf:group>
+    		</xf:group>
+    		<xf:group style="" tagname="tr">
+    			<xf:group class="w2tb_th" style="" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="비용코드" style="" tagname="span"></w2:textbox>
+    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    			</xf:group>
+    			<xf:group class="w2tb_td" style="" tagname="td">
+    				<xf:group class="flex" id="" style="">
+    					<xf:group class="inpSch" id="grp_expns_cd" style="width: 120px;">
+    						<xf:input adjustMaxLength="false" class="inp req" ev:onviewchange="scwin.inputExpnsCd_onviewchange"
+    							id="ibx_expns_cd" ref="data:dma_accnt.expns_cd" style="" title="비용코드">
+    						</xf:input>
+    						<xf:trigger class="btn" ev:onclick="scwin.btn_expns_onclick" id="btn_expns" style="" title="비용코드 조회"
+    							type="button">
+    							<xf:label><![CDATA[검색]]></xf:label>
+    						</xf:trigger>
+    					</xf:group>
+    					<xf:input adjustMaxLength="false" class="inp full" id="inputExpnsCdNm" readOnly="true"
+    						ref="data:dma_accnt.expns_cd_nm" style="" title="비용코드 상세">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="w2tb_th" style="" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="회계코드" style="" tagname="span"></w2:textbox>
+    				<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    			</xf:group>
+    			<xf:group class="w2tb_td" style="" tagname="td">
+    				<xf:group id="" class="flex">
+    					<xf:input adjustMaxLength="false" disabled="true" style="width:100px;" id="" title="회계코드" class="inp"
+    						ref="data:dma_accnt.accnt_cd">
+    					</xf:input>
+    					<xf:input adjustMaxLength="false" disabled="true" style="" id="" class="inp full"
+    						ref="data:dma_accnt.accnt_cd_abbr">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group tagname="tr" style="">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="예산금액" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td ri" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:span class="" escape="false" id="ibx_bugt_amt" label="0" style="" dataType="number" displayFormat="#,###"></w2:span>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="원인금액" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td ri" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:span class="" id="ibx_cause_amt" label="0" style="" dataType="number" displayFormat="#,###"></w2:span>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="집행금액" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td ri" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:span class="" escape="false" id="ibx_enfrc_amt" label="0" style="" dataType="number" displayFormat="#,###"></w2:span>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="잔여금액" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td ri" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:span class="" dataType="number" id="ibx_remidr_amt" label="0" style="" displayFormat="#,###"></w2:span>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="구매요구금액" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td ri" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:span class="" escape="false" id="" label="000" ref="data:dma_accnt.accnt_demnd_amt" style="" dataType="number"
+    					displayFormat="#,###">
+    				</w2:span>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="연구기자재/시작품" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<xf:group class="flex" id="" style="">
+    					<xf:group class="inpSch" id="grp_group1" style="width: 120px;">
+    						<xf:input adjustMaxLength="false" class="inp" ev:onviewchange="scwin.inputExpnsCd_onviewchange"
+    							id="ibx_equip_odr" style="" title="연구기자재시작품" ref="data:dma_accnt.equip_odr" disabled="true">
+    						</xf:input>
+    						<xf:trigger class="btn" id="btn_equip" style="" title="비용코드 조회" type="button" disabled="true"
+    							ev:onclick="scwin.btn_equip_onclick">
+    							<xf:label><![CDATA[검색]]></xf:label>
+    						</xf:trigger>
+    					</xf:group>
+    					<xf:input adjustMaxLength="false" class="inp full" id="" readOnly="true" style="" title="연구기자재시작품"
+    						ref="data:dma_accnt.equip_nm" disabled="true">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="심의번호" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:span class="" escape="false" id="" label="000" ref="data:dma_accnt.consttn_no" style=""></w2:span>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="첨부파일번호" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<w2:span class="" escape="false" id="" label="000" style="" ref="data:dma_accnt.attach_file_no"></w2:span>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" tagname="tr">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="" label="공급가액" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<xf:input adjustMaxLength="false" class="inp ri req full" id="ibx_sum_amt" style="" title="공급가액" dataType="number"
+    					displayFormat="#,###" ref="data:dma_accnt.sum_amt" ev:onviewchange="scwin.ibx_sum_amt_onviewchange">
+    				</xf:input>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="spn_incidntl_expns" label="부대비" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<xf:input adjustMaxLength="false" class="inp ri full" dataType="number" displayFormat="#,###" id="ibx_incidntl_expns"
+    					style="" title="공급가액" ev:onviewchange="scwin.ibx_incidntl_expns_onviewchange" ref="data:dma_accnt.incidntl_expns">
+    				</xf:input>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" tagname="tr" id="grp_incidntl_expns">
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="spn_addtax" label="부가세" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<xf:input adjustMaxLength="false" class="inp ri full" dataType="number" displayFormat="#,##0"
+    					ev:onviewchange="scwin.ibx_add_tax_onviewchange" id="ibx_add_tax" style="" title="부가세" ref="data:dma_accnt.add_tax">
+    				</xf:input>
+    			</xf:group>
+    			<xf:group class="w2tb_th" tagname="th">
+    				<w2:attributes>
+    					<w2:scope>row</w2:scope>
+    				</w2:attributes>
+    				<w2:textbox id="spn_equip" label="ZEUS 장비조회" style="" tagname="span"></w2:textbox>
+    			</xf:group>
+    			<xf:group class="w2tb_td" tagname="td">
+    				<w2:attributes></w2:attributes>
+    				<xf:group class="inpSch" id="grp_equip" style="width: 180px;">
+    					<xf:input adjustMaxLength="false" class="inp" ev:onviewchange="scwin.inputExpnsCd_onviewchange" id=""
+    						ref="data:dma_accnt.ntis_reg_no" style="" title="비용코드">
+    					</xf:input>
+    					<xf:trigger class="btn" ev:onclick="scwin.btn_zeus_onclick" id="btn_zeus" style="" title="비용코드 조회" type="button">
+    						<xf:label><![CDATA[검색]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger style="" id="btn_save" type="button" class=" btn pro conf" ev:onclick="scwin.btn_save_onclick">
+    				<xf:label><![CDATA[적용]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

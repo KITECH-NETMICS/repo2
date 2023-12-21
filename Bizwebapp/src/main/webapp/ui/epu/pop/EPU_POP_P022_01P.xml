@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="구매요구번호 검색" meta_author="이영희" meta_date="2022.12.06.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="pur_req_no" name="구매요구번호" dataType="text"></w2:column>
+            			<w2:column id="inout_psn_clsf_cd" name="내외자구분" dataType="text"></w2:column>
+            			<w2:column id="charg_syspayno" name="구매담당자" dataType="text"></w2:column>
+            			<w2:column id="charg_nm" name="구매담당자성명" dataType="text"></w2:column>
+            			<w2:column id="user_sub_nm" name="실사용자성명" dataType="text"></w2:column>
+            			<w2:column id="req_amt_sum" name="구매요구금액" dataType="text"></w2:column>
+            			<w2:column id="req_ymd" name="작성일자" dataType="text"></w2:column>
+            			<w2:column id="apr_state_nm" name="결재상태명" dataType="text"></w2:column>
+            			<w2:column id="accnt_no" name="계정번호" dataType="text"></w2:column>
+            			<w2:column id="item_gdnm" name="품명" dataType="text"></w2:column>
+            			<w2:column id="elecapp_docu_no" name="특정구매신청번호" dataType="text"></w2:column>
+            			<w2:column id="req_psn_dept_nm" name="신청부서명" dataType="text"></w2:column>
+            			<w2:column id="inhr_pur_req_no" name="부속구매요구번호" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            		<w2:data use="false"></w2:data>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="pur_req_no" name="구매요구번호" dataType="text"></w2:key>
+            			<w2:key id="syspayno" name="시스템개인번호" dataType="text"></w2:key>
+            			<w2:key id="empno" name="개인번호" dataType="text"></w2:key>
+            			<w2:key id="nm" name="성명" dataType="text"></w2:key>
+            			<w2:key id="dept_cd" name="부서코드" dataType="text"></w2:key>
+            			<w2:key id="clsf" name="팝업구분" dataType="text"></w2:key>
+            			<w2:key id="inout_psn_clsf_cd" name="내외자구분" dataType="text"></w2:key>
+            			<w2:key id="role_type" name="롤타입" dataType="text"></w2:key>
+            			<w2:key id="bid_ord_no" name="발주번호" dataType="text"></w2:key>
+            			<w2:key id="chg_no" name="변경순번" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>            
+        	<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='data:json,{"id":"dlt_grd","key":"cardList"}' 
+        	    action="SvcEPUREQPOPR05.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 구매요구번호 검색
+ 	 * 변경 이력 : 2022-12-06	이영희	최초 작성
+ 	 ****************************************************/  
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */ 
+	scwin.onpageload = function() {
+		//enter key event
+		com.setEnterKeyEvent(grp_emp, scwin.btn_emp_onclick);
+		
+		var param = com.getParameter();
+		dma_search.setJSON(param);
+		// clsf : special 특정물품구매사유서, COMB_ORD 발주계획(통합발주)
+		dma_search.set("clsf", param.pop_gbn);
+		
+		if(param.pop_gbn == "special" || param.pop_gbn == "continue" ){ // 특정구매사유서, 계속연차확인서
+			dma_search.set("syspayno", com.getLoginInfo("sn"));
+			dma_search.set("nm", com.getLoginInfo("cn"));
+			dma_search.set("empno", com.getLoginInfo("empno"));
+			dma_search.set("dept_cd", com.getLoginInfo("deptCode"));
+			dma_search.set("role_type", "3");
+			
+			btn_emp.setDisabled(true);
+		}else if(param.pop_gbn == "COMB_ORD" ){ // 발주계획(통합발주)
+			btn_search.setDisabled(true);
+			
+			btn_search.trigger("click");
+		}
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.btn_search_onclick = function(e) {
+		com.execute(sbm_selectData, {
+			successCallback : function(e) {
+				dlt_grd.setJSON(e.responseJSON.purReqMastrMngVoList);
+			}
+		});
+			
+	};
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/**
+	 * 그리드 더블클릭 이벤트
+	 */
+	scwin.grd_pur_oncelldblclick = function(row,col,colId) {
+		com.closePopup(dlt_grd.getRowJSON(row));
+	};
+
+	/**
+	 * 직원검색
+	 */
+	scwin.btn_emp_onclick = function(e) {
+		var data ={empno : ibx_empno.getValue()};
+		if(ibx_empno.getValue() == ""){
+			data.ref_yn = "Y";
+		}
+		
+		com.pop.open(com.pop.TYPE.HUM, data, function(ret) {
+			dma_search.set("syspayno", ret.syspayno);
+			dma_search.set("nm", ret.nm);
+			dma_search.set("empno", ret.empno);
+		});
+	};
+	
+	scwin.ibx_empno_onblur = function(e) {
+		if(ibx_empno.getValue() == ""){
+			dma_search.set("syspayno", "");
+			dma_search.set("nm", "");
+		}
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection " id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="width:180px;" tagname="col"></xf:group>
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="구매번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" class="inp" id="" ref="data:dma_search.pur_req_no" style="width: 150px;"
+    								title="관련내용">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="사용자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:group class="inpSch" id="grp_emp" style="width: 100px;">
+    								<xf:input adjustMaxLength="false" class="inp" ev:onblur="scwin.ibx_empno_onblur" id="ibx_empno"
+    									ref="data:dma_search.empno" style="" title="직원개인번호">
+    								</xf:input>
+    								<xf:trigger class="btn" ev:onclick="scwin.btn_emp_onclick" id="btn_emp" style="" title="기술지원책임자 조회"
+    									type="button">
+    									<xf:label><![CDATA[검색]]></xf:label>
+    								</xf:trigger>
+    							</xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" disabled="true" id="" ref="data:dma_search.nm"
+    								style="width: 100px;" title="직원명">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff" id="grd_pur"
+    			noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="50" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="10" tooltipDisplay="true" fixedColumn="4" ev:oncelldblclick="scwin.grd_pur_oncelldblclick"
+    			readOnly="true">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column width="90" inputType="text" style="height:28px" id="column47" value="구매요구번호" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="내외자" width="67"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="사용자" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column30" inputType="text" style="height:28px" value="구매담당" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column46" inputType="text" style="height:28px" value="결재상태" width="90">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column44" inputType="text" style="height:28px" value="품명" width="150"></w2:column>
+    					<w2:column displayMode="label" id="column42" inputType="text" style="height:28px" value="계정번호" width="90"></w2:column>
+    					<w2:column displayMode="label" id="column40" inputType="text" style="height:28px" value="구매요구일자" width="90"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="column49" value="구매요구부서" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column51" value="구매요구금액" displayMode="label"></w2:column>
+    					<w2:column width="79" inputType="text" style="height:28px" id="column53" value="특정구매신청번호" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column width="90" inputType="text" style="height:28px" id="pur_req_no" value="" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" escape="false" id="inout_psn_clsf_cd" inputType="select" readOnly="true" style="height:28px;"
+    						width="67" allOption="" chooseOption="" ref="">
+    						<w2:choices>
+    							<w2:item>
+    								<w2:label><![CDATA[내자]]></w2:label>
+    								<w2:value><![CDATA[1]]></w2:value>
+    							</w2:item>
+    							<w2:item>
+    								<w2:label><![CDATA[외자]]></w2:label>
+    								<w2:value><![CDATA[2]]></w2:value>
+    							</w2:item>
+    						</w2:choices>
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="user_sub_nm" inputType="text" readOnly="true" style="height:28px;"
+    						width="80" class="">
+    					</w2:column>
+    					<w2:column displayMode="label" id="charg_nm" inputType="text" readOnly="true" style="height:28px" width="80"
+    						dataType="text">
+    					</w2:column>
+    					<w2:column displayMode="label" id="apr_state_nm" inputType="text" readOnly="true" style="height:28px" width="90"
+    						class="" dataType="text">
+    					</w2:column>
+    					<w2:column displayMode="label" id="item_gdnm" inputType="text" readOnly="true" style="height:28px" width="150"
+    						class="le" dataType="text">
+    					</w2:column>
+    					<w2:column displayMode="label" id="accnt_no" inputType="text" readOnly="true" style="height:28px" width="90"
+    						class="" dataType="text">
+    					</w2:column>
+    					<w2:column displayMode="label" id="req_ymd" inputType="text" readOnly="true" style="height:28px" width="90"
+    						class="" dataType="date">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px" id="req" value="" displayMode="label"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="req_amt_sum" value="" displayMode="label" dataType="number" displayFormat="#,###" class="ri"></w2:column>
+    					<w2:column width="79" inputType="text" style="height:28px" id="elecapp_docu_no" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

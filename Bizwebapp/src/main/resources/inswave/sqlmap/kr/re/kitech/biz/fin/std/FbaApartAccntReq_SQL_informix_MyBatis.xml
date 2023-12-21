@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.std">
+  
+  <!--별도 계좌 사번으로 Grid조회 -->
+  <select id="selectFbaApartAccntGrid" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo" resultType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.std.selectFbaApartAccntGrid */ 
+		    a.syspayno
+         ,b.empno
+         ,b.nm
+         ,a.bankaccnt_no
+         ,c.bankaccnt_no as bankaccnt_no_1
+         ,a.depstr_nm
+         ,a.bank
+         ,a.rmk
+FROM    fbaapartaccnt a, humbasicinfo b, humslbasinfo c
+WHERE   a.syspayno = b.syspayno
+AND   a.syspayno = c.syspayno
+AND     b.empno like #{syspayno}
+  </select>
+  
+  <!--별도 계좌 form 조회 -->
+  <select id="selectFbaApartAccntForm" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo" resultType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.std.selectFbaApartAccntForm */ 
+		    a.syspayno
+         ,b.empno
+         ,b.nm
+         ,a.bankaccnt_no
+         ,c.bankaccnt_no as bankaccnt_no_1
+         ,c.salry_bank
+         ,a.depstr_nm
+         ,a.bank
+         ,a.rmk
+FROM    fbaapartaccnt a, humbasicinfo b, humslbasinfo c
+WHERE   a.syspayno = b.syspayno
+AND   a.syspayno = c.syspayno
+AND     a.syspayno = #{syspayno}
+  </select>  
+
+  <!--별도 계좌 목록 조회 -->
+  <select id="selectListItemFbaApartAccntReq" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo" resultType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+		SELECT /* QueryID : kr.re.kitech.biz.fin.std.selectListItemFbaApartAccntReq */ 
+				 a.req_no  --신청번호
+		        ,a.req_ymd--신청일
+		        ,a.syspayno
+		        ,b.empno     --개인번호
+		        ,b.nm        --성명
+		        ,b.dept_cd   --부서코드
+		        ,b.dept_nm   --부서명
+		        ,b.posi_cd   --직급코드
+		        ,b.posi_nm   --직급명
+		        ,b.entr_ymd  --입원일(입사일)
+		        ,a.salry_bank --은행코드
+		        ,d.cd_nm AS salry_bank_nm --은행명
+		        ,a.depstr       --예금주
+		        ,a.bankaccnt_no --계좌번호
+		        ,c.apr_state    --결제상태
+		        ,e.cd_nm AS apr_state_nm  --결제상태 이름
+		FROM fbaapartaccntreq a     --급여계좌 신청
+		     ,v_humbASicinfo b
+		     ,xomxintfatab c
+		     ,xodxcommst d
+		     ,xodxcommst e
+		WHERE
+		     a.syspayno=b.syspayno
+		     AND a.req_no=c.req_no
+		     AND c.apr_state=e.cd
+		     AND a.salry_bank=d.cd
+		    AND c.state_inform_flag = '1'
+		         <if test="apr_state != null and apr_state != ''">
+			 and c.apr_state  = #{apr_state}
+		</if>
+		         <if test="syspayno != null and syspayno != ''">
+			 and a.syspayno  = #{syspayno}
+		</if>
+		         <if test="req_no != null and req_no != ''">
+			 and a.req_no LIKE #{req_no}
+		</if>
+		         <if test="dept_cd != null and dept_cd != ''">
+			 and b.dept_cd  = #{dept_cd}
+		</if>
+		         <if test="req_ymd_from != null and req_ymd_from != ''">
+			 and a.req_ymd  <![CDATA[>=]]>  #{req_ymd_from}
+		</if>
+		         <if test="req_ymd_to != null and req_ymd_to != ''">
+			 and a.req_ymd   <![CDATA[<= ]]>  #{req_ymd_to}
+		</if>
+		ORDER BY a.req_no DESC
+  </select>
+  
+  <!--기본 계좌 조회 -->
+  <select id="selectSingleItemFbaApartAccntReq" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo" resultType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+		SELECT /* QueryID : kr.re.kitech.biz.fin.std.selectSingleItemFbaApartAccntReq */ 
+		 a.salry_bank,   --은행명
+		 a.bankaccnt_no,   --계좌번호
+		 a.bankaccnt_attach_file_no, --계좌사본 파일번호
+		 a.attach_file_no,  --첨부파일번호
+		 a.dept_new_ymd,
+		 a.dept_cd,
+		 a.depstr,
+		 b.nm,    --성명
+		 b.empno,   --개인번호
+		 b.syspayno,   --시스템개인번호
+		 c.dept_nm,   --부서명
+		 d.posi_nm,   --직무명
+		fun_xodxcommst_cd_nm(e.apr_state,0) apr_state_nm,
+		e.apr_state,
+		e.mngmt_item_3 ret_yn,
+		f.bankaccnt_no a_bankaccnt_no,
+		 g.bankaccnt_no b_bankaccnt_no,
+		 fun_xodxcommst_cd_nm(f.salry_bank,0) a_bankaccnt_nm,
+		 fun_xodxcommst_cd_nm(g.bank,0) b_bankaccnt_nm 
+		FROM 
+		 fbaapartaccntreq a,
+		 humbasicinfo b,
+		 xodhdeptinfo c,
+		 xodhposiinfo d,
+		 xomxintfatab e,
+		 humslbasinfo f,
+		 OUTER fbaapartaccnt g
+		WHERE
+		 a.req_no = #{req_no}
+		 AND a.syspayno = b.syspayno
+		 AND b.dept_cd = c.dept_cd
+		 AND b.dept_new_ymd = c.dept_new_ymd
+		 AND b.posi_cd = d.posi_cd
+		 AND a.req_no = e.req_no
+		 AND state_inform_flag = '1'
+		 AND a.syspayno = f.syspayno
+		 AND a.syspayno = g.syspayno
+  </select>
+  
+  <!-- 신청전 기본 데이터 조회 -->
+  <select id="selectBeforeSingleItemHumBasicInfo" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo" resultType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+		SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectListItemHumBasicInfo */ 
+		 a.nm,
+		 a.nm_eng,
+		 fun_dept_nm(a.dept_cd, a.dept_new_ymd) dept_nm,
+		 fun_posi_nm(a.posi_cd) posi_nm,
+		 a.posi_cd,
+		 a.empno,
+		 a.dept_cd,
+		 a.dept_new_ymd,
+		 a.home_tel,
+		 a.ext_no,
+		 a.mobile,
+		 a.email,
+		 a.addr_postmt_no,
+		 a.addr_base,
+		 a.addr_detls,
+		 a.entr_ymd,
+		 b.longwk_cntfr_ymd,
+		 a.resid_no,
+		 b.sci_tech_anuty,
+		 b.savng_shape_dedct,
+		 a.syspayno,
+		 b.bankaccnt_no a_bankaccnt_no,
+		 c.bankaccnt_no b_bankaccnt_no,
+		 fun_xodxcommst_cd_nm(b.salry_bank,0) a_bankaccnt_nm,
+		 fun_xodxcommst_cd_nm(c.bank,0) b_bankaccnt_nm,
+		 a.job_clsf,
+		 d.cd_nm as job_clsf_nm
+		FROM
+		   humbasicinfo a,
+		   humslbasinfo b,
+		   OUTER fbaapartaccnt c,
+		   xodxcommst d
+		WHERE
+		   a.syspayno = #{syspayno}
+		   AND a.syspayno = b.syspayno
+		   AND a.syspayno = c.syspayno
+		   AND a.job_clsf = d.cd
+	</select>
+	
+  <!-- 별도계좌 신규 저장 -->
+  <insert id="insertItemFbaApartAccntReq" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+		INSERT /* QueryID : kr.re.kitech.biz.fin.std.insertListItemFbaApartAccntReq */ 
+				 INTO fbaapartaccntreq(
+		   req_no ,   --신청번호          
+		   req_ymd,          --신청일            
+		   syspayno,          --시스템개인번호    
+		   dept_cd,          --부서코드          
+		   dept_new_ymd,          --부서신설일        
+		   depstr ,          --예금주            
+		   salry_bank,          --급여은행           
+		   bankaccnt_no,          --계좌번호          
+		   bankaccnt_attach_file_no, --계좌사본          
+		   attach_file_no ,  --첨부파일번호      
+		   regst_syspayno ,  --등록시스템개인번호  
+		   regst_daytm   --등록일시            
+		)VALUES(
+		 #{req_no}, 
+		 #{req_ymd}, 
+		 #{syspayno}, 
+		 #{dept_cd}, 
+		 #{dept_new_ymd}, 
+		 #{depstr}, 
+		 #{salry_bank}, 
+		 #{bankaccnt_no}, 
+		 #{bankaccnt_attach_file_no}, 
+		 #{attach_file_no}, 
+		 #{regst_syspayno},
+		 CURRENT
+		)
+  </insert>
+  
+  <!-- 별도계좌 저장 -->
+  <update id="updateItemFbaApartAccntReq" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+		UPDATE /* QueryID : kr.re.kitech.biz.fin.std.updateListItemFbaApartAccntReq */ 
+				 fbaapartaccntreq SET
+		 depstr = #{depstr},          --예금주            
+		 salry_bank = #{salry_bank},          --급여은행           
+		 bankaccnt_no = #{bankaccnt_no},          --계좌번호    
+		 bankaccnt_attach_file_no = #{bankaccnt_attach_file_no}, --계좌사본  
+		 attach_file_no = #{attach_file_no},           
+		 updt_syspayno = #{regst_syspayno},
+		 updt_daytm = CURRENT
+		WHERE
+		 req_no = #{req_no}
+  </update>
+  
+  <!-- 별도계좌 삭제 -->
+  <delete id="deleteItemFbaApartAccntReq" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+		DELETE /* QueryID : kr.re.kitech.biz.fin.std.deleteListItemFbaApartAccntReq */ 
+				 FROM fbaapartaccntreq WHERE req_no = #{req_no}
+  </delete>
+  
+  <!-- 별도계좌신청-처리(승인) -->
+   <update id="updateListItemFbaApartAccntReq" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+		MERGE /* QueryID : kr.re.kitech.biz.fin.std.updateListItemFbaApartAccntReq */ 
+				 INTO fbaapartaccnt AS dst
+		USING (
+		    SELECT
+		        CAST(#{syspayno} AS CHAR(8)) AS syspayno,
+		        CAST(#{bankaccnt_no} AS VARCHAR(50)) AS bankaccnt_no,
+		        CAST(#{depstr_nm} AS VARCHAR(50)) AS depstr_nm,
+		        CAST(#{bank} AS CHAR(6)) AS bank,
+		        '' AS rmk,
+		        CAST(#{updt_syspayno} AS CHAR(8)) AS regst_syspayno,
+		        CURRENT AS regst_daytm
+		    FROM sysmaster:sysdual
+		) AS src ON src.syspayno = dst.syspayno
+		WHEN MATCHED THEN
+		    UPDATE SET
+		        dst.bankaccnt_no = src.bankaccnt_no,
+		        dst.depstr_nm = src.depstr_nm,
+		        dst.bank = src.bank,
+		        updt_syspayno = src.regst_syspayno,
+		        updt_daytm = CURRENT
+		WHEN NOT MATCHED THEN
+		    INSERT (dst.syspayno, dst.bankaccnt_no, dst.depstr_nm, dst.bank, dst.rmk, dst.regst_syspayno, dst.regst_daytm)
+		    VALUES (src.syspayno, src.bankaccnt_no, src.depstr_nm, src.bank, '', src.regst_syspayno, src.regst_daytm)
+  </update> 
+  <select id="selectFbaApartAccntCnt" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo" resultType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntReqVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.std.selectFbaApartAccntCnt */ 
+		 count(*) as cnt FROM fbaapartaccnt WHERE syspayno = #{syspayno}
+  </select>
+  <insert id="insertFbaApartAccnt" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.std.insertFbaApartAccnt */ 
+		 INTO fbaapartaccnt (
+            syspayno
+           ,bankaccnt_no
+           ,depstr_nm
+           ,bank
+           ,rmk
+           ,regst_syspayno
+           ,regst_daytm
+           ,updt_syspayno
+           ,updt_daytm     )
+VALUES
+         ( #{syspayno}, #{bankaccnt_no}, #{depstr_nm}, #{bank}, #{rmk}, #{regst_syspayno}, current, #{updt_syspayno}, current )
+  </insert>
+  <update id="updateFbaApartAccnt" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.std.updateFbaApartAccnt */ 
+		  fbaapartaccnt
+SET     bankaccnt_no  = #{bankaccnt_no},
+        depstr_nm  = #{depstr_nm},
+        bank = #{bank},
+        rmk = #{rmk},
+        updt_syspayno = #{updt_syspayno},
+        updt_daytm = current
+WHERE   syspayno = #{syspayno}
+  </update>
+  <delete id="deleteFbaApartAccnt" parameterType="kr.re.kitech.biz.fin.std.vo.FbaApartAccntVo">
+DELETE /* QueryID : kr.re.kitech.biz.fin.std.deleteFbaApartAccnt */ 
+		 FROM fbaapartaccnt WHERE syspayno = #{syspayno}
+  </delete>
+  
+  <select id="selectFinPartAccnt" parameterType="kr.re.kitech.biz.fin.std.vo.FinPartAccntVo" resultType="kr.re.kitech.biz.fin.std.vo.FinPartAccntVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.std.selectFinPartAccnt */ 
+		 b.accnt_no,  
+       b.cls_ymd,
+       fun_emp_nm(b.accnt_rspns) AS accnt_rspns_nm,     
+       f.bugt_amt,          
+       NVL(d.sunsu_amt, 0) AS sunsu_amt,
+       NVL(e.intrst_amt, 0) AS intrst_amt ,
+       NVL(c.enfrc_amt, 0) AS enfrc_amt,
+       NVL(d.sunsu_amt, 0) + NVL(e.intrst_amt, 0) - NVL(c.enfrc_amt, 0) AS ramt_amt,
+       a.bankaccnt_no AS rmk
+FROM resinpmast a
+INNER JOIN resbgacctm b ON a.prj_no = b.prj_no AND b.accnt_clsf ='RAR001'
+INNER JOIN fcpdepst g ON a.bankaccnt_no = g.bankaccnt_no
+INNER JOIN ( SELECT SUBSTR(accnt_no, 1,7)||'0' AS accnt_no,
+                    NVL(SUM(bugt_amt), 0) AS bugt_amt FROM bblbugtactrslt WHERE bugt_amt != 0
+             GROUP BY 1) f ON b.accnt_no = f.accnt_no
+LEFT OUTER JOIN ( SELECT accnt_no,
+                         SUM(enfrc_amt) AS enfrc_amt
+                  FROM ( SELECT b.main_accnt_no AS accnt_no,
+                            SUM(DECODE(base_debit_cr,'1', NVL(unslip_amt, 0), (-1) * NVL(unslip_amt, 0))) AS enfrc_amt
+                      FROM resinpmast c 
+                      INNER JOIN resbgacctm b ON b.prj_no = c.prj_no     
+                      INNER JOIN fspslipdecsnd a  ON B.accnt_no = A.accnt_no   
+                             WHERE NVL(c.bankaccnt_type, '') ='I'                      
+                      GROUP BY 1
+                      UNION ALL
+                      SELECT b.main_accnt_no AS accnt_no, 
+                              SUM(DECODE(base_debit_cr,'1', NVL(unslip_amt, 0),  0)) AS enfrc_amt  --기타가수는 집행금액은 차변만(2013.09.09)
+                      FROM  resinpmast c 
+                          INNER JOIN resbgacctm b ON c.prj_no = b.prj_no 
+                          INNER JOIN fspslipdecsnd a on b.accnt_no  = a.ramt_mngmt_2
+                      WHERE NVL(c.bankaccnt_type, '') ='I'                        
+                      AND a.accnt_cd = '21017912'  -- 기타가수 
+                      GROUP BY 1  
+                      UNION ALL
+                      SELECT b.main_accnt_no AS accnt_no, 
+                              SUM(DECODE(base_debit_cr,'1', NVL(unslip_amt, 0), (-1) * NVL(unslip_amt, 0))) AS enfrc_amt
+                      FROM resinpmast c
+                      INNER JOIN resbgacctm b ON b.prj_no = c.prj_no            
+                      INNER JOIN fspslipdecsnd a  ON b.accnt_no = a.ramt_mngmt_2
+                      WHERE NVL(c.bankaccnt_type, '') ='I' 
+                      AND    a.accnt_cd = '11157010'  -- 미착장비 
+                      GROUP BY 1
+                     )
+               GROUP BY accnt_no ) c ON b.accnt_no = c.accnt_no         
+LEFT OUTER JOIN ( SELECT accnt_no,
+                      SUM(sunsu_amt) AS sunsu_amt
+               FROM ( SELECT SUBSTR(a.ramt_mngmt_1, 1, 7)||'0' AS accnt_no, 
+                          DECODE(a.base_debit_cr,'2', NVL(a.unslip_amt, 0), (-1) * NVL(a.unslip_amt, 0)) AS sunsu_amt
+                   FROM  resinpmast c 
+                   INNER JOIN resbgacctm b ON b.prj_no = c.prj_no   
+                   INNER JOIN fspslipdecsnd a ON b.accnt_no = a.ramt_mngmt_1
+                   WHERE NVL(c.bankaccnt_type, '') ='I'          
+                   AND   a.accnt_cd IN ('21021061', '21021041')                                                            
+                   UNION ALL
+                   SELECT SUBSTR(a.ramt_mngmt_2, 1, 7)||'0' AS accnt_no, 
+                               DECODE(a.base_debit_cr,'2', NVL(a.unslip_amt, 0), 0) AS sunsu_amt  --기타가수는 선수금은 대변만(2013.09.09)
+                   FROM  resinpmast c 
+                   INNER JOIN resbgacctm b ON b.prj_no = c.prj_no   
+                   INNER JOIN fspslipdecsnd a ON b.accnt_no = a.ramt_mngmt_2
+                   WHERE NVL(c.bankaccnt_type, '') ='I'          
+                   AND   a.accnt_cd IN ('21017912')                         
+                        )
+                   GROUP BY 1
+                ) d ON b.accnt_no = d.accnt_no                    
+LEFT OUTER JOIN ( SELECT a.ramt_mngmt_2 AS bankaccnt_no, 
+                     SUM(DECODE(a.base_debit_cr,'2', NVL(a.unslip_amt, 0), (-1) * NVL(a.unslip_amt, 0))) AS intrst_amt
+               FROM  resinpmast c              
+               INNER JOIN fspslipdecsnd a ON c.bankaccnt_no = a.ramt_mngmt_2
+               WHERE NVL(c.bankaccnt_type, '') ='I'  
+               AND   a.accnt_cd = '21017901'                         
+                  GROUP BY 1
+                  ) e ON a.bankaccnt_no = e.bankaccnt_no 
+WHERE NVL(a.bankaccnt_type, '') ='I'  
+<if test="accnt_no != null and accnt_no != ''">
+	 and b.accnt_no = #{accnt_no}
+</if>
+<if test="bankaccnt_no != null and bankaccnt_no != ''">
+	 and a.bankaccnt_no = #{bankaccnt_no}
+</if>
+<if test='accnt_state != null and accnt_state != "N" and accnt_state != "A"'>
+	 and NVL(g.expir_ymd, '') = ''
+</if>
+<if test='accnt_state != null and accnt_state != "Y" and accnt_state != "A"'>
+	 and NVL(g.expir_ymd, '')<![CDATA[ <> ]]>''
+</if>  
+ORDER BY 9, 1
+  </select>          
+</mapper>

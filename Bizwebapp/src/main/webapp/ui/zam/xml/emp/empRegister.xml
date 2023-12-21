@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="사원등록 (CRUD 샘플)">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_emp">
+        			<w2:keyInfo>
+        				<w2:key id="empno" name="사번" dataType="text"></w2:key>
+        				<w2:key id="ename" name="성명" dataType="text"></w2:key>
+        				<w2:key id="job" name="직업" dataType="text"></w2:key>
+        				<w2:key id="mgr" name="직속상관" dataType="text"></w2:key>
+        				<w2:key id="hiredate" name="입사일" dataType="text"></w2:key>
+        				<w2:key id="sal" name="급여" dataType="text"></w2:key>
+        				<w2:key id="comm" name="상여" dataType="text"></w2:key>
+        				<w2:key id="deptno" name="부서코드" dataType="text"></w2:key>
+        				<w2:key id="account" name="설명" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataMap baseNode="map" id="dma_cond">
+        			<w2:keyInfo>
+        				<w2:key id="empno" name="empno" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_deptlist" saveRemovedData="true" ev:ondataload="scwin.dlt_deptlist_ondataload">
+        			<w2:columnInfo>
+        				<w2:column id="deptno" name="deptno" dataType="text"></w2:column>
+        				<w2:column id="dname" name="dname" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_save" ref='data:json,{"id":"dma_emp","key":"elData"}' target="" action="/DmoEmpIns.pwkjson"
+        		method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler=""
+        		mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="scwin.sbm_save_submitdone" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_selEmpInfo" ref='data:json,{"id":"dma_cond","key":"elData"}'
+        		target='data:json,{"id":"dma_emp","key":"elData.empVo"}' action="/DmoEmpUpdView.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="scwin.sbm_selEmpInfo_submitdone" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_delEmpInfo" ref='data:json,{"id":"dma_cond","key":"elData"}' target=""
+        		action="/DmoEmpDel.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace=""
+        		errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="scwin.sbm_delEmpInfo_submitdone"
+        		ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_updEmp" ref='data:json,{"id":"dma_emp","key":"elData"}' target=""
+        		action="/DmoEmpUpd..pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace=""
+        		errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="scwin.sbm_updEmp_submitdone"
+        		ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_deptlist" ref='data:json,{"id":"dma_cond","key":"elData"}' target='data:json,{"id":"dlt_deptlist","key":"elData.deptVoList"}' action="/DmoEmpView.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="scwin.sbm_deptlist_submitdone" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+	scwin.mode = "";
+
+	scwin.onpageload = function() {
+		scwin.init(); 
+	};
+
+	scwin.onpageunload = function() {
+
+	};
+
+	scwin.init = function() {
+		//************
+		//dept SelectBox set
+		//************
+		com.sbm.execute(sbm_deptlist);
+		//파라미터 있으면 조회 후 사번 readonly
+		var empno = com.data.getParameter("empno");
+		//************
+		//사원정보 상세조회
+		//************
+		if (typeof empno !== "undefined") {
+			scwin.selectEmpInfo(empno);
+		} else {
+			scwin.mode = "insert";
+			btn_del.hide();
+		}
+	}
+
+	/**
+	 *
+	 * select
+	 *
+	 **/
+	scwin.selectEmpInfo = function(empno) {
+		//dma_emp.set("empno", empno);
+		dma_cond.set("empno", empno);
+		com.sbm.execute(sbm_selEmpInfo);
+	};
+
+	scwin.sbm_selEmpInfo_submitdone = function(e) {
+		ibx_empno.setReadOnly(true);
+		scwin.mode = "select";
+
+		/*
+		if(e.responseJSON.elHeader.resSuc){
+			com.win.alert("사원 정보가 조회되었습니다.");
+		}
+		 */
+	};
+
+	/**
+	 *
+	 * 목록조회
+	 *
+	 **/
+	scwin.btn_list_onclick = function(e) {
+		com.win.moveUrl("/ui/zam/xml/emp/empList.xml");
+	};
+
+	/**
+	 *
+	 * 저장
+	 *
+	 **/
+	scwin.btn_save_onclick = function(e) {
+		//---------------------------------------------------------
+		// 입력 검증 : com.data.validateGroup
+		//---------------------------------------------------------
+		//---------------------------------------------------------
+		// 저장 처리 : /DmoEmpIns.pwkjson
+		//---------------------------------------------------------
+		if (com.data.validateGroup(grp_empDetail)) {
+			com.win.confirm(com.data.getMessage("MSG_CM_00031"), function(res) {
+				if (res.clickValue === true) {
+					if (scwin.mode == "insert") {
+						com.sbm.execute(sbm_save);
+					} else {
+						com.sbm.execute(sbm_updEmp);
+					}
+				}
+			});
+		}
+	};
+
+	/**
+	 *
+	 * 초기화
+	 *
+	 **/
+	scwin.btn_init_onclick = function(e) {
+		if (scwin.mode == "insert") {
+			dma_emp.setEmptyValue();
+		} else {
+		}
+	};
+
+	/**
+	 *
+	 * delete
+	 *
+	 **/
+	scwin.btn_del_onclick = function(e) {
+		scwin.deleteEmpInfo();
+	};
+
+	scwin.deleteEmpInfo = function() {
+		dma_cond.set("empno", dma_emp.get("empno"));
+		com.sbm.execute(sbm_delEmpInfo);
+	};
+
+	scwin.sbm_delEmpInfo_submitdone = function(e) {
+		if (e.responseJSON.elHeader.resSuc) {
+			com.win.alert("사원 정보가 삭제되었습니다.");
+		}
+	};
+	scwin.sbm_save_submitdone = function(e) {
+		if (com.sbm.getResultCode(e) == gcm.MESSAGE_CODE.STATUS_SUCCESS) {
+			com.win.alert("사원 정보가 저장되었습니다.");
+		}
+	};
+
+	scwin.sbm_updEmp_submitdone = function(e) {
+		if (com.sbm.getResultCode(e) == gcm.MESSAGE_CODE.STATUS_SUCCESS) {
+			com.win.alert("사원 정보가 수정되었습니다.");
+		}
+	};
+
+	scwin.sbm_deptlist_submitdone = function(e) {
+
+	};
+
+	scwin.dlt_deptlist_ondataload = function() {
+		//sbx_dept set
+		sbx_dept.setNodeSet("data:dlt_deptlist", "dname", "deptno");
+	};
+
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    <xf:group id="" style="" class="emp_contents"><xf:group style="" id="" class="tbbox">
+    		<xf:group adaptive="layout" adaptiveThreshold="800" tagname="table" style="" id="grp_empDetail" class="w2tb tb">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="colgroup">
+    				<xf:group tagname="col" style="width:120px;"></xf:group>
+    				<xf:group tagname="col" style=""></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th req">사번</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input minlength="4" ref="data:dma_emp.empno" maxlength="4" style="" id="ibx_empno" enterBlur="" class="req" mandatory="true" dataType="number">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th req">성명</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input ref="data:dma_emp.ename" style="" id="ibx_ename" enterBlur="" class="req" mandatory="true">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th req">직업</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input ref="data:dma_emp.job" style="" id="ibx_job" enterBlur="" class="req" mandatory="true">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th req">직속상관</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input ref="data:dma_emp.mgr" style="" id="ibx_mgr" enterBlur="" class="req" mandatory="true">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th">입사일</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input ref="data:dma_emp.hiredate" style="" id="ibx_hiredate" enterBlur="" class="" ev:onclick="scwin.ibx_hiredate_onclick">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th req">급여</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input ref="data:dma_emp.sal" style="" id="ibx_sal" enterBlur="" class="req" mandatory="true">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th req">상여</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input ref="data:dma_emp.comm" style="" id="ibx_comm" enterBlur="" class="req" mandatory="true">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th req">부서코드</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    				<xf:group id="" class="flex">
+    					<xf:select1 allOption="" appearance="minimal" chooseOption="true" direction="auto" disabled="false"
+    						disabledClass="w2selectbox_disabled" id="sbx_dept" style=";width:100px;" submenuSize="auto" ref="data:dma_emp.deptno"
+    						chooseOptionLabel="">
+    						<xf:choices></xf:choices>
+    					</xf:select1>
+    				</xf:group></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr" style="">
+    				<xf:group tagname="th" style="" class="w2tb_th">설명</xf:group>
+    				<xf:group tagname="td" style="" class="w2tb_td">
+    					<xf:input ref="data:dma_emp.account" style="" id="ibx_account" enterBlur="" class="">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group><xf:group style="" id="" class="btnbox">
+    		<xf:group id="" class="fr">
+    			<xf:trigger ev:onclick="scwin.btn_list_onclick" style="" id="btn_list" type="button" class="btn_cm">
+    				<xf:label><![CDATA[목록]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger ev:onclick="scwin.btn_save_onclick" style="" id="btn_save" type="button" class="btn_cm">
+    				<xf:label><![CDATA[저장]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger style="" id="btn_del" type="button" class="btn_cm" ev:onclick="scwin.btn_del_onclick">
+    				<xf:label><![CDATA[삭제]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger ev:onclick="scwin.btn_init_onclick" style="" id="btn_init" type="button" class="btn_cm">
+    				<xf:label><![CDATA[초기화]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group></xf:group></body>
+</html>

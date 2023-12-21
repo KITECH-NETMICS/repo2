@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="헤더">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_login">
+					<w2:keyInfo>
+						<w2:key id="id" name="id" dataType="text"></w2:key>
+						<w2:key id="pw" name="pw" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+			</w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+			<xf:submission id="sbm_logout" ref="" action="/SvcComLogout.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous" />
+			<xf:submission id="sbm_session" tref="data:json,dma_login" action="/SvcComSession.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous" />
+        </xf:model>
+         <script src="/cm/js/biz/apr.js" cache="false" />
+         <script type="text/javascript" lazy="false"><![CDATA[
+		 	
+			/**
+			 * 페이지 로딩 이벤트
+			 */
+			scwin.onpageload = function() {
+								
+				sbx_lang.setValue(gcm.langCode);
+				
+				scwin.menuLink.forEach(function(menuInfo, idx){
+					$("li ." + menuInfo.id).on("click", scwin.all_svc_menu_onclick);
+				});
+				
+				// 사용자 프로필 이미지 세팅
+				let picturePath = gcm.baseUrls.oldBizUrl + "/photoimages/" + com.getLoginInfo("sn")+".jpg";
+				img_profileImage.setSrc(picturePath);
+			};
+			
+			/**
+			 * → 프로필이미지 불러오기 실패 이벤트
+			 */
+			scwin.img_profileImage_onerror = function(e) {
+				img_profileImage.setSrc('/cm/images/img_totalsch_photo_no.png');
+			};
+			
+			scwin.btn_config_onclick = function() {
+				com.openPopup("/cm/xml/configUser.xml", {
+					id : "configUser",
+					popupName : "환경 설정",
+					width : 1000, height: 650 
+				});
+			};
+			
+			scwin.btn_csr_onclick = function() {
+//				com.openPopup("/cm/xml/X953_00P.xml", {
+//					id : "csrRegist",
+//					popupName : "시스템문의 등록",
+//					width : 900, height: 550 
+//				});
+
+				var url = gcm.baseUrls.oldBizUrl + "/filter/index.jsp?serviceid=X953&eipserid="+ com.getLoginInfo("serviceId") +"&popupGubn=Y";
+				window.open(url, "", "width=1005px,height=537px,toolbar=no,menubar=no,scrollbars=yes,statusbar=no,resizable=yes");
+			};
+			
+			scwin.btn_remote_onclick = function() {
+				window.open(gcm.baseUrls.doorayUrl + "/share/drive-files/mxk9pvjavpq0.k6X95SvCRE2izqozl7hX1w", '_blank').focus();
+			};
+			
+			/**
+			 * 도움말 파일 미리보기
+			 */
+			scwin.btn_help_onclick = function() {
+				// xomxcomattachfile 및 /was/IMIS_FILES/2022/01/03/X95220220003301 참조
+				biz.apr.previewFiles('X952202200033','01');
+			};
+			
+			/**
+			 * 로그아웃
+			 */
+			scwin.btn_logout_onclick = function() {
+				// 자체 세션 로그아웃 -> SSO 로그아웃 전이		
+				document.location = "/SvcComLogout.do";
+			};
+		
+			/**
+			 * 언어 변경 이벤트
+			 */
+			scwin.sbx_lang_onviewchange = function(info) {
+				com.confirm("message.xom.wq.038"/*언어를 변경하면 새로고침합니다. 계속하시겠습니까?*/, function(ret) {
+					if (ret) {
+						gcm.lang.setLangCode(info.newValue);
+						com.goHome();
+					} else {
+						sbx_lang.setValue(info.oldValue);
+					}
+				});
+			};
+			
+			/**
+			 * 로고 클릭
+			 */
+			scwin.tbx_logo_onclick = function(e) {
+			
+				// 신청서양식함 오픈
+				var menuObj = gcm.win.getMenuObj('A002');
+				glovalMenuObj = menuObj
+				if(!shiftPressed && !ctrlPressed){
+					com.openMenu(menuObj, {});	
+				}
+				
+				// 각 결재함 카운트 갱신
+				$p.top().wfm_side.getWindow().scwin.refreshCount();
+			};
+						
+			scwin.menuLink = [
+				{ id : "dooray", link : gcm.baseUrls.doorayUrl + "/home/" },	// Dooray
+				{ id : "eip", link : gcm.baseUrls.newBizUrl },	// 업무/결재
+				{ id : "doc", link : gcm.baseUrls.kdocUrl + "/xclickr3_kitech/" }, // 문서유통
+				{ id : "potal", link : gcm.baseUrls.newEipUrl + "?screen=portal" }, // 종합정보포털 
+				{ id : "search", link : gcm.baseUrls.newEipUrl + "?screen=search" }, // 검색추천포털 
+				{ id : "rule", link : gcm.baseUrls.newRuleUrl }, // 원규
+				{ id : "research", link : gcm.baseUrls.newNoteUrl }, // 전자연구노트
+				{ id : "ejour", link : gcm.baseUrls.newEipUrl + "/cm/eLibInfo/index.html" }, // 전자저널
+				{ id : "pdf", link : "http://10.250.104.131:8889/station/auth/login?userId="+ com.getLoginInfo("uid") }, // PDF변환기
+				{ id : "ekpc", link : "https://www.e-kpc.or.kr/kitech/" }, // 사이버연수원 
+				{ id : "cshaedu", link : "https://kitech.cshaedu.or.kr/" },	// 안전교육수강
+				{ id : "calendar", link : "https://kitech.cjtone.co.kr/se/" }, // 휴양지신청
+				{ id : "eip2", link : gcm.baseUrls.oldEipUrl }, // EIP 2.0 포털
+				{ id : "apr2", link : gcm.baseUrls.oldAprUrl+"/processparticipant/worklist/kitech_index.jsp" } // EIP 2.0 결재
+			];
+			
+
+			scwin.all_svc_menu_onclick = function(e) {
+				var menuInfo = scwin.menuLink.find(function(menulink) {
+					return event.target.classList[1] === menulink.id;
+				});
+				
+				if (com.isEmpty(menuInfo.link)) return;
+				
+				window.open(menuInfo.link, '_blank').focus();		
+			};
+		]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group class="header" id="" style="">
+    		<xf:group class="logo" id="" style="">
+    			<w2:textbox id="tbx_logo" label="KITECH 한국생산기술연구원" style="" tagname="h1" ev:onclick="scwin.tbx_logo_onclick"></w2:textbox>
+    			<w2:textbox id="" label="업무/결재" style="" tagname="h2"></w2:textbox>
+    		</xf:group>
+    		<xf:group class="svcmenu" id="" style="position: relative;top: -2px;">
+    			<xf:select1 submenuSize="auto" chooseOption="" allOption="" displayMode="label" ref="" appearance="minimal"
+    				disabledClass="w2selectbox_disabled" ev:onviewchange="scwin.sbx_lang_onviewchange" optionOrder="false" disabled="false"
+    				style="width: 100px;line-height: 26px;position: relative;top: -1px;display:none" id="sbx_lang" renderType="component" class="lang ml5" direction="auto">
+    				<xf:choices>
+    					<xf:item>
+    						<xf:label><![CDATA[KOR]]></xf:label>
+    						<xf:value><![CDATA[ko]]></xf:value>
+    					</xf:item>
+    					<xf:item>
+    						<xf:label><![CDATA[ENG]]></xf:label>
+    						<xf:value><![CDATA[en]]></xf:value>
+    					</xf:item>
+    				</xf:choices>
+    			</xf:select1>
+    			<w2:anchor id="" outerDiv="false" ev:onclick="scwin.btn_help_onclick" style="background: url(/cm/images/ico_mdi_help.png) 0px center no-repeat ;margin-left: 18px;">
+    				<xf:label><![CDATA[도움말]]></xf:label>
+    			</w2:anchor>
+    			<w2:anchor id="" outerDiv="false" ev:onclick="scwin.btn_remote_onclick" style="background: url(/cm/images/ico_mdi_advice.png) 0px center no-repeat;margin-left: 18px;">
+    				<xf:label><![CDATA[원격지원]]></xf:label>
+    			</w2:anchor>
+    			<w2:anchor id="" outerDiv="false" ev:onclick="scwin.btn_csr_onclick" style="background: url(/cm/images/ico_mdi_system.png) 0px center no-repeat;margin-left: 18px;">
+    				<xf:label><![CDATA[시스템문의]]></xf:label>
+    			</w2:anchor>
+    			<xf:group class="allsvc" id=""> 
+    				<w2:anchor class="" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[전체서비스]]></xf:label>
+    				</w2:anchor>
+    				<xf:group class="allservc_view" id="" style="">
+    					<xf:group id="allservc_view_menu" style="" tagname="ul">
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="dooray inquiry" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[Dooray!]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="eip" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[업무/결재]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="doc" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[문서유통]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="potal" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[종합정보포털]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="search" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[검색추천포털]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="rule" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[원규]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="research" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[전자연구노트]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="ejour" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[전자저널]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="pdf" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[PDF변환기]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="ekpc inquiry" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[사이버연수원]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="cshaedu inquiry" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[안전교육수강]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="calendar" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[휴양지신청]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="eip2" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[EIP 2.0 포털]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="apr2" id="" outerDiv="false" style="">
+    								<xf:label><![CDATA[EIP 2.0 결재]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="user" id="" style="padding: 0 0 0 7px;">
+    				<xf:group id="" class="user_photo" style="display: inline-block;margin-right: 6px;width: 32px;height: 32px;background: #fff;border: 1px solid #c9ced5;border-radius: 50%;overflow: hidden;vertical-align: middle;margin-top: -2px;">
+						<xf:image src="/cm/images/img_totalsch_photo_no.png" style="width:30px; height:30px;vertical-align: super;" id="img_profileImage" class=""
+							ev:onerror="scwin.img_profileImage_onerror">
+						</xf:image>
+					</xf:group>
+    				<w2:anchor class="" id="btn_userNm" outerDiv="false" style="">
+    					<xf:label><![CDATA[관리자]]></xf:label>
+    				</w2:anchor>
+    				<xf:group class="user_view" id="" style="">
+    					<xf:group id="" style="" tagname="ul">
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="modify" id="" outerDiv="false" style="display:none;">
+    								<xf:label><![CDATA[내정보수정]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    						<xf:group class="" id="" tagname="li">
+    							<w2:anchor class="config" outerDiv="false" ev:onclick="scwin.btn_config_onclick">
+    								<xf:label><![CDATA[환경설정]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>    						
+    						<xf:group class="" id="" style="" tagname="li">
+    							<w2:anchor class="logout" id="btn_logout" outerDiv="false" style="" ev:onclick="scwin.btn_logout_onclick">
+    								<xf:label><![CDATA[로그아웃]]></xf:label>
+    							</w2:anchor>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

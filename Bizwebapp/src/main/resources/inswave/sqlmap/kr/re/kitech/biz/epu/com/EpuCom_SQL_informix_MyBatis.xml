@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.epu.com">
+<!-- 구매, 검수 권한 담당자 조회 -->
+<select id="selectPurManager" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.epu.com.selectPurManager */
+      group_concat(distinct a.syspayno) as syspayno
+FROM xodrdeptpurman a
+JOIN humbasicinfo b ON a.dept_cd = b.dept_cd AND a.dept_new_ymd = b.dept_new_ymd
+WHERE a.role_type = 'PUR'
+AND b.syspayno = #{syspayno}
+</select>
+<!-- 구매요구 통제금액 조회 -->
+<select id="selectBblenfrcChngAmt" parameterType="java.lang.String" resultType="kr.re.kitech.biz.epu.cnt.vo.BblenfrcVo">
+SELECT /* kr.re.kitech.biz.epu.com.selectBblenfrcChngAmt */ 
+       req_no
+     , req_seq
+     , accnt_no
+     , accnt_cd
+     , ctrl_no
+     , ctrl_ymd
+     , req_amt
+     , unslip_no
+     , enfrc_amt_cause
+     , unslip_amt
+     , enfrc_amt_cause - unslip_amt AS chng_amt
+  FROM bblenfrc
+ WHERE req_no = #{req_no}
+</select>
+
+<!-- 집행내역 원인행위 금액 정리 -->
+<update id="updateBblenfrcCtrlAmt" parameterType="kr.re.kitech.biz.epu.cnt.vo.BblenfrcVo">
+UPDATE /* kr.re.kitech.biz.epu.com.updateBblenfrcCtrlAmt */
+       bblenfrc
+   SET enfrc_amt_cause =  enfrc_amt_cause - #{chng_amt}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+   AND req_seq = #{req_seq}
+</update>
+
+<!-- 일반예산 원인행위 금액 정리 -->
+<update id="updateBblBugtActRsltCauseAmt">
+UPDATE /* kr.re.kitech.biz.epu.com.updateBblBugtActRsltCauseAmt */
+      bblbugtactrslt
+   SET cause_amt = cause_amt - #{chng_amt}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE
+ WHERE accnt_no = #{accnt_no}
+   AND accnt_cd = #{accnt_cd}
+</update>
+
+<!-- 구매요구서 purreqmastr에 삭제 플래그 저장 -->
+<update id="updatePurReqDelFlag" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.epu.com.updatePurReqDelFlag */
+      purreqmastr
+SET cud_type = 'D'
+WHERE pur_req_no = #{pur_req_no}
+;
+UPDATE purreqaccnt
+SET equip_odr = NULL
+WHERE pur_req_no = #{pur_req_no}
+;
+UPDATE epuordreqitem
+SET del_cause = '수요부서 구매취소 요청'
+WHERE pur_req_no = #{pur_req_no}
+</update>
+
+<!-- 재공고 신규발주시 구매요구품목 초기화 -->
+<update id="updatePurReqItemOrderCd" parameterType="java.lang.String">
+UPDATE /* kr.re.kitech.biz.epu.com.updatePurReqItemOrderCd */
+       purreqitem
+   SET order_cd = NULL
+WHERE pur_req_no = #{pur_req_no}
+</update>
+
+<!-- g2b 공통코드 조회 -->
+<select id="selectEpuComCodeG2b" parameterType="kr.re.kitech.biz.epu.com.vo.EpuComCodeG2bVo" resultType="kr.re.kitech.biz.epu.com.vo.EpuComCodeG2bVo">
+SELECT /* QueryID : kr.re.kitech.biz.epu.com.selectEpuComCodeG2b */ 
+       cd
+     , cd_level
+     , cd_nm
+     , upper_cd
+     , use_ex
+  FROM epucomcodeg2b
+ WHERE use_ex = 'Y'
+<if test='upper_cd != null and upper_cd != ""'> AND upper_cd = #{upper_cd} </if>
+<if test='cd != null and cd != ""'>
+  <choose>
+    <when test='str_length != null and str_length != 0'> AND SUBSTR(cd, #{str_index}, #{str_length}) = #{cd} </when>
+    <otherwise> AND cd LIKE '%'|| #{cd} ||'%'</otherwise>
+  </choose>
+ </if>
+ORDER BY cd ASC
+</select>
+</mapper>

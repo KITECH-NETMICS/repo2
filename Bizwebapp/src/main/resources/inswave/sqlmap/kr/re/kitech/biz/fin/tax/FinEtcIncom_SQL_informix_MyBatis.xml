@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.tax">
+<!-- 기타소득 목록 조회 -->
+<select id="selectEtcIncomList" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxEtcIncomVo" resultType="kr.re.kitech.biz.fin.tax.vo.FtxEtcIncomVo">
+
+		/* QueryID : kr.re.kitech.biz.fin.tax.selectEtcIncomList */ 
+		 SELECT mngmt_yrmon
+		  ,mngmt_no
+		  ,DECODE(LENGTH(TRIM(resid_no)), 13, substr(resid_no,0,6)||'-'||substr(resid_no,7), resid_no) AS resid_no
+		  ,nm 
+		  ,addr
+		  ,resid_clsf
+		  ,foctr_psn_clsf
+		  ,resid_natn_cd
+		  ,incom_clsf
+		  ,fun_xodxcommst_cd_nm(incom_clsf, 0) AS incom_clsf_nm
+		  ,pay_ymd
+		  ,incom_belng_month
+		  ,pay_tot_liq
+		  ,need_expns
+		  ,incom_amt
+		  ,incomtax
+		  ,corptax
+		  ,residtax
+		  ,rmk
+		  ,req_no
+		  ,regst_syspayno
+		  ,regst_daytm
+		  ,updt_syspayno
+		  ,updt_daytm
+		FROM   ftxetcincom		
+		WHERE mngmt_yrmon like #{mngmt_yrmon}||'%'		
+		<if test = 'nm != null and nm != ""' >
+		AND nm like #{nm}||'%'
+		</if>
+		<if test = 'resid_no != null and resid_no != ""' >
+		AND REPLACE(resid_no,'-','') LIKE  REPLACE(#{resid_no}||'%','-','')
+		</if>
+		<if test = 'resid_clsf != null and resid_clsf != ""' >
+		AND resid_clsf like #{resid_clsf}||'%'
+		</if>
+</select>
+<!-- 기타소득 관리번호 채번 조회 -->
+<select id="selectEtcIncomMnmtNo" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxEtcIncomVo" resultType="kr.re.kitech.biz.fin.tax.vo.FtxEtcIncomVo">	
+	select /* QueryID : kr.re.kitech.biz.fin.tax.selectEtcIncomMnmtNo */ 
+		 (nvl(max(mngmt_no), 0) + 1)  as mngmt_no
+	from   ftxetcincom 
+	where  mngmt_yrmon = #{mngmt_yrmon}	
+</select>
+<!-- 기타소득 상세 조회 -->
+<select id="selectEtcIncomData" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxEtcIncomVo" resultType="kr.re.kitech.biz.fin.tax.vo.FtxEtcIncomVo">
+	/* QueryID : kr.re.kitech.biz.fin.tax.selectEtcIncomData */ 
+	select 
+		<if test = 'resid_no != null and resid_no != ""' >	
+		first 1
+			 ""            as mngmt_yrmon
+		,  	   ""              as mngmt_no		
+		,      ""                as pay_ymd
+		,      ""      as incom_belng_month
+		</if>
+		<if test = 'mngmt_no != null and mngmt_no != ""' >	
+			   mngmt_yrmon            as mngmt_yrmon
+		,  	   mngmt_no               as mngmt_no		
+		,      pay_ymd                as pay_ymd
+		,      incom_belng_month      as incom_belng_month
+		</if>
+		,      resid_no               as resid_no	   
+		,      nm                     as nm
+		,      addr                   as addr
+		,      resid_clsf             as resid_clsf
+		,      foctr_psn_clsf         as foctr_psn_clsf
+		,      resid_natn_cd          as resid_natn_cd
+		,      incom_clsf             as incom_clsf				
+		,      pay_tot_liq            as pay_tot_liq
+		,      need_expns             as need_expns
+		,      incom_amt              as incom_amt
+		,      incomtax               as incomtax
+		,      corptax                as corptax
+		,      residtax               as residtax
+		,      rmk                    as rmk
+		,      regst_syspayno         as regst_syspayno
+		,      regst_daytm            as regst_daytm
+		,      updt_syspayno          as updt_syspayno
+		,      updt_daytm             as updt_daytm
+		from   ftxetcincom
+		where  1=1
+		<if test = 'mngmt_yrmon != null and mngmt_yrmon != ""' >	
+		AND mngmt_yrmon = #{mngmt_yrmon}
+		</if>
+		<if test = 'mngmt_no != null and mngmt_no != ""' >	
+		AND    mngmt_no   =  #{mngmt_no}
+		</if>
+		<if test = 'resid_no != null and resid_no != ""' >	
+		AND REPLACE(resid_no,'-','') LIKE  REPLACE(#{resid_no}||'%','-','')
+		</if>
+		ORDER BY mngmt_yrmon, mngmt_no
+</select>
+<delete id="deleteEtcIncomData"  parameterType="kr.re.kitech.biz.fin.tax.vo.FtxEtcIncomVo">
+		DELETE /* kr.re.kitech.biz.fin.tax.deleteEtcIncomData */ 
+		FROM ftxetcincom
+		where  mngmt_yrmon = #{mngmt_yrmon}
+		and    mngmt_no   =  #{mngmt_no}
+</delete>
+<update id="updateEtcIncomData" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxEtcIncomVo">
+		update /* QueryID : kr.re.kitech.biz.fin.tax.updateFtxEtcIncom */ 
+				 ftxetcincom set
+		       resid_no          = replace(#{resid_no},'-','')
+		,      nm                = #{nm}
+		,      addr              = #{addr}
+		,      resid_clsf        = #{resid_clsf}
+		,      foctr_psn_clsf    = #{foctr_psn_clsf}
+		,      resid_natn_cd     = #{resid_natn_cd}
+		,      incom_clsf        = #{incom_clsf}
+		,      pay_ymd           = #{pay_ymd}
+		,      incom_belng_month = #{incom_belng_month}
+		,      pay_tot_liq       = #{pay_tot_liq}
+		,      need_expns        = #{need_expns}
+		,      incom_amt         = #{incom_amt}
+		,      incomtax          = #{incomtax}
+		,      corptax           = #{corptax}
+		,      residtax          = #{residtax}
+		,      rmk               = #{rmk}
+		,      updt_syspayno     = #{updt_syspayno}
+		,      updt_daytm        = current
+		where  mngmt_yrmon = #{mngmt_yrmon}
+		and    mngmt_no =  #{mngmt_no}
+</update>
+<insert id="insertEtcIncomData" parameterType="kr.re.kitech.biz.fin.tax.vo.FtxEtcIncomVo">
+		INSERT /* QueryID : kr.re.kitech.biz.fin.tax.insertFtxEtcIncom */ 
+				 INTO ftxetcincom(
+		    mngmt_yrmon
+		  , mngmt_no
+		  , resid_no
+		  , nm
+		  , addr
+		  , resid_clsf
+		  , foctr_psn_clsf
+		  , resid_natn_cd
+		  , incom_clsf
+		  , pay_ymd
+		  , incom_belng_month
+		  , pay_tot_liq
+		  , need_expns
+		  , incom_amt
+		  , incomtax
+		  , corptax
+		  , residtax
+		  , req_no
+		  , mngmt_odr
+		  , rmk		  
+		  , regst_syspayno
+		  , regst_daytm
+		) VALUES (   #{mngmt_yrmon}
+		  ,  #{mngmt_no}
+		  , replace(#{resid_no},'-','')
+		  , #{nm}
+		  , #{addr}
+		  , #{resid_clsf}
+		  , #{foctr_psn_clsf}
+		  , #{resid_natn_cd}
+		  , #{incom_clsf}
+		  , #{pay_ymd}
+		  , #{incom_belng_month}
+		  , #{pay_tot_liq}
+		  , #{need_expns}
+		  , #{incom_amt}
+		  , #{incomtax}
+		  , #{corptax}
+		  , #{residtax}
+		  , #{req_no}
+		  , #{mngmt_odr}
+		  , #{rmk}		  
+		  , #{regst_syspayno}
+		  , CURRENT)
+  </insert>
+</mapper>

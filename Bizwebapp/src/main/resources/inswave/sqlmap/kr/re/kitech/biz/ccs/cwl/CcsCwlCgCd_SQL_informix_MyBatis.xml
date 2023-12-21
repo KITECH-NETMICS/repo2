@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.ccs.cwl">
+	
+<select id="selectCcsCwlCgCdList" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdSrchVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCcsCwlCgCdList */ 
+	   a.req_no
+      , a.cgncd_clsf
+      , fun_xodxcommst_cd_nm(a.cgncd_clsf, 0) as cgncd_clsf_nm
+      , a.req_psn_syspayno
+      , fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 1) as emp_no
+      , fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 0) as req_psn_nm     
+      , fun_posi_nm(c.posi_cd) AS posi_nm   
+      , a.req_ymd
+      , a.expns_amt
+      , a.pay_amt
+      , a.cgncd_detls
+      , a.fam_relat
+      , fun_xodxcommst_cd_nm(a.fam_relat, 0) as fam_relat_nm
+      , a.progrss_state
+      , b.apr_state
+      , fun_xodxcommst_cd_nm(b.apr_state, 0) as apr_state_nm
+      , a.reject_resn
+ FROM cwlcgcd a
+ LEFT JOIN xomxintfatab b ON a.req_no = b.req_no
+ INNER JOIN humbasicinfo c ON a.req_psn_syspayno = c.syspayno 
+ WHERE a.req_ymd between #{req_ymd1} AND #{req_ymd2}
+   AND a.cgncd_clsf LIKE DECODE(#{cgncd_clsf},'','%',#{cgncd_clsf})
+   AND a.req_psn_syspayno LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno})
+ORDER BY a.regst_daytm DESC
+</select>
+
+
+<select id="selectHumSlBscInfo" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdSrchVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlHumSlBscInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectHumSlBscInfo */ 
+       a.salry_bank,
+       fun_xodxcommst_cd_nm(a.salry_bank,0) as salry_bank_nm,
+       a.bankaccnt_no,
+       a.depstr,
+       b.bankaccnt_no as oth_bankaccnt,
+       b.bank as oth_bank,
+       fun_xodxcommst_cd_nm(b.bank,0) as oth_salry_bank_nm,
+       b.depstr_nm as oth_depstr
+FROM humslbasinfo a, outer fbaapartaccnt b
+WHERE a.syspayno = b.syspayno
+and a.syspayno = #{syspayno}
+</select>
+<select id="selectCwlCgCdFee" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdSrchVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdFeeVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlCgCdFee */ 
+     fam_relat ,
+     cgncd_clsf ,
+     cgncd_fee     
+FROM cwlcgcdfee
+WHERE fam_relat = #{fam_relat}
+AND cgncd_clsf = #{cgncd_clsf}
+</select>
+<insert id="insertCwlCgCd" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlSvCgCdVo">
+INSERT /* QueryID : kr.re.kitech.biz.ccs.cwl.insertCwlCgCd */ 
+		 INTO cwlcgcd
+(    
+     req_no
+    ,req_ymd
+    ,req_psn_nm
+    ,req_psn_syspayno
+    ,req_psn_dept_cd
+    ,req_psn_dept_new_ymd
+    ,dept_tel
+    ,cgncd_clsf
+    ,fam_relat
+    ,expns_amt
+    ,cgncd_detls
+    ,req_state
+    ,progrss_state
+    ,pay_amt
+    ,pay_ymd
+    ,depst_bankaccnt_no
+    ,depst_bank_cd
+    ,depst_bank_nm
+    ,depstr_nm
+    ,rmk
+    ,attach_file_no
+    ,regst_psn_syspayno
+    ,regst_daytm
+)
+VALUES(
+	   #{req_no}
+	 , #{req_ymd}
+	 , #{req_psn_nm}
+	 , #{req_psn_syspayno}
+	 , #{req_psn_dept_cd}
+	 , #{req_psn_dept_new_ymd}
+	 , #{dept_tel}
+	 , #{cgncd_clsf}
+	 , #{fam_relat}
+	 , #{expns_amt}
+	 , #{cgncd_detls}
+	 , #{req_state}
+	 , #{progrss_state}
+	 , #{pay_amt}
+	 , #{pay_ymd}
+	 , #{depst_bankaccnt_no}
+	 , #{depst_bank_cd}
+	 , #{depst_bank_nm}
+	 , #{depstr_nm}
+	 , #{rmk}
+	 , #{attach_file_no}
+	 , #{regst_psn_syspayno}
+	 ,   sysdate
+	 )
+</insert>
+<select id="selectCwlBeforeCgCdInfo" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdSrchVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlBeforeCgCdInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlBeforeCgCdInfo */ 
+        req_no,
+        req_ymd,   
+        cgncd_clsf,
+        fam_relat        
+FROM    cwlcgcd
+WHERE   1=1
+AND     req_psn_syspayno = #{req_psn_syspayno}
+AND     cgncd_clsf = #{cgncd_clsf}
+AND     fam_relat = #{fam_relat}
+
+</select>
+<select id="selectCcsCwlCgCdDtl" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdSrchVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdDtlVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCcsCwlCgCdDtl */ 
+    a.req_no
+   ,trim(nvl(req_psn_dept_cd, '')) as req_psn_dept_cd
+   ,trim(nvl(req_psn_dept_new_ymd, '')) as req_psn_dept_new_ymd
+   ,fun_dept_nm(req_psn_dept_cd, req_psn_dept_new_ymd) as dept_nm
+   ,dept_tel
+   ,fam_relat
+   ,fun_xodxcommst_cd_nm(cgncd_clsf, 0) as cgncd_clsf_nm
+   ,req_psn_syspayno
+   ,fun_humbasicinfo_cd_nm(req_psn_syspayno, 1) as emp_no
+   ,req_psn_nm
+   ,req_ymd
+   ,nvl(expns_amt, '') as expns_amt
+   ,cgncd_detls
+   ,progrss_state
+   ,pay_amt
+   ,pay_ymd
+   ,depst_bankaccnt_no
+   ,depst_bank_cd
+   ,depst_bank_nm
+   ,depstr_nm
+   ,reject_resn
+   ,rmk
+   ,attach_file_no
+   ,email
+   ,cgncd_clsf 
+   , c.apr_state
+from cwlcgcd a
+join xomxintfatab c on a.req_no = c.req_no
+left join  humbasicinfo b on a.req_psn_syspayno = b.syspayno
+where a.req_no = #{req_no}
+</select>
+<delete id="deleteCwlCgCd" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdSrchVo">
+DELETE /* QueryID : kr.re.kitech.biz.ccs.cwl.deleteCwlCgCd */ 
+		  cwlcgcd
+WHERE   1=1
+AND     req_no = #{req_no}
+</delete>
+<select id="selectCcsCwlCgCdMnt" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdSrchVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdMntVo">
+select /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCcsCwlCgCdMnt */ 
+	  b0.req_no
+	, b1.empno
+	, b1.nm
+	, b2.dept_nm
+	, b0.fam_relat
+	, b0.cgncd_clsf
+	, b0.pay_ymd
+	, b0.expns_amt
+	, b0.pay_amt
+	, b0.cgncd_detls
+	, b0.rmk
+from cwlcgcd b0
+    join humbasicinfo b1 on b0.req_psn_syspayno = b1.syspayno
+    join xodhdeptinfo b2 on b1.dept_cd = b2.dept_cd and b1.dept_new_ymd = b2.dept_new_ymd
+where b0.req_no = #{req_no};
+</select>
+
+<update id="updateCwlCgCd" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlSvCgCdVo">
+update /* QueryID : kr.re.kitech.biz.ccs.cwl.updateCwlCgCd */ 
+		 cwlcgcd
+     set fam_relat = #{fam_relat}				--가족관계
+         , cgncd_clsf = #{cgncd_clsf}			--경조사구분
+         , pay_ymd = #{pay_ymd}				--지급일자
+         , pay_amt = #{pay_amt}				--지급금액
+         , expns_amt = #{expns_amt}			--지출금액
+         , cgncd_detls = #{cgncd_detls}		--경조내역
+         , rmk = #{rmk}							--비고
+         , updt_psn_syspayno = #{updt_psn_syspayno}	--수정자
+         , updt_daytm = sysdate						--수정일시
+ where req_no = #{req_no}
+</update>
+<update id="updateCwlCgCdDtl" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlSvCgCdVo">
+UPDATE /* QueryID : kr.re.kitech.biz.ccs.cwl.updateCwlCgCdDtl */ 
+		   cwlcgcd
+SET      req_psn_nm = #{req_psn_nm}
+        ,req_psn_syspayno = #{req_psn_syspayno}
+        ,req_psn_dept_cd = #{req_psn_dept_cd}
+        ,req_psn_dept_new_ymd = #{req_psn_dept_new_ymd}
+        ,dept_tel = #{dept_tel}
+        ,cgncd_clsf = #{cgncd_clsf}
+        ,expns_amt = #{expns_amt}
+        ,cgncd_detls = #{cgncd_detls}
+        ,fam_relat = #{fam_relat}
+        ,attach_file_no = #{attach_file_no}
+        ,progrss_state = #{progrss_state}
+        ,reject_resn = #{reject_resn}
+        ,rmk = #{rmk}
+        ,pay_ymd = #{pay_ymd}
+        ,depst_bankaccnt_no = #{depst_bankaccnt_no}
+        ,depst_bank_cd = #{depst_bank_cd}
+        ,depst_bank_nm = #{depst_bank_nm}
+        ,depstr_nm = #{depstr_nm}
+        ,pay_amt = #{pay_amt}
+        ,updt_psn_syspayno = #{updt_psn_syspayno}
+        ,updt_daytm = sysdate
+WHERE   1=1
+AND     req_no = #{req_no}
+</update>
+<select id="selectCwlBeforeCgCdInfo2" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlCgCdSrchVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CcsCwlBeforeCgCdInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlBeforeCgCdInfo2 */ 
+        req_no,
+        req_ymd,   
+        cgncd_clsf,
+        fam_relat        
+FROM    cwlcgcd
+where 	cgncd_clsf in ('CWC002','CWC003','CWC004','CWC005')
+  AND   req_psn_syspayno = #{req_psn_syspayno}		--개인번호
+  AND   fam_relat = #{fam_relat}					--가족관계
+</select>
+</mapper>

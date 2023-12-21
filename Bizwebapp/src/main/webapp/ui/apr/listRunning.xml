@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programId="A001L" meta_programName="결재진행함" meta_programDesc="결재진행함 페이지" meta_author="James" meta_date="2022-08-05" meta_vertical_guides="" meta_horizontal_guides="">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_aprlist">
+					<w2:keyInfo>
+						<w2:key id="reqNo" name="접수번호" dataType="text"></w2:key>
+						<w2:key id="infoCd" name="제목" dataType="text"></w2:key>
+						<w2:key id="taskStatus" name="상태" dataType="text"></w2:key>
+						<w2:key id="ext01" name="계정번호" dataType="text"></w2:key>
+						<w2:key id="defAlias" name="문서양식" dataType="text"></w2:key>
+						<w2:key id="taskstartdate" name="시작일시" dataType="text"></w2:key>
+						<w2:key id="endpoint" name="대상자" dataType="text"></w2:key>
+						<w2:key id="pageIndex" name="페이지번호" dataType="number"></w2:key>
+						<w2:key id="pageUnit" name="페이지별목록단위" dataType="number"></w2:key>
+						<w2:key id="procClsf" name="결재구분" dataType="text"></w2:key>
+						<w2:key id="tool" name="업무구분" dataType="text"></w2:key>
+						<w2:key id="status" name="진행구분" dataType="text"></w2:key>
+						<w2:key id="searchClsf" name="양식구분" dataType="text"></w2:key>
+						<w2:key id="searchData" name="검색데이터" dataType="text"></w2:key>
+						<w2:key id="instStartYmd" name="시작일자" dataType="text"></w2:key>
+						<w2:key id="instEndYmd" name="종료일자" dataType="text"></w2:key>
+					</w2:keyInfo>
+            	</w2:dataMap>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_aprlist" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="instName" name="instName" dataType="text"></w2:column>
+            			<w2:column id="instId" name="instId" dataType="text"></w2:column>
+            			<w2:column id="rootInstId" name="rootInstId" dataType="text"></w2:column>
+            			<w2:column id="instStarteddate" name="instStarteddate" dataType="text"></w2:column>
+            			<w2:column id="taskStartdate" name="taskStartdate" dataType="text"></w2:column>
+            			<w2:column id="isSubprocess" name="isSubprocess" dataType="text"></w2:column>
+            			<w2:column id="instStatus" name="instStatus" dataType="text"></w2:column>
+            			<w2:column id="defId" name="defId" dataType="text"></w2:column>
+            			<w2:column id="defName" name="defName" dataType="text"></w2:column>
+            			<w2:column id="defAlias" name="defAlias" dataType="text"></w2:column>
+            			<w2:column id="taskName" name="taskName" dataType="text"></w2:column>
+            			<w2:column id="taskId" name="taskId" dataType="text"></w2:column>
+            			<w2:column id="trctag" name="trctag" dataType="text"></w2:column>
+            			<w2:column id="endpoint" name="endpoint" dataType="text"></w2:column>
+            			<w2:column id="taskStatus" name="taskStatus" dataType="text"></w2:column>
+            			<w2:column id="instInfo" name="제목(infoCd)" dataType="text"></w2:column>
+            			<w2:column id="instExt1" name="계정번호" dataType="text"></w2:column>
+            			<w2:column id="initepName" name="신청자" dataType="text"></w2:column>
+            			<w2:column id="currep" name="현결재자" dataType="text"></w2:column>
+            			<w2:column id="currepName" name="현결재자명" dataType="text"></w2:column>
+            			<w2:column id="taskExt1" name="서비스ID" dataType="text"></w2:column>
+            			<w2:column id="taskExt2" name="apr상태값" dataType="text"></w2:column>
+            			<w2:column id="instAlias" name="인스턴스Alias" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+			</w2:dataCollection>
+			<w2:workflowCollection>
+			</w2:workflowCollection>
+			<xf:submission id="SvcSearchAprList" ref="data:json,dma_aprlist" target='data:json,{"id":"dlt_aprlist","key":"workListVo"}' action="SvcSearchAprList.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"/>
+			<xf:submission id="SvcInstSearch" ref="data:json,dma_aprlist" target='data:json,{"id":"dlt_aprlist","key":"workListVo"}' action="SvcInstSearch.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"/>
+		</xf:model>
+		<script src="/cm/js/biz/apr.js" cache="false" />
+		<script type="text/javascript" lazy="false"><![CDATA[
+		        
+			scwin.onpageload = function() {
+				wfForm.getWindow().grp_docEmpty.show();
+							
+				// 스플릿터 초기화
+				biz.apr.initSplitter(grp_left.getID(), grp_right.getID(), grp_splitter.getID());
+
+				if (!com.isEmpty(com.getParameter("reqNo")) && com.getParameter("sideYn") != "Y") {
+					slt_searchCont.setValue("docId");
+					idx_searchText.setValue(com.getParameter("reqNo"));
+					// 스냅샷 wframe 데이터 전달
+					wfForm.getWindow().dma_snap.set("reqNo", com.getParameter("reqNo"));
+				}
+				wfForm.getWindow().dma_snap.set("viewMode", "running");	
+
+				com.setEnterKeyEvent(grp_search, scwin.btn_chk_search_onclick);
+				com.checkPeriod(inpStartYmd, inpEndYmd);
+				scwin.btn_inst_search_onclick();		
+				
+			};
+			
+			/**
+			 * json data 를 generator에 설정한다. 메소드로 분리
+			 * @date 2022. 09. 02
+			 * @author James
+			 */ 
+			scwin.setGeneratorDataByJson = function(gen, json) {
+				wq_pglist.setCount(com.ceil(json.totalCount/dma_aprlist.get("pageUnit")), true);
+				gen.removeAll();
+				
+				json.workListVo.forEach( function (element, index) {
+					gen.insert();
+					var currepName = dlt_aprlist.getCellData( index , "currepName" );
+					var currp = dlt_aprlist.getCellData( index , "currep" );
+					gen.getChild( index , "idx" ).setValue(index+1);
+					gen.getChild( index , "instId" ).setValue(dlt_aprlist.getCellData( index , "instId" ));
+					gen.getChild( index , "rootInstId" ).setValue(dlt_aprlist.getCellData( index , "rootInstId" ));
+        			gen.getChild( index , "defName" ).setValue(dlt_aprlist.getCellData( index , "defName" ));
+        			gen.getChild( index , "instName" ).setValue(dlt_aprlist.getCellData( index , "instName" ));
+        			gen.getChild( index , "instInfo" ).setValue(dlt_aprlist.getCellData( index , "instInfo" ));
+        			gen.getChild( index , "instExt1" ).setValue(dlt_aprlist.getCellData( index , "instExt1" ));
+        			gen.getChild( index , "initepName" ).setValue(dlt_aprlist.getCellData( index , "initepName" ));
+        			gen.getChild( index , "currep" ).setValue(currp);
+        			gen.getChild( index , "currepName" ).setValue(biz.apr.bindEmpnmEvent(currp, currepName));
+        			gen.getChild( index , "taskStartYmd" ).setValue(dlt_aprlist.getCellData( index , "taskStartdate" ).substring(0,10).replaceAll('-','.') + '.');
+        			gen.getChild( index , "taskStartdate" ).setValue(biz.apr.currentGapTime( dlt_aprlist.getCellData( index , "taskStartdate" )));
+        			gen.getChild( index , "instAlias" ).setValue(dlt_aprlist.getCellData( index , "instAlias" ));
+        			
+        			if (dlt_aprlist.getCellData( index , "instId" ) == dlt_aprlist.getCellData( index , "rootInstId" )) {
+        				gen.getChild( index , "procMainUrl" ).setStyle("display", "none");
+        			}
+				});			
+			}			
+	
+			scwin.grp_group1_onmouseover = function(e) {
+				this.addClass("on");
+			};
+			
+			scwin.grp_group1_onmouseout = function(e) {
+				this.removeClass("on");
+			};
+			
+			scwin.li_genNode_onclick = function(e) {
+			
+				var index = typeof e === 'undefined' ? 0 : this.getGeneratedIndex();
+				
+				var reqData = {
+					  "instName" : dlt_aprlist.getCellData(index, "instName")
+					, "endpoint" : dlt_aprlist.getCellData(index, "endpoint")
+					, "instId" : dlt_aprlist.getCellData(index, "instId")
+					, "rootInstId" : dlt_aprlist.getCellData(index, "rootInstId")
+					, "taskId" : dlt_aprlist.getCellData(index, "taskId")
+					, "trctag" : dlt_aprlist.getCellData(index, "trctag")
+					, "serviceid" : dlt_aprlist.getCellData(index, "taskExt1")
+					, "aprStatus" : dlt_aprlist.getCellData(index, "taskExt2")
+					, "instAlias" : dlt_aprlist.getCellData(index, "instAlias")
+				};
+					
+				com.executeDynamic({id : "sbm_send", action : "SvcAPRCOMLINR07.pwkjson"}, {
+					requestData: reqData, 
+					successCallback: function(e) {
+						console.log( e.responseJSON.elData.totalCount);
+
+						// 동일 레벨 Generate ON 클래스 초기화
+						$p.$(".onch").removeClass("onch");						
+						gen_list.getChild(index, 'li_genNode').addClass('onch');
+
+						if (0 < e.responseJSON.elData.totalCount) {
+							var menuObj = gcm.win.getMenuObj("A001") || {};
+							var dataObj = { reqNo : reqData.instName
+								, endpoint : reqData.endpoint
+								, rootInstId : reqData.rootInstId
+								, instId : reqData.instId
+								, taskId : reqData.taskId
+								, trctag : reqData.trctag
+								, instAlias : reqData.instAlias
+								, viewMode : "running"
+								, "menuObj" : menuObj
+							};
+							// 스냅샷 이동
+							biz.apr.wfFormMovePage(wfForm, menuObj, dataObj);
+						} else {
+							
+							// 업무화면 이동: ASIS, TOBE 메뉴 분기 처리 및 파라미터 전달
+							gcm.win.getMenuObj(reqData.serviceid, function(menuObj){
+								var isLegacy = gcm.util.isLegacyMenu(menuObj);
+								if (menuObj && menuObj.serviceNewUrl && !isLegacy) {
+									biz.apr.wfFormMovePage(wfForm, menuObj, { 
+										req_no : reqData.instName,
+										uiId : reqData.serviceid, 
+										aprStatus: reqData.aprStatus, 
+										"menuObj" : menuObj 
+									});
+								} else {
+									// AS-IS 매뉴 오픈
+									menuObj.param = { 
+										  param1: reqData.serviceid			// 서비스ID
+										, param2: reqData.instName				// reqNo
+										, param3: reqData.aprStatus			// aprStatus
+										, param4: "apr" 			// apr
+									};
+									com.openMenu(menuObj);
+								}
+							});
+						}			
+					}			
+				});
+			};
+			
+			scwin.wq_pglist_onclick = function(idx) {
+				dma_aprlist.set("pageIndex", idx);
+				
+				com.execute(SvcSearchAprList, {
+					successCallback : function(e) { // 성공 콜백
+						// 제너레이터 리스트업
+						scwin.setGeneratorDataByJson(gen_list, e.responseJSON.elData);
+					}
+				});
+			};
+			
+		/**
+		 * 프로세스보기
+		 * @date 2022. 08. 23
+		 * @author James
+		 */ 
+		scwin.procUrl_onclick = function(e) {
+			var instId = this.getGeneratedComponent("instId").getValue().trim();
+			var defName = this.getGeneratedComponent("defName").getValue().trim();
+			biz.apr.procUrl(instId, defName);
+		};
+		
+		/**
+		 * 메인프로세스보기
+		 * @date 2022. 08. 23
+		 * @author James
+		 */ 
+		scwin.procMainUrl_onclick = function(e) {
+			var rootInstId = this.getGeneratedComponent("rootInstId").getValue().trim();
+			var defName = this.getGeneratedComponent("defName").getValue().trim();
+			biz.apr.procMainUrl(rootInstId, defName);
+		};
+		
+		/**
+		 * 메시지 전송 팝업 오픈 및 데이터 전달
+		 * @date 2022. 09. 04
+		 * @author James
+		*/ 
+		scwin.sendMessage_onclick = function(e) {
+			console.log("메시지보내기");
+			var currentAuthors = this.getGeneratedComponent("currep").getValue().trim().split(/;/g);
+			var defName = this.getGeneratedComponent("defName").getValue().trim();
+			var instName = this.getGeneratedComponent("instName").getValue().trim();
+			var instInfo = this.getGeneratedComponent("instInfo").getValue().trim();
+			
+			var params = [];
+			currentAuthors.forEach( function(author, index) {
+				params.push({uid:author});
+			});
+		
+			// 동적으로 대상자의 전화번호와 성명을 조회한다.
+			com.executeDynamic({id : "sbm_temp", action : "SvcGetMobileInfos.pwkjson"}, {
+				requestData: {users : params}, 
+				successCallback: function(e) {
+					// 대상자 처리
+					var targets = [];
+					e.responseJSON.elData.users.forEach(function(user) {
+						targets.push(user.cn + "|" + user.celphoneNumber);
+					});
+					// 디폴트 메시지 처리
+					var message = defName+"["+instName+"]"+"의 빠른 결재 부탁드립니다.("+ instInfo +")";
+					var param = "&isDisableTalk=true&receivers="+ encodeURI(encodeURIComponent(targets.join(','))) + "&message=" + encodeURI(encodeURIComponent(message));
+				 	var url = '/filter/index.jsp?serviceid=X605'+ param; 
+				 	
+				 	biz.apr.openPopupByNative(url, 'messagePopup', {width:670, height:575}, "BIZ2");				
+				}
+			});			
+		};
+		
+		
+		/**
+		 * 전체 선택 해제
+		 * @date 2022. 08. 23
+		 * @author James
+		 */ 
+		scwin.tbx_select_all_onclick = function(e) {
+			var flag = true;
+			for (var index = 0; index < gen_list.getLength(); index++) {
+				if ("Y" == gen_list.getChild(index, "chk_select").getValue()) {
+					flag = false;
+					break;
+				}
+			}
+			for (var index = 0; index < gen_list.getLength(); index++) {
+				gen_list.getChild(index, "chk_select").setValue(flag ? "Y" : "");
+			}	
+		};
+
+		
+		/**
+		 * 선택 출력
+		 * @date 2022. 08. 23
+		 * @author James
+		 */ 
+		scwin.btn_printer_onclick = function(e) {
+			var reqNos = [];
+			for (var index = 0; index < gen_list.getLength(); index++) {
+				if ("Y" == gen_list.getChild(index, "chk_select").getValue()) {
+					var reqNo = gen_list.getChild(index, "instName").getValue();
+					var instAlias = gen_list.getChild(index, "instAlias").getValue();
+					reqNos.push(com.trim(reqNo)+"/"+com.trim(instAlias));
+				}
+			}
+			
+			if (1 > reqNos.length) {
+				alert("출력을 위해 선택 된 문서가 없습니다.");
+				return;
+			}
+			
+			if (1 < reqNos.length) {
+				alert("다건출력은 서비스 예정입니다.");
+				return;
+			} 
+			
+			var reportArr = [];
+			reqNos.forEach( function(reqNo, index) {
+				var reqNoArr = reqNo.split('/');
+				reportArr.push({
+					formAlias : reqNoArr[1],
+					reqNo : reqNoArr[0]
+	       		});
+			});
+			com.oz.openPopup(reportArr);				
+		};
+		
+		scwin.btn_chk_search_onclick = function(e) {
+			if(biz.apr.chkSearchForm(slt_searchCont, dma_aprlist)) {
+				scwin.btn_inst_search_onclick();
+			}
+		}
+		
+		// 결재진행함 검색
+		scwin.btn_inst_search_onclick = function(e) {
+			dma_aprlist.setJSON({ procClsf : "Running", status : "Running", taskStatus : "NEW", endpoint : com.getLoginInfo("uid"), viewMode : "running", pageIndex: 1, pageUnit: 20 });
+			com.execute(SvcInstSearch, {
+				successCallback : function(e) { // 성공 콜백
+					if (0 < e.responseJSON.elData.totalCount) {
+						// 제너레이터 리스트업
+						scwin.setGeneratorDataByJson(gen_list, e.responseJSON.elData);
+						// 첫번째 노드 선택
+						// scwin.li_genNode_onclick();
+					} else {
+						// 데이터가 없으므로 빈페이지 표시
+						gen_list.removeAll();
+						wq_pglist.setCount(0, true);
+						wfForm.setSrc("/ui/apr/snapshot.xml");
+						wfForm.scope.scwin.btnControl("blank");
+					}					
+				}
+			});
+		};
+	]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group class="locationSection" id="" style="display:none"></xf:group>
+		<xf:group id="" class="pageWrap" style="position: absolute;overflow: hidden;top: 0;padding: 15px 15px;">
+			<xf:group id="" class="panel-container">
+				<xf:group id="grp_left" class="panel-left" style="width:100%">	
+					<xf:group class="formView" id="" style="">
+						
+			    		<xf:group class="listbox" id="">
+<style><![CDATA[
+	.panel-container .panel-left{flex: 0 0 auto;min-width: 0;max-width: 586.33px;white-space: nowrap;height: 100%;margin-right: 0;overflow: hidden;}
+	.formView .listbox{position: relative;height: 100%;}
+	.formView .searchForm{margin-bottom: 10px;}
+	.listbox .listBoxWrap{height: 100%;margin-top: 0;}
+	.listbox .listBoxWrap .listHeader{background-color: #e9ecf5;font-weight: bold;}
+	.listbox .listBoxWrap .col1{width: 27px}
+	.listbox .listBoxWrap .col2{width: 28px}
+	.listbox .listBoxWrap .col3{width: 200px}
+	.listbox .listBoxWrap .col4{width: 100px}
+	.listbox .listBoxWrap .col5{width: 65px}
+	.listbox .listBoxWrap .col6{width: 60px}
+	.listbox .listBoxWrap .col7{width: 61px}
+	.listbox .listBoxWrap .col8{width: 365px}
+	.listbox .listBoxWrap .col9{width: 60px}
+	.listbox .listBoxWrap .col10{width: 60px}
+	.listbox .listBoxWrap .col11{width: 37px}
+	.listbox .listBoxWrap .col12{width: 55px}
+	.listbox .listBoxWrap .pl05em{padding-left:0.5em;}
+	.listbox .listBoxWrap .row{display: table-row;height: 50px}
+	.listbox .listBoxWrap .listBody{text-align: center;font-size: 12px;table-layout: fixed;white-space: normal;border-collapse: collapse;}
+	.listbox .listBoxWrap .listBody .row{border-bottom:1px solid #c2c7d5}
+	.listbox .listBoxWrap .listBody .cell{border-top: none}
+	.listbox .listBoxWrap .table{text-align: center;font-size: 12px;table-layout: fixed;white-space: normal;border-collapse: collapse;min-width: 584px;}
+	.listbox .listBoxWrap .listBody .row:hover{background-color: #003b8f33;}
+	.listbox .listBoxWrap .listHeader .cell{border: 1px solid #c2c7d5}
+	.listbox .listBoxWrap .listHeader .cell > .block.border-b{border-bottom: 1px solid #c2c7d5}
+	.listbox .listBoxWrap .listHeader .cell > .block .bcell{border-left: 1px solid #c2c7d5;}
+	.listbox .listBoxWrap .cell{display: table-cell;vertical-align: middle;}
+	.listbox .listBoxWrap .cell > .block{display: table;width: 100%;height:25px;border-collapse: collapse;}
+	.listbox .listBoxWrap .cell > .block .bcell{display: table-cell;vertical-align: middle;}
+	.listbox .listBoxWrap .listHeader .cell.border-l-none{border-left: none;}
+	.listbox .listBoxWrap .cell > .block .bcell.border-l-none{border-left: none;}
+	.listbox .listBoxWrap .txtl{text-align: left;}
+	.listbox .listBoxWrap .txtc{text-align: center;}
+	.listbox .listBoxWrap .txtr{text-align: right;}
+	.listbox .listBoxWrap .formtit {padding: 0 3px;border-radius: 3px;background: #e9ecf5;color: #063b8f;font-weight: bold;cursor: pointer;}
+]]></style>
+
+<!-- table start -->
+<xf:group tagname="div" class="listBoxWrap">
+	<xf:group class="searchForm" id="grp_search" style="">
+		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+			<w2:attributes>
+				<w2:summary></w2:summary>
+			</w2:attributes>
+			<xf:group tagname="caption"></xf:group>
+			<xf:group tagname="colgroup">
+				<xf:group style="width:82px;" tagname="col"></xf:group>
+				<xf:group style="" tagname="col"></xf:group>
+			</xf:group>
+			<xf:group style="" tagname="tr">
+				<xf:group class="w2tb_th" tagname="th">
+					<w2:attributes>
+						<w2:scope>row</w2:scope>
+					</w2:attributes>
+					<w2:textbox id="" label="작성일" style="" class="apprTitle"></w2:textbox>
+				</xf:group>
+				<xf:group class="w2tb_td" tagname="td">
+					<w2:attributes>
+						<w2:colspan>1</w2:colspan>
+						<w2:rowspan>1</w2:rowspan>
+					</w2:attributes>
+					<xf:group class="inpcalWrap full" id="" style="">
+						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false" id="inpStartYmd" renderDiv="true"
+							renderType="native" rightAlign="false" style="" ref="data:dma_aprlist.instStartYmd">
+						</w2:inputCalendar>
+						<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false" id="inpEndYmd" renderDiv="true"
+							renderType="native" rightAlign="false" style="" ref="data:dma_aprlist.instEndYmd">
+						</w2:inputCalendar>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group style="" tagname="tr">
+				<xf:group class="w2tb_th" style="" tagname="th">
+					<w2:attributes>
+						<w2:scope>row</w2:scope>
+					</w2:attributes>
+					<xf:select1 allOption="false" appearance="minimal" chooseOption="true" class="sel" direction="auto" disabled="false" disabledClass="w2selectbox_disabled"
+						id="slt_searchCont" ref="data:dma_aprlist.searchClsf" style="" submenuSize="auto" visibleRowNum="10" chooseOptionLabel="-전체-">
+						<xf:choices>
+							<xf:item>
+								<xf:label><![CDATA[문서번호]]></xf:label>
+								<xf:value>docId</xf:value>
+							</xf:item>
+							<xf:item>
+								<xf:label><![CDATA[양식명]]></xf:label>
+								<xf:value>appName</xf:value>
+							</xf:item>
+							<xf:item>
+								<xf:label><![CDATA[제목]]></xf:label>
+								<xf:value>title</xf:value>
+							</xf:item>
+							<xf:item>
+								<xf:label><![CDATA[신청자]]></xf:label>
+								<xf:value>initiator</xf:value>
+							</xf:item>
+							<xf:item>
+								<xf:label><![CDATA[계정번호]]></xf:label>
+								<xf:value>accntNo</xf:value>
+							</xf:item>
+						</xf:choices>
+					</xf:select1>
+				</xf:group>
+				<xf:group class="w2tb_td" style="" tagname="td">
+					<xf:group class="flex" id="">
+						<xf:input id="idx_searchText" adjustMaxLength="false" class="inp full" ref="data:dma_aprlist.searchData"></xf:input>
+						<xf:trigger class="btn search" id="btn_inst_search" style="width:40px;" type="button" ev:onclick="scwin.btn_chk_search_onclick">
+							<xf:label><![CDATA[조회]]></xf:label>
+						</xf:trigger>
+						<xf:trigger class="btn search" id="btn_printer" style="width:40px;" type="button" ev:onclick="scwin.btn_printer_onclick">
+							<xf:label><![CDATA[인쇄]]></xf:label>
+						</xf:trigger>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+		</xf:group>
+	</xf:group>
+	<xf:group tagname="div" class="listHeader table">
+		<xf:group tagname="div" class="row">
+			<xf:group tagname="div" class="cell col1 border-l-none">
+				<w2:textbox id="tbx_select_all" label="선택" style="cursor:pointer;" tagname="span" ev:onclick="scwin.tbx_select_all_onclick"></w2:textbox>
+			</xf:group>
+			<xf:group tagname="div" class="cell col2">
+				No.
+			</xf:group>
+
+			<xf:group tagname="div" class="cell">
+				<xf:group tagname="div" class="block border-b">
+					<xf:group tagname="div" class="bcell border-l-none col3">
+						양식명
+					</xf:group>
+					<xf:group tagname="div" class="bcell col4">
+						문서번호
+					</xf:group>
+					<xf:group tagname="div" class="bcell col5">
+						계정번호
+					</xf:group>
+					<xf:group tagname="div" class="bcell col6">
+						작성일시
+					</xf:group>
+					<xf:group tagname="div" class="bcell col7">
+						대기일
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="div" class="block">
+					<xf:group tagname="div" class="bcell border-l-none col8">
+						문서제목
+					</xf:group>
+					<xf:group tagname="div" class="bcell col9">
+						신청자
+					</xf:group>
+					<xf:group tagname="div" class="bcell col10">
+						현결재자
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group tagname="div" class="cell col11">
+				SMS
+			</xf:group>
+			<xf:group tagname="div" class="cell col12" style="border-right: none;">
+				프로세스
+			</xf:group>
+
+		</xf:group>
+
+	</xf:group>
+
+
+	<w2:generator id="gen_list" class="listBody table list" tagname="div" style="top: 138px;">
+		<xf:group tagname="div">
+			<xf:group tagname="div" id="li_genNode" class="content row">
+	
+				<xf:group tagname="div" class="cell col1">
+					<xf:select selectedindex="-1" id="chk_select" appearance="full" cols="1" rows="1" ref="">
+						<xf:choices>
+							<xf:item>
+								<xf:value><![CDATA[Y]]></xf:value>
+							</xf:item>
+						</xf:choices>
+			    	</xf:select>
+				</xf:group>
+				<xf:group tagname="div" class="cell col2 txtc">
+					<w2:textbox id="idx" label="1" tagname="div" />
+				</xf:group>
+	
+				<xf:group tagname="div" class="cell">
+					<xf:group tagname="div" class="block border-b">
+						<xf:group tagname="div" class="bcell border-l-none col3 txtl">
+							<w2:textbox class="formtit" id="defName" label="구매지급신청서(기성/분할)" tagname="span" ev:onclick="scwin.li_genNode_onclick"/>
+						</xf:group>
+						<xf:group tagname="div" class="bcell col4 txtc">
+							<w2:span id="instName" label="P95202200006" ></w2:span>
+						</xf:group>
+						<xf:group tagname="div" class="bcell col5 txtc">
+							<w2:span id="instExt1" label="BG2200001" style="white-space: nowrap;text-overflow: ellipsis;overflow: hidden;width: 65px;display: block;"></w2:span>
+						</xf:group>
+						<xf:group tagname="div" class="bcell col6 txtc">
+							<w2:span class="date" id="taskStartYmd" label="2022-01-31"></w2:span>
+						</xf:group>
+						<xf:group tagname="div" class="bcell col7  txtc">
+							<w2:span class="time" id="taskStartdate" label="3일 12:00"></w2:span>
+						</xf:group>
+					</xf:group>
+					<xf:group tagname="div" class="block">
+						<xf:group tagname="div" class="bcell border-l-none col8 txtl pl05em">
+							<w2:textbox class="subject" id="instInfo" label="2021년 진주뿌리기술지원센터 승강기유지보수관리서비스" tagname="span" ev:onclick="scwin.li_genNode_onclick" style="cursor:pointer;"/>
+						</xf:group>
+						<xf:group tagname="div" class="bcell col9">
+							<w2:span class="name" id="initepName" label="홍길동"></w2:span>
+						</xf:group>
+						<xf:group tagname="div" class="bcell col10">
+							<w2:span id="instId" label="" style="display: none;"></w2:span>
+							<w2:span id="rootInstId" label="" style="display: none;"></w2:span>
+							<w2:span id="taskExt1" label="" style="display: none;"></w2:span>
+							<w2:span id="currep" label="" style="display: none;"></w2:span>
+							<w2:span id="currepName" label="" style="" escape="false"></w2:span>
+							<w2:span id="instAlias" label="" style="display: none;"></w2:span>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="div" class="cell col11">
+					<w2:anchor class="ico_search" id="sendMessage" outerDiv="false" style="background: url(/cm/images/apr/sms.png) no-repeat 0 0px;background-size: 100%; width:25px; height:15px; color: #465E73;" ev:onclick="scwin.sendMessage_onclick">
+						<xf:label><![CDATA[메시지 보내기]]></xf:label>
+					</w2:anchor>
+				</xf:group>
+				<xf:group tagname="div" class="cell col12">
+					<w2:anchor id="procMainUrl" outerDiv="false" style="display: block;width: 30px;margin: 0 auto;text-align: center;background: #e9ecf5;color: #063b8f;font-weight: bold;border-radius: 3px;text-decoration: none;padding: 1px 2px;margin-bottom: 3px;background: url(/cm/images/btn_process.gif) center center no-repeat;text-indent:-9999px" ev:onclick="scwin.procMainUrl_onclick">
+						<xf:label><![CDATA[메인]]></xf:label>
+					</w2:anchor>
+					<w2:anchor id="procUrl" class="btn_sub" outerDiv="false" style="display: block;width: 30px;margin: 0 auto;text-align: center;background: #e9ecf5;color: #063b8f;font-weight: bold;border-radius: 3px;text-decoration: none;padding: 1px 2px;background: url(/cm/images/btn_process_sub.gif) center center no-repeat;text-indent:-9999px" ev:onclick="scwin.procUrl_onclick">
+						<xf:label><![CDATA[서브]]></xf:label>
+					</w2:anchor>
+				</xf:group>
+	
+			</xf:group>
+		</xf:group>
+	</w2:generator>
+	<w2:pageList class="pagination" displayButtonType="display" displayFormat="#" id="wq_pglist" pageSize="10" renderType="list" ev:onclick="scwin.wq_pglist_onclick" style="position: absolute;bottom: 10px;width: 100%;"></w2:pageList>
+</xf:group>
+<!-- table end -->
+
+			    			
+						</xf:group>
+						
+					</xf:group>
+				</xf:group>
+				<xf:group id="grp_splitter" class="splitter" style=""><xf:group tagname="div" class="splitter_back"></xf:group></xf:group>
+				<xf:group id="grp_right" class="panel-right">
+					<w2:wframe id="wfForm" src="/ui/apr/snapshot.xml" style="" processMsgFrame="true"></w2:wframe>
+				</xf:group>
+				<!-- 탑 스크롤 버튼  -->
+				<xf:group id="grp_fixed" class="panel-fixed">
+					<w2:wframe id="wfTopScroll" src="/ui/apr/topScrollButton.xml" style=""></w2:wframe>
+				</xf:group>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.etc">
+	<select id="selectEtcOrgPprCpyMnt"  resultType="kr.re.kitech.biz.kbk.etc.vo.EtcOrgPprCpySrcVo" 
+										parameterType="kr.re.kitech.biz.kbk.etc.vo.EtcOrgPprCpyInpVo">
+		SELECT 					/* QueryID : kr.re.kitech.biz.kbk.etc.selectEtcOrgPprCpyMnt */
+				regst_no
+				, ymd
+				, req_psn_syspayno
+				, fun_humbasicinfo_cd_nm(req_psn_syspayno, 0) AS req_psn_nm
+				, origntxt_copy_typ
+				, fun_xodxcommst_cd_nm(origntxt_copy_typ,0) AS origntxt_copy_nm
+				, paper_nm_pat
+				, std_pat_no
+				, auth_nm
+				, fun_xodxcommst_cd_nm(prcs_state,0) AS prcs_state
+		FROM 
+				kbkorgltxtcopyreq
+		WHERE 
+				regst_no 
+				LIKE DECODE(#{regst_no},'','%',#{regst_no})
+			AND 
+				replace(upper(paper_nm_pat),' ','') 
+				LIKE DECODE(#{paper_nm_pat},'','%',concat(concat('%',replace(upper(#{paper_nm_pat}),' ','')),'%'))
+			AND 
+				ymd BETWEEN #{start_ymd} AND #{cls_ymd}
+			AND 
+				origntxt_copy_typ 
+				LIKE DECODE(#{origntxt_copy_typ},'','%',#{origntxt_copy_typ})
+			AND 
+				prcs_state 
+				LIKE DECODE(#{prcs_state},'','%',#{prcs_state})
+			AND 
+				req_psn_syspayno 
+				LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno})
+		ORDER BY 
+				regst_no desc
+	</select>
+</mapper>

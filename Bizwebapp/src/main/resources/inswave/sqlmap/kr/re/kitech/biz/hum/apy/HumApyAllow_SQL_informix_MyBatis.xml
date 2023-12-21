@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+
+  <select id="selectHumApyAllowList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAllowList */ 
+		 a.req_no         --신청번호
+        ,a.req_ymd        --신청일
+        , a.syspayno      --시스템개인번호
+        , b.empno         --개인번호
+        , b.nm            --성명
+        , b.dept_cd       --부서코드
+        , b.dept_nm       --부서명
+        , b.posi_cd       --직급코드
+        , b.posi_nm       --직급명
+        , c.cnt AS count --신청인원수
+        , a.rmk           --비고
+        , d.apr_state     --결제상태
+        , e.cd_nm AS apr_state_nm  --결제상태명
+FROM HUMAPYBASIC a    --기본신청
+        , v_humbasicinfo b
+        , (
+ SELECT count(*) cnt, req_no FROM humrctfam
+  WHERE req_no LIKE 'H13%' and decode(nvl(bf_clsf,''), '', 'P', bf_clsf) = 'P' group by req_no
+ ) c --지원자가족사항
+        , xomxintfatab d
+        , xodxcommst e
+WHERE a.syspayno=b.syspayno
+        and a.req_no=c.req_no
+        and a.req_no=d.req_no
+        and d.apr_state=e.cd
+        and a.req_typ='H13'
+        and d.state_inform_flag = '1'
+<if test="syspayno != null and syspayno != ''">
+	 and a.syspayno  = #{syspayno}
+</if>
+          <if test="req_no != null and req_no != ''">
+	 and a.req_no LIKE '%'||#{req_no}||'%'
+</if>
+          <if test="dept_cd != null and dept_cd != ''">
+	 and b.dept_cd  = #{dept_cd}
+</if>
+          <if test="apr_state != null and apr_state != ''">
+	 and d.apr_state  = #{apr_state}
+</if>
+          <if test="req_ymd_from != null and req_ymd_from != ''">
+	 and a.req_ymd  >=  #{req_ymd_from}
+</if>
+          <if test="req_ymd_to != null and req_ymd_to != ''">
+	 and a.req_ymd   <![CDATA[ <=]]>   #{req_ymd_to}
+</if>
+ORDER BY a.req_no DESC
+  </select>
+  
+<!-- kitech.hum.apy.xda.HumBasicInfoSS04 신청번호가 없을 때 시스템개인정보로 조회 -->
+  <select id="selectHumApyUserBasicInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyUserBasicInfo */ 
+ FIRST 1
+ a.nm,
+ fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm,
+ a.posi_cd,
+ fun_posi_nm(a.posi_cd) AS posi_nm,
+ a.empno,
+ a.dept_cd,
+ a.dept_new_ymd,
+ a.resid_no,
+ a.syspayno,
+ a.occugrp_cd
+FROM humbasicinfo a
+JOIN humslbasinfo b ON a.syspayno = b.syspayno
+JOIN xodhdeptinfo g ON g.dept_cd = a.dept_cd and g.dept_new_ymd = a.dept_new_ymd
+JOIN (SELECT CASE WHEN SUBSTR(resid_no,8,1) IN ('1','2','5','6') THEN '19'
+                  WHEN SUBSTR(resid_no,8,1) IN ('9','0') THEN '18'  
+                  WHEN SUBSTR(resid_no,8,1) IN ('3','4','7','8') THEN '20' END || LEFT(resid_no,6) as birth_ymd, syspayno
+      FROM humbasicinfo) dd ON a.syspayno = dd.syspayno
+LEFT JOIN humapysema c ON a.syspayno = c.syspayno
+LEFT JOIN (SELECT FIRST 1 keep_charg FROM fbacard WHERE card_clsf = 'FAI001' AND keep_charg = #{syspayno}  AND NVL(retrn_ymd,'') = '') d ON a.syspayno = d.keep_charg --법인카드 소지구분
+LEFT JOIN (SELECT a.contrct_cls_ymd ,a.syspayno
+                 FROM humrctbasinfo a
+                 INNER JOIN (SELECT syspayno, MAX(req_ymd) AS req_ymd, MAX(req_no) AS req_no
+                             FROM humrctbasinfo
+                             GROUP BY syspayno) b ON a.req_no = b.req_no) e ON a.syspayno = e.syspayno --별정직 계약종료일
+LEFT JOIN humetcinfo f ON a.syspayno = f.syspayno
+WHERE a.syspayno = #{syspayno}
+  </select>  
+  
+  <!-- kitech.hum.apy.xda.HumApyBasicSS06 신청번호가 있을 때 신청정보 조회 -->
+  <select id="selectHumApyAllowBasic" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAllowBasic */ 
+ b.nm,      --성명
+ a.req_ymd,   -- 요청일
+ a.req_no, --요청번호
+ b.empno,
+ fun_dept_nm(b.dept_cd, b.dept_new_ymd) dept_nm, --부서명
+ b.posi_cd,
+ fun_posi_nm(b.posi_cd) posi_nm,   --직급명 
+ d.cd_nm apr_state_nm,     --상태명   
+ apr_state,
+ b.dept_cd,     --부서코드
+ b.dept_new_ymd,     --부서신설일
+ c.mngmt_item_3 ret_yn,
+ e.bankaccnt_no,
+ fun_xodxcommst_cd_nm(e.salry_bank,0) bankaccnt_nm,
+ a.syspayno,
+ b.resid_no,
+ a.attach_file_no,
+ a.rmk
+ --to_char(c.last_execute_tim, '%Y%m%d') as last_execute_tim
+FROM
+ humapybasic a,
+ humbasicinfo b,  
+ xomxintfatab c,
+ xodxcommst d,
+ humslbasinfo e
+WHERE
+ a.req_no = #{req_no}
+ AND a.syspayno = b.syspayno
+ AND a.req_no = c.req_no
+ AND c.apr_state = d.cd
+ AND a.syspayno = e.syspayno
+ AND state_inform_flag = '1'
+  </select>
+  
+   <!-- 가족수당신청 중복신청 조회 -->
+  <select id="selectHumApyAprDuplCheck" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAprDuplCheck */ 
+		 COUNT(*) as cnt
+FROM humapybasic a -- 신청서기본
+INNER JOIN xomxintfatab b ON b.req_no = a.req_no AND b.apr_state != 'XAD100'
+WHERE SUBSTR(a.req_no,1,3) = #{req_no}
+AND a.syspayno = #{syspayno}
+  </select>
+   
+  <!-- kitech.hum.apy.xda.HumRctFamMS08 가족기본정보 리스트 조회-->
+  <select id="selectHumApyBasicFamList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyBasicFamList */ 
+  a.resid_no,   --주민등록번호
+  a.relat,
+  fun_xodxcommst_cd_nm(a.relat, 0) as relat_nm,
+  a.nm,    --성명
+  a.ocpt_nm,   --직업명
+  a.educ,    --학력
+  nvl(fun_xodxcommst_cd_nm(a.educ, 0),'') as educ_nm,
+  a.addr,    --주소
+  a.detls_addr,    --주소상세
+  DECODE(NVL(a.cohbt_yn,''),'','0','N','0','1') as cohbt_yn,    --인적공제
+  DECODE(NVL(a.obst_yn,''),'','0','N','0','1') as obst_yn,   --가족수당
+  DECODE(NVL(a.human_dedct_yn,''),'','0','N','0','1') as human_dedct_yn,    --인적공제
+  DECODE(NVL(a.fam_payamt_yn,''),'','0','N','0','1') as fam_payamt_yn,   --가족수당
+  'N' as except_yn,   --제외여부
+  nvl(payamt_occr_ymd,'') as payamt_occr_ymd, --수당발생월
+  nvl(payamt_cls_ymd,'') as payamt_cls_ymd, --수당종료월
+  a.rmk    --비고 
+ FROM   humfamyinfo a 
+ WHERE  a.syspayno = #{syspayno} 
+ AND nvl(a.except_yn,'') <![CDATA[ <> ]]> 'Y' 
+order by 2,1
+  </select>
+  
+  <!-- kitech.hum.apy.xda.HumRctFamMS06, kitech.hum.apy.xda.HumRctFamMS07 가족수당신청 대상 가족리스트 조회 -->
+  <select id="selectHumApyReqRctFamList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyReqRctFamList */ 
+  a.resid_no,    --주민등록번호
+  a.relat,
+ <if test='bf_clsf != null and bf_clsf =="P"'>
+  FLOOR(TRUNC(fun_period_day(TO_CHAR(CURRENT, '%Y%m%d'), fun_hum_resid_ymd(a.resid_no),'D')/365, 1)) as age,
+ </if>
+  fun_xodxcommst_cd_nm(a.relat, 0) as relat_nm,
+  a.nm,    --성명
+  a.ocpt_nm,   --직업명
+  a.educ,    --학력
+  nvl(fun_xodxcommst_cd_nm(a.educ, 0),'') as educ_nm,
+  a.addr,    --주소
+  a.detls_addr,    --주소상세
+  DECODE(NVL(a.cohbt_yn,''),'','0','N','0','1') as cohbt_yn,    --인적공제
+  DECODE(NVL(a.obst_yn,''),'','0','N','0','1') as obst_yn,   --가족수당
+  DECODE(NVL(a.human_dedct_yn,''),'','0','N','0','1') as human_dedct_yn,    --인적공제
+  DECODE(NVL(a.fam_payamt_yn,''),'','0','N','0','1') as fam_payamt_yn,   --가족수당
+  DECODE(NVL(a.except_yn,''),'','N',a.except_yn) as except_yn,   --제외구분
+  nvl(a.payamt_occr_ymd,'') as payamt_occr_ymd, --수당발생월
+  nvl(a.payamt_cls_ymd,'') as payamt_cls_ymd, --수당종료월
+  a.rmk    --비고 
+ FROM 
+  humrctfam a 
+ WHERE nvl(a.bf_clsf,'') = #{bf_clsf} 
+ AND req_no = #{req_no} 
+order by 2,1
+  </select>  
+
+
+<!-- kitech.hum.apy.xda.HumApyBasicSS05 신청번호로 신청정보 확인 -->
+  <select id="selectHumApyBasic" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyBasic */ 
+ req_no             -- 신청번호      
+,req_typ              -- 기본신청유형        
+,req_ymd          -- 신청일              
+,syspayno                      -- 시스템개인번호      
+,dept_cd                        -- 부서코드            
+,dept_new_ymd                     -- 부서신설일          
+,depthed_syspayno              -- 부서장시스템개인번호
+,divsn_rspns_syspayno        -- 본부장시스템개인번호
+,map_prof_syspayno as map_prof
+,map_prof_syspayno
+,fun_emp_nm(map_prof_syspayno) as map_prof_nm
+,fun_emp_no(map_prof_syspayno) as map_prof_emp_no
+,attach_file_no                -- 첨부파일번호        
+,regst_syspayno                  -- 등록시스템개인번호  
+,regst_daytm   -- 등록일시            
+,updt_syspayno                -- 수정시스템개인번호  
+,updt_daytm        -- 수정일시  
+,rmk
+,rpt_req_no
+FROM humapybasic
+WHERE  req_no = #{req_no}
+  </select>
+
+<!-- kitech.hum.apy.xda.HumApyBasicSI03 가족수당신청 정보 저장 -->
+ <insert id="insertHumApyAlowwBasic" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyAlowwBasic */ 
+		 INTO humapybasic 
+(
+   req_no   , --신청번호      
+   req_typ  , --기본신청유형(문서종류)        
+   req_ymd  , --신청일              
+   syspayno  , --시스템개인번호      
+   dept_cd  , --부서코드            
+   dept_new_ymd  , --부서신설일         
+   rmk  , --비고  
+   attach_file_no  , --첨부파일번호     
+   regst_syspayno  , --등록시스템개인번호  
+   regst_daytm   --등록일시            
+)VALUES(
+  #{req_no}  , --신청번호      
+   #{req_typ}  , --기본신청유형(문서종류)        
+   #{req_ymd}  , --신청일              
+   #{syspayno}  , --시스템개인번호      
+   #{dept_cd}  , --부서코드            
+   #{dept_new_ymd}  , --부서신설일          
+   #{rmk}  , --비고
+   #{attach_file_no}  , --첨부파일번호      
+   #{regst_syspayno}  , --등록시스템개인번호  
+   CURRENT  --등록일시 
+)
+  </insert>
+
+<!-- kitech.hum.apy.xda.HumApyBasicSU03 가족수당신청 정보 수정 -->
+  <update id="updateHumApyAllowBasic" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyAllowBasic */ 
+		 humapybasic SET    
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = current
+<if test="rmk != null and rmk != ''">
+	 , rmk = #{rmk}
+</if>
+        <if test="req_no != null and req_no != ''">
+	 , req_no = #{req_no}
+</if>
+        <if test="req_typ != null and req_typ != ''">
+	 , req_typ = #{req_typ}
+</if>
+        <if test="req_ymd != null and req_ymd != ''">
+	 , req_ymd = #{req_ymd}
+</if>
+        <if test="syspayno != null and syspayno != ''">
+	 , syspayno = #{syspayno}
+</if>
+        <if test="dept_cd != null and dept_cd != ''">
+	 , dept_cd = #{dept_cd}
+</if>
+        <if test="dept_new_ymd != null and dept_new_ymd != ''">
+	 , dept_new_ymd = #{dept_new_ymd}
+</if>
+        <if test="attach_file_no != null and attach_file_no != ''">
+	 , attach_file_no = #{attach_file_no}
+</if>
+WHERE
+    req_no = #{req_no}
+  </update>
+  
+  <!-- kitech.hum.apy.xda.HumApyReqYmdSU01 가족수당 결재신청일 등록-->
+   <update id="updateHumApyAllowReqYmd" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+update /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyAllowReqYmd */ 
+		 humapybasic SET req_ymd = #{req_ymd} where req_no = #{req_no}
+  </update>
+  
+   
+<!-- kitech.hum.apy.xda.HumRctFamMU02 지원자가족사항&가족수당신청 수정 -->
+  <update id="updateHumApyAllowRctFam" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApyAllowRctFam */ 
+		 humrctfam SET 
+relat = #{relat},
+nm = #{nm},
+ocpt_nm = #{ocpt_nm},
+educ = #{educ},
+postmt_no = #{postmt_no},
+addr = #{addr},
+detls_addr = #{detls_addr},
+psinsr_yn = #{psinsr_yn},
+cohbt_yn = #{cohbt_yn},
+obst_yn = #{obst_yn},
+human_dedct_yn = #{human_dedct_yn},
+fam_payamt_yn = #{fam_payamt_yn},
+except_yn = #{except_yn},
+payamt_occr_ymd = #{payamt_occr_ymd},
+payamt_cls_ymd = #{payamt_cls_ymd},
+rmk = #{rmk},
+attach_file_no = #{attach_file_no},
+updt_syspayno = #{updt_syspayno},
+updt_daytm = current
+WHERE req_no = #{req_no}
+  AND resid_no = #{resid_no}
+  AND bf_clsf = 'P'
+  </update>
+   
+   <!-- kitech.hum.apy.xda.HumRctFamMI02 지원자가족사항&가족수당신청 등록-->
+  <insert id="insertHumApyAllowRctFam" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApyAllowRctFam */ 
+		 INTO humrctfam
+(
+req_no                -- 시스템개인번호
+,resid_no             -- 주민번호
+,relat                        -- 관계
+,nm                               -- 성명
+,ocpt_nm                       -- 직업명
+,educ                            -- 학력
+,postmt_no                    -- 우편번호
+,addr                  -- 주소
+,detls_addr         -- 상세주소
+,psinsr_yn            -- 피보험자여부
+,cohbt_yn            -- 동거여부
+,obst_yn             -- 장애여부
+,human_dedct_yn        -- 인적공제여부
+,fam_payamt_yn         -- 가족수당여부
+,bf_clsf               -- 변경전후구분
+,except_yn             -- 제외구분
+,payamt_occr_ymd        -- 수당발생일
+,payamt_cls_ymd          -- 수당종료일
+,rmk                                 -- 비고
+,attach_file_no                 -- 첨부파일번호
+,regst_syspayno                   -- 등록시스템개인번호
+,regst_daytm          -- 등록일시
+) VALUES
+(
+ #{req_no}
+,#{resid_no}
+,#{relat}
+,#{nm}
+,#{ocpt_nm}
+,#{educ}
+,#{postmt_no}
+,#{addr}
+,#{detls_addr}
+,#{psinsr_yn}
+,#{cohbt_yn}
+,#{obst_yn}
+,#{human_dedct_yn}
+,#{fam_payamt_yn}
+,#{bf_clsf}
+,#{except_yn}
+,#{payamt_occr_ymd}
+,#{payamt_cls_ymd}
+,#{rmk}
+,#{attach_file_no}
+,#{regst_syspayno}
+,current
+)
+  </insert>  
+
+
+  
+
+
+ <!--kitech.hum.apy.xda.HumFamyInfoMS02 상신전 삭제 가족정보 확인  -->
+  <select id="selectHumApyAllowDelFamy" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApyAllowDelFamy */ 
+ CASE WHEN NVL(a.req_no,'') = '' THEN
+ 'D'
+ ELSE
+ ''
+ END del_flg, 
+ b.resid_no   
+FROM
+ humfamyinfo b,
+ OUTER humrctfam a
+WHERE
+ b.syspayno = #{syspayno}
+ AND a.req_no = #{req_no}
+ AND a.regst_syspayno = b.syspayno
+ AND a.resid_no = b.resid_no
+  </select> 
+
+ <!-- kitech.hum.apy.xda.HumFamyInfoSD01 신청자 가족정보 삭제 --> 
+  <delete id="deleteBasicFamyInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy."deleteBasicFamyInfo" */ 
+		 FROM humfamyinfo WHERE syspayno = #{syspayno} AND resid_no = #{resid_no}
+  </delete>  
+
+<!-- kitech.hum.apy.xda.HumRctFamMS10 가족수당신청 변경후 리스트 확인 -->
+   <select id="selectRctFamAfterList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectRctFamAfterList */ 
+ req_no  , --신청번호 
+ resid_no , --주민번호 
+ relat  , --관계 
+ nm  , --성명 
+ ocpt_nm  , --직업명 
+ educ  , --학력 
+ postmt_no , --우편번호 
+ addr  , --주소 
+ detls_addr , --상세주소 
+ psinsr_yn , --피보험자여부 
+ cohbt_yn , --동거여부 
+ obst_yn  , --장애여부 
+ human_dedct_yn , --인적공제여부 
+ fam_payamt_yn , --가족수당여부 
+ except_yn, --제외구분 
+ decode(nvl(except_yn,'N'),'C',to_char(current,'%Y%m%d'),'A',to_char(current,'%Y%m%d'), payamt_occr_ymd) as payamt_occr_ymd , --수당발생일 
+ decode(nvl(except_yn,'N'),'Y',to_char(current,'%Y%m%d'),'R',to_char(current,'%Y%m%d'), payamt_cls_ymd) as payamt_cls_ymd , --수당종료일 
+ rmk  , --비고 
+ attach_file_no , --첨부파일번호 
+ regst_syspayno , --등록시스템개인번호 
+ regst_daytm  --등록일시  
+FROM 
+ humrctfam 
+WHERE 
+ req_no = #{req_no}
+and bf_clsf = 'P'
+  </select>
+  
+<!-- kitech.hum.apy.xda.HumFamyInfoMS03 가족기본정보에 있는지 확인 -->
+  <select id="selectHumFamyInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumFamyInfo */ 
+    resid_no ,        --주민번호          
+    relat  ,        --관계              
+    nm  ,        --성명              
+    ocpt_nm ,       --직업명            
+    educ  ,        --학력              
+    postmt_no ,        --우편번호          
+    addr  ,         --주소              
+    detls_addr ,        --상세주소     
+    psinsr_yn , --피보험자여부     
+    cohbt_yn , --동거여부          
+    obst_yn , --장애여부          
+    human_dedct_yn , --인적공제여부      
+    fam_payamt_yn,  --가족수당여부     
+    except_yn,  --제외구분
+    rmk  --비고 
+FROM
+humfamyinfo 
+WHERE
+ syspayno = #{syspayno}
+<if test="resid_no != null and resid_no != ''">
+	 and resid_no = #{resid_no}
+</if>
+  </select> 
+      
+  <!-- kitech.hum.apy.xda.HumFamyInfoSU02 가족사항 수정-->
+  <update id="updateHumFamyInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumFamyInfo */ 
+		 humfamyinfo SET
+ relat = #{relat}, --관계              
+ nm = #{nm}, --성명              
+ ocpt_nm  = #{ocpt_nm}, --직업명            
+ educ = #{educ}, --학력              
+ postmt_no = #{postmt_no}, --우편번호          
+ addr = #{addr}, --주소              
+ detls_addr = #{detls_addr}, --상세주소     
+ psinsr_yn  = #{psinsr_yn}, --피보험자여부     
+ cohbt_yn = #{cohbt_yn}, --동거여부          
+ obst_yn = #{obst_yn}, --장애여부          
+ human_dedct_yn = #{human_dedct_yn}, --인적공제여부      
+ fam_payamt_yn = #{fam_payamt_yn}, --가족수당여부
+ except_yn = #{except_yn}, --제외구분 
+ payamt_occr_ymd = #{payamt_occr_ymd}, --수당시작일
+ payamt_cls_ymd = #{payamt_cls_ymd}, --수당종료일
+ rmk = #{rmk}, --비고 
+ updt_syspayno = #{updt_syspayno},
+ updt_daytm = CURRENT    
+WHERE syspayno = #{syspayno}
+  AND resid_no = #{resid_no}
+  </update>  
+  
+  <!-- kitech.hum.apy.xda.HumFamyInfoSI02 가족사항 등록-->
+  <insert id="insertHumFamyInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyRctFamInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumFamyInfo */ 
+		 INTO humfamyinfo
+(
+ syspayno, --시스템개인번호    
+ resid_no, --주민번호          
+ relat, --관계              
+ nm, --성명              
+ ocpt_nm, --직업명            
+ educ, --학력              
+ postmt_no, --우편번호          
+ addr, --주소              
+ detls_addr, --상세주소     
+ psinsr_yn, --피보험자여부     
+ cohbt_yn, --동거여부          
+ obst_yn, --장애여부          
+ human_dedct_yn, --인적공제여부      
+ fam_payamt_yn, --가족수당여부      
+ except_yn, --제외구분  
+ payamt_occr_ymd, --수당발생일        
+ payamt_cls_ymd, --수당종료일        
+ rmk, --비고              
+ regst_syspayno, --등록시스템개인번호
+ regst_daytm  --등록일시 
+)VALUES(
+ #{syspayno}, --시스템개인번호    
+ #{resid_no}, --주민번호          
+ #{relat}, --관계              
+ #{nm}, --성명              
+ #{ocpt_nm}, --직업명            
+ #{educ}, --학력              
+ #{postmt_no}, --우편번호          
+ #{addr}, --주소              
+ #{detls_addr}, --상세주소     
+ #{psinsr_yn}, --피보험자여부     
+ #{cohbt_yn}, --동거여부          
+ #{obst_yn}, --장애여부          
+ #{human_dedct_yn}, --인적공제여부      
+ #{fam_payamt_yn}, --가족수당여부      
+ #{except_yn}, --제외구분
+ #{payamt_occr_ymd}, --수당발생일        
+ #{payamt_cls_ymd}, --수당종료일        
+ #{rmk}, --비고              
+ #{regst_syspayno}, --등록시스템개인번호
+ CURRENT  --등록일시 
+)
+  </insert>  
+  
+  <!-- kitech.hum.apy.xda.HumRctFamMD01 가족수당신청 대상 가족정보 삭제 -->
+   <delete id="deleteHumApyAllowRctFam" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyAllowRctFam */ 
+  FROM humrctfam
+WHERE req_no = #{req_no}
+<if test="resid_no != null and resid_no != ''">
+	 and resid_no= #{resid_no}
+</if>
+  </delete>
+  
+  <!-- kitech.hum.apy.xda.HumApyBasicSD01 가족수당신청 정보 삭제-->
+  <delete id="deleteHumApyAllowBasic" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApyAllowInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApyAllowBasic */ 
+		 FROM
+ humapybasic
+WHERE
+ req_no = #{req_no}
+  </delete>
+</mapper>

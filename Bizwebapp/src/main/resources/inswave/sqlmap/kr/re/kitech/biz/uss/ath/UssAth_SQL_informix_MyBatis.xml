@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.uss.ath">
+<!-- 사용자권한 서비스정보 삭제 -->
+<delete id="deleteXomxUserScrnAuth" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.uss.ath.deleteXomxUserScrnAuth */
+      xomxuserscrnauth
+ WHERE sys_pay_no = #{sys_pay_no}
+</delete>
+<!-- 사용자권한 서비스정보 저장 -->
+<insert id="mergeXomxUserScrnAuth" parameterType="kr.re.kitech.biz.uss.ath.vo.XomxUserScrnAuthVo">
+MERGE /* kr.re.kitech.biz.uss.ath.mergeXomxUserScrnAuth */
+  INTO xomxuserscrnauth AS a
+ USING dual AS b ON 1=1 AND a.sys_pay_no = #{sys_pay_no} AND scrn_id = #{scrn_id}
+ WHEN MATCHED THEN
+    UPDATE
+       SET r1_right_yn = (CASE WHEN r1_right_yn = '0' THEN #{r1_right_yn} ELSE r1_right_yn END),
+           r2_right_yn = (CASE WHEN r2_right_yn = '0' THEN #{r2_right_yn} ELSE r2_right_yn END),
+           r3_right_yn = (CASE WHEN r3_right_yn = '0' THEN #{r3_right_yn} ELSE r3_right_yn END),
+           r4_right_yn = (CASE WHEN r4_right_yn = '0' THEN #{r4_right_yn} ELSE r4_right_yn END),
+           chng_psn_id = #{updt_syspayno},
+           chng_daytm = SYSDATE
+WHEN NOT MATCHED THEN  
+INSERT (   
+       a.sys_pay_no
+     , a.scrn_id
+     , a.scrn_nm
+     , a.sys_bigclsf_cd
+     , a.sys_bigclsf_nm
+     , a.sys_midclsf_cd
+     , a.sys_midclsf_nm
+     , a.sys_smalclsf_cd
+     , a.sys_smalclsf_nm
+     , a.ldap_svr_id
+     , a.linkurl
+     , a.c_right_yn
+     , a.r1_right_yn
+     , a.r2_right_yn
+     , a.r3_right_yn
+     , a.r4_right_yn
+     , a.u_right_yn
+     , a.d_right_yn
+     , a.e_right_yn
+     , a.p_right_yn
+     , a.use_ex
+     , a.regst_psn_id
+     , a.regst_daytm
+   ) VALUES(
+       #{sys_pay_no}
+     , #{scrn_id}
+     , #{scrn_nm}
+     , #{sys_bigclsf_cd}
+     , #{sys_bigclsf_nm}
+     , ''
+     , ''
+     , ''
+     , ''
+     , #{ldap_svr_id}
+     , #{linkurl}
+     , #{c_right_yn}
+     , #{r1_right_yn}
+     , #{r2_right_yn}
+     , #{r3_right_yn}
+     , #{r4_right_yn}
+     , #{u_right_yn}
+     , #{d_right_yn}
+     , #{e_right_yn}
+     , #{p_right_yn}
+     , ''
+     , #{regst_syspayno}
+     , SYSDATE
+   )
+</insert>
+</mapper>

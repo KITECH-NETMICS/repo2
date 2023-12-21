@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="국외귀빈접견">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="visit_start_ymd1" name="시작일" dataType="text"></w2:key>
+				       <w2:key id="visit_start_ymd2" name="종료일" dataType="text"></w2:key>
+				       <w2:key id="visit_clsf" name="visit_clsf" dataType="text"></w2:key>
+				       <w2:key id="charg_dept" name="charg_dept" dataType="text"></w2:key>
+				       <w2:key id="charg_syspayno" name="charg_syspayno" dataType="text"></w2:key>
+				       <w2:key id="agncy_clsf" name="agncy_clsf" dataType="text"></w2:key>
+				       <w2:key id="cmpy_nm_krchar" name="cmpy_nm_krchar" dataType="text"></w2:key>
+				       <w2:key id="cmpy_nm_eng" name="cmpy_nm_eng" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="audenc_no" name="audenc_no" dataType="text"></w2:column>
+				       <w2:column id="visit_start_ymd" name="visit_start_ymd" dataType="text"></w2:column>
+				       <w2:column id="visit_cls_ymd" name="visit_cls_ymd" dataType="text"></w2:column>
+				       <w2:column id="visit_term" name="visit_term" dataType="text"></w2:column>
+				       <w2:column id="visit_clsf" name="visit_clsf" dataType="text"></w2:column>
+				       <w2:column id="visit_clsf_nm" name="visit_clsf_nm" dataType="text"></w2:column>
+				       <w2:column id="visit_subj" name="visit_subj" dataType="text"></w2:column>
+				       <w2:column id="charg_syspayno" name="charg_syspayno" dataType="text"></w2:column>
+				       <w2:column id="charg_dept" name="charg_dept" dataType="text"></w2:column>
+				       <w2:column id="visit_goal" name="visit_goal" dataType="text"></w2:column>
+				       <w2:column id="visit_plc" name="visit_plc" dataType="text"></w2:column>
+				       <w2:column id="audenc_psn" name="audenc_psn" dataType="text"></w2:column>
+				       <w2:column id="rmk" name="rmk" dataType="text"></w2:column>
+				       <w2:column id="attach_file_no" name="attach_file_no" dataType="text"></w2:column>
+				       <w2:column id="natn_cd" name="natn_cd" dataType="text"></w2:column>
+				       <w2:column id="natn_nm" name="natn_nm" dataType="text"></w2:column>
+				       <w2:column id="odr" name="odr" dataType="text"></w2:column>
+				       <w2:column id="reprs_psn_nm" name="reprs_psn_nm" dataType="text"></w2:column>
+				       <w2:column id="psn_count" name="psn_count" dataType="text"></w2:column>
+				       <w2:column id="cmpy_nm_krchar" name="cmpy_nm_krchar" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>            
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 조회 -->
+            <xf:submission id="sbm_selectData" ref="data:json,dma_search" target='data:json,[{"id":"dlt_list","key":"lcpVipAudencVoList"}]' 
+        	    action="SvcLPLLCPVIPR01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>             
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 국외귀빈접견
+ 	 * 변경 이력 : 2023-11-08	김준하	최초 작성
+ 	 ****************************************************/
+ 	scwin.data = {};
+	/**
+	 * 페이지 로딩 이벤트
+	 */         
+	scwin.onpageload = function() {
+		var codeOptions = [ { code : "LCA", compID : "sbx_visit_clsf"} ];//방문구분
+		com.setCmnCd(codeOptions, function() {	
+			var session = com.getLoginInfo();
+			var now = new Date();
+			var year= now.getFullYear();
+			var mon = (now.getMonth()+1)>9 ? ''+(now.getMonth()+1) : '0'+(now.getMonth()+1);
+			var day = now.getDate()>9 ? ''+now.getDate() : '0'+now.getDate();
+			var curdate = year + mon + day;
+			var curStrDate = year + "0101";
+			
+			ica_from.setValue(curStrDate);
+			ica_cls.setValue(curdate); 
+			
+			// 기간 역전 체크
+			com.checkPeriod(ica_from, ica_cls);
+			
+			// enter key event
+			com.setEnterKeyEvent(grp_search, scwin.btn_search_onclick);				
+						
+			//화면 권한 체크
+			com.biz.checkRole({serviceId : "L458", roleCodes : session.roleCode}, function(e){
+				if(e.isRoleYn){					
+					btn_search.setDisabled(false);
+				}else{
+					btn_search.setDisabled(true);
+				}
+			});
+		});		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+    /**	
+     *	조회
+     **/		
+	scwin.btn_search_onclick = function(e) {
+		if (!scwin.vaildCheck()) return;
+		dma_search.set("cmpy_nm_krchar", "%" + ibx_agncy_nm.getValue() + "%");
+		dma_search.set("cmpy_nm_eng", "%" + ibx_agncy_nm.getValue() + "%");
+		com.execute(sbm_selectData, {				
+			successCallback : function(e){
+				//e.responseJSON.elData.lcpOvsResMouVoList
+				tbx_result.setValue(dlt_list.getTotalRow());	
+			}	
+		});					
+	};
+	
+	// 유효성 검사
+	scwin.vaildCheck = function(e) {
+		if (!com.validateData(dma_search,[
+				 { id : "visit_start_ymd1", mandatory : true }//시작일
+				,{ id : "visit_start_ymd2", mandatory : true }//종료일
+			], false)
+		) return false;
+		return true;		
+	}	
+	
+    /**	
+     *	그리드 클릭
+     **/	
+	scwin.grd_list_oncellclick = function(row,col,colId) {
+		if (colId == "visit_term") {
+			var data = {};
+			data.audencNo = grd_list.getCellData(row, "audenc_no");
+			data.searchCon1 = ica_from.getValue();
+			data.searchCon2 = ica_cls.getValue();
+			data.searchCon3 = sbx_visit_clsf.getValue();
+			data.searchCon4 = ibx_agncy_nm.getValue();
+			data.flag = "Update";							
+			com.openTabMenu("L457", data, function(ret) {
+			});
+//			com.openTabUrl("국외귀빈접견상세", "/ui/lpl/lcp/LPL_LCP_L457_00D.xml", 1, data, function() {
+//			});		
+		}		
+	};
+	
+    /**	
+     *	신규
+     **/	
+	scwin.btn_new_onclick = function(e) {
+		var data = {};
+//		com.openTabUrl("국외귀빈접견상세", "/ui/lpl/lcp/LPL_LCP_L457_00D.xml", 1, data, function() {
+//		});
+		com.openTabMenu("L457", data, function(ret) {
+		});				
+	};
+	
+	scwin.btn_excel_onclick = function(e) {
+		var option = {fileName : "국외귀빈접견그리드.xlsx", hiddenVisible : "true"};
+		com.downloadGridExcel(grd_list, option);			
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group class="pageWrap" id="" style="">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:280px;" tagname="col"></xf:group>
+    						<xf:group style="width:123px;" tagname="col"></xf:group>
+    						<xf:group style="width:235px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr" id="grp_search">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="방문기간" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td"><w2:attributes></w2:attributes><xf:group class="inpcalWrap" id="" style="">
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    									footerDiv="false" id="ica_from" placeholder="시작일" renderDiv="true" rightAlign="false" style="" ref="data:dma_search.visit_start_ymd1">
+    								</w2:inputCalendar>
+    								<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    									footerDiv="false" id="ica_cls" placeholder="종료일" renderDiv="true" rightAlign="false" style="" ref="data:dma_search.visit_start_ymd2">
+    								</w2:inputCalendar>
+    							</xf:group></xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="방문구분" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-전체-" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_visit_clsf" ref="data:dma_search.visit_clsf" style="width:150px;" submenuSize="auto"
+    								title="상태" visibleRowNum="10">
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="기관명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_agncy_nm" style="width: 150px;" title="사용자 정보"></xf:input>
+    						</xf:group>
+    					</xf:group>
+	    			</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="left" id="">
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:group class="btnarea" id="" style="">
+    					<xf:trigger class="btn" id="btn_new" style="" type="button" ev:onclick="scwin.btn_new_onclick">
+    						<xf:label><![CDATA[신규]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger class="btn icon down" id="btn_excel" style="" type="button" ev:onclick="scwin.btn_excel_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_list" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="20" sortable="true" ev:oncellclick="scwin.grd_list_oncellclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column1" inputType="text" style="height:28px;" value="방문일자" width="82"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="방문구분" width="79"></w2:column>
+    					<w2:column displayMode="label" id="column14" inputType="text" style="height:28px;" value="방문목적" width="170"></w2:column>
+    					<w2:column displayMode="label" id="column4" inputType="text" style="height:28px;" value="방문장소" width="130"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="방문자" width="119"></w2:column>
+    					<w2:column displayMode="label" id="column6" inputType="text" style="height:28px;" value="방문기관" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="방문자국가" width="55"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column class="" displayMode="label" id="visit_term" inputType="link" readOnly="true" style="height:28px;"
+    						width="127">
+    					</w2:column>
+    					<w2:column displayMode="label" id="visit_clsf_nm" inputType="text" readOnly="true" style="height:28px;" width="56"></w2:column>
+    					<w2:column displayMode="label" id="visit_goal" inputType="text" readOnly="true" style="height:28px;" width="269" textAlign="left"></w2:column>
+    					<w2:column displayMode="label" id="visit_plc" inputType="text" readOnly="true" style="height:28px;" width="187" textAlign="left"></w2:column>
+    					<w2:column displayMode="label" id="reprs_psn_nm" inputType="text" readOnly="true" style="height:28px;" width="120" textAlign="left"></w2:column>
+    					<w2:column displayMode="label" id="cmpy_nm_krchar" inputType="text" readOnly="true" style="height:28px;" width="157" class="" textAlign="left"></w2:column>
+    					<w2:column displayMode="label" id="natn_nm" inputType="text" readOnly="true" style="height:28px;" width="82" class="" textAlign="left"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

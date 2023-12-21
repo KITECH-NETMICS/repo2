@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.inv">
+		
+<select id="selectJurnlList" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvJurnlVolVo" resultType="kr.re.kitech.biz.kbk.inv.vo.InvJurnlVolVo">
+SELECT  a.jurnl_no,
+		  b.jurnl_subj,
+		  a.vol,
+		  a.no,
+		  a.publ_yr,
+		  a.publ_month,
+		  a.wrhsg_ymd,
+		  a.missno_yn,
+		  a.wrhsg_schdl_ymd,
+		  case when trim(nvl(a.attach_file_no,'')) = ''  then 'N' else 'Y' end as file_yn
+		FROM  kbkjurnlcontnt a JOIN kbkjurnlno b ON a.jurnl_no = b.jurnl_no
+		WHERE  1 = 1
+		<if test="jurnl_no != null and jurnl_no != ''"> AND  a.jurnl_no LIKE #{jurnl_no} || '%' </if>
+		<if test="jurnl_subj != null and jurnl_subj != ''"> AND (replace(upper(b.jurnl_subj), ' ', '') LIKE '%' || #{jurnl_subj} || '%'  OR upper(b.jurnl_subj) LIKE  '%' || upper(#{jurnl_subj}) || '%') </if>
+		<if test="missno_yn != null and missno_yn != ''"> AND a.missno_yn LIKE #{missno_yn} || '%' </if>
+		ORDER BY vol desc, no desc
+</select>
+	
+</mapper>

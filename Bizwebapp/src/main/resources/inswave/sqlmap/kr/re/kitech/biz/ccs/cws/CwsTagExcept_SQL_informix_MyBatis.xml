@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.ccs.cws">
+
+    <insert id="insertCwsTagExcept" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsTagExceptVo">	
+        INSERT INTO CWSTAGEXCEPTS   /* QueryID : kr.re.kitech.biz.ccs.cws.insertCwsTagExcept */
+        ( 
+            REQ_NO
+            <if test="syspayno      != null"> , SYSPAYNO       </if>
+            <if test="basedate      != null"> , BASEDATE       </if>
+            <if test="miss_type     != null"> , MISS_TYPE      </if>
+            <if test="valid_st_dt   != null"> , VALID_ST_DT    </if>
+            <if test="valid_ed_dt   != null"> , VALID_ED_DT    </if>
+            <if test="cause         != null"> , CAUSE          </if>
+            <if test="work_perfmc   != null"> , WORK_PERFMC    </if>
+            <if test="attach_file_no!= null"> , ATTACH_FILE_NO </if>
+            <if test="regst_syspayno!= null"> , REGST_SYSPAYNO </if>
+            <if test="regst_daytm   != null"> , REGST_DAYTM    </if>
+        )
+        VALUES  
+        ( 
+            #{req_no}
+            <if test="syspayno      != null"> , #{syspayno}       </if>
+            <if test="basedate      != null"> , TO_DATE(#{basedate}, '%Y%m%d')       </if>
+            <if test="miss_type     != null"> , #{miss_type}      </if>
+            <if test="valid_st_dt   != null"> , #{valid_st_dt}    </if>
+            <if test="valid_ed_dt   != null"> , #{valid_ed_dt}    </if>
+            <if test="cause         != null"> , #{cause}          </if>
+            <if test="work_perfmc   != null"> , #{work_perfmc}    </if>
+            <if test="attach_file_no!= null"> , #{attach_file_no} </if>
+            <if test="regst_syspayno!= null"> , #{regst_syspayno} </if>
+            <if test="regst_daytm   != null"> , CURRENT   </if> 
+        )          
+    </insert>	
+	
+    <update id="updateCwsTagExcept" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsTagExceptVo">
+        UPDATE CWSTAGEXCEPTS    /* QueryID : kr.re.kitech.biz.ccs.cws.updateCwsTagExcept */      
+      	  SET  
+                REQ_NO         = #{req_no}                	                       
+            <if test="syspayno      != null"> , SYSPAYNO       = #{syspayno}       </if>
+            <if test="basedate      != null"> , BASEDATE       = TO_DATE(#{basedate}, '%Y%m%d')       </if>
+            <if test="miss_type     != null"> , MISS_TYPE      = #{miss_type}      </if>
+            <if test="valid_st_dt   != null"> , VALID_ST_DT    = #{valid_st_dt}    </if>
+            <if test="valid_ed_dt   != null"> , VALID_ED_DT    = #{valid_ed_dt}    </if>
+            <if test="cause         != null"> , CAUSE          = #{cause}          </if>
+            <if test="work_perfmc   != null"> , WORK_PERFMC    = #{work_perfmc}    </if>
+            <if test="attach_file_no!= null"> , ATTACH_FILE_NO = #{attach_file_no} </if>
+            <if test="updt_syspayno != null"> , UPDT_SYSPAYNO  = #{updt_syspayno}  </if>
+            <if test="updt_daytm    != null"> , UPDT_DAYTM     = #{updt_daytm}     </if>                 
+        WHERE   
+                REQ_NO         = #{req_no}        
+    </update>
+	
+    <delete id="deleteCwsTagExcept" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsTagExceptVo">
+        DELETE FROM CWSTAGEXCEPTS   /* QueryID : kr.re.kitech.biz.ccs.cws.deleteCwsTagExcept */ 
+        WHERE   
+                REQ_NO         = #{req_no}                
+    </delete>
+	
+    <select id="selectCwsTagExcept" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsTagExceptVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsTagExceptVo">	
+        SELECT 
+		      x0.req_no
+		    , x0.syspayno
+		    , (x0.syspayno[3,8]) AS empno
+		    , TO_CHAR(x0.basedate, '%Y%m%d') AS basedate
+		    , x0.miss_type
+		    , x0.valid_st_dt
+		    , x0.valid_ed_dt
+		    , (x0.valid_st_dt)::INTERVAL HOUR TO HOUR::VARCHAR(12)::INT AS valid_st_hour
+		    , MOD((x0.valid_st_dt)::INTERVAL MINUTE(5) TO MINUTE::VARCHAR(12)::INT, 60) AS valid_st_minute
+		    , (x0.valid_ed_dt)::INTERVAL HOUR TO HOUR::VARCHAR(12)::INT AS valid_ed_hour
+		    , MOD((x0.valid_ed_dt)::INTERVAL MINUTE(5) TO MINUTE::VARCHAR(12)::INT, 60) AS valid_ed_minute
+		    , x0.cause
+		    , x0.work_perfmc
+		    , x0.attach_file_no
+		    , x1.apr_state
+		    , x2.cd_nm AS apr_state_nm
+		FROM cwstagexcepts AS x0
+		JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+		JOIN xodxcommst AS x2 ON x2.cd = x1.apr_state
+		WHERE x0.req_no = #{req_no}       			
+    </select>
+	
+    <select id="selectListCwsTagExcept" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsTagExceptVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsTagExceptVo">
+SELECT 
+			      x0.req_no
+			    , x0.syspayno
+			    , (x0.syspayno[3,8]) AS empno
+			    , x3.nm as nm
+			    , TO_CHAR(x0.basedate, '%Y%m%d') AS basedate
+			    , x0.miss_type
+			    , x0.valid_st_dt
+			    , x0.valid_ed_dt
+			    , (x0.valid_st_dt)::INTERVAL HOUR TO HOUR::VARCHAR(12)::INT AS valid_st_hour
+			    , MOD((x0.valid_st_dt)::INTERVAL MINUTE(5) TO MINUTE::VARCHAR(12)::INT, 60) AS valid_st_minute
+			    , (x0.valid_ed_dt)::INTERVAL HOUR TO HOUR::VARCHAR(12)::INT AS valid_ed_hour
+			    , MOD((x0.valid_ed_dt)::INTERVAL MINUTE(5) TO MINUTE::VARCHAR(12)::INT, 60) AS valid_ed_minute
+			    , x0.cause
+			    , x0.work_perfmc
+			    , x0.attach_file_no
+			    , x1.apr_state
+			    , x2.cd_nm AS apr_state_nm
+			FROM cwstagexcepts AS x0
+			JOIN xomxintfatab AS x1 ON x1.req_no = x0.req_no
+			JOIN xodxcommst AS x2 ON x2.cd = x1.apr_state
+			JOIN humbasicinfo AS x3 ON x3.syspayno = x0.syspayno
+			WHERE 1=1
+            <if test="syspayno      != null and syspayno != ''">AND x0.syspayno = #{syspayno} </if>
+            <if test="basedate      != null and basedate != ''">AND x0.basedate = TO_DATE(#{basedate}, '%Y%m%d') </if>
+            <if test="start_ymd      != null and start_ymd != ''">AND x0.basedate BETWEEN #{start_ymd} AND #{cls_ymd} </if>
+            <if test="dup_str      == 'dup'">AND x0.req_no != #{req_no} </if>
+            order by x0.req_no desc
+</select>
+	
+    <select id="selectListCountCwsTagExcept" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsTagExceptVo" resultType="long">
+         SELECT    /* QueryID : kr.re.kitech.biz.ccs.cws.selectListCountCwsTagExcept */
+             COUNT(*) totcnt  		                  
+         FROM CWSTAGEXCEPTS
+         WHERE  1=1    		
+
+    </select>
+
+	<select id="selectExceptWorkTime" parameterType="kr.re.kitech.biz.ccs.cws.vo.CwsExceptWorkTimeVo" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsExceptWorkTimeVo">
+		SELECT 
+		      w.syspayno
+		    , NVL(TO_CHAR(CASE WHEN w.extra_st_dt IS NOT NULL THEN w.extra_st_dt ELSE w.truth_st_dt END, '%Y-%m-%d %H:%M'), '누락') AS attend_at
+		    , NVL(TO_CHAR(CASE WHEN w.extra_ed_dt IS NOT NULL THEN w.extra_ed_dt ELSE w.truth_ed_dt END, '%Y-%m-%d %H:%M'), '누락') AS leave_at
+		FROM imis.cwsworktime AS w
+		WHERE 1=1
+        <if test="syspayno      != null and syspayno != ''">AND w.syspayno = #{syspayno} </if>
+        <if test="basedate      != null and basedate != ''">AND TO_CHAR(w.basedate, '%Y%m%d') = #{basedate} </if>
+	</select>
+	
+	<select id="selectExcepAuthor" parameterType="String" resultType="kr.re.kitech.biz.ccs.cws.vo.CwsTagExceptVo">
+		SELECT FIRST 1 x0.syspayno, x0.nm
+		    , x1.dept_cd AS dept_cd, x2.dept_cd AS dvsn_cd, x3.dept_cd AS updp_cd
+		    , NVL( y1.dept_cd, NVL( y2.dept_cd, NVL( y3.dept_cd, NVL( y4.dept_cd, y5.dept_cd)))) AS decide_dept
+		    , NVL( y1.syspayno, NVL( y2.syspayno, NVL( y3.syspayno, NVL( y4.syspayno, y5.syspayno)))) AS auth_syspayno
+		FROM humbasicinfo x0
+		LEFT JOIN xodhdeptinfo AS x1 ON x1.dept_cd = x0.dept_cd AND x1.dept_new_ymd = x0.dept_new_ymd
+		LEFT JOIN xodhdeptinfo AS x2 ON x2.dept_cd = x1.up_dept AND x2.dept_new_ymd = x1.up_dept_new_ymd
+        LEFT JOIN xodhdeptinfo AS x3 ON x3.dept_cd = x2.up_dept AND x3.dept_new_ymd = x2.up_dept_new_ymd
+        LEFT JOIN xodhdeptinfo AS x4 ON x4.dept_cd = x3.up_dept AND x4.dept_new_ymd = x3.up_dept_new_ymd
+        LEFT JOIN xodhdeptinfo AS x5 ON x5.dept_cd = x4.up_dept AND x5.dept_new_ymd = x4.up_dept_new_ymd
+        LEFT JOIN CbiCwsAuthor AS y1 ON y1.dept_cd = x1.dept_cd and y1.dept_new_ymd = x1.dept_new_ymd
+		LEFT JOIN CbiCwsAuthor AS y2 ON y2.dept_cd = x2.dept_cd and y2.dept_new_ymd = x2.dept_new_ymd
+		LEFT JOIN CbiCwsAuthor AS y3 ON y3.dept_cd = x3.dept_cd and y3.dept_new_ymd = x3.dept_new_ymd
+		LEFT JOIN CbiCwsAuthor AS y4 ON y4.dept_cd = x4.dept_cd and y4.dept_new_ymd = x4.dept_new_ymd
+		LEFT JOIN CbiCwsAuthor AS y5 ON y5.dept_cd = x5.dept_cd and y5.dept_new_ymd = x5.dept_new_ymd
+		WHERE x0.syspayno = #{syspayno}
+	</select>
+
+</mapper>

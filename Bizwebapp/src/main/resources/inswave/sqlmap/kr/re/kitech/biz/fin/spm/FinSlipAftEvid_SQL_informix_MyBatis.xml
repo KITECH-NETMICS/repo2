@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.spm">
+  <select id="selectSlipAftEvidInfoList" parameterType="kr.re.kitech.biz.fin.spm.vo.FinSlipAftEvidVo" resultType="kr.re.kitech.biz.fin.spm.vo.FinSlipAftEvidListVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.fin.selectFspSlipDecsnH */ 
+   g1.slip_no
+ , g1.accnt_ymd
+ , g1.attach_file_no
+ , g1.apr_state
+ , g1.decsn_psn
+ , CASE WHEN cnt <![CDATA[ > ]]> 1 THEN TRIM(g1.unslip_no) || ' [총 ' || g1.cnt || ' 건]' ELSE TRIM(g1.unslip_no) END AS summary
+ , CASE WHEN cnt <![CDATA[ > ]]> 1 THEN TRIM(b.rmk) || ' [총 ' || g1.cnt || ' 건]' ELSE TRIM(b.rmk) END AS rmk
+ , c.slip_typ_nm
+ , g1.unslip_amt
+ , h2.nm AS wrte_psn
+ , g1.aply_yn
+FROM ( SELECT a.slip_no
+	   , a.accnt_ymd
+	   , a.attach_file_no
+	   , x1.cd_nm AS apr_state
+	   , h1.nm AS decsn_psn
+	   , MIN(f.unslip_no) AS unslip_no
+	   , SUM(f.unslip_amt) AS unslip_amt
+	   , COUNT(DISTINCT f.unslip_no) AS cnt
+	   , nvl(a.aply_yn,'Y') as aply_yn
+	   FROM fspslipdecsnh a
+	   JOIN fspslipdecsnd f ON a.slip_no = f.slip_no AND f.base_debit_cr = '1'
+	   JOIN humbasicinfo h1 ON a.decsn_psn = h1.syspayno
+	   LEFT JOIN xomxintfatab d ON a.slip_no = d.req_no
+	   LEFT JOIN xodxcommst x1 ON d.apr_state = x1.cd AND x1.cd_clsf = 'XAD'
+	   WHERE a.accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+	   AND ( '' = #{decsn_syspayno} OR a.decsn_psn = #{decsn_syspayno})
+	   AND ( '' = #{slip_no} OR a.slip_no = #{slip_no})
+	   AND ( '' = #{unslip_no} OR f.unslip_no = #{unslip_no})
+	   GROUP BY 1,2,3,4,5,9
+) g1
+JOIN fspsliph b ON g1.slip_no = b.slip_no AND g1.unslip_no = b.unslip_no
+JOIN humbasicinfo h2 ON b.wrte_psn = h2.syspayno
+JOIN fbasliptyph c ON b.slip_typ_cd = c.slip_typ_cd
+WHERE ( '' = #{syspayno} OR b.wrte_psn = #{syspayno})
+ORDER BY g1.slip_no
+</select>
+<update id="updateSlipAftEvidInfo" parameterType="kr.re.kitech.biz.fin.spm.vo.FinSlipAftEvidVo">
+UPDATE /* QueryID : kr.re.kitech.biz.fin.spm.updateSlipAftEvidInfo */ 
+	fspslipdecsnh
+SET 
+<if test="attach_file_no != null and attach_file_no != ''">
+	attach_file_no = #{attach_file_no},
+</if>
+<if test="aply_yn != null and aply_yn != ''">
+	aply_yn = #{aply_yn},
+</if>
+	updt_syspayno = #{updt_syspayno},
+	updt_daytm = SYSDATE 
+WHERE slip_no = #{slip_no}
+</update>
+<insert id="insertDelSlipAftEvid" parameterType="kr.re.kitech.biz.fin.spm.vo.FinSlipAftEvidVo">
+INSERT /* QueryID : kr.re.kitech.biz.fin.spm.insertDelSlipAftEvid */ 
+INTO evid:job_conv_del_list 
+SELECT * 
+FROM evid:job_conv 
+WHERE file_cls = 'after' 
+AND (mis_pk = #{rqst_no} OR mis_pk IN (
+    SELECT unslip_no 
+    FROM fspslipdecsnh 
+    WHERE slip_no = #{rqst_no} 
+    GROUP BY unslip_no)
+)
+</insert>
+<select id="createSlipAftEvid" parameterType="kr.re.kitech.biz.fin.spm.vo.FinSlipAftEvidVo" resultType="kr.re.kitech.biz.fin.spm.vo.FinSlipAftEvidVo">
+/* QueryID : kr.re.kitech.biz.fin.spm.createSlipAftEvid */
+{call evid:sp_act_pdf_file_all_after(#{slip_no}, #{aply_yn})}
+</select>
+</mapper>

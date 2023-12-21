@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="전자결재 제약 관리" meta_programId="appvConstraintMng" meta_date="2023.05.16.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_appvConst" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="action_cd" name="결재행위구분" dataType="text"></w2:column>
+        				<w2:column id="query" name="쿼리" dataType="text"></w2:column>
+        				<w2:column id="message" name="메세지" dataType="text"></w2:column>
+        				<w2:column id="is_use" name="사용유무" dataType="text"></w2:column>
+        				<w2:column id="rmk" name="비고" dataType="text"></w2:column>
+        				<w2:column id="alias" name="문서번호" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataMap baseNode="map" id="dma_appvConst">
+        			<w2:keyInfo>
+        				<w2:key id="action_cd" name="결재행위구분" dataType="text"></w2:key>
+        				<w2:key id="query" name="쿼리" dataType="text"></w2:key>
+        				<w2:key id="message" name="메세지" dataType="text"></w2:key>
+        				<w2:key id="is_use" name="사용유무" dataType="text"></w2:key>
+        				<w2:key id="rmk" name="비고" dataType="text"></w2:key>
+        				<w2:key id="alias" name="문서번호" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataMap baseNode="map" id="dma_docu">
+        			<w2:keyInfo>
+        				<w2:key id="alias" name="문서번호" dataType="text"></w2:key>
+        				<w2:key id="xslurl" name="결재문서" dataType="text"></w2:key>
+        				<w2:key id="xslurl_ready" name="결재문서_준비" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectAppvConstList"
+				target='data:json,[{"id":"dlt_appvConst","key":"appvConstraintVoList"},{"id":"dma_docu","key":"betaTesterVo"}]' action="SvcCOMCONSVCR03.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="" ref="data:json,dma_docu">
+			</xf:submission>
+        	<xf:submission id="sbm_saveAppvConstList"
+				target='' action="SvcCOMCONSVCM02.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="" ref='data:json,{"action":"modified","id":"dlt_appvConst","key":"appvConstraintVoList"}'>
+			</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 결재제약
+ 	 * 변경 이력 : 2023-05-16	홍성민	최초 작성
+	 * TODO		: 현재 LDAP 속성에 alias이 존재하지 않음. 추가해야됨
+ 	 ****************************************************/
+	/**
+	 * 페이지 로딩 이벤트
+	 */  
+	scwin.onpageload = async function() {
+		var codeOptions = [ { code : "APC", compID :"sbx_action_cd,grd_appvConst:action_cd" } //useEx이 'N'인 항목은 재선택 불가
+		];
+		
+		await com.setCmnCd(codeOptions);
+		
+		let alias = $p.parent().dma_docuInfo.get("alias");
+		dma_docu.set("alias", alias);
+
+		if (com.isNotEmpty(alias)) {
+			scwin.searchAppvConst();
+		} 
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	scwin.searchAppvConst = async function() {
+		let retJSON = await com.execute(sbm_selectAppvConstList);
+	};
+
+	scwin.btn_apply_onclick = function(e) {
+
+	};
+
+
+	scwin.grd_appvConst_oncellclick = async function(row,col,colId) {
+		if (com.isModified(dma_appvConst) && !(await com.confirm("message.xom.wq.018"))) 
+			return false;
+		
+		let rowJSON = dlt_appvConst.getRowJSON(row);
+
+		dma_appvConst.setJSON(rowJSON);
+		dma_appvConst.initRowStatus();
+	};
+
+	scwin.btn_saveAll_onclick = async function() {
+		if (await com.confirm("message.xom.wq.017")) {
+			let ret = await com.execute(sbm_saveAppvConstList);
+			
+			if (ret.responseJSON.elHeader.resSuc) {
+				await com.alert("message.xom.wq.023");
+				scwin.searchAppvConst();
+			}
+
+		}
+
+	};
+
+	scwin.btn_saveQuery_onclick = async function(e) {
+		if (com.isModified(dma_appvConst)) {
+			let updatedIndex = dlt_appvConst.getMatchedIndex("action_cd", dma_appvConst.get("action_cd"))[0];
+			dlt_appvConst.setRowJSON(updatedIndex, dma_appvConst.getJSON(), true);
+			dma_appvConst.initRowStatus();
+		}
+	};
+
+	scwin.btn_redoAll_onclick = function(e) {
+		com.undoRow(grd_appvConst);
+	};
+
+	scwin.btn_redo_onclick = function(e) {
+		com.undoAll(grd_appvConst);
+	};
+
+	scwin.btn_swapUrl_onclick = function(e) {
+		let swapTemp = dma_docu.get("xslurl");
+		dma_docu.set("xslurl", dma_docu.get("xslurl_ready"))
+		dma_docu.set("xslurl_ready", swapTemp)
+	};
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    		rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    		rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="true" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    		dataList="data:dlt_appvConst" evenRowBackgroundColor="#f7faff" style="height: 85px;margin-bottom:10px;" autoFit="allColumn" id="grd_appvConst"
+    		visibleRowNum="20" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" fixedRow="0" filterFocusMode="outfocus"
+    		sortEvent="onclick" sortable="true" ev:oncellclick="scwin.grd_appvConst_oncellclick">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column displayMode="label" id="column28" inputType="text" style="height:20px;" value="결재구분" width="70"></w2:column>
+    				<w2:column displayMode="label" id="column27" inputType="text" style="height:20px;" value="쿼리내용" width="70"></w2:column>
+    				<w2:column displayMode="label" id="column24" inputType="text" style="height:20px;" value="메시지" width="70"></w2:column>
+    				<w2:column displayMode="label" id="column23" inputType="text" style="height:20px;" value="사용유무" width="70"></w2:column>
+    				<w2:column displayMode="label" id="column25" inputType="text" style="height:20px;" value="비고" width="70"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column id="action_cd" inputType="select" style="" value="" width="70" readOnly="true"></w2:column>
+    				<w2:column id="query" inputType="text" style="" value="" width="70" readOnly="true"></w2:column>
+    				<w2:column id="message" inputType="text" style="" value="" width="70" dateValidSet="true" readOnly="true"></w2:column>
+    				<w2:column id="is_use" inputType="select" style="" value="" width="70" readOnly="true" allOption="" chooseOption=""
+    					ref="">
+    					<w2:choices>
+    						<w2:item>
+    							<w2:label><![CDATA[사용]]></w2:label>
+    							<w2:value><![CDATA[true]]></w2:value>
+    						</w2:item>
+    						<w2:item>
+    							<w2:label><![CDATA[미사용]]></w2:label>
+    							<w2:value><![CDATA[false]]></w2:value>
+    						</w2:item>
+    					</w2:choices>
+    				</w2:column>
+    				<w2:column id="rmk" inputType="text" style="" value="" width="70" readOnly="true"></w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group style="" id="" class="btnGroup">
+				<xf:group style="" id="" class="le"></xf:group>
+				<xf:group id="" class="ri">
+				<xf:trigger class="btn pro" ev:onclick="scwin.btn_redo_onclick" id="btn_redo" style="" type="button">
+						<xf:label><![CDATA[취소]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn pro" ev:onclick="scwin.btn_redoAll_onclick" id="btn_redoAll" style="" type="button">
+						<xf:label><![CDATA[전체취소]]></xf:label>
+					</xf:trigger>
+					<xf:trigger style="" id="btn_saveAll" type="button" class="btn pro conf"
+						ev:onclick="scwin.btn_saveAll_onclick">
+						<xf:label><![CDATA[모두 저장]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+    	</xf:group>
+    	<xf:group id="grp_exceptInfo" class="mt20" style="margin-top:40px !important;">
+			<xf:group class="tbbox" id="" style="">
+				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+					<w2:attributes>
+						<w2:summary></w2:summary>
+					</w2:attributes>
+					<xf:group tagname="caption" text="예외 상세정보"></xf:group>
+					<xf:group tagname="colgroup">
+						<xf:group style="width:140px;" tagname="col"></xf:group>
+						<xf:group style="" tagname="col"></xf:group>
+						<xf:group style="width:140px;" tagname="col"></xf:group>
+						<xf:group style="" tagname="col"></xf:group>
+						<xf:group style="width:140px;" tagname="col"></xf:group>
+						<xf:group style="" tagname="col"></xf:group>
+					</xf:group>
+					<xf:group tagname="tr">
+						<xf:group class="w2tb_th" style="" tagname="th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+							<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+							<w2:textbox id="" label="결재구분" style="" tagname="span"></w2:textbox>
+						</xf:group>
+						<xf:group class="w2tb_td" style="" tagname="td" id="">
+							<w2:attributes></w2:attributes>
+							<xf:select1 allOption="" appearance="minimal" chooseOption="" chooseOptionLabel="- 선택 -" class="sel full"
+								direction="auto" disabledClass="w2selectbox_disabled" id="sbx_action_cd" ref="data:dma_appvConst.action_cd" style="" submenuSize="auto" title="예외구분">
+								<xf:choices></xf:choices>
+							</xf:select1>
+						</xf:group>
+						<xf:group class="w2tb_th" style="" tagname="th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+							<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+							<w2:textbox id="" label="화면 alias" style="" tagname="span"></w2:textbox>
+						</xf:group>
+						<xf:group class="w2tb_td" style="" tagname="td">
+							<w2:attributes></w2:attributes>
+							<xf:group class="" id="group3" style="width: 30%;display: inline-block;margin-right:5px;">
+								<xf:input adjustMaxLength="false" class="inp full" id="inp_sch"
+									style="" title="화면ID" ref="data:dma_appvConst.alias" ev:onchange="" disabled="true">
+								</xf:input>
+							</xf:group>
+						</xf:group>
+						<xf:group class="w2tb_th" tagname="th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+							<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+							<w2:textbox id="" label="사용유무" style="" tagname="span"></w2:textbox>
+						</xf:group>
+						<xf:group class="w2tb_td" tagname="td">
+							<w2:attributes></w2:attributes>
+
+							<xf:select1 appearance="full" class="radioGroup req" cols="" id="rb_out_work_clsf" ref="data:dma_appvConst.is_use"
+								renderType="radiogroup" rows="1" style="" title="재택근무장소 구분">
+								<xf:choices>
+									<xf:item>
+										<xf:label><![CDATA[사용]]></xf:label>
+										<xf:value><![CDATA[true]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[미사용]]></xf:label>
+										<xf:value><![CDATA[false]]></xf:value>
+									</xf:item>
+								</xf:choices>
+							</xf:select1>
+						</xf:group>
+					</xf:group>
+					<xf:group style="" tagname="tr">
+						<xf:group class="w2tb_th" tagname="th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+							<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+							<w2:textbox id="" label="쿼리" style="" tagname="span"></w2:textbox>
+						</xf:group>
+						<xf:group class="w2tb_td" tagname="td">
+							<w2:attributes>
+								<w2:colspan>5</w2:colspan>
+								<w2:rowspan>1</w2:rowspan>
+							</w2:attributes>
+							<xf:textarea class="req" id="txa_query" ref="data:dma_appvConst.query"
+								style="height: 80px;" title="쿼리">
+							</xf:textarea>
+						</xf:group>
+					</xf:group>
+					<xf:group style="" tagname="tr">
+						<xf:group class="w2tb_th" tagname="th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+							<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+							<w2:textbox id="" label="메시지" style="" tagname="span"></w2:textbox>
+						</xf:group>
+						<xf:group class="w2tb_td" tagname="td">
+							<w2:attributes>
+								<w2:colspan>5</w2:colspan>
+								<w2:rowspan>1</w2:rowspan>
+							</w2:attributes>
+							<xf:input adjustMaxLength="false" class="inp full req"
+								id="inp_message" ref="data:dma_appvConst.message" style="" title="비고">
+							</xf:input>
+						</xf:group>
+					</xf:group>
+					<xf:group style="" tagname="tr">
+						<xf:group class="w2tb_th" tagname="th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+							<w2:textbox id="" label="비고" style="" tagname="span"></w2:textbox>
+						</xf:group>
+						<xf:group class="w2tb_td" tagname="td">
+							<w2:attributes>
+								<w2:colspan>5</w2:colspan>
+								<w2:rowspan>1</w2:rowspan>
+							</w2:attributes>
+							<xf:input adjustMaxLength="false" class="inp full"
+								id="inp_rmk" ref="data:dma_appvConst.rmk" style="" title="비고">
+							</xf:input>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group style="" id="" class="btnGroup">
+				<xf:group style="" id="" class="le"></xf:group>
+				<xf:group id="" class="ri">
+					<xf:trigger class="btn pro conf" ev:onclick="scwin.btn_saveQuery_onclick" id="btn_saveQuery" style="" type="button">
+						<xf:label><![CDATA[제약 적용]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+		</xf:group>
+    </body>
+</html>

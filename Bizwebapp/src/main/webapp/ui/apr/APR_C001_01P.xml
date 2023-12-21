@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="개인 결재선">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="apl_id" name="결재선번호"></w2:key>
+            			<w2:key dataType="text" id="apl_name" name="결재선명"></w2:key>
+            			<w2:key dataType="text" id="apl_desc" name="결재선 설명"></w2:key>
+            			<w2:key dataType="text" id="apl_endpoint" name="개인결재자"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_userLine" saveRemovedData="true" ev:onrowpositionchange="">
+					<w2:columnInfo>
+						<w2:column id="syspayno" name="시스템개인번호" dataType="text"></w2:column>
+						<w2:column id="typenm" name="타입명" dataType="text"></w2:column>
+						<w2:column id="nm" name="성명" dataType="text"></w2:column>
+						<w2:column id="nm_eng" name="성명영문" dataType="text"></w2:column>
+						<w2:column id="nm_chchar" name="성명한차" dataType="text"></w2:column>
+						<w2:column id="occugrp_cd" name="직군코드" dataType="text"></w2:column>
+						<w2:column id="occutyp_cd" name="직종코드" dataType="text"></w2:column>
+						<w2:column id="posi_cd" name="직급코드" dataType="text"></w2:column>
+						<w2:column id="duty_cd" name="직책코드" dataType="text"></w2:column>
+						<w2:column id="dept_cd" name="부서코드" dataType="text"></w2:column>
+						<w2:column id="apld_id" name="결재상세번호" dataType="text"></w2:column>
+						<w2:column id="apld_aplid" name="결재선번호" dataType="text"></w2:column>
+						<w2:column id="apld_endpoint" name="결제아이디" dataType="text"></w2:column>
+						<w2:column id="apld_apltype" name="타입" dataType="text"></w2:column>
+						<w2:column id="apld_order" name="순번" dataType="text"></w2:column>
+						<w2:column id="empname" name="이름" dataType="text"></w2:column>
+						<w2:column id="jikname" name="직책" dataType="text"></w2:column>
+						<w2:column id="partcode" name="부서코드" dataType="text"></w2:column>
+						<w2:column id="partname" name="부서명" dataType="text"></w2:column>
+						<w2:column id="duty_nm" name="직급" dataType="text"></w2:column>
+					</w2:columnInfo>
+				</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+        	<!-- 저장 -->
+        	<xf:submission id="sbm_saveData" ref='data:json,[{"id":"dlt_userLine", "key":"aprLineDescList"},{"id":"dma_search", "key":"aprLineVo"}]' target='' 
+        	    action="SvcAPRCOMLINC01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 수정 -->
+        	<xf:submission id="sbm_updateData" ref='data:json,[{"id":"dma_search", "key":"aprLineVo"},{"id":"dlt_userLine", "key":"aprLineDescList"}]' target='' 
+        	    action="SvcAPRCOMLINU01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+   	/**************************************************************************************
+ 	 * 화면 설명 : 개인별 결재선편집 등록 수정 팝업
+ 	 * 변경 이력 : 2022-07-29	박병목	최초 작성
+ 	 * 설  명    : 결재선편집시 개인별로 저장된 결재라인을 관리한다.
+ 	 *************************************************************************************/
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		var param = com.getParameter("data");
+		dlt_userLine.setJSON(com.getParameter("aprLineData"), false);
+		param.forEach( function(data){
+								data.apl_endpoint = com.getParameter("apl_endpoint");
+								dma_search.setJSON(data);
+							}
+		);
+	};	
+
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup({});
+	};
+
+	/**
+	 * 저장버튼 클릭 이벤트
+	 */
+	scwin.btn_save_onclick = function(e) {
+		if (apl_desc.getValue() == "" && apl_name.getValue() == "") {
+			alert("결재선과 결재선명을 입력바랍니다.");
+			return true;
+		}
+		
+		com.confirm("저장 하시겠습니까?", function(ret){
+			if(ret){
+				dma_search.set("apl_endpoint", com.getParameter("apl_endpoint"));
+				com.execute(sbm_saveData, {
+					successCallback : function(e) { // 성공 콜백
+						com.alert("정상적으로 처리되었습니다.", function(){
+							com.closePopup({});
+						});
+					}
+				});
+			}
+		});
+	};
+	
+	
+	scwin.btn_update_onclick = function(e) {		
+		com.confirm("수정 하시겠습니까?", function(ret){
+			if(ret){
+				com.execute(sbm_updateData, {
+					successCallback : function(e) { // 성공 콜백
+						com.alert("정상적으로 처리되었습니다.", function(){
+							com.closePopup({});
+						});
+					}
+				});
+			}
+		})
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="개인 결재선"></xf:group>
+    			<xf:group tagname="colgroup">
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="결재선명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>2</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp" id="apl_name" style="width:160px;" title="등록번호" ref="data:dma_search.apl_name">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="결재선 설명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="apl_desc" style="" title="등록번호" ref="data:dma_search.apl_desc"></xf:input>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn  pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[취소]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_update" type="button" class=" btn pro" ev:onclick="scwin.btn_update_onclick" >
+    					<xf:label><![CDATA[덮어쓰기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_save" type="button" class=" btn pro conf" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[새로저장]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="3책5공 제외사업 기준">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="cd_clsf" name="코드구분" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_threefive" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="threefive_clsf" name="threefive_clsf" dataType="text"></w2:column>
+        				<w2:column id="threefive_nm" name="threefive_nm" dataType="text"></w2:column>
+        				<w2:column id="threefive_detail_nm" name="threefive_detail_nm" dataType="text"></w2:column>
+        				<w2:column id="use_ex" name="use_ex" dataType="text"></w2:column>
+        				<w2:column id="cd_clsf" name="cd_clsf" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_selectTrheeFive" ref="data:json,dma_search"
+        		target='' action="SvcRESAPPAPLR09.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+	 * 화면 설명 : 사업조정 제외기준
+	 * 변경 이력 : 2022-11-25	홍성민	최초 작성
+	 ****************************************************/
+	/*
+	 * 페이지 열기
+	 */
+	scwin.onpageload = function() {
+		var params = com.getParameter();
+		var flag = params.flag;
+		var clsfFlag = "consider_clsf";
+		console.log(params[clsfFlag]);
+		
+
+		if (flag == "thr") {
+			scwin.textbox_control("show");
+			dma_search.set("cd_clsf", "RIE"); // 3책5공 제외사업기준
+			clsfFlag = "three_five_clsf"
+			
+			if(params.three_five_clsf == "RIE005"){
+				grd_threefive.setReadOnly("grid", true);
+				btn_confirm.hide();
+			}
+		} else {
+			scwin.textbox_control("hide"); // 사업조정 제외기준
+			dma_search.set("cd_clsf", "RIH");
+		}
+
+		com.execute(sbm_selectTrheeFive, {
+			successCallback : function(e) {
+				dlt_threefive.setJSON(e.responseJSON.resAppBsnsThreeFiveVoList);
+				
+				if (dma_search.get("cd_clsf") == "RIH") {
+					grd_threefive.setColumnVisible("threefive_detail_nm", false);
+				}
+
+				for (var i = 0; i < dlt_threefive.getRowCount(); i++) {
+					if (dlt_threefive.getCellData(i, "threefive_clsf").trim() == params[clsfFlag]) {
+						dlt_threefive.setCellData(i, "use_ex", "Y"); //계정번호
+					}
+				}
+			}
+		});
+	};
+
+	scwin.textbox_control = function(method) {
+		var aug = null;
+		if (method == "show")
+			aug = "";
+
+		(tbxArea[method])(aug);
+		(tbx_bottom[method])(aug);
+	};
+
+	scwin.onpageunload = function() {
+
+	};
+
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+
+	scwin.btn_confirm_onclick = function(e) {
+		com.closePopup({
+			threefive_clsf : dlt_threefive.getMatchedJSON("use_ex", "Y")[0].threefive_clsf
+		});
+	};
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group id="tbxArea">
+				<w2:textbox class="fwb mt10" id="" label="※ 사업공고문에서 ‘3책5공’ 적용 대상과제 여부 확인 후, 해당 요건을 선택하여 주시기 바랍니다." style="color:red;" escape="false"></w2:textbox>
+	    		<w2:textbox class="fwb" id="" label="- ｢국가연구개발혁신법 시행령｣ 제64조제2항에 따라 부처(또는 전문기관)가 소관 과제의 3책5공 적용 또는 적용제외 여부를 결정함.&lt;br/&gt;- ｢국가연구개발혁신법 시행령｣ 제64조제2항에 따른 3책5공 적용제외 가능 과제에 해당하더라도" style="" escape="false"></w2:textbox>
+	    		<w2:textbox class="fwb mb10" id="" label=" &amp;nbsp; 부처(또는 전문기관)가 3책5공을 적용제외 하지 않는 경우에는 3책5공이 적용됨" style="color:red;" escape="false"></w2:textbox>    		
+    		</xf:group>
+    		<w2:gridView autoFit="lastColumn" class="grid" dataList="data:dlt_threefive" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_threefive" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="10">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="해당여부" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="구분" width="200"></w2:column>
+    					<w2:column displayMode="label" id="column4" inputType="text" style="height:28px;" value="세부기준" width="500"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" escape="false" id="use_ex" inputType="radio" readOnly="false" style="height:28px;"
+    						width="70" trueValue="Y">
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="threefive_nm" inputType="text" readOnly="true" style="height:28px;"
+    						width="200" class="le">
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="threefive_detail_nm" inputType="text" readOnly="true" style="height:28px;"
+    						width="500" class="le">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<w2:textbox class="fwb mt10" id="tbx_bottom" label="* 조회 된 [세부기준] 항목 내용은 더블 클릭하여 상세 확인이 가능합니다 ." style="color:#FF8000;" escape="false"></w2:textbox>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class=" btn pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="btn_confirm" style="" type="button" ev:onclick="scwin.btn_confirm_onclick">
+    					<xf:label><![CDATA[확인]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

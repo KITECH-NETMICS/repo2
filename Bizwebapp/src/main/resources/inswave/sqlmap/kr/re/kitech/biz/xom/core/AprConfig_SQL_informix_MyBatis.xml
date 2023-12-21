@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.xom.core">
+	<!-- 환경설정 메인 조회 -->
+	<select id="selectApprvConfig" parameterType="kr.re.kitech.biz.xom.core.vo.ApprvConfigVo" resultType="kr.re.kitech.biz.xom.core.vo.ApprvConfigVo">
+		SELECT /* kr.re.kitech.biz.xom.core.selectApprvConfig */
+		       syspayno
+		     , auto_rule_Yn
+		     , dlgt_use_yn
+		     , sort_odr
+		     , row_per_page
+		     , appr_recv_yn
+		     , sms_recv_yn
+		     , dlgt_alrm_yn
+		     , 'U' AS cud_type
+		  FROM apprv_config
+		 WHERE syspayno = #{syspayno}
+	</select>
+	
+	<!-- 환경설정 대결 리스트 조회 -->
+	<select id="selectApprvDelegatorList" parameterType="kr.re.kitech.biz.xom.core.vo.ApprvConfigVo" resultType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorVo">
+		SELECT /* kr.re.kitech.biz.xom.core.selectApprvDelegatorList */
+		       CASE WHEN (TO_CHAR(SYSDATE, '%Y%m%d') >= a.start_ymd  AND TO_CHAR(SYSDATE, '%Y%m%d') <![CDATA[<= ]]> DECODE(NVL(a.cls_ymd,''),'', '29991231', a.cls_ymd)) OR a.ischkdate = '0' THEN 'Y' ELSE 'N' END AS state
+		      , a.dlgt_sn
+		      , a.syspayno
+		      , c.nm AS main_nm
+		      , d.nm AS sub_nm
+		      , a.start_ymd
+		      , a.cls_ymd
+		      , GROUP_CONCAT(e.appname) AS appnames
+		   FROM appv_delegator a
+		   LEFT JOIN appv_delegator_detail b ON a.dlgt_sn = b.dlgt_sn
+		   LEFT JOIN humbasicinfo c ON a.main_syspayno = c.syspayno
+		   LEFT JOIN humbasicinfo d ON a.sub_syspayno = d.syspayno
+		   LEFT JOIN appv_applicationmap e ON b.form_alias = e.procdefalias
+		 WHERE a.syspayno = #{syspayno}
+		  GROUP BY 1,2,3,4,5,6,7
+	</select>
+	
+	<!-- 환경설정 저장 -->
+	<insert id="insertApprvConfig" parameterType="kr.re.kitech.biz.xom.core.vo.ApprvConfigVo">
+		INSERT /* kr.re.kitech.biz.xom.core.insertApprvConfig */
+		  INTO apprv_config (  
+		            syspayno
+		          , auto_rule_yn
+		          , dlgt_use_yn
+		          , sort_odr
+		          , row_per_page
+		          , appr_recv_yn
+		          , sms_recv_yn
+		          , dlgt_alrm_yn
+		          , regst_syspayno
+		          , regst_daytm
+		  )VALUES (
+		           #{syspayno}
+		         , #{auto_rule_yn}
+		         , #{dlgt_use_yn}
+		         , #{sort_odr}
+		         , #{row_per_page}
+		         , #{appr_recv_yn}
+		         , #{sms_recv_yn}
+		         , #{dlgt_alrm_yn}
+		         , #{regst_syspayno}
+		         , #{regst_daytm}
+		  )
+	</insert>
+	
+	<!-- 환경설정 수정 -->
+	<update id="updateApprvConfig" parameterType="kr.re.kitech.biz.xom.core.vo.ApprvConfigVo">
+		UPDATE /* kr.re.kitech.biz.xom.core.updateApprvConfig */
+		     apprv_config
+		   SET auto_rule_yn = #{auto_rule_yn}
+		     , dlgt_use_yn = #{dlgt_use_yn}
+		     , sort_odr = #{sort_odr}
+		     , row_per_page = #{row_per_page}
+		     , appr_recv_yn = #{appr_recv_yn}
+		     , sms_recv_yn = #{sms_recv_yn}
+		     , dlgt_alrm_yn = #{dlgt_alrm_yn}
+		     , updt_syspayno = #{updt_syspayno}
+		     , updt_daytm = SYSDATE
+		 WHERE syspayno = #{syspayno}
+	</update>
+	
+	<!-- 양식 트리 조회 -->
+	<select id="selectAppvMapList" parameterType="kr.re.kitech.biz.xom.core.vo.ApprvConfigVo" resultType="kr.re.kitech.biz.xom.core.vo.ApprMapVo">
+		select /* kr.re.kitech.biz.xom.core.selectAppvMapList */ 
+		   1 depth, x.cd, '' AS div, '' as mdiv, div as appname , div AS procdefalias
+		from appv_applicationmap a
+		JOIN xodxcommst x on x.cd_clsf = 'APR' and a.div = x.cd_nm
+		where length(a.procdefalias) = 3
+		GROUP BY x.cd, a.div
+		UNION ALL
+		select 2 depth, x.cd, div, mdiv, mdiv as appname, mdiv AS procdefalias
+		from appv_applicationmap a
+		JOIN xodxcommst x on x.cd_clsf = 'APR' and a.div = x.cd_nm
+		where length(a.procdefalias) = 3
+		GROUP BY x.cd, a.div, a.mdiv
+		UNION ALL
+		select 3 depth, x.cd, a.div, a.mdiv, a.appname, a.procdefalias
+		from appv_applicationmap a
+		JOIN xodxcommst x on x.cd_clsf = 'APR' and a.div = x.cd_nm
+		where length(a.procdefalias) = 3
+		order by 2,3,4,1
+	</select>
+	
+	
+	<!-- 대결설정 조회 -->
+	<select id="selectAppvDelegator" parameterType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorVo" resultType="java.lang.String">
+		SELECT /* kr.re.kitech.biz.xom.core.selectAppvDelegator */
+		       a.dlgt_sn
+		     , a.syspayno
+		     , TRIM(a.start_ymd) AS start_ymd
+		     , a.cls_ymd
+		     , TRIM(a.ischkdate) AS ischkdate
+		     , a.main_syspayno
+		     , c.empno AS main_empno
+		     , c.nm AS main_nm
+		     , a.sub_syspayno
+		     , d.empno AS sub_empno
+		     , d.nm AS sub_nm
+		     , 'U' AS cud_type
+		  FROM appv_delegator a
+		  LEFT JOIN humbasicinfo c ON a.main_syspayno = c.syspayno
+		  LEFT JOIN humbasicinfo d ON a.sub_syspayno = d.syspayno
+		 WHERE a.syspayno = #{syspayno}
+	</select>	
+	
+	<!-- 대결설정 단건 조회 -->
+	<select id="getAppvDelegator" parameterType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorVo" resultType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorVo">
+		SELECT /* kr.re.kitech.biz.xom.core.getAppvDelegator */
+		       FIRST 1 a.dlgt_sn
+		     , a.syspayno
+		     , TRIM(a.start_ymd) AS start_ymd
+		     , a.cls_ymd
+		     , TRIM(a.ischkdate) AS ischkdate
+		     , a.main_syspayno
+		     , c.empno AS main_empno
+		     , c.nm AS main_nm
+		     , a.sub_syspayno
+		     , d.empno AS sub_empno
+		     , d.nm AS sub_nm
+		     , 'U' AS cud_type
+		  FROM appv_delegator a
+		  LEFT JOIN humbasicinfo c ON a.main_syspayno = c.syspayno
+		  LEFT JOIN humbasicinfo d ON a.sub_syspayno = d.syspayno
+		 WHERE a.syspayno = #{syspayno}
+		  <if test ='dlgt_sn != null and dlgt_sn != 0'> AND dlgt_sn = #{dlgt_sn} </if>
+		 ORDER BY DECODE(NVL(a.cls_ymd,''),'', '29991231', a.cls_ymd) desc
+	</select>
+	
+	<!-- 대결상세 조회 -->
+	<select id="selectAppvDelegatorDetailList" parameterType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorVo" resultType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorDetailVo">
+		SELECT /* kr.re.kitech.biz.xom.core.selectAppvDelegatorDetailList */
+		      a.dlgt_sn
+		     , a.seq
+		     , a.syspayno
+		     , a.form_alias
+		     , b.appname
+		  FROM appv_delegator_detail a
+		  JOIN appv_applicationmap b On a.form_alias = b.procdefalias
+		 WHERE a.dlgt_sn = #{dlgt_sn}
+	</select>
+	
+	<!-- 대결 설정 등록 -->
+	<insert id="insertAppvDelegator" parameterType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorVo">
+		INSERT /* kr.re.kitech.biz.xom.core.insertAppvDelegator */
+		   INTO appv_delegator(
+		      syspayno
+		    , start_ymd
+		    , cls_ymd
+		    , ischkdate
+		  <if test ='main_syspayno != null'>, main_syspayno </if>
+		  <if test ='sub_syspayno != null'>, sub_syspayno </if>
+		    , regst_syspayno
+		    , regst_daytm
+		) VALUES (
+		      #{syspayno}
+		    , #{start_ymd}
+		    , #{cls_ymd}
+		    , #{ischkdate}
+		  <if test ='main_syspayno != null'>, #{main_syspayno} </if>
+		  <if test ='sub_syspayno != null'>, #{sub_syspayno} </if>
+		    , #{regst_syspayno}
+		    , SYSDATE
+		)
+		
+		<selectKey resultType="int" keyProperty="dlgt_sn" order ="AFTER">
+			select Max(dlgt_sn) from appv_delegator where syspayno = #{syspayno}
+		</selectKey>
+	</insert>
+	
+	<!-- 대결설정 수정 -->
+	<update id="updateAppvDelegator" parameterType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorVo">
+		UPDATE /* kr.re.kitech.biz.xom.core.updateAppvDelegator */
+		       appv_delegator
+		   SET start_ymd = #{start_ymd}
+		     , ischkdate = #{ischkdate}
+		   <if test ='cls_ymd != null'>, cls_ymd = #{cls_ymd} </if>
+		   <if test ='main_syspayno != null'>, main_syspayno = #{main_syspayno} </if>
+		   <if test ='sub_syspayno != null'>, sub_syspayno = #{sub_syspayno} </if>
+		     , updt_syspayno = #{updt_syspayno}
+		     , updt_daytm = SYSDATE
+		 WHERE dlgt_sn = #{dlgt_sn}
+	</update>
+	
+	<!-- 대결설정 상세 삭제 -->
+	<delete id="deleteAppvDelegatorDetail" parameterType="int">
+		DELETE /* kr.re.kitech.biz.xom.core.deleteAppvDelegatorDetail */
+		  FROM appv_delegator_detail
+		 WHERE dlgt_sn = #{dlgt_sn}
+	</delete>
+	
+	<!-- 대결설정 상세 삭제 -->
+	<delete id="deleteAppvDelegatorDetailAll" parameterType="java.lang.String">
+		DELETE /* kr.re.kitech.biz.xom.core.deleteAppvDelegatorDetailAll */
+		  FROM appv_delegator_detail
+		 WHERE syspayno = #{syspayno}
+	</delete>
+	
+	<!-- 대결설정 상세 등록 -->
+	<insert id="insertAppvDelegatorDetail" parameterType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorDetailVo">
+	INSERT /* kr.re.kitech.biz.xom.core.insertAppvDelegatorDetail */
+	  INTO appv_delegator_detail(
+	        dlgt_sn
+	      , seq
+	      , syspayno
+	      , form_alias
+	      , regst_syspayno
+	      , regst_daytm
+	 )VALUES (
+	        #{dlgt_sn}
+	      , #{seq}
+	      , #{syspayno}
+	      , #{form_alias}
+	      , #{regst_syspayno}
+	      , SYSDATE
+	 )
+	</insert>
+
+	<!-- 대결설정 삭제 -->
+	<delete id="deleteAppvDelegator" parameterType="int">
+		DELETE /* kr.re.kitech.biz.xom.core.deleteAppvDelegator */
+		  FROM appv_delegator
+		 WHERE dlgt_sn = #{dlgt_sn}
+	</delete>
+	
+	<!-- 대결설정 특정 사용자 전체 목록 삭제 -->
+	<delete id="deleteAppvDelegatorAll" parameterType="java.lang.String">
+		DELETE /* kr.re.kitech.biz.xom.core.deleteAppvDelegatorAll */
+		  FROM appv_delegator
+		 WHERE syspayno = #{syspayno}
+	</delete>
+	
+	<!-- 신규저장시 이전 대결설정 유효개수 -->
+	<select id="selectAppvDelegatorCnt" parameterType="java.lang.String" resultType="int">
+	SELECT /* kr.re.kitech.biz.xom.core.selectAppvDelegatorCnt */
+	      COUNT(*) AS cnt
+	  FROM appv_delegator
+	 WHERE syspayno = #{syspayno}
+	   AND TO_CHAR(SYSDATE, '%Y%m%d') BETWEEN start_ymd AND DECODE(NVL(cls_ymd,''),'', '29991231', cls_ymd)
+	</select>
+
+	
+	<!--  현재시각 기준 특정인의 특정양식에 해당하는 대결자를 조회한다. -->
+	<select id="getAuthorApprByProxy" parameterType="kr.re.kitech.biz.xom.core.vo.AppvDelegatorDetailVo" resultType="java.lang.String">
+		<![CDATA[
+	   		SELECT /* kr.re.kitech.biz.xom.core.getAuthorApprByProxy */
+	               FIRST 1 DECODE( state, 'Y', (SELECT empcode FROM bpm:emptable WHERE empsn = (CASE WHEN form_alias LIKE '%'||'C55'||'%' THEN sub_no ELSE main_no END)), '') AS uid
+	           --, DECODE( state, 'Y', (SELECT empname FROM bpm:emptable WHERE empsn = (CASE WHEN form_alias LIKE '%'||'C81'||'%' THEN sub_no ELSE main_no END)), '') AS authorName
+	         FROM (
+	          SELECT
+	                 CASE WHEN a.ischkdate = 0 OR (a.ischkdate = 1 AND TO_CHAR(SYSDATE, '%Y%m%d') >= a.start_ymd  AND TO_CHAR(SYSDATE, '%Y%m%d') <= DECODE(NVL(a.cls_ymd,''),'', '29991231', a.cls_ymd)) THEN 'Y' ELSE 'N' END AS state
+	               , a.dlgt_sn
+	               , a.syspayno
+	               , c.nm AS main_nm
+	               , d.nm AS sub_nm
+	               , a.start_ymd
+	               , a.cls_ymd
+	               , a.main_syspayno AS main_no
+	               , a.sub_syspayno  AS sub_no
+	               , GROUP_CONCAT(b.form_alias) AS form_alias
+	            FROM apprv_config AS x
+	            JOIN appv_delegator AS a ON a.syspayno = x.syspayno
+	           LEFT  JOIN appv_delegator_detail AS b ON a.dlgt_sn = b.dlgt_sn
+	            LEFT JOIN humbasicinfo AS c ON a.main_syspayno = c.syspayno
+	            LEFT JOIN humbasicinfo AS d ON a.sub_syspayno = d.syspayno
+	            LEFT JOIN appv_applicationmap AS e ON b.form_alias = e.procdefalias
+	          WHERE x.dlgt_use_yn = 'Y'
+	           AND a.syspayno =  #{syspayno}
+	           GROUP BY 1,2,3,4,5,6,7,8,9   
+	           ORDER BY a.dlgt_sn DESC
+	         )
+		]]> 
+	</select>
+</mapper>

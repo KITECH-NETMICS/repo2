@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.api.bpm">
+<!-- 불용신청된 자산 조회 -->
+<select id="selectAssUnUseAsetNo" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.api.bpm.selectAssUnUseAsetNo */
+       aset_no		/* 자산번호 */
+FROM assunuse
+WHERE req_no = #{reqNo}
+</select>
+
+<!-- 자산 인수인계 결재 완료 후 설치위치 조회 -->
+<select id="selectAssReceiptTransInfo" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ass.com.vo.AssMastrBodyVO" >
+SELECT /* kr.re.kitech.biz.api.bpm.selectAssReceiptTransInfo */
+       aset_no							/* 자산번호 */
+       , posi_region					/* 자산지역 */
+       , posi_build						/* 건물 */
+       , posi_floor						/* 층 */
+       , posi_detls						/* 상세위치 */
+       , receipt_syspayno AS syspayno	/* 인수자시스템번호 */
+FROM assreceipttrans
+WHERE req_no = #{reqNo}
+</select>
+
+<!-- 자산 이동신청 결재 완료 후 설치위치 조회 -->
+<select id="selectAssMoveInfo" parameterType="java.lang.String" resultType="kr.re.kitech.biz.ass.com.vo.AssMastrBodyVO" >
+SELECT  /* kr.re.kitech.biz.api.bpm.selectAssMoveInfo */
+        t1.aset_no								/* 자산번호 */
+        , t1.move_clsf							/* 자산이동구분 */
+        , t1.tout_posi_region AS posi_region	/* 자산지역 */
+        , t1.tout_posi_build AS posi_build		/* 건물 */
+        , t1.tout_posi_floor AS posi_floor		/* 층 */
+        , t1.tout_posi_detls AS posi_detls		/* 상세위치 */
+FROM assmove t1
+JOIN assmastrh t2 ON t1.aset_no = t2.aset_no
+JOIN assmastrb t3 ON t1.aset_no= t3.aset_no
+WHERE t1.req_no = #{reqNo}
+</select>
+</mapper>

@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/css/sample.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="엑셀 다운로드/업로드 (그리드)">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+					<w2:keyInfo>
+						<w2:key id="fromDate" name="입사기간(시작)" dataType="text"></w2:key>
+						<w2:key id="toDate" name="입사기간(종료)" dataType="text"></w2:key>
+						<w2:key id="srchWord" name="사원명" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList id="dlt_sample" baseNode="list" saveRemovedData="true" repeatNode="map" ev:onrowpositionchange=""
+					ev:onbeforerowpositionchange="">
+					<w2:columnInfo>
+						<w2:column id="empno" name="사번" dataType="text" ignoreStatus="true"></w2:column>
+						<w2:column id='ename' name="성명" dataType="text"></w2:column>
+						<w2:column id="hiredate" name="입사일" dataType="text"></w2:column>
+						<w2:column id='sal' name="급여" dataType="number"></w2:column>
+						<w2:column id="deptno" name="부서" dataType="text"></w2:column>
+						<w2:column id="account" name="설명" dataType="text"></w2:column>
+						<w2:column id="mgr" name="상관사번" dataType="text"></w2:column>
+						<w2:column id="mgrname" name="상관이름" dataType="text"></w2:column>
+					</w2:columnInfo>
+				</w2:dataList>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_selectSampleList" ref='data:json,dma_search'
+				target='data:json,{"id":"dlt_sample","key":"empVoList"}' action="DmoEmpList.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 엑셀 다운/업로드
+ 	 * 변경 이력 : 2022-01-01	문철주	최초작성
+ 	 ****************************************************/
+
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		var codeOptions = [ { code : "TEST_DEPT", compID :"grd_sample:deptno" } ]; 
+		com.setCmnCd(codeOptions);
+	};
+
+	/**
+	 * 조회버튼 클릭
+	 */
+	scwin.btn_search_onclick = function() {
+		scwin.search();
+	};
+
+	/**
+	 * 조회
+	 */
+	scwin.search = function() {
+		// 목록 조회
+		com.execute(sbm_selectSampleList, {
+			successCallback : function(e) {
+				tbx_cnt.setValue(dlt_sample.getTotalRow());
+			}
+		});
+	};
+
+	/**
+	 * 엑셀 다운로드 버튼 클릭
+	 */
+	scwin.btn_down_onclick = function(e) {
+		var option = {
+			    fileName : "data.xlsx"
+//			  , hiddenVisible : true
+		};
+		com.downloadGridExcel(grd_sample, option);
+	};
+	
+	/**
+	 * 엑셀 다운로드(DB) 버튼 클릭
+	 */
+	scwin.btn_downDb_onclick = function(e) {
+		// DB 다운로드
+		var option = {
+			  fileName : "data_db.xlsx"
+//			, hiddenVisible : true
+			, providerInfo : {
+				  service : "empServiceImpl"
+				, method : "selectListEmp"
+				, vo : "zam.emp.vo.EmpVo"
+				, paramMap : dma_search
+			}
+		};
+		com.downloadGridExcel(grd_sample, option);
+	};
+	
+	/**
+	 * 엑셀 업로드
+	 */
+	scwin.btn_up_onclick = function(e) {
+		com.uploadGridExcel(grd_sample);
+	};
+
+	/**
+	 * 엑셀 업로드 콜백
+	 */
+	scwin.grd_sample_onfilereadend = function(value) {
+		tbx_cnt.setValue(dlt_sample.getTotalRow() +" Rows");
+	};
+
+	/**
+	 * 헤더만 다운로드
+	 */
+	scwin.btn_head_onclick = function(e) {
+		com.downloadGridHeader(grd_sample, { fileName : "header.xlsx" });
+	};
+	
+	/**
+	 * 양식파일 다운로드
+	 */
+	scwin.btn_form_onclick = function() {
+		com.downloadExcelForm("/ui/zam/sample/excelGridHeader.xlsx");
+	};
+	]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe><xf:group class="pageWrap" id="" style="">
+			
+			<xf:group class="shbox" id="grp_search" style="">
+				<xf:group class="shbox_inner" id="" style="">
+					<xf:group adaptive="layout" adaptiveThreshold="768" class="w2tb tb " id="" style="" tagname="table">
+						<w2:attributes>
+							<w2:summary></w2:summary>
+						</w2:attributes>
+						<xf:group tagname="colgroup">
+							<xf:group style="width:100px;" tagname="col"></xf:group>
+							<xf:group tagname="col"></xf:group>
+							<xf:group style="width:100px;" tagname="col"></xf:group>
+							<xf:group tagname="col"></xf:group>
+						</xf:group>
+						<xf:group class="" id="" style="" tagname="tr">
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes></w2:attributes>
+								<w2:textbox class="" id="" label="입사일" style="" tagname="label"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+								<xf:group class="ly_form fn" id="">
+									<w2:inputCalendar calendarDisplayFormat="" calendarDisplayFormatFunc=""
+										calendarValueType="yearMonthDate" class="" displayFormat="" id="ica_from" ioFormat="" keepFixedDate="" maxYear="" placeholder=""
+										ref="data:dma_search.fromDate" renderType="" showPlaceHolderOnReadOnly="" style="width:100px;" toolTip="" userData2="" wmode="">
+									</w2:inputCalendar>
+									<w2:span id="" label="~" style=""></w2:span>
+									<w2:inputCalendar calendarDisplayFormat="" calendarDisplayFormatFunc=""
+										calendarValueType="yearMonthDate" class="" displayFormat="" id="ica_to" ioFormat="" keepFixedDate="" maxYear="" placeholder=""
+										ref="data:dma_search.toDate" renderType="" showPlaceHolderOnReadOnly="" style="width:100px;" toolTip="" userData2="" wmode="">
+									</w2:inputCalendar>
+								</xf:group>
+							</xf:group>
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes></w2:attributes>
+								<w2:textbox class="" id="" label="사원명" style="" tagname="label"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" tagname="td">
+								<w2:attributes></w2:attributes>
+								<xf:input class="ipt" id="" ref="data:dma_search.srchWord" style=""></xf:input>
+							</xf:group>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+				<xf:group class="btn_shbox" id="" style="">
+					<xf:trigger class="btn_cm ic_sch" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+						<xf:label><![CDATA[조회]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			<xf:group id="" tagname="section" style="">
+				<xf:group class="dfbox" id="" style="">
+					<w2:textbox class="df_tit fl" id="" label="사원 List" style="" tagname="h3"></w2:textbox>
+					<xf:group class="fr" id="">
+						<xf:group class="txt_sys" id="" style="">
+							<w2:textbox class="font_red" id="tbx_cnt" label="0" style="" tagname=""></w2:textbox>
+							<w2:textbox class="" id="" label="건" style="" tagname=""></w2:textbox>
+						</xf:group>
+						<xf:trigger class="btn_cm" ev:onclick="scwin.btn_form_onclick" id="btn_form" style="" type="button">
+							<xf:label><![CDATA[양식 다운로드]]></xf:label>
+						</xf:trigger>
+						<xf:trigger class="btn_cm" ev:onclick="scwin.btn_head_onclick" id="btn_head" style="" type="button">
+							<xf:label><![CDATA[헤더 다운로드]]></xf:label>
+						</xf:trigger>
+						<xf:trigger style="" id="btn_up" type="button" class="btn_cm" ev:onclick="scwin.btn_up_onclick">
+							<xf:label><![CDATA[Excel Upload]]></xf:label>
+						</xf:trigger>
+						<xf:trigger class="btn_cm excel" ev:onclick="scwin.btn_downDb_onclick" id="btn_downDb" style="" type="button">
+							<xf:label><![CDATA[Excel(DB)]]></xf:label>
+						</xf:trigger>
+						<xf:trigger class="btn_cm excel" id="btn_down" style="" type="button" ev:onclick="scwin.btn_down_onclick">
+							<xf:label><![CDATA[Excel]]></xf:label>
+						</xf:trigger>
+					</xf:group>
+				</xf:group>
+				<xf:group adaptiveThreshold="" class="gvwbox fullH" id="" style="min-height : 150px;height : 300px;">
+					<w2:gridView autoFit="allColumn" checkReadOnlyOnPasteEnable="" class="wq_gvw" dataList="data:dlt_sample"
+						ev:oncellclick="scwin.grd_sample_oncellclick" id="grd_sample" readOnly="true" rowNumHeaderValue="" rowNumVisible="true"
+						scrollByColumn="" scrollByColumnAdaptive="" style="height: 100%;" visibleRowNum="">
+						<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+						<w2:header id="header1" style="">
+							<w2:row id="row1" style="">
+								<w2:column displayMode="label" id="column28" inputType="text" style="" value="사번" width="70"></w2:column>
+								<w2:column displayMode="label" id="column27" inputType="text" style="" value="성명" width="70"></w2:column>
+								<w2:column displayMode="label" id="column24" inputType="text" style="" value="입사일" width="70"></w2:column>
+								<w2:column displayMode="label" id="column23" inputType="text" style="" value="급여" width="70"></w2:column>
+								<w2:column displayMode="label" id="column22" inputType="text" style="" value="부서" width="70"></w2:column>
+								<w2:column displayMode="label" id="column21" inputType="text" style="" value="설명" width="70"></w2:column>
+								<w2:column displayMode="label" id="column26" inputType="text" style="" value="상관사번" width="70"></w2:column>
+								<w2:column displayMode="label" id="column25" inputType="text" style="" value="상관이름" width="70"></w2:column>
+							</w2:row>
+						</w2:header>
+						<w2:gBody id="gBody1" style="">
+							<w2:row id="row2" style="">
+								<w2:column id="empno" inputType="text" style="" value="" width="70"></w2:column>
+								<w2:column id="ename" inputType="text" style="" value="" width="70"></w2:column>
+								<w2:column id="hiredate" inputType="calendar" style="" value="" width="70"></w2:column>
+								<w2:column id="sal" inputType="text" style="" value="" width="70"></w2:column>
+								<w2:column id="deptno" inputType="select" style="" value="" width="70"></w2:column>
+								<w2:column id="account" inputType="text" style="" value="" width="70"></w2:column>
+								<w2:column id="mgr" inputType="text" style="" value="" width="70" hidden="true"></w2:column>
+								<w2:column id="mgrname" inputType="text" style="" value="" width="70"></w2:column>
+							</w2:row>
+						</w2:gBody>
+					</w2:gridView>
+				</xf:group>
+			</xf:group>
+</xf:group>
+
+	</body>
+</html>

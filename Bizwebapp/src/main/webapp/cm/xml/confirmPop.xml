@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="메시지 팝업">
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection>
+			</w2:dataCollection>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : confirm 메시지 박스
+ 	 * 변경 이력 : 2021-11-01	문철주	최초작성
+ 	 ****************************************************/
+
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		try {
+			var message = com.getParameter("message") || "메시지 없음";
+			var btnLabels = com.getParameter("btnLabel") || {};
+
+			tbx_msg.setValue(com.newlineToBr(message)); // 개행문자 <br/>로 변경
+			// 메시지 길이가 길면 높이 조정
+			gcm.pop.setMsgPopHeight(scwin, grp_content);
+			
+			if (Object.keys(btnLabels).length == 0 && com.isEmpty(btnLabels.ok) && com.isEmpty(btnLabels.cancel)) {
+				btnLabels = {
+					"ok" : "확인",
+					"cancel" : "취소"
+				}
+			}
+
+			btn_ok.setValue(btnLabels.ok);
+			btn_cancel.setValue(btnLabels.cancel);
+
+			$("div[id*='"+ scwin.$w.getPopupId() +"'").on('keydown', function(e){
+			   if (e.keyCode == 32 || e.keyCode == 13) {
+					com.closePopup(true);
+			   } else if (e.keyCode == 27) {
+					com.closePopup(false);
+			   }
+			});
+		} catch(e) {
+			console.error("[confirmPop] Exception :: " + e);
+		}
+	};
+
+	/**
+	 * 확인 버튼 클릭 이벤트
+	 */
+	scwin.btn_confirm_onclick = function(e) {
+		try {
+			com.closePopup(true);
+		} catch(ex) {
+			console.error("[confirmPop] Exception :: " + ex);
+		}
+	};
+
+	/**
+	 * 취소 버튼 클릭 이벤트
+	 */
+	scwin.btn_cancel_onclick = function(e) {
+		try {
+			com.closePopup(false);
+		} catch(ex) {
+			console.error("[confirmPop] Exception :: " + ex);
+		}
+	};
+	]]></script>
+	<style type="text/css"><![CDATA[
+		.w2popup_window.confirm .w2window_close{display: none;}
+	]]></style>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group class="pop_contents" id="grp_body" style="">
+			<xf:group class="messageBox" id="grp_content">
+				<w2:textbox class="text" id="tbx_msg" label="처리가 완료되었습니다.&lt;br/&gt;확인하시겠습니까?" style="" tagname="p" ref="" escape="false"></w2:textbox>
+			</xf:group>
+			<xf:group class="messageBtn" id="" style="">
+				<xf:group class="fr" id="" style="">
+					<w2:anchor class="btn pro" ev:onclick="scwin.btn_cancel_onclick" id="btn_cancel" outerDiv="false" style="">
+						<xf:label><![CDATA[취소]]></xf:label>
+					</w2:anchor>
+					<w2:anchor class="btn pro conf" id="btn_ok" outerDiv="false" style="" ev:onclick="scwin.btn_confirm_onclick">
+						<xf:label><![CDATA[확인]]></xf:label>
+					</w2:anchor>
+				</xf:group>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

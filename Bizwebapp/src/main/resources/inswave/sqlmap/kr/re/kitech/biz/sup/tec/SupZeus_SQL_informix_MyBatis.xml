@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.sup.tec">
+<!-- 제우스 장비예약 상세 정보 확인 -->
+<select id="selectSptZeusResvDtl" parameterType="java.lang.String" resultType="kr.re.kitech.biz.sup.tec.vo.SptZeusResvDtlVo">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptZeusResvDtl */
+       a.resvno
+     , DECODE(a.resvlaststatcd, '0000', '임시저장', '0009', '임시예약취소', '1001', '예약신청', '1009', '예약취소', '3001', '이용승인', '3009', '이용취소', '4001', '분석완료', '4009', '분석취소', '5001', '결재완료', '미접수') AS acccode
+     , a.resvlaststatcd
+     , b.cancelreason
+     , b.resvstartdt
+     , b.resvstarthour
+     , b.resvstartmin
+     , b.resvenddt
+     , b.resvendhour
+     , b.resvendmin
+     , b.tech_supt_req_no
+  FROM sptzeusresvmst a
+  JOIN sptzeusresvdtl b ON a.resvno = b.resvno
+ WHERE a.resvno = #{resvno}
+</select>
+<select id="selectSptZeusResvDtlSlipEnd">
+SELECT /* kr.re.kitech.biz.sup.tec.selectSptZeusResvDtlSlipEnd */
+       a.resvno
+     , d.unslip_amt AS decsn_amt
+  FROM sptzeusresvdtl a
+  JOIN spttecrcptinfo b ON a.tech_supt_req_no = b.tech_supt_req_no
+  JOIN fspsliph c ON b.unslip_no = c.unslip_no
+  JOIN fspslipd d ON b.unslip_no = d.unslip_no AND b.unslip_odr = d.unslip_odr AND d.base_debit_cr = 1
+ WHERE a.resvlaststatcd != '5001'
+   AND a.tech_supt_req_no is not null
+   AND c.decsn_ex = 'Y'
+</select>
+</mapper>

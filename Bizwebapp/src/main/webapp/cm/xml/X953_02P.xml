@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare"
+	xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="시스템문의 정보">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_csr">
+					<w2:keyInfo>
+						<w2:key id="status" name="상태" dataType="text"></w2:key>
+						<w2:key id="bizNm" name="요청업무" dataType="text"></w2:key>
+						<w2:key id="writeDt" name="요청일" dataType="text"></w2:key>
+						<w2:key id="changeTitle" name="요청서 제목" dataType="text"></w2:key>
+						<w2:key id="changeReason" name="요청 상세 내용" dataType="text"></w2:key>
+						<w2:key id="expectedDt" name="희망완료일" dataType="text"></w2:key>
+						<w2:key id="midCategory" name="업무코드" dataType="text"></w2:key>
+						<w2:key id="instId" name="인스턴스ID" dataType="text"></w2:key>
+						<w2:key id="successYn" name="성공여부" dataType="text"></w2:key>
+						<w2:key id="csrType" name="요청구분" dataType="text"></w2:key>
+						<w2:key id="statusNm" name="상태명" dataType="text"></w2:key>
+						<w2:key id="statusDt" name="최근 작업일" dataType="text"></w2:key>
+						<w2:key id="workResult" name="조치결과" dataType="text"></w2:key>
+						<w2:key id="satisfaction" name="만족도" dataType="text"></w2:key>
+						<w2:key id="syspayno" name="요청자" dataType="text"></w2:key>
+						<w2:key id="userLoginId" name="로그인ID" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList repeatNode="map" baseNode="list" id="dlt_attach" saveRemovedData="true">
+					<w2:columnInfo>
+						<w2:column id="file_nm" name="파일명" dataType="text"></w2:column>
+						<w2:column id="path" name="링크" dataType="text"></w2:column>
+						<w2:column id="etc" name="파일그룹" dataType="text"></w2:column>
+						<w2:column id="attach_file_no" name="파일Id" dataType="text"></w2:column>
+					</w2:columnInfo>
+				</w2:dataList>
+				<w2:dataMap baseNode="map" id="dma_hum">
+					<w2:keyInfo>
+						<w2:key id="syspayno" name="시스템사번" dataType="text"></w2:key>
+						<w2:key id="empno" name="사번" dataType="text"></w2:key>
+						<w2:key id="nm" name="요청자" dataType="text"></w2:key>
+						<w2:key id="dept_nm" name="부서명" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_selectCsr" ref="data:json,dma_csr" target='data:json,dma_csr' action="SvcSelectCsr.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<xf:submission id="sbm_saveSatisfaction" ref="data:json,dma_csr" target="" action="SvcSaveSatis.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+       /**
+        * pageload 이벤트 핸들러
+        */
+	scwin.onpageload = function() {
+		var instId = com.getParameter("inst_id");
+		
+		if (com.isEmpty(instId)) {
+			instId = $p.top().$p.getParameter("demndno");
+		}
+		
+		if (!com.isEmpty(instId)) {
+			dma_csr.set("instId", instId);
+			com.execute(sbm_selectCsr, {
+				successCallback : function(e) {
+					var attachVoList = e.responseJSON.elData.attachVoList;
+					attachVoList = typeof attachVoList === 'undefined' ? {} : attachVoList;
+					dlt_attach.setJSON(attachVoList, false);
+					dma_csr.set("writeDt", e.responseJSON.elData.writeDt.substr(0, 8));
+					var statusDt = e.responseJSON.elData.statusDt;
+					if (!com.isEmpty(statusDt)) {
+						cal_statusDt.setValue(statusDt.substr(0, 8));
+						inp_statusTime.setValue(statusDt.substr(8, 6));
+						if (!com.isEmpty(e.responseJSON.elData.workResult)) {
+							grp_fix.show("");
+							grp_satisfaction.show("");
+						}
+						btn_saveSatis.setDisabled(e.responseJSON.elData.status === 'FINISHED');
+					}
+					scwin.selectHum();
+				}
+			});		
+		}
+	};
+
+	/**
+	 * pageunload 이벤트 핸들러
+	 */
+	scwin.onpageunload = function() {
+		
+	};
+	
+	scwin.selectHum = function() {
+		dma_hum.set("syspayno", dma_csr.get("syspayno"));
+		if (dma_hum.get("syspayno") === '0') {
+			dma_hum.set("nm", "cmadmin");
+			dma_hum.set("dept_nm", "관리자");
+			return;
+		}
+		
+		var data = { empno : dma_hum.get("syspayno").substr(2,6)};
+		
+		com.pop.open( com.pop.TYPE.HUM, data, function(ret){
+			dma_hum.set("nm", ret.nm);
+			dma_hum.set("dept_nm", ret.dept_nm);
+			btn_saveSatis.setDisabled(ret.syspayno != com.getLoginInfo("sn"));
+			rbx_satisfaction.setDisabled(ret.syspayno != com.getLoginInfo("sn"));
+		});
+	};
+	
+	scwin.grd_attachfile_oncellclick = function(row,col,colId) {
+		if (colId === 'btn_down') {
+			window.open(dlt_attach.getCellData(row, "path"), '_blank').focus();
+		}
+	};
+	
+	scwin.btn_cancel_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	scwin.btn_saveSatis_onclick = function(e) {
+		dma_csr.set("userLoginId", com.getLoginInfo("uid"));
+		com.execute(sbm_saveSatisfaction, {
+			successCallback : function(e) {
+				com.alert("정상적으로 처리되었습니다.", function(e) {
+					com.closeTab();
+				});
+			}
+		});
+	};
+	]]></script>
+	<style>
+		.outbd {
+			border : 1px solid #c2c7d5;
+		}
+		
+	</style>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+		<xf:group class="pop_contents">
+			<xf:group style="" id="" class="titleSection pt0">
+				<w2:textbox tagname="h3" style="" id="" label="기본 정보" class="tit_tbl"></w2:textbox>
+			</xf:group>
+			<xf:group class="w2tb tbl outbd" tagname="table">
+				<w2:attributes>
+					<w2:summary></w2:summary>
+				</w2:attributes>
+				<xf:group tagname="caption" text="시스템문의 등록 정보 입력"></xf:group>
+				<xf:group tagname="colgroup">
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style=""></xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="요청번호" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td" id="td_req">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="temp" tagname="span" ref="data:dma_csr.instId"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="th" class="w2tb_th" style="" id="th_sysreq">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox tagname="span" label="진행상태"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="td" class="w2tb_td" style="" id="td_sysreq">
+						<w2:attributes>
+							<w2:colspan>5</w2:colspan>
+						</w2:attributes>
+						<w2:textbox label="temp" tagname="span" ref="data:dma_csr.statusNm"></w2:textbox>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="요청구분" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="temp" tagname="span" ref="data:dma_csr.csrType"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="th" class="w2tb_th">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="요청업무" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="td" class="w2tb_td">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="temp" tagname="span" ref="data:dma_csr.bizNm"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="th" class="w2tb_th">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="요청근거구분" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="td" class="w2tb_td">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="temp" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="th" class="w2tb_th">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="요청대상구분" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group tagname="td" class="w2tb_td">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="temp" tagname="span"></w2:textbox>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="요청자" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="temp" tagname="span" id="tbx_nm" ref="data:dma_hum.nm"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="요청부서" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>3</w2:colspan>
+						</w2:attributes>
+						<w2:textbox label="temp" tagname="span" id="tbx_dept_nm" ref="data:dma_hum.dept_nm"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="요청일자" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="temp" tagname="span" ref="data:dma_csr.writeDt" dataType="date" displayFormat="yyyy년 MM월 dd일"></w2:textbox>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group style="" id="" class="titleSection pt0">
+				<w2:textbox tagname="h3" style="" id="" label="요청 내용" class="tit_tbl"></w2:textbox>
+			</xf:group>
+			<xf:group class="w2tb tbl" tagname="table">
+				<w2:attributes>
+					<w2:summary></w2:summary>
+				</w2:attributes>
+				<xf:group tagname="colgroup">
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style=""></xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="요청제목" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>7</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<w2:textbox id="" label="temp" ref="data:dma_csr.changeTitle" tagname="span" style="" escape="false"></w2:textbox>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="요청내용" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>7</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<xf:textarea id="" readOnly="true" style="height:130px;" ref="data:dma_csr.changeReason"></xf:textarea>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr" style="">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="완료요구일자" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>7</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" disabled="true" focusOnDateSelect="false"
+							footerDiv="false" id="" renderDiv="true" rightAlign="false" style="" ref="data:dma_csr.expectedDt">
+						</w2:inputCalendar>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr" style="">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="첨부파일" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>7</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<xf:group style="height: 150px;" id="">
+							<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="false" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+				    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="첨부 파일이 없습니다."
+				    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+				    			dataList="data:dlt_attach" evenRowBackgroundColor="#f7faff" style="height: 100%;" autoFit="allColumn" id="grd_attachfile" visibleRowNum="5"
+				    			class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_attachfile_oncellclick">
+				    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+				    			<w2:header style="" id="header1">
+				    				<w2:row style="" id="row1" class="ce">
+				    					<w2:column width="400" inputType="text" style="height:28px;" id="column1" value="파일명" displayMode="label"></w2:column>
+				    					<w2:column width="100" inputType="text" style="height:28px;" id="column2" value="다운로드" displayMode="label"></w2:column>
+				    				</w2:row>
+				    			</w2:header>
+				    			<w2:gBody style="" id="gBody1" class="ce">
+				    				<w2:row style="" id="row2">
+				    					<w2:column width="400" inputType="text" readOnly="true" style="height:28px;" id="file_nm" displayMode="label" class="le"></w2:column>
+				    					<w2:column width="100" inputType="button" readOnly="true" style="height:28px;" id="btn_down" class="" displayMode="label" fixColumnWidth="true" value="다운로드"></w2:column>
+				    				</w2:row>
+				    			</w2:gBody>
+				    		</w2:gridView>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="titleSection pt0" id="" style="">
+				<w2:textbox class="tit_tbl" id="" label="조치 결과" style="" tagname="h3"></w2:textbox>
+			</xf:group>
+			<xf:group class="w2tb tbl" tagname="table" style="display:none;" id="grp_fix">
+				<w2:attributes>
+					<w2:summary></w2:summary>
+				</w2:attributes>
+				<xf:group tagname="colgroup">
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style="width:240px;"></xf:group>
+					<xf:group tagname="col" style="width:190px;"></xf:group>
+					<xf:group tagname="col" style=""></xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="완료일" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false" id="cal_statusDt" renderDiv="true" rightAlign="false" style="" readOnly="true">
+						</w2:inputCalendar><xf:input adjustMaxLength="false" class="inp" id="inp_statusTime" ref="" style="width:100px;" title="제목"
+							dataType="time" disabled="true" displayFormat="HH : mm">
+						</xf:input>
+						
+					</xf:group>
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes></w2:attributes>
+						<w2:textbox label="시행일" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+						</w2:attributes>
+						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false" id=""
+							ref="" renderDiv="true" rightAlign="false" style="" title="완료요구일자">
+						</w2:inputCalendar>
+						<xf:input adjustMaxLength="false" class="inp" id="inp_reltime" ref="" style="width:100px;" title="제목"></xf:input>
+					</xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox label="조치결과" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes>
+							<w2:colspan>3</w2:colspan>
+						</w2:attributes>
+						<xf:textarea id="" readOnly="true" style="height:130px;" ref="data:dma_csr.workResult"></xf:textarea>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group id="grp_satisfaction" style="display:none;">
+				<xf:group class="titleSection" id="" style="">
+					<w2:textbox class="tit_tbl" id="" label="만족도 조사" style="" tagname="h3"></w2:textbox>
+				</xf:group>
+				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+					<w2:attributes>
+						<w2:summary></w2:summary>
+					</w2:attributes>
+					<xf:group tagname="colgroup">
+						<xf:group style="width:10%;" tagname="col"></xf:group>
+						<xf:group style="width:90%;" tagname="col"></xf:group>
+					</xf:group>
+					<xf:group tagname="tr">
+						<xf:group class="w2tb_th" tagname="th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+							<w2:textbox label="만족도" tagname="span"></w2:textbox>
+						</xf:group>
+						<xf:group class="w2tb_td" tagname="td">
+							<w2:attributes></w2:attributes>
+							<xf:select1 appearance="full" class="radioGroup req" cols="" id="rbx_satisfaction" ref="data:dma_csr.satisfaction" 
+								renderType="radiogroup" rows="1" style="" title="만족도">
+								<xf:choices>
+	    							<xf:item>
+	    								<xf:label><![CDATA[매우불만족]]></xf:label>
+	    								<xf:value>5</xf:value>
+	    							</xf:item>
+	    							<xf:item>
+	    								<xf:label><![CDATA[불만족]]></xf:label>
+	    								<xf:value>4</xf:value>
+	    							</xf:item>
+	    							<xf:item>
+	    								<xf:label><![CDATA[보통]]></xf:label>
+	    								<xf:value>3</xf:value>
+	    							</xf:item>
+	    							<xf:item>
+	    								<xf:label><![CDATA[만족]]></xf:label>
+	    								<xf:value>2</xf:value>
+	    							</xf:item>
+	    							<xf:item>
+	    								<xf:label><![CDATA[매우만족]]></xf:label>
+	    								<xf:value>1</xf:value>
+	    							</xf:item>
+	    						</xf:choices>
+							</xf:select1>
+						</xf:group>
+					</xf:group>
+					<xf:group tagname="tr">
+						<xf:group class="w2tb_th" tagname="th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+							<w2:textbox label="의견" tagname="span"></w2:textbox>
+						</xf:group>
+						<xf:group class="w2tb_td" tagname="td">
+							<w2:attributes>
+							</w2:attributes>
+							<xf:textarea class="req" id="satisfacion_clsf" placeholder="아직 지원하지 않는 기능입니다." ref="" style="height: 120px;" title="요청내용" disabled="true">
+							</xf:textarea>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+				<xf:group class="btnGroup">
+				<xf:group class="le"></xf:group>
+				<xf:group class="ri">
+					<xf:trigger type="button" class="btn pro" ev:onclick="scwin.btn_saveSatis_onclick" id="btn_saveSatis">
+						<xf:label><![CDATA[만족도 저장]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			</xf:group>
+			<xf:group class="btnGroup">
+				<xf:group class="le"></xf:group>
+				<xf:group class="ri">
+					<xf:trigger type="button" class="btn pro" ev:onclick="scwin.btn_cancel_onclick" id="btn_close">
+						<xf:label><![CDATA[닫기]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			
+		</xf:group>
+	</body>
+</html>

@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="회의실신청 목록">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+
+            	<!-- 회의실리스트 조회 -->
+            	<w2:dataMap baseNode="map" id="dma_mRoomSearch">
+            		<w2:keyInfo>
+            			<w2:key id="use_yn" name="사용여부" dataType="text"></w2:key>
+            			<w2:key id="region_cd" name="지역코드" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<!-- 회의실리스트  -->
+            	<w2:dataList id="dlt_mRoom" baseNode="list" saveRemovedData="true" repeatNode="map" ev:onrowpositionchange=""
+            		ev:onbeforerowpositionchange="">
+            		<w2:columnInfo>
+            			<w2:column id="mroom_cd" name="회의실코드" dataType="text" ignoreStatus="true"></w2:column>
+            			<w2:column id="meet_ofic_nm" name="회의실명" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+
+            	<!-- 회의실신청리스트 조회 -->
+            	<w2:dataMap baseNode="map" id="dma_mRoomReqSearch">
+            		<w2:keyInfo>
+            			<w2:key id="meet_ymd" name="회의일자" dataType="text"></w2:key>
+            			<w2:key id="mroom_cd" name="회의실코드" dataType="text"></w2:key>
+            			<w2:key id="req_state" name="등록상태" dataType="text"></w2:key>
+            			<w2:key id="req_psn_syspayno" name="신청자시스템개인번호" dataType="text"></w2:key>
+            			<w2:key id="region_cd" name="지역코드" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<!-- 회의실신청리스트 -->
+            	<w2:dataList id="dlt_mRoomReq" baseNode="list" saveRemovedData="true" repeatNode="map" ev:onrowpositionchange=""
+            		ev:onbeforerowpositionchange="">
+            		<w2:columnInfo>
+            			<w2:column id="req_no" name="회의실신청번호" dataType="text" ignoreStatus="true"></w2:column>
+            			<w2:column id="roomno" name="회의실호실" dataType="text"></w2:column>
+            			<w2:column id="region_nm" name="지역명" dataType="text"></w2:column>
+            			<w2:column id="meet_ymd" name="회의일자" dataType="text"></w2:column>
+            			<w2:column id='meet_ymd_nm' name="요일" dataType="text"></w2:column>
+            			<w2:column id="use_orign_time" name="사용시작시간" dataType="text"></w2:column>
+            			<w2:column id="use_cls_time" name="사용종료시간" dataType="text"></w2:column>
+            			<w2:column id="use_time" name="사용시간" dataType="text"></w2:column>
+            			<w2:column id="mroom_cd" name="회의실코드" dataType="text"></w2:column>
+            			<w2:column id="meet_ofic_nm" name="회의실명" dataType="text"></w2:column>
+            			<w2:column id="meet_subj" name="목적" dataType="text"></w2:column>
+            			<w2:column id="req_psn_empno_nm" name="신청자명" dataType="text"></w2:column>
+            			<w2:column id="req_psn_dept_nm" name="신청자부서명" dataType="text"></w2:column>
+            			<w2:column id="req_psn_tel" name="신청자전화번호" dataType="text"></w2:column>
+            			<w2:column id="charg_syspayno_nm" name="담당자명" dataType="text"></w2:column>
+            			<w2:column id="req_state_nm" name="등록상태명" dataType="text"></w2:column>
+            			<w2:column id="regst_daytm" name="등록일시" dataType="text"></w2:column>
+            			<w2:column id="apr_state" name="상태코드" dataType="text"></w2:column>
+            			<w2:column id="region_cd" name="지역코드" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+            <!-- 회의실조회 -->
+			<xf:submission id="sbm_selectMRoom" ref='data:json,dma_mRoomSearch'
+				target='data:json,{"id":"dlt_mRoom","key":"cgsMRoomReqVoList"}' action="SvcCCSCGSMRRR03.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			
+			<!-- 회의실신청조회 -->
+			<xf:submission id="sbm_selectMroomReq" ref='data:json,dma_mRoomReqSearch'
+				target='data:json,{"id":"dlt_mRoomReq","key":"cgsMRoomReqVoList"}' action="SvcCCSCGSMRRR01.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+            
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		
+		var codeOptions = [ { code : "RVC", compID :"state_sel"} ,
+							{ code : "CAA", compID :"area_list_sel"} 
+							];
+		
+			com.setCmnCd(codeOptions, function() {
+					
+				state_sel.getItemArray().forEach(function(element, index) {
+						
+					if ("RVC002" == element.value || "RVC003" == element.value) {
+						state_sel.deleteItem(index);
+					}
+					
+				});
+				state_sel.getItemArray().forEach(function(element, index) {
+						
+					if ("RVC002" == element.value || "RVC003" == element.value) {
+						state_sel.deleteItem(index);
+					}
+					
+					
+					meet_ymd_sch.setValue(getDateStr(thisMonth));
+					
+				});			
+				
+		});
+		
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	var date = new Date();
+	var year = date.getFullYear();
+	var month = date.getMonth();
+	var thisMonth = new Date(year, month);
+	
+	
+	//엑셀다운로드
+	scwin.btn_down_onclick = function(e) {
+	var option = {
+		    fileName : "data.xlsx"
+	};
+	com.downloadGridExcel(grd_detail, option);
+	};
+	
+	
+	//회의실조회
+	scwin.searchMRoom = function() {
+		
+		com.execute(sbm_selectMRoom, {
+			successCallback : function(e) {
+				
+				
+			}
+		});
+	};
+	
+	scwin.searchMRoom_change = function() {
+		
+		var region = dma_mRoomReqSearch.get("region_cd"); 
+		
+		dma_mRoomSearch.set("region_cd",region);
+		
+		 scwin.searchMRoom();
+
+	};
+	
+	
+	
+	
+	//회의실신청조회
+	scwin.searchMroomReq = function() {
+		
+		com.execute(sbm_selectMroomReq, {
+			successCallback : function(e) {
+				tbx_result.setValue(dlt_mRoomReq.getTotalRow());
+			}
+		});
+	};
+	
+	
+	 //조회
+	scwin.btn_search_onclick = function() {
+		scwin.searchMroomReq();
+	};
+	
+	
+	//등록클릭
+	scwin.btn_add_onclick = function(e) {
+		scwin.openDetail();
+	};
+	
+	//상세클릭
+	scwin.grd_detail_oncellclick = function(row,col,colId) {
+		
+		var data = { req_no : dlt_mRoomReq.getCellData(row, "req_no")
+				  , meet_ymd : dlt_mRoomReq.getCellData(row, "meet_ymd") 
+				  , use_orign_time : dlt_mRoomReq.getCellData(row, "use_orign_time")
+				  , use_cls_time : dlt_mRoomReq.getCellData(row, "use_cls_time")
+				  , mroom_cd : dlt_mRoomReq.getCellData(row, "mroom_cd")
+				  , req_psn_empno_nm : dlt_mRoomReq.getCellData(row, "req_psn_empno_nm")
+				  , region_cd : dlt_mRoomReq.getCellData(row, "region_cd")
+				  , apr_state : dlt_mRoomReq.getCellData(row, "apr_state")
+				  
+				  };
+		
+		scwin.openDetail(data);
+				
+	};
+	
+	//상세팝업(둥록,상세)
+	scwin.openDetail = function(data) {
+		var options = {
+			id : "crudOnePop",
+			popupName : "회의실신청서",
+			width : 1000, height: 550 
+		};
+		com.openPopup("/ui/ccs/cgs/CCS_CGS_C210_00P.xml", options, data, function(retObj) {
+			scwin.searchMroomReq();
+		});
+	};
+	
+	//달력
+	scwin.openCalender = function(data) {
+		var options = {
+			id : "crudOnePop",
+			popupName : "달력",
+			width : 1300, height: 850 
+		};
+		com.openPopup("/ui/ccs/cgs/CCS_CGS_C210_02P.xml", options, data, function(retObj) {
+
+		});
+	};
+	
+	
+	//회의실현황
+	scwin.openMRoom = function(data) {
+		var options = {
+			id : "crudOnePop",
+			popupName : "회의실현황",
+			width : 1000, height: 630 
+		};
+		com.openPopup("/ui/ccs/cgs/CCS_CGS_C210_03P.xml", options, data, function(retObj) {
+
+		});
+	};
+		
+	//날짜구하기
+	function getDateStr(date) {
+	    var sYear = date.getFullYear();
+	    var sMonth = date.getMonth() + 1;
+	    
+	    sMonth = sMonth > 9 ? sMonth : "0" + sMonth;
+	    return String(sYear) + String(sMonth);
+	}
+	
+	
+	
+	scwin.btn_calender_onclick = function(e) {
+		scwin.openCalender();
+	};
+	
+	scwin.btn_mRoom_onclick = function(e) {
+		scwin.openMRoom();
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+	<w2:wframe id="" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:120px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:150px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:170px;"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr" style="">
+    						<xf:group tagname="th" style="" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="신청년월"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" style="" class="w2tb_td">
+    							<xf:group style="" id="" class="inpcalWrap">
+	    							<w2:inputCalendar calendarValueType="yearMonth" focusOnDateSelect="" footerDiv="" id="meet_ymd_sch"
+										renderDiv="true" renderType="" rightAlign="" style="width:120px;" pickerType="" class="inpcal" ref="data:dma_mRoomReqSearch.meet_ymd"
+										monthNamesForYearMonthType="">
+									</w2:inputCalendar>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="지역"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="area_list_sel" ref="data:dma_mRoomReqSearch.region_cd"
+    								style="width:120px;" submenuSize="auto" visibleRowNum="10" title="지역" chooseOptionLabel="- 전체 -"
+    								ev:onviewchange="scwin.searchMRoom_change">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="회의실"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="" ref="dma_mRoomReqSearch.mroom_cd" style="width:150px;"
+    								submenuSize="auto" visibleRowNum="10" title="회의실" chooseOptionLabel="- 전체 -">
+    								<xf:choices>
+    									<xf:itemset nodeset="data:dlt_mRoom">
+    										<xf:label ref="meet_ofic_nm"></xf:label>
+    										<xf:value ref="mroom_cd"></xf:value>
+    									</xf:itemset>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th" style="">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="신청상태" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td" style="">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="state_sel" ref="data:dma_mRoomReqSearch.req_state" style="width:120px;"
+    								submenuSize="auto" visibleRowNum="10" title="신청상태" chooseOptionLabel="- 전체 -">
+    								<xf:choices></xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger style="" id="" type="button" class="btn search" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<xf:group class="le" id="" style="">
+    				<xf:group class="result" id="" style="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:group style="" id="" class="btnarea">
+    					<xf:trigger class="btn" id="btn_calender" style="" type="button" ev:onclick="scwin.btn_calender_onclick">
+    						<xf:label><![CDATA[달력보기]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger class="btn" id="" style="" type="button" ev:onclick="scwin.btn_add_onclick">
+    						<xf:label><![CDATA[신청]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger style="" id="" type="button" class="btn icon down" ev:onclick="scwin.btn_down_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger class="btn blue" id="btn_mRoom" style="" type="button" ev:onclick="scwin.btn_mRoom_onclick">
+    						<xf:label><![CDATA[회의실 현황]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group> 
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_mRoomReq" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_detail" visibleRowNum="20"
+    			class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_detail_oncellclick" filterFocusMode="outfocus" sortEvent="onclick" sortable="true">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column9" value="지역" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column7" value="회의일자" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column5" value="회의시간" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column3" value="회의실" displayMode="label"></w2:column>
+    					<w2:column width="250" inputType="text" style="height:28px;" id="column20" value="회의목적" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column29" value="신청자" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column27" value="신청자전화" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column25" value="담당자" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="column21" value="상태" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column23" value="등록일시" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="70" inputType="text" readOnly="true" style="height:28px;" id="region_nm" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="meet_ymd_nm" class=""
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;text-align:;" id="use_time" class="le" escape="false"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;text-align:;" id="meet_ofic_nm" displayMode="label"
+    						escape="false" class="le">
+    					</w2:column>
+    					<w2:column width="250" inputType="link" readOnly="true" style="height:28px;" id="meet_subj" displayMode="label" class="le"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="req_psn_empno_nm" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="req_psn_tel" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="charg_syspayno_nm" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px;" id="req_state_nm" displayMode="label" readOnly="true"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="regst_daytm" class="" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

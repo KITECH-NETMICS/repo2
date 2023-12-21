@@ -1,0 +1,714 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="휴가원신청서">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_lapp">
+					<w2:keyInfo>
+						<w2:key id="req_no" name="신청번호" dataType="text"></w2:key>
+						<w2:key id="req_psn_syspayno" name="신청자시스템번호" dataType="text"></w2:key>
+						<w2:key id="req_psn_empno" name="신청자사번" dataType="text"></w2:key>
+						<w2:key id="req_psn_nm" name="신청자명" dataType="text"></w2:key>
+						<w2:key id="req_psn_dept_cd" name="신청자부서코드" dataType="text"></w2:key>
+						<w2:key id="req_psn_dept_nm" name="신청자부서명" dataType="text"></w2:key>
+						<w2:key id="req_psn_dept_ymd" name="신청자부서신설일자" dataType="text"></w2:key>
+						<w2:key id="req_psn_posi_cd" name="신청자직급코드" dataType="text"></w2:key>
+						<w2:key id="req_psn_posi_nm" name="신청자직급명" dataType="text"></w2:key>
+						<w2:key id="agent_psn_syspayno" name="대행자시스템번호" dataType="text"></w2:key>
+						<w2:key id="agent_psn_empno" name="대행자사번" dataType="text"></w2:key>
+						<w2:key id="agent_psn_nm" name="대행자명" dataType="text"></w2:key>
+						<w2:key id="holiday_clsf" name="휴가구분" dataType="text"></w2:key>
+						<w2:key id="hoilday_sub_clsf" name="휴가소구분" dataType="text"></w2:key>
+						<w2:key id="holiday_cause" name="휴가사유" dataType="text"></w2:key>
+						<w2:key id="holiday_start_ymd" name="휴가시작일자" dataType="text"></w2:key>
+						<w2:key id="holiday_cls_ymd" name="휴가종료일자" dataType="text"></w2:key>
+						<w2:key id="holiday_start_hour" name="휴가시작시간" dataType="text"></w2:key>
+						<w2:key id="holiday_cls_hour" name="휴가종료시간" dataType="text"></w2:key>
+						<w2:key id="holiday_daycnt" name="휴가일수" dataType="number"></w2:key>
+						<w2:key id="attach_file_no" name="첨부파일번호" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataMap baseNode="map" id="dma_holidayCnt">
+					<w2:keyInfo>
+						<w2:key id="start_day" name="휴가시작일" dataType="text"></w2:key>
+						<w2:key id="close_day" name="휴가종료일" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_searchHolidayCnt" ref='data:json,dma_holidayCnt' target='data:json,dma_lapp'
+				action="/SvcCCSCGSVACR06.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler=""
+				customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+			<xf:submission id="sbm_search" ref="" target="" action="" method="post" mediatype="application/json" encoding="UTF-8"
+				instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+				ev:submiterror="" abortTrigger="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[ 
+    /*************************************************************************************************************
+     *
+     *	전역변수
+     *
+     *************************************************************************************************************/
+    scwin.currentDate = com.getServerDateTime("yyyyMMdd");
+    scwin.attachFileNo = "C21A";
+    
+    
+    /*************************************************************************************************************
+     *
+     *	페이지 이벤트 함수
+     *
+     *************************************************************************************************************/
+    /*
+     * 페이지 열기
+     */
+	scwin.onpageload = function() {
+		//첨부파일 초기화
+		com.file.init();
+		
+		//공통코드
+		let codeOptions = [
+		    //휴가구분
+		 	{ code : "HBI", compID :"sbx_holidayClsf", filter : "useEx == 'Y'" }
+		];
+		com.setCmnCd(codeOptions, function() {
+			dma_lapp.set("req_no", com.getParameter().req_no);
+			
+			//신규
+			if(dma_lapp.get("req_no") === "")
+				scwin.init();
+			//조회
+			else
+				scwin.search();
+		});
+	};
+	
+	/*
+     * 페이지 닫기
+     */
+	scwin.onpageunload = function() {
+		com.file.destroy();
+	};
+	
+	
+	/*************************************************************************************************************
+     *
+     *	사용자 정의 함수
+     *
+     *************************************************************************************************************/
+	/*
+     * 초기화
+     */
+    scwin.init = function() {
+		//컬렉션 초기화
+		dma_lapp.setEmptyValue();
+		
+		//신청자
+		dma_lapp.set("req_psn_syspayno", com.getLoginInfo("sn"));
+		dma_lapp.set("req_psn_empno", com.getLoginInfo("empno"));
+		dma_lapp.set("req_psn_nm", com.getLoginInfo("cn"));
+		dma_lapp.set("req_psn_dept_cd", com.getLoginInfo("deptCode"));
+		dma_lapp.set("req_psn_dept_nm", com.getLoginInfo("deptName"));
+		dma_lapp.set("req_psn_dept_ymd", com.getLoginInfo("deptNewYmd"));
+		dma_lapp.set("req_psn_posi_cd", com.getLoginInfo("posiCode"));
+		dma_lapp.set("req_psn_posi_nm", com.getLoginInfo("posiName"));
+		
+		//대행자
+		dma_lapp.set("agent_psn_syspayno", com.getLoginInfo("sn"));
+		dma_lapp.set("agent_psn_empno", com.getLoginInfo("empno"));
+		dma_lapp.set("agent_psn_nm", com.getLoginInfo("cn"));
+		
+		//휴가구분
+		scwin.sbx_holidayClsf_onviewchange();
+		
+		//휴가일자
+		dma_lapp.set("holiday_start_ymd", scwin.currentDate);
+		dma_lapp.set("holiday_cls_ymd", scwin.currentDate);
+		
+		//휴가일수
+		scwin.holidayCnt();
+		
+		//첨부파일
+		com.file.create(upload_A.getID(), { fileKey : scwin.attachFileNo, mode : 'edit' });
+	};
+	
+	/*
+     * 조회
+     */
+    scwin.search = function() {
+		com.execute(sbm_searchInfo, {
+			successCallback : function(e) {
+				console.log(e);
+			}
+		});
+	};
+	
+	/*
+     * 휴가일수
+     */
+    scwin.holidayChg = function() {
+	    
+	};
+	
+	/*
+     * 휴가일수
+     */
+    scwin.holidayCnt = function() {
+	    if(dma_lapp.get("holiday_start_ymd") != "" && dma_lapp.get("holiday_cls_ymd") != "") {
+	    	dma_holidayCnt.set("start_day", dma_lapp.get("holiday_start_ymd"));
+	    	dma_holidayCnt.set("close_day", dma_lapp.get("holiday_cls_ymd"));
+	    	
+			com.execute(sbm_searchHolidayCnt, {
+				successCallback : function(e) {
+					dma_lapp.set("holiday_daycnt", e.responseJSON.elData.work_days);
+				}
+			});
+		}
+	};
+	
+	
+	/*************************************************************************************************************
+     *
+     *	컴포넌트 이벤트 함수
+     *
+     *************************************************************************************************************/
+	/*
+     * 휴가구분 변경
+     */
+	scwin.sbx_holidayClsf_onviewchange = function(info) {
+		//휴가소구분
+		sbx_holidaySubclsf.hide();
+		//휴가일자
+    	grp_holidayDay.hide();
+    	//휴가종료시간
+    	grp_calClsYmd.show("inline-block");
+    	//휴가시간
+    	grp_holidayHour.hide();
+		
+		switch(dma_lapp.get("holiday_clsf")) {
+		    case "HBI031" : //건강검진
+		    case "HBI042" : //임산부정기건강진단
+		    case "HBI050" : //유산/사산휴가
+		    case "HBI055" : //난임휴가
+		    	sbx_holidaySubclsf.show("");
+		    case "HBI019" : //시간제연차
+		    case "HBI080" : //보상휴가
+		    	grp_calClsYmd.hide();
+		    	grp_holidayDay.show("inline-block");
+		    	grp_holidayHour.show("inline-block");
+		    	break;
+		    case "HBI013" : //가족돌봄휴가(무급)
+		    case "HBI100" : //공가-코로나19
+		    	com.alert("휴가구분이 " + sbx_holidayClsf.getText() + "인 경우 PC에서 신청해주세요");
+		    	dma_lapp.set("holiday_clsf", info.oldValue);
+		}
+	};
+	
+	/*
+     * 휴가시작일자 변경
+     */
+    scwin.cal_startYmd_onviewchange = function(info) {
+		scwin.holidayCnt();
+	};
+	
+	/*
+     * 휴가종료일자 변경
+     */
+    scwin.cal_clsYmd_onviewchange = function(info) {
+		scwin.holidayCnt();
+	};
+	
+	/*
+     * 휴가시작시간 변경
+     */
+	scwin.sbx_startHour_onviewchange = function(info) {
+		//임산부정기건강진단
+		if(dma_lapp.get("holiday_clsf") === "HBI042") { debugger
+			//4시간 고정
+			let clsHour = Number(info.newValue) + 4;
+			
+			//점심시간 제외
+			if(info.newValue <= 12)
+				clsHour + 1;
+			
+			dma_lapp.set("holiday_cls_hour", clsHour);
+		}
+	};
+	
+	/*
+     * 휴가종료시간 변경
+     */
+	scwin.sbx_clsHour_onviewchange = function(info) {
+		
+	};
+	]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+		<xf:group id="" class="pageWrap">
+			<xf:group class="searchSection step" id="" style="">
+				<xf:group class="le" id="" style="">
+					<xf:trigger class="btn" id="" style="" type="button">
+						<xf:label><![CDATA[목록]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+				<xf:group class="btnbox" id="">
+					<xf:trigger class="btn " id="" style="" type="button">
+						<xf:label><![CDATA[결재문서보기]]></xf:label>
+					</xf:trigger>
+					<xf:trigger class="btn blue" id="btn_apr_req" style="" type="button" ev:onclick="scwin.btn_apr_req_onclick">
+						<xf:label><![CDATA[결재신청]]></xf:label>
+					</xf:trigger>
+				</xf:group>
+			</xf:group>
+			<xf:group class="titleSection" id="" style="">
+				<xf:group class="le" id="">
+					<w2:span class="note red" id="" label="※ 휴가원 신청시 타인이 대신 신청하는 경우 실휴가자를 결재선에 반드시 넣어주시기 바랍니다" style=""></w2:span>
+				</xf:group>
+				<xf:group class="ri" id=""></xf:group>
+			</xf:group>
+			<xf:group class="w2tb tbl" id="" style="" tagname="table">
+				<w2:attributes>
+					<w2:summary></w2:summary>
+				</w2:attributes>
+				<xf:group tagname="caption" text="휴가원신청서 정보"></xf:group>
+				<xf:group tagname="colgroup">
+					<xf:group style="width:160px;" tagname="col"></xf:group>
+					<xf:group style="" tagname="col"></xf:group>
+					<xf:group style="width:160px;" tagname="col"></xf:group>
+					<xf:group style="" tagname="col"></xf:group>
+				</xf:group>
+				<xf:group tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+						<w2:textbox id="" label="휴가자" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<xf:group class=" flex" id="">
+							<xf:group class="inpSch" id="" style="width: 120px;">
+								<xf:input adjustMaxLength="false" class="inp req" id="inputEmpno" style="" title="휴가자사번" ev:onkeydown="scwin.inputEmpno_onkeydown"
+									ref="data:dma_lapp.req_psn_empno">
+								</xf:input>
+								<xf:trigger class="btn" id="btn_req_psn" style="" title="휴가자 조회" type="button" ev:onclick="scwin.btn_req_psn_onclick">
+									<xf:label><![CDATA[검색]]></xf:label>
+								</xf:trigger>
+							</xf:group>
+							<xf:input adjustMaxLength="false" class="inp req" id="inputNm" style="width: 150px;" title="휴가자명" ref="data:dma_lapp.req_psn_nm" readOnly="true" readOnlyClass="inp req"></xf:input>
+							<xf:input adjustMaxLength="false" class="inp" id="hdnSyspayno" style="display: none;" title="휴가자시스템사번" ref="data:dma_cgsInfoData.req_psn_syspayno" ev:onchange="scwin.hdnSyspayno_onchange">
+							</xf:input>
+						</xf:group>
+					</xf:group>
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="신청번호" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<xf:input adjustMaxLength="false" class="inp req" id="req_psn_syspayno_nm"
+							ref="data:dma_lapp.req_no" style="width: 100%;" title="휴가자명" readOnly="true" readOnlyClass="inp req">
+						</xf:input>
+					</xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="소속부서" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<xf:input adjustMaxLength="false" class="inp req" id="req_psn_syspayno_nm30"
+							ref="data:dma_lapp.req_psn_dept_nm" style="width: 100%;" title="휴가자명" readOnly="true" readOnlyClass="inp req">
+						</xf:input>
+					</xf:group>
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="직급" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<xf:input adjustMaxLength="false" class="inp req" id="req_psn_syspayno_nm10"
+							ref="data:dma_lapp.req_psn_posi_nm" style="width: 100%;" title="휴가자명" readOnly="true" readOnlyClass="inp req">
+						</xf:input>
+					</xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+						<w2:textbox id="" label="휴가구분" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" style="" tagname="td">
+						<xf:select1 allOption="" appearance="minimal" chooseOption="" chooseOptionLabel="- 선택 -" class="sel req"
+							direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_holidayClsf" ref="data:dma_lapp.holiday_clsf"
+							style="width:150px;" submenuSize="auto" title="부서명" visibleRowNum="20" ev:onviewchange="scwin.sbx_holidayClsf_onviewchange">
+							<xf:choices></xf:choices>
+						</xf:select1>
+						<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="" class="sel req" direction="auto" disabled="false"
+							disabledClass="w2selectbox_disabled" id="sbx_holidaySubclsf" ref="data:dma_lapp.hoilday_sub_clsf" style="width:150px;" submenuSize="auto" title="본부명" ev:onviewchange="scwin.sltHolidaySubClsf_onviewchang">
+						</xf:select1>
+					</xf:group>
+					<xf:group class="w2tb_th" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+						<w2:textbox id="" label="휴가사유" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" style="" tagname="td">
+						<xf:input adjustMaxLength="false" class="inp req" id="req_psn_syspayno_nm20"
+							ref="data:dma_cgsInfoData.req_psn_syspayno_nm" style="width: 100%;" title="휴가자명">
+						</xf:input>
+					</xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+						<w2:textbox id="" label="휴가기간" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" style="" tagname="td">
+						<w2:attributes>
+							<w2:colspan>3</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+
+						<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal req" focusOnDateSelect="false" footerDiv="false" id="cal_startYmd" placeholder="시작일"
+							renderDiv="true" rightAlign="false" style="" title="기간 중 시작일 " ref="data:dma_lapp.holiday_start_ymd" ev:onviewchange="scwin.cal_startYmd_onviewchange">
+						</w2:inputCalendar>
+						<xf:group id="grp_calClsYmd" style="display: inline-block;">
+							<w2:textbox tagname="span" style="" id="" label="~" class="dash"></w2:textbox>
+							<w2:inputCalendar footerDiv="false" rightAlign="false" focusOnDateSelect="false" style="" id="cal_clsYmd" placeholder="종료일" title="기간 중 종료일"
+								class="inpcal req" renderDiv="true" calendarValueType="yearMonthDate" ref="data:dma_lapp.holiday_cls_ymd" ev:onviewchange="scwin.cal_clsYmd_onviewchange">
+							</w2:inputCalendar>
+						</xf:group>
+						<xf:group id="grp_holidayDay" style="display: inline-block;">
+							<xf:select1 submenuSize="auto" chooseOption="true" allOption=""
+								title="사용시간 시작시간" appearance="minimal" disabledClass="w2selectbox_disabled" disabled="false" style="width:80px;" id="sbx_startHour"
+								class="sel req" direction="auto" chooseOptionLabel="시작시각" ref="data:dma_lapp.holiday_start_hour" ev:onviewchange="scwin.sbx_startHour_onviewchange">
+								<xf:choices>
+									<xf:item>
+										<xf:label><![CDATA[09:00]]></xf:label>
+										<xf:value><![CDATA[9]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[10:00]]></xf:label>
+										<xf:value><![CDATA[10]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[11:00]]></xf:label>
+										<xf:value><![CDATA[11]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[12:00]]></xf:label>
+										<xf:value><![CDATA[12]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[13:00]]></xf:label>
+										<xf:value><![CDATA[13]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[14:00]]></xf:label>
+										<xf:value><![CDATA[14]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[15:00]]></xf:label>
+										<xf:value><![CDATA[15]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[16:00]]></xf:label>
+										<xf:value><![CDATA[16]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[17:00]]></xf:label>
+										<xf:value><![CDATA[17]]></xf:value>
+									</xf:item>
+								</xf:choices>
+							</xf:select1>
+							<w2:textbox tagname="span" style="" id="" label="~" class="dash"></w2:textbox>
+							<xf:select1 submenuSize="auto" appearance="minimal" disabledClass="w2selectbox_disabled" chooseOption="true"
+								disabled="false" style="width:80px;" allOption="" id="sbx_clsHour" title="사용시간 종료시간" class="sel req" direction="auto"
+								chooseOptionLabel="종료시각" ref="data:dma_lapp.holiday_cls_hour" ev:onviewchange="scwin.sbx_clsHour_onviewchange">
+								<xf:choices>
+									<xf:item>
+										<xf:label><![CDATA[10:00]]></xf:label>
+										<xf:value><![CDATA[10]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[11:00]]></xf:label>
+										<xf:value><![CDATA[11]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[12:00]]></xf:label>
+										<xf:value><![CDATA[12]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[13:00]]></xf:label>
+										<xf:value><![CDATA[13]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[14:00]]></xf:label>
+										<xf:value><![CDATA[14]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[15:00]]></xf:label>
+										<xf:value><![CDATA[15]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[16:00]]></xf:label>
+										<xf:value><![CDATA[16]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[17:00]]></xf:label>
+										<xf:value><![CDATA[17]]></xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label><![CDATA[18:00]]></xf:label>
+										<xf:value><![CDATA[18]]></xf:value>
+									</xf:item>
+								</xf:choices>
+							</xf:select1>
+						</xf:group>
+						<xf:group id="grpHolidayDays" style="display: inline-block;">
+							<xf:input adjustMaxLength="false" style="width: 50px" id="iptHolidayDays" title="총사용일" class="inp ri" ref="data:dma_lapp.holiday_daycnt" readOnly="true" readOnlyClass="inp ri"></xf:input>
+							<w2:textbox tagname="span" style="" id="" label="일" class="txt blue"></w2:textbox>
+						</xf:group>
+						<xf:group id="grp_holidayHour" style="display: inline-block;">
+							<xf:input adjustMaxLength="false" class="inp  ri" dataType="number" ev:onkeyup="scwin.iptHolidayHour_onkeyup" id="iptHolidayHour" style="width: 50px"
+								title="총 시간" readOnly="true" readOnlyClass="inp ri">
+							</xf:input>
+							<w2:textbox class="txt pl20 blue" label="시간" style="" tagname="span"></w2:textbox>
+						</xf:group>
+						<w2:textbox class="txt" id="" label="(공휴일 제외, 자세한 내용은 도움말 참조)" style="" tagname="span"></w2:textbox>
+					</xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="신청전 잔여연차" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" style="" tagname="td">
+						<w2:textbox class="txt" id="txtBeforeRemain" label="000" style="" tagname="span"></w2:textbox>
+						<xf:trigger class="btn" id="btnOpenCgsSavePop" style="" type="button" ev:onclick="scwin.btnOpenCgsSavePop_onclick">
+							<xf:label><![CDATA[적용연차]]></xf:label>
+						</xf:trigger>
+					</xf:group>
+					<xf:group class="w2tb_th pd0" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<xf:group id="" class="point top">
+							<w2:textbox tagname="span" style="" id="" label="신청후 잔여연차"></w2:textbox>
+						</xf:group>
+					</xf:group>
+					<xf:group class="w2tb_td pd0" style="" tagname="td">
+						<xf:group id="" class="point top">
+							<w2:textbox tagname="span" style="" id="txtAfterRemain" label="000" class="txt"></w2:textbox>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="신청전 잔여보상휴가" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" style="" tagname="td">
+						<w2:textbox class="txt" id="beforeRewardRemain" label="000" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_th pd0" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<xf:group id="" class="point bot">
+							<w2:textbox tagname="span" style="" id="" label="신청후 잔여보상휴가"></w2:textbox>
+						</xf:group>
+					</xf:group>
+					<xf:group class="w2tb_td pd0" style="" tagname="td">
+						<xf:group id="" class="point bot">
+							<w2:textbox tagname="span" style="" id="afterRewardRemain" label="000" class="txt"></w2:textbox>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="helparea" id="" style="">
+				<xf:group id="" style="" tagname="ul">
+					<xf:group id="" style="" tagname="li">
+						<w2:textbox class="" id="" label="『선택적 근로시간제 운영요령』제9조(보상휴가) ①항에 따라 잔여 보상휴가가 1일 이상 적립된 경우, 보상휴가를 연차휴가보다 우선하여 소진하여 주시기 바랍니다." style="" tagname="span">
+						</w2:textbox>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="w2tb tbl" id="" style="" tagname="table">
+				<w2:attributes>
+					<w2:summary></w2:summary>
+				</w2:attributes>
+				<xf:group tagname="caption" text="휴가원신청서 상세"></xf:group>
+				<xf:group tagname="colgroup">
+					<xf:group style="width:160px;" tagname="col"></xf:group>
+					<xf:group style="" tagname="col"></xf:group>
+					<xf:group style="width:140px;" tagname="col"></xf:group>
+					<xf:group style="" tagname="col"></xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="행선지" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" style="" tagname="td">
+						<w2:attributes>
+							<w2:colspan>3</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<xf:input adjustMaxLength="false" byteCheckIgnoreChar=" " class="inp full" id="" style="" title="행선지"
+							ref="data:dma_cgsInfoData.destin">
+						</xf:input>
+
+						<xf:group id="" style="display: none;">
+							<xf:select1 chooseOptionLabel="- 선택 -" submenuSize="auto" appearance="minimal"
+								defaultStyle="text-align:center;vertical-align:middle;" activeStyle=";" style="width:49px;" id="selectboxPhoneGu" visibleRowNum="10"
+								class="sel" displayMode="label">
+								<xf:choices>
+									<xf:item>
+										<xf:label>010</xf:label>
+										<xf:value>010</xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label>011</xf:label>
+										<xf:value>011</xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label>016</xf:label>
+										<xf:value>016</xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label>017</xf:label>
+										<xf:value>017</xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label>019</xf:label>
+										<xf:value>019</xf:value>
+									</xf:item>
+									<xf:item>
+										<xf:label>018</xf:label>
+										<xf:value>018</xf:value>
+									</xf:item>
+								</xf:choices>
+							</xf:select1>
+							<xf:input maxlength="4" onFocusClass="input_on" dataType="number" style="width:43px;" id="inputMobile1"
+								class="inp">
+							</xf:input>
+							<w2:textbox tagname="span" style="" label="-" class="dash"></w2:textbox>
+							<xf:input maxlength="4" onFocusClass="input_on" dataType="number" style="width:43px;" id="inputMobile2"
+								class="inp">
+							</xf:input>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+						<w2:textbox id="" label="직무대행" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<xf:group class="inpSch" id="" style="width: 120px;">
+							<xf:input adjustMaxLength="false" class="inp req" id="iptAgentEmpno" style="" title="직무대행 명"
+								ev:onkeydown="scwin.iptAgentEmpno_onkeydown" ref="data:dma_lapp.agent_psn_empno">
+							</xf:input>
+							<xf:trigger class="btn" id="btn_charger" style="" title="직무대행 조회" type="button"
+								ev:onclick="scwin.btn_charger_onclick">
+								<xf:label><![CDATA[검색]]></xf:label>
+							</xf:trigger>
+						</xf:group>
+						<xf:input adjustMaxLength="false" class="inp req" id="iptAgentNm" style="" title="직무대행 상세"
+							ref="data:dma_lapp.agent_psn_nm">
+						</xf:input>
+					</xf:group>
+					<xf:group class="w2tb_th" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="작성자" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" tagname="td">
+						<w2:attributes></w2:attributes>
+						<w2:textbox class="txt" id="txtReqPsnNm" label="000" style="" tagname="span"
+							ref="data:dma_cgsInfoData.regst_psn_syspayno_nm">
+						</w2:textbox>
+					</xf:group>
+				</xf:group>
+				<xf:group style="" tagname="tr">
+					<xf:group class="w2tb_th" style="" tagname="th">
+						<w2:attributes>
+							<w2:scope>row</w2:scope>
+						</w2:attributes>
+						<w2:textbox id="" label="첨부파일" style="" tagname="span"></w2:textbox>
+					</xf:group>
+					<xf:group class="w2tb_td" style="" tagname="td">
+						<w2:attributes>
+							<w2:colspan>3</w2:colspan>
+							<w2:rowspan>1</w2:rowspan>
+						</w2:attributes>
+						<xf:group class="full" ev:onclick="scwin.upload_A_onclick" id="upload_A" style="height:150px;"></xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="helparea" id="" style="">
+				<xf:group id="" style="" tagname="ul">
+					<xf:group id="" style="" tagname="li">
+						<w2:textbox class="" id="" label="휴가신청서 기본사용법, 연차 관련사항 및 휴가구분별 관련증빙 등 상세정보는" style="" tagname="span"></w2:textbox>
+						<w2:textbox class="blue underline linkPoint" id="" label="도움말(클릭)" style="" tagname="a"></w2:textbox>
+						<w2:textbox class="" id="" label="화면을 참조하시기 바랍니다." style="" tagname="span"></w2:textbox>
+					</xf:group>
+				</xf:group>
+				<w2:textbox id="textboxCommuteCd" style="display:none;" />
+			</xf:group>
+			<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class=" btn pro conf" ev:onclick="scwin.btn_save_onclick" id="btn_save" style="" type="button">
+    					&gt;
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_del" type="button" class=" btn pro conf" ev:onclick="scwin.btn_deleteCgs_onclick">
+    					<xf:label><![CDATA[삭제]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger style="" id="btn_ret" type="button" class=" btn pro conf" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[반려]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" ev:onclick="scwin.btn_close_onclick" id="btn_close" style="" type="button">
+    					<xf:label><![CDATA[연차반영]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

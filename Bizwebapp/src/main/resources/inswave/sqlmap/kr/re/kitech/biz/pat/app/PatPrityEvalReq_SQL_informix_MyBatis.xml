@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.app">
+  <select id="selectPatPrityEvalReqSS03" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo" resultType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.app.xda.PatPrityEvalReqSS03 */
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatPrityEvalReqSS03 */ 
+		   t1.mngmt_no,
+         t1.prity_eval_req_no,
+         t2.invnt_krn_nm,
+         t3.nm     AS prity_nm,
+         substr(t3.empno,1,6)  AS prity_empno,
+         t7.cd_nm as pat_clsf_nm,
+         t1.req_resn,
+         t1.req_syspayno,
+         t1.req_ymd,
+         t6.cd_nm AS apr_state_nm,
+         t2.smitapp_no,
+         t2.smitapp_ymd
+FROM patprityevalreq t1
+JOIN humbasicinfo t3 ON t1.req_syspayno = t3.syspayno 
+JOIN xodhdeptinfo t4 ON t3.dept_cd = t4.dept_cd AND t3.dept_new_ymd = t4.dept_new_ymd
+LEFT JOIN patmastr t2 ON t1.mngmt_no = t2.mngmt_no
+LEFT JOIN xomxintfatab t5 ON t5.req_no = t1.prity_eval_req_no
+LEFT JOIN xodxcommst t6 ON t6.cd = t5.apr_state AND t6.cd_clsf = 'XAD'
+LEFT JOIN xodxcommst t7 ON t7.cd = t2.pat_clsf AND t7.cd_clsf = 'PAT'
+WHERE ( '' = #{prity_start_ymd} OR t1.req_ymd between #{prity_start_ymd} and #{prity_end_ymd})
+AND   ( '' = #{mngmt_no} OR t1.mngmt_no = #{mngmt_no} )
+AND   ( '' = #{prity_syspayno} OR t1.req_syspayno = #{prity_syspayno})
+AND   ( '' = #{apr_state} OR T5.apr_state= #{apr_state})
+<if test="ref_no != null and ref_no != '' and no_type == 'A'.toString()">
+    AND t1.prity_eval_req_no LIKE '%'|| #{ref_no} || '%'
+</if>
+<if test="ref_no != null and ref_no != '' and no_type == 'B'.toString()">
+    AND t1.mngmt_no LIKE '%'|| #{ref_no} || '%'
+</if>
+<if test="ref_no != null and ref_no != '' and no_type == 'C'.toString()">
+    AND t2.smitapp_no LIKE '%'|| #{ref_no} || '%'
+</if>
+<if test="ref_no != null and ref_no != '' and no_type == 'D'.toString()">
+    AND t2.regst_no LIKE '%'|| #{ref_no} || '%'
+</if>
+<if test="ref_no != null and ref_no != '' and no_type == 'E'.toString()">
+    AND t2.patofic_mng_no LIKE '%'|| #{ref_no} || '%'
+</if>
+ORDER BY req_ymd DESC
+  </select>
+<select id="selectPatPrityEvalReqSS02" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo" resultType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.app.xda.PatPrityEvalReqSS02 */
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatPrityEvalReqSS02 */ 
+		 t1.prity_eval_req_no,  
+       t1.mngmt_no,           
+       t1.req_ymd,            
+       t1.req_syspayno,       
+       t1.empno,              
+       t1.nm,
+       t1.req_dept_cd,
+       t1.req_dept_new_ymd,
+       t1.dept_nm,
+       t1.req_resn,
+       t1.rmk,
+       t1.attach_file_no,
+       t1.invnt_krn_nm,
+       t1.smitapp_no,
+       t1.smitapp_ymd,
+       t1.apr_state,
+       t1.rpt_prity_date,
+       t1.accnt_no,
+       t1.prj_nm,
+       t1.prj_term,
+       t1.bsns_cd_inout_nm
+FROM (
+SELECT t2.prity_eval_req_no,  
+       t1.mngmt_no,           
+       t2.req_ymd,            
+       t2.req_syspayno,       
+       t3.empno,              
+       t3.nm,
+       t2.req_dept_cd,
+       t2.req_dept_new_ymd,
+       t4.dept_nm,
+       t2.req_resn,
+       t2.rmk,
+       t2.attach_file_no,
+       t1.invnt_krn_nm,
+       t1.smitapp_no,
+       t1.smitapp_ymd,
+       t6.cd_nm AS apr_state,
+       (select max(rpt_prity_date) from patpritydemnd where mngmt_no = t1.mngmt_no and req_no = t1.req_no) as rpt_prity_date,
+       t7.accnt_no,
+       t7.prj_nm,
+       CASE WHEN LENGTH(t7.prj_term) <![CDATA[ > ]]> 0 AND t7.prj_term IS NOT NULL THEN
+                    substr(t7.prj_term ,0,4)||'-'||substr(t7.prj_term, 5,2) || '-' ||substr(t7.prj_term, 7,7) || '-' || substr(t7.prj_term, 14,2) || '-' || substr(t7.prj_term, 16,2)
+       END AS prj_term,
+       fun_xodxcommst_cd_nm(t8.bsns_cd_inout, 0) as bsns_cd_inout_nm
+FROM patmastr t1
+LEFT JOIN patrelatreschprj t7 on t7.req_no = t1.req_no AND fun_pat_relatreschprj_lst(t7.req_no) = t7.accnt_no
+LEFT JOIN resinpmast t8 on t8.prj_no = t7.prj_no
+LEFT JOIN patprityevalreq t2 ON t1.mngmt_no = t2.mngmt_no
+LEFT JOIN humbasicinfo t3 ON t2.req_syspayno = t3.syspayno
+LEFT JOIN xodhdeptinfo t4 ON t2.req_dept_cd = t4.dept_cd AND t2.req_dept_new_ymd  = t4.dept_new_ymd
+LEFT JOIN xomxintfatab t5 ON t5.req_no = t2.prity_eval_req_no
+LEFT JOIN xodxcommst t6 ON t6.cd = t5.apr_state AND t6.cd_clsf = 'XAD'
+WHERE ( '' = #{mngmt_no} OR t1.mngmt_no = #{mngmt_no} )
+AND   ( '' = #{prity_eval_req_no} OR t2.prity_eval_req_no = #{prity_eval_req_no} )
+) t1
+  </select>
+<insert id="insertPatPrityEvalReqSI01" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.app.xda.PatPrityEvalReqSI01 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.app.insertPatPrityEvalReqSI01 */ 
+		 INTO patprityevalreq(prity_eval_req_no,
+                            mngmt_no,
+                            req_ymd,
+                            req_syspayno,
+                            req_dept_cd,
+                            req_dept_new_ymd,
+                            req_resn,
+                            rmk,
+                            attach_file_no,
+                            regst_syspayno,
+                            regst_daytm)
+VALUES(#{prity_eval_req_no},
+       #{mngmt_no},
+       #{req_ymd},
+       #{req_syspayno},
+       #{req_dept_cd},
+       #{req_dept_new_ymd},
+       #{req_resn},
+       #{rmk},
+       #{attach_file_no},
+       #{regst_syspayno},
+       CURRENT)
+  </insert>
+<update id="updatePatPrityEvalReqSU01" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.app.xda.PatPrityEvalReqSU01 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.app.updatePatPrityEvalReqSU01 */ 
+		 patprityevalreq
+SET  mngmt_no = #{mngmt_no},
+     req_ymd  = #{req_ymd},
+     req_resn = #{req_resn},
+     rmk = #{rmk},
+     attach_file_no = #{attach_file_no},
+     updt_syspayno = #{updt_syspayno},
+     updt_daytm = CURRENT
+WHERE prity_eval_req_no = #{prity_eval_req_no}
+  </update>
+<select id="selectPatCoinvntPsnMS01" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo" resultType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.chr.xda.PatCoinvntPsnMS01 */
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatCoinvntPsnMS01 */ 
+		 t1.req_no             AS req_no             ,   /* 의뢰번호         */                 
+       t1.seq                AS seq                ,   /* 의뢰차수         */  
+       t1.syspayno           AS syspayno           ,   /* 시스템개인번호   */
+       DECODE(t1.blong_clsf, 'PDT010', t2.empno, 'PDT020', '')           AS empno,   /* 개인번호           */  
+       t1.blong_clsf         AS blong_clsf         ,   /* 소속구분         */  
+       DECODE(t1.blong_clsf, 'PDT010', t3.dept_cd, 'PDT020', t1.blong_cd)           AS blong_cd           ,   /* 소속코드         */ 
+       DECODE(t1.blong_clsf, 'PDT010', t3.dept_new_ymd, 'PDT020', t1.dept_new_ymd)  AS dept_new_ymd       ,   /* 소속부서명       */
+       DECODE(t1.blong_clsf, 'PDT010', t3.dept_nm, 'PDT020', t1.blong_nm)           AS blong_nm           ,   /* 소속명           */  
+       t1.nm_krn             AS nm_krn             ,   /* 성명국문         */  
+       t1.nm_eng             AS nm_eng             ,   /* 성명영문         */  
+       t1.resid_regst_no     AS resid_regst_no     ,   /* 주민등록번호     */  
+       substr(t1.resid_regst_no, 0, 6)||'*******'                             
+                          AS resid_no_dis       ,   /* 주민등록번호     */  
+       t1.contac_loc         AS contac_loc         ,   /* 연락처           */  
+       t1.email              AS email              ,   /* 이메일           */  
+       t1.addr               AS addr               ,   /* 주소             */  
+       t1.stake_rt           AS stake_rt           ,   /* 지분율           */ 
+       t1.stake_dept         AS stake_dept         ,   /* 실적부서         */ 
+       rtrim(t1.invnt_psn_clsf)  AS invnt_psn_clsf ,   /* 발명자구분       */  
+       t1.trans_ex           AS trans_ex           ,   /* 양도유무         */  
+       t1.attach_file_no     AS attach_file_no     ,   /* 첨부파일         */  
+       t1.co_invnt_affir_ex  AS co_invnt_affir_ex  ,   /* 공동발명확인유무 */  
+       t1.co_invnt_affir_ymd AS co_invnt_affir_ymd ,   /* 공동발명확인일자 */  
+       t1.co_invnt_affir_rmk AS co_invnt_affir_rmk ,   /* 공동발명확인비고 */  
+       t1.co_invnt_retn_ymd  AS co_invnt_retn_ymd  ,   /* 공동발명반송일자 */  
+       t1.co_invnt_retn_rmk  AS co_invnt_retn_rmk,      /* 공동발명반송비고 */
+       t2.work_clsf,
+       c.cd_nm AS work_clsf_nm 
+FROM patcoinvntpsn t1
+LEFT JOIN humbasicinfo t2 ON t1.syspayno = t2.syspayno
+LEFT JOIN xodhdeptinfo t3 ON t2.dept_cd = t3.dept_cd AND t2.dept_new_ymd = t3.dept_new_ymd
+LEFT JOIN xodxcommst c ON t2.work_clsf = c.cd AND c.cd_clsf = 'HAG'
+WHERE 1=1
+<if test="req_no != null and req_no != ''">
+	 AND t1.req_no = #{req_no}
+</if>   /* 의뢰번호 */
+<if test="mngmt_no != null and mngmt_no != ''">
+	 AND t1.mngmt_no = #{mngmt_no}
+</if>   /* 관리번호 */
+  </select>
+<select id="selectPatCasTechTransMS01" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo" resultType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.chr.xda.PatCasTechTransMS01 */
+SELECT /* QueryID : kr.re.kitech.biz.pat.app.selectPatCasTechTransMS01 */ 
+		  d.tech_fee_clsf,
+        k.first_pre_prj_no,
+        a.smitapp_no,
+        fun_xodxcommst_cd_nm(d.tech_fee_mou_state, 0) AS mou_state_nm,
+        d.tech_fee_no,
+        h.vend_nm,
+        d.tech_nm,           
+        c.accnt_no,
+        fun_xodxcommst_cd_nm(d.permit_clsf, 0)        AS permit_clsf_nm,
+        d.mou_contrct_ymd,
+        d.contrct_cls_ymd,
+        g.nm                                          AS rspns_nm,
+        max(nvl(h.advnc_fee,0)) + max(NVL(h.flt_ryalty, 0))  AS contrct_fee,
+        SUM(NVL(i.ofic_depst_amt, 0))                 AS ofic_depst_amt 
+FROM respstaply a
+INNER JOIN patmastr b ON a.smitapp_no = b.smitapp_no 
+INNER JOIN respstmast d ON a.tech_fee_no = d.tech_fee_no
+INNER JOIN respstcrtpagr h ON d.tech_fee_no = h.tech_fee_no 
+INNER JOIN humbasicinfo  g ON d.resch_rspns_main = g.syspayno
+LEFT OUTER JOIN patrelatreschprj c ON b.req_no = c.req_no
+LEFT OUTER JOIN rescrtpsrecte i ON d.tech_fee_no = i.tech_fee_no 
+LEFT OUTER JOIN resbgacctm j ON c.accnt_no = j.accnt_no AND j.accnt_clsf = 'RAR001'
+LEFT OUTER JOIN resinpmast k ON j.prj_no = k.prj_no
+WHERE b.mngmt_no = #{mngmt_no}
+  AND d.tech_fee_mou_state IN ('RFJ012','RFJ013')
+  AND d.mou_clsf = 'RFD001' 
+ AND LENGTH(a.smitapp_no) <![CDATA[ > ]]> 0
+GROUP BY 1, 2, 3, 4, 5, 6,7, 8, 9,10,11,12
+ORDER BY 1, 2, 3, 5
+  </select>
+<insert id="insertXomxIntfaTabSI01" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.fin.bud.frc.xda.XomxIntfaTabSI01 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.app.insertXomxIntfaTabSI01 */ 
+		 INTO xomxintfatab ( req_no,
+                           apr_state,
+                           state_inform_flag,
+                           last_execute_tim,
+                           ui_id,
+                           endpoints, 
+                           mngmt_item_7
+)VALUES( #{req_no},
+        CASE WHEN #{apr_state} = '' THEN 'XAD005' ELSE #{apr_state} END,
+        '1',
+        current,
+        #{ui_id},
+        #{endpoints},
+        #{mngmt_item_7})
+  </insert>
+<delete id="deletePatGiveUpSD01" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.app.xda.PatGiveUpSD01 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatGiveUpSD01 */ 
+FROM    patgiveup
+WHERE   giveup_req_no   = #{giveup_req_no}
+  </delete>
+<delete id="deletePatPrityEvalReqSD01" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.app.xda.PatPrityEvalReqSD01 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatPrityEvalReqSD01 */ 
+FROM    patprityevalreq
+WHERE   prity_eval_req_no = #{prity_eval_req_no}
+  </delete>
+<delete id="deletePatIpdTempSaveSD02" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdTempSaveSD02 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatIpdTempSaveSD02 */ 
+FROM    patdvsprr
+WHERE   dp_req_no = #{dp_req_no}
+  </delete>
+<delete id="deletePatIpdTempSaveSD01" parameterType="kr.re.kitech.biz.pat.app.vo.PatPrityEvalReqVo">
+/* XDA : kitech.pat.ipd.xda.PatIpdTempSaveSD01 */
+DELETE /* QueryID : kr.re.kitech.biz.pat.app.deletePatIpdTempSaveSD01 */ 
+		 FROM patdvsprrapp
+WHERE dp_req_no = #{dp_req_no}
+  </delete>
+</mapper>

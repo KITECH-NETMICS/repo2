@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+
+<select id="selectHumApySlfDrivList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySlfDrivInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApySlfDrivInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySlfDrivList */ 
+		 a.req_no       --신청번호
+        , a.req_ymd   --신청일
+        , a.syspayno
+        , b.empno     --개인번호
+        , b.nm        --성명
+        , b.dept_cd   --부서코드
+        , b.dept_nm   --부서명
+        , b.posi_cd   --직급코드
+        , b.posi_nm   --부서명
+        , a.req_clsf  --신청구분
+        , fun_xodxcommst_cd_nm(a.req_clsf, 0) AS req_clsf_nm
+        , a.car_no    --차량번호
+        , a.carmdl    --차종
+        , a.car_clr   --차량색상
+        , c.apr_state --결제상태 코드
+        , d.cd_nm AS apr_state_nm --결제상태 이르
+        , b.work_clsf
+        ,e.cd_nm AS work_clsf_nm
+FROM humapyslfdriv a
+JOIN v_humbasicinfo b ON b.syspayno = a.syspayno
+JOIN xomxintfatab c ON c.req_no = a.req_no AND c.state_inform_flag = '1'
+JOIN xodxcommst d ON d.cd = c.apr_state
+JOIN xodxcommst e ON e.cd = b.work_clsf
+<where>
+    <if test="syspayno != null and syspayno != ''">
+	 AND a.syspayno  = #{syspayno}
+	</if>
+    <if test="req_no != null and req_no != ''">
+	 AND a.req_no LIKE '%'|| #{req_no} ||'%'
+	</if>
+    <if test="dept_cd != null and dept_cd != ''">
+	 AND b.dept_cd  = #{dept_cd}
+	</if>
+    <if test="apr_state != null and apr_state != ''">
+	 AND c.apr_state  = #{apr_state}
+	</if>
+    <if test="work_clsf != null and work_clsf != ''">
+	 AND b.work_clsf  = #{work_clsf}
+	</if>
+    <if test="req_ymd_from != null and req_ymd_from != ''">
+	 AND a.req_ymd  >=  #{req_ymd_from}
+	</if>
+	<if test="req_ymd_to != null and req_ymd_to != ''">
+	 AND a.req_ymd  <![CDATA[ <=]]>  #{req_ymd_to}
+	</if>
+</where>
+ORDER BY a.req_no DESC
+  </select>
+  
+<select id="selectHumApySlfDriv" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySlfDrivInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApySlfDrivInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySlfDriv */ 
+ a.req_no,             --신청번호
+ b.nm,
+ b.empno,
+ c.apr_state ,
+ d.cd_nm apr_state_nm,
+ a.req_ymd   ,        --신청일            
+ a.syspayno  ,        --시스템개인번호    
+ fun_dept_nm(a.dept_cd, a.dept_new_ymd)   dept_nm,        --부서코드  
+ fun_posi_nm(b.posi_cd) posi_nm,   
+ a.req_clsf,          			--신청구분     
+ a.car_no   ,        			--차량번호          
+ a.car_clr,        				--차량색상    
+ a.carmdl,        				--차종
+ a.req_cause  ,        			--신청사유          
+ TRIM(a.driv_licns_attach_file_no) as driv_licns_attach_file_no  , 	--운전면허증사본    
+ TRIM(a.car_regst_attach_file_no) as car_regst_attach_file_no ,  	--차량등록증사본      
+ TRIM(a.attach_file_no) as attach_file_no         					--첨부파일번호      
+FROM
+ humapyslfdriv a,            	--자가운전보조비 신청
+ humbasicinfo b,
+ xomxintfatab c,
+ xodxcommst d
+WHERE
+	 a.req_no = #{req_no}
+ AND a.syspayno = b.syspayno
+ AND a.req_no = c.req_no
+ AND c.apr_state = d.cd
+ AND state_inform_flag = '1'
+ AND d.cd_clsf = 'XAD'
+ AND d.use_ex = 'Y'
+  </select>  
+
+<select id="selectHumApySlfDrivAprInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySlfDrivInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApySlfDrivInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySlfDrivAprInfo */ 
+		  t2.apr_state
+FROM    humapyslfdriv t1,
+        (SELECT req_no, apr_state
+         FROM   xomxintfatab 
+         WHERE  req_no IN (SELECT  MAX(req_no) AS req_no 
+                           FROM    humapyslfdriv 
+                           WHERE   syspayno = #{syspayno}))t2
+WHERE   t1.req_no   = t2.req_no
+AND     t1.syspayno = #{syspayno}
+  </select>
+    
+  <insert id="insertHumApySlfDriv" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySlfDrivInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApySlfDriv */ 
+		 INTO humapyslfdriv(
+ req_no,                       --신청번호          
+ req_ymd,                      --신청일            
+ syspayno,                     --시스템개인번호    
+ dept_cd,                      --부서코드          
+ dept_new_ymd,                 --부서신설일     
+ req_clsf,                     -- 신청구분   
+ car_no,                       --차량번호        
+ carmdl,
+ car_clr,
+ req_cause,                    --신청사유          
+ driv_licns_attach_file_no,    --운전면허증사본    
+ car_regst_attach_file_no,     --차량등록증사본      
+ attach_file_no,               --첨부파일번호      
+ regst_syspayno,               --등록시스템개인번호  
+ regst_daytm                   --등록일시    
+)VALUES(
+ #{req_no},        --신청번호          
+ #{req_ymd},        --신청일            
+ #{syspayno},        --시스템개인번호    
+ #{dept_cd},        --부서코드          
+ #{dept_new_ymd},        --부서신설일        
+ #{req_clsf},        --신청구분
+ #{car_no},        --차량번호  
+ #{carmdl},
+ #{car_clr},        
+ #{req_cause},        --신청사유          
+ #{driv_licns_attach_file_no},        --운전면허증사본    
+ #{car_regst_attach_file_no},        --차량등록증사본      
+ #{attach_file_no},        --첨부파일번호      
+ #{regst_syspayno},        --등록시스템개인번호  
+ CURRENT   --등록일시
+)
+  </insert>  
+
+<update id="updateHumApySlfDriv" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySlfDrivInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApySlfDriv */ 
+		 humapyslfdriv SET
+ car_no   = #{car_no},        --차량번호          
+ req_cause  = #{req_cause},        --신청사유 
+ car_clr = #{car_clr},
+ carmdl = #{carmdl},         
+ driv_licns_attach_file_no = #{driv_licns_attach_file_no} ,      --운전면허증사본    
+ car_regst_attach_file_no = #{car_regst_attach_file_no} ,      --차량등록증사본      
+ attach_file_no  = #{attach_file_no},      --첨부파일번호      
+ updt_syspayno = #{updt_syspayno},
+ updt_daytm = current
+WHERE
+ req_no = #{req_no}
+  </update>
+  
+  <delete id="deleteHumApySlfDriv" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySlfDrivInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApySlfDriv */ 
+		 FROM humapyslfdriv WHERE req_no = #{req_no}
+  </delete>  
+</mapper>

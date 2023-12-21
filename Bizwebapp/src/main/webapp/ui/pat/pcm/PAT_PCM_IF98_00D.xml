@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ev="http://www.w3.org/2001/xml-events"
+	xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="출원업무ARP메인">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate/>
+		<xf:model>
+			<xf:instance>
+				<data />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>				
+				       <w2:key id="todo_auth" name="todo_auth" dataType="text"></w2:key>
+				       <w2:key id="ref_key" name="ref_key" dataType="text"></w2:key>
+				       <w2:key id="page_gbn" name="page_gbn" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				
+				<w2:dataMap baseNode="map" id="dma_rev_param">
+				  	<w2:keyInfo>				
+				       <w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+				       <w2:key id="mngmt_no" name="mngmt_no" dataType="text"></w2:key>
+				       <w2:key id="ref_no" name="ref_no" dataType="text"></w2:key>
+				       <w2:key id="page_detail_id" name="page_detail_id" dataType="text"></w2:key>
+				       <w2:key id="job_title" name="job_title" dataType="text"></w2:key>
+				       <w2:key id="page_id" name="page_id" dataType="text"></w2:key>
+				 	</w2:keyInfo>
+				</w2:dataMap>
+				
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+
+			<!-- 출원업무공통탭 파라미터 조회 -->
+			<xf:submission id="sbm_svcpatpcmmansr01" 
+						   ref='data:json,dma_search' 
+						   target='data:json,{"id":"dma_rev_param","key":"patPcmMainVo"}' 
+						   action="SvcPATPCMMANSR01.pwkjson" 
+						   ev:submitdone="scwin.sbm_svcpatpcmmansr01_done" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+						   
+		</xf:model>
+		<script src="/cm/js/biz/pat.js" cache="false" />
+		<script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 출원업무ARP메인
+ 	 * 변경 이력 : 2023-09-04	이대훈	최초 작성
+ 	 ****************************************************/
+	 
+ 	scwin.param = {};
+
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		
+		scwin.param = com.getParameter();
+		dma_search.setJSON(scwin.param);
+		
+		const roleCode = com.getLoginInfo('roleCode');
+		if (roleCode.lastIndexOf("1016121") > 0) { // 특허팀
+            dma_search.set("todo_auth", "1");
+		} else { // 발명자
+            dma_search.set("todo_auth", "0");
+		}
+		
+		if (typeof scwin.param.param5 === 'undefined' ) {
+			dma_search.set("page_gbn", "ing");
+		} else {
+			dma_search.set("page_gbn", "end");
+		}
+		
+		if (scwin.param.param4 === "apr"){
+			com.alert('특허 업무는 "업무대기함"에서 진행해 주시기 바랍니다. \n결재진행함에서는 본 단위업무가 끝날 때까지 현황 확인만 가능합니다.');
+		}
+		
+		com.execute(sbm_svcpatpcmmansr01);
+	};
+	
+	scwin.sbm_svcpatpcmmansr01_done = async function(e) {
+		
+		com.trimDataCollection(dma_rev_param);
+	
+		const serviceId = dma_rev_param.get("page_detail_id");
+		
+		const jobTitle = dma_rev_param.get("job_title");
+        scwin.param.req_no = dma_rev_param.get("req_no");
+        scwin.param.mngmt_no = dma_rev_param.get("mngmt_no");
+        
+        const rowJSON = dma_rev_param.getJSON();
+        rowJSON.req_no = rowJSON.req_no ? rowJSON.req_no : scwin.param.req_no;  
+        rowJSON.mngmt_no = rowJSON.mngmt_no ? rowJSON.mngmt_no : scwin.param.mngmt_no;
+        
+        let dataObject = {
+            "type" : "json", 
+            "name" : "param",
+            "data" : rowJSON
+        };
+        
+        const menuObj = await com.getMenuObj(serviceId);
+        if("serviceNewUrl" in menuObj){
+	        dtlFrame.setSrc(menuObj.serviceNewUrl, {"dataObject": dataObject});
+			wfm_title.getWindow().tbx_title.setValue(jobTitle);
+        }else{
+        	com.alert("메뉴정보가 없습니다.");
+        }
+
+    };
+	
+	scwin.onpageunload = function() {
+	};
+	
+	/**
+	 * 목록 버튼 클릭시 이벤트
+	 */
+	scwin.trigger_list_onclick = function(e) {
+	    let menuIdToMove;
+	
+	    if (scwin.param.param4 === "apr") {
+	        if (typeof scwin.param.param5 === "undefined") {
+	            // 업무대기함
+	            menuIdToMove = "A004";
+	        } else {
+				if (scwin.param.param3 == "XAD100") {
+				    // 완료함
+				    menuIdToMove = "A006";
+				} else {
+					// 진행함
+				    menuIdToMove = "A005";
+				}
+	        }
+	    } else {
+	        // 기본 메뉴 이동
+	        scwin.param.pageId ? menuIdToMove = scwin.param.pageId : menuIdToMove = "IA09";
+	    }
+	    com.moveList(menuIdToMove);
+	};
+
+		
+	]]></script>
+	<style><![CDATA[
+		.pageWrap .pageWrap{padding: 15px 0 0 0}		
+	]]></style>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml"></w2:wframe>
+		<xf:group class="pageWrap" style="">
+			<xf:group class="searchSection step">
+    			<xf:group class="le">
+    				<xf:trigger class="btn" type="button" ev:onclick="scwin.trigger_list_onclick">
+    					<xf:label><![CDATA[목록]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<w2:wframe id="dtlFrame" processMsgFrame="true"></w2:wframe>
+		</xf:group>
+	</body>
+</html>

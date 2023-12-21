@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.etc">
+	<select id="selectEtcBookPurMnt" resultType="kr.re.kitech.biz.kbk.etc.vo.EtcBookPurMntSrcVo"
+		parameterType="kr.re.kitech.biz.kbk.etc.vo.EtcBookPurMntInpVo">
+		/* QueryID : kr.re.kitech.biz.kbk.etc.selectEtcBookPurMnt */
+		select
+					a.req_no,
+					a.centr_cd,
+					fun_xodxcommst_cd_nm(a.centr_cd, 0) AS centr_nm,
+					a.ymd,
+					a.book_pur_typ,
+					fun_xodxcommst_cd_nm(a.book_pur_typ, 0) AS book_pur_typ_nm,
+					a.book_info_url,
+					a.req_qty,
+					a.tot_expns,
+					c.book_nm,
+					a.prcs_state,
+					fun_xodxcommst_cd_nm(a.prcs_state, 0) AS prcs_state_nm,
+					b.apr_state,
+					fun_xodxcommst_cd_nm(b.apr_state, 0) AS apr_state_nm,
+					fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 0) AS req_psn_syspaynm
+		FROM
+					kbkbookpurreq a
+		LEFT JOIN
+					xomxintfatab b
+		       ON
+					state_inform_flag = '1'
+		      AND
+					a.req_no = b.req_no
+		LEFT JOIN
+					kbkbookpurreqlist c
+		       ON
+					a.req_no = c.req_no
+		WHERE
+					a.ymd between #{start_ymd} AND #{cls_ymd}
+			   AND  
+					a.req_no LIKE DECODE(#{req_no},'','%',#{req_no})
+		<if test="book_nm != null and book_nm != ''">
+			AND
+				a.req_no IN(
+				SELECT
+					req_no
+				FROM
+					kbkbookpurreqlist
+				WHERE
+					replace(upper(book_nm),' ','')
+				LIKE
+					DECODE(#{book_nm},'','%',concat(concat('%',replace(upper(#{book_nm}),' ','')),'%'))
+				)
+		</if>
+		<if test="req_psn_syspayno != null and req_psn_syspayno != ''">
+			AND a.req_psn_syspayno = #{req_psn_syspayno}
+		</if>
+		<if test="apr_state != null and apr_state != ''">
+			AND b.apr_state = #{apr_state}
+		</if>
+		<if test="prcs_state != null and prcs_state != ''">
+			AND a.prcs_state = #{prcs_state}
+		</if>
+		<if test="book_pur_typ != null and book_pur_typ != ''">
+			AND a.book_pur_typ = #{book_pur_typ}
+		</if>
+		AND
+			(b.apr_state != "XAD005"
+		AND
+			b.apr_state != "XAD010"
+		AND
+			b.apr_state != "XAD013"
+		AND
+			b.apr_state != "XAD015"
+		OR
+			apr_state is null)
+		ORDER BY
+				req_no desc
+	</select>
+</mapper>

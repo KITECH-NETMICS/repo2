@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="선정평가 위원회 점수 등록">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="bsns_req_no" name="bsns_req_no" dataType="text"></w2:key>
+        				<w2:key id="cmitt_clsf" name="cmitt_clsf" dataType="text"></w2:key>
+        				<w2:key id="cmitt_nm" name="cmitt_nm" dataType="text"></w2:key>
+        				<w2:key id="req_psn_syspayno" name="req_psn_syspayno" dataType="text"></w2:key>
+        				<w2:key id="cmitt_no" name="cmitt_no" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_member" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="bsns_req_no" name="사업신청번호" dataType="text"></w2:column>
+        				<w2:column id="odr" name="순번" dataType="text"></w2:column>
+        				<w2:column id="cmitt_no" name="위원회번호" dataType="text"></w2:column>
+        				<w2:column id="cmitt_clsf" name="위원회구분" dataType="text"></w2:column>
+        				<w2:column id="cmitt_clsf_nm" name="위원회구분명" dataType="text"></w2:column>
+        				<w2:column id="cmitt_nm" name="위원회명" dataType="text"></w2:column>
+        				<w2:column id="state_clsf" name="상태구분" dataType="text"></w2:column>
+        				<w2:column id="inout_clsf" name="위원회내외구분" dataType="text"></w2:column>
+        				<w2:column id="mber_no" name="위원번호" dataType="text"></w2:column>
+        				<w2:column id="empno" name="개인번호" dataType="text"></w2:column>
+        				<w2:column id="membr_nm" name="성명" dataType="text"></w2:column>
+        				<w2:column id="resid_no" name="주민번호" dataType="text"></w2:column>
+        				<w2:column id="blong" name="소속" dataType="text"></w2:column>
+        				<w2:column id="open_ymd" name="개최일자" dataType="text"></w2:column>
+        				<w2:column id="cud_type" name="cud타입" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_cmitt" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="cmitt_no" name="위원회번호" dataType="text"></w2:column>
+        				<w2:column id="cmitt_clsf" name="위원회구분" dataType="text"></w2:column>
+        				<w2:column id="cmitt_clsf_nm" name="위원회구분명" dataType="text"></w2:column>
+        				<w2:column id="cmitt_nm" name="위원회명" dataType="text"></w2:column>
+        				<w2:column id="open_ymd" name="개최일자" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<!-- 사업신청으로 최초조회 -->
+        	<xf:submission id="sbm_selectApcCmtList" ref="data:json,dma_search" target="" action="SvcRESAPCCMTR01.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 위원조회 -->
+        	<xf:submission id="sbm_selectApcCmtDetailList" ref="data:json,dma_search"
+        		target='' action="SvcRESAPCCMTR02.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<!-- 저장 -->
+        	<xf:submission id="sbm_registApcCmtDetail"
+        		ref='data:json,[{"id":"dma_search","key":"resApcCmtVo"},{"id":"dlt_member","key":"resApcCmtVoList"}]' target=""
+        		action="SvcRESAPCCMTM01.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace=""
+        		errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror=""
+        		abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 선정평가위원회
+ 	 * 변경 이력 : 2022-11-25	홍성민	최초 작성
+ 	 ****************************************************/  
+ 	scwin.data={};
+    /*
+     * 페이지 열기
+     */      
+	scwin.onpageload = function() {
+		dma_search.setJSON(com.getParameter());
+		// 조회
+		scwin.search();
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	/****************************************************************************
+	*	사용자 정의 함수
+	*****************************************************************************/
+	/*
+     * 저장
+     */
+	scwin.save = function() {
+		com.confirm("message.xom.wq.017" /*저장 하시겠습니까?*/, function(ret) {
+			if (ret) {
+				dma_search.set("state_clsf", "RHC001");
+				
+				com.execute(sbm_registApcCmtDetail, {
+					successCallback : function(e) {
+						scwin.search();	
+					}
+				});
+			}
+		});
+	};
+	
+	/*
+     * 조회
+     */
+	scwin.search = function() {
+		com.execute(sbm_selectApcCmtList, { 
+			successCallback : function(e){
+				var resultList = e.responseJSON.elData.resApcCmtVoList;
+				var cudType = resultList[0].cud_type;
+				if (cudType == "U") {
+					grd_cmitt.hide();
+					btn_search.hide();
+
+					dlt_member.setJSON(resultList, false);	
+	                if (dlt_member.getRowCount() > 0) {
+						inp_commitNm.setValue(dlt_member.getCellData(0, "cmitt_nm" ));
+						inp_commitNm.setReadOnly( true );
+					}
+				}else{
+					dlt_cmitt.setJSON(resultList, false);
+				}
+			}
+		}); 
+	};
+	
+	scwin.closePopup = function(ret) {
+		var retJson = Object.assign({selt_ymd  : scwin.result['selt_ymd']}, ret);
+		com.closePopup(retJson);	
+	};
+	
+	/**
+	*
+	*	이벤트 함수
+	*
+	**/
+	
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	
+	/*
+     * 저장 버튼 클릭 이벤트
+     */
+	scwin.btn_save_onclick = function(e) {
+		var rowIndex = grd_cmitt.getFocusedRowIndex();
+				
+		scwin.data.selt_ymd = grd_cmitt.getCellData(rowIdex, "open_ymd");
+		
+		scwin.save();
+	};
+	
+	/*
+     * 위원 추가 버튼 클릭 이벤트
+     */
+	scwin.btn_add_onclick = function(e) {
+		var row = com.addRow(grd_member);
+		dlt_member.setCellData(row, "bsns_req_no", dma_search.get("bsns_req_no"));
+		dlt_member.setCellData(row, "state_clsf", "RHC001");
+	};
+	
+	/*
+     * 위원 삭제 버튼 클릭 이벤트
+     */
+	scwin.btn_del_onclick = function(e) {
+		var rowIdxArr = dlt_member.getCheckedIndex("chk");
+		if (rowIdxArr.length == 0) {
+			com.alert("삭제할 행을 선택하세요.");
+			return;		
+		}
+
+		rowIdxArr.reverse().forEach(function(idx) {
+			dlt_member.removeRow(idx);
+		});
+	};
+	
+	/*
+     * 닫기 버튼 클릭 이벤트
+     */
+	scwin.btn_close_onclick = function(e) {
+		scwin.closePopup();
+	};
+	
+	/*
+     * 위원회 그리드 클릭 클릭 이벤트
+     */
+	scwin.grd_cmitt_oncellclick = function(row,col,colId) {
+		dma_search.set("cmitt_no", dlt_cmitt.getCellData( row, "cmitt_no" ));
+		
+		com.execute(sbm_selectApcCmtDetailList, { 
+			successCallback : function(e){	
+				dlt_member.setJSON(e.responseJSON.elData.resApcCmtVoList);			
+			}
+		});
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="" style="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption" text="조회조건"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:80px;" tagname="col"></xf:group>
+    						<xf:group style="width:190px;" tagname="col"></xf:group>
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="신청번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<xf:input adjustMaxLength="false" id="inp_prjNo" ref="data:dma_search.bsns_req_no" style=""></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox id="" label="위원회명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" id="inp_commitNm" ref="data:dma_search.cmitt_nm" style="" class="inp ful"></xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    				<xf:group class="schbtn" id="" style="">
+    					<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+    						<xf:label><![CDATA[조회]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_cmitt" defaultCellHeight="28" evenRowBackgroundColor="#f7faff" id="grd_cmitt" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;" summaryAuto="true" visibleRowNum="3" ev:oncellclick="scwin.grd_cmitt_oncellclick">
+				<w2:caption id="caption1" style="" value="this is a grid caption.">
+				</w2:caption>
+				<w2:header id="header1" style="">
+					<w2:row id="row1" style="">
+						<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="관리번호" width="100">
+						</w2:column>
+						<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="분류" width="60">
+						</w2:column>
+						<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="위원회명" width="300">
+						</w2:column>
+						<w2:column displayMode="label" id="column29" inputType="text" style="height:28px;" value="개최일자" width="140">
+						</w2:column>
+					</w2:row>
+				</w2:header>
+				<w2:gBody id="gBody1" style="">
+					<w2:row id="row2" style="">
+						<w2:column displayMode="label" escape="false" id="cmitt_no" inputType="text" readOnly="true" style="height:28px;" width="70">			</w2:column>
+						<w2:column displayMode="label" escape="false" id="cmitt_clsf_nm" inputType="text" readOnly="true" style="height:28px;" width="100">			</w2:column>
+						<w2:column displayMode="label" id="cmitt_nm" inputType="text" readOnly="true" style="height:28px;" width="70" class="le">
+						</w2:column>
+						<w2:column displayMode="label" id="open_ymd" inputType="text" readOnly="true" style="height:28px;" width="70" dataType="date">
+						</w2:column>
+					</w2:row>
+				</w2:gBody>
+			</w2:gridView>
+   			<xf:group class="btnGroup" id="" style="padding-top:5px;padding-bottom:5px;">
+   				<xf:group id="" class="le"></xf:group>
+   				<xf:group id="" class="ri">
+	   				<xf:trigger class="bt_plus" id="btn_add" style="" type="button" ev:onclick="scwin.btn_add_onclick">
+	   					<xf:label><![CDATA[추가]]></xf:label>
+	   				</xf:trigger>
+	   				<xf:trigger class="bt_minus" id="btn_del" style="" type="button" ev:onclick="scwin.btn_del_onclick">
+	   					<xf:label><![CDATA[삭제]]></xf:label>
+	   				</xf:trigger>
+	   			</xf:group>
+   			</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_member" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_member" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="8">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column6" inputType="checkbox" style="height:28px;" value="" width="50"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="내외구분" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="개인번호(내/외)" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="성명" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column26" inputType="text" style="height:28px;" value="주민등록번호" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column29" inputType="text" style="height:28px;" value="소속" width="150"></w2:column>
+    					<w2:column displayMode="label" id="column32" inputType="text" style="height:28px" value="직책" width="70"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" escape="false" id="chk" inputType="checkbox" style="height:28px;"
+    						width="50" fixColumnWidth="true">
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="inout_clsf" inputType="select" style="height:28px;"
+    						width="70" readOnly="true">
+    						<w2:choices>
+   								<w2:item>
+   									<w2:label>내부위원</w2:label>
+   									<w2:value>RHD001</w2:value>
+   								</w2:item>
+   								<w2:item>
+   									<w2:label>외부위원</w2:label>
+   									<w2:value>RHD002</w2:value>
+   								</w2:item>
+   							</w2:choices>
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="expt_empno" inputType="text" readOnly="true" style="height:28px;"
+    						width="100">
+    					</w2:column>
+    					<w2:column displayMode="label" id="nm" inputType="text" readOnly="true" style="height:28px;" width="70"></w2:column>
+    					<w2:column displayMode="label" id="resid_no" inputType="text" readOnly="true" style="height:28px;" width="120"></w2:column>
+    					<w2:column displayMode="label" id="blong" inputType="text" readOnly="true" style="height:28px" width="150"></w2:column>
+    					<w2:column displayMode="label" id="posi_nm" inputType="text" readOnly="true" style="height:28px" width="70"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger class=" btn pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro conf" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick">
+    					<xf:label><![CDATA[저장]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

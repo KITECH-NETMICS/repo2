@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.lpl.lcp">
+  <select id="selectVipAudencList" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.LcpVipAudencMS01 국외귀빈접견조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectVipAudencList */ 
+		 a.audenc_no
+      ,a.visit_start_ymd
+      ,a.visit_cls_ymd
+      ,substr(to_date(a.visit_start_ymd, '%Y%m%d'), 0, 10) || ' ~ '||case when a.visit_cls_ymd <![CDATA[ <> ]]> "" then substr(to_date(a.visit_cls_ymd, '%Y%m%d'), 0, 10) else '' end as visit_term
+      ,a.visit_clsf
+      ,fun_xodxcommst_cd_nm(a.visit_clsf, 0) as visit_clsf_nm
+      ,a.visit_subj
+      ,a.charg_syspayno
+      ,a.charg_dept
+      ,a.visit_goal
+      ,a.visit_plc
+      ,a.audenc_psn
+      ,a.rmk
+      ,a.attach_file_no
+      ,b.natn_cd
+      ,fun_xodxcommst_cd_nm(b.natn_cd, 0) as natn_nm
+      ,b.odr
+      ,b.reprs_psn_nm
+      ,concat(b.reprs_psn_nm, concat('외 ', concat(max(b.odr)-1, '명'))) as psn_count
+      ,b.cmpy_nm_krchar
+FROM  lcpvipaudenc a  LEFT JOIN (SELECT c.audenc_no, c.odr , c.natn_cd, c.reprs_psn_nm, d.cmpy_nm_eng, d.cmpy_nm_krchar
+                                 FROM lcpvipaudencagncy c 
+                                 JOIN (SELECT cust_no, cmpy_nm_krchar, cmpy_nm_eng FROM sptcustbaseinfo 
+                                       WHERE 1=1                               ) d
+            ON c.agncy_cd = d.cust_no
+                                 WHERE 1=1
+            )b
+on a.audenc_no = b.audenc_no
+WHERE 1=1
+AND   a.visit_start_ymd  between #{visit_start_ymd1}  AND #{visit_start_ymd2}
+AND   a.visit_clsf LIKE DECODE(#{visit_clsf},'','%',#{visit_clsf})
+AND   a.charg_dept LIKE DECODE(#{charg_dept},'','%',#{charg_dept})
+AND   a.charg_syspayno LIKE DECODE(#{charg_syspayno},'','%',#{charg_syspayno})
+AND   a.audenc_no IN (SELECT distinct a.audenc_no FROM lcpvipaudencagncy a
+                       JOIN (SELECT cust_no, cmpy_nm_krchar, agncy_clsf, cmpy_nm_eng
+                             FROM sptcustbaseinfo
+                             WHERE 1=1
+                             AND   agncy_clsf LIKE DECODE(#{agncy_clsf},'','%',#{agncy_clsf})) c
+                       ON a.agncy_cd = c.cust_no
+                       WHERE 1=1 AND (c.cmpy_nm_krchar LIKE DECODE(#{cmpy_nm_krchar},'','%',#{cmpy_nm_krchar}) OR c.cmpy_nm_eng LIKE DECODE(#{cmpy_nm_eng},'','%',#{cmpy_nm_eng}))) 
+GROUP BY a.audenc_no
+      ,a.visit_start_ymd
+      ,a.visit_cls_ymd
+      ,a.visit_clsf
+      ,a.visit_subj
+      ,a.charg_syspayno
+      ,a.charg_dept
+      ,a.visit_goal
+      ,a.visit_plc
+      ,a.audenc_psn
+      ,a.rmk
+      ,a.attach_file_no
+      ,b.natn_cd
+      ,b.odr
+      ,b.reprs_psn_nm
+      ,b.cmpy_nm_krchar
+ORDER BY a.audenc_no, b.odr
+  </select>
+  <select id="selectVipAudencDetail" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.LcpVipAudencMS02*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectVipAudencDetail */ 
+		 a.audenc_no
+      ,a.visit_start_ymd
+      ,a.visit_cls_ymd
+      ,a.visit_clsf
+      ,fun_xodxcommst_cd_nm(a.visit_clsf, 0) as visit_clsf_nm
+      ,a.visit_subj
+      ,a.charg_syspayno
+      ,fun_humbasicinfo_cd_nm(a.charg_syspayno, 1) as charg_empno
+      ,a.charg_nm
+      ,a.charg_dept
+      ,a.charg_dept_new_ymd
+      ,a.visit_goal
+      ,a.visit_plc
+      ,a.audenc_psn
+      ,a.audenc_contnt
+      ,a.rmk
+      ,a.attach_file_no
+FROM  lcpvipaudenc a
+WHERE 1=1
+AND   a.audenc_no = #{audenc_no}
+  </select>
+  <select id="selectLcpVipAudencAgncy" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.LcpVipAudencAgncyMS01*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpVipAudencAgncy */ 
+		  a.audenc_no
+       ,a.odr
+       ,a.natn_cd
+       ,fun_xodxcommst_cd_nm(a.natn_cd, 0) natn_nm
+       ,a.agncy_cd
+       ,a.reprs_psn_nm
+       ,b.cmpy_nm_krchar as krchar_agncy_nm
+FROM   lcpvipaudencagncy a JOIN (SELECT cmpy_nm_krchar, cust_no
+                                 FROM   sptcustbaseinfo) b
+ON a.agncy_cd = b.cust_no
+WHERE 1=1
+AND   audenc_no = #{audenc_no}
+  </select>
+  <select id="selectVipAudencPopTree" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.SptCustBaseInfoMS03 기관마스터트리조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectVipAudencPopTree */ 
+    natn_cd, natn_nm
+from
+    (
+    SELECT   
+        natn_cd 
+        ,nvl(fun_xodxcommst_cd_nm(natn_cd, 0), '') as natn_nm       
+    FROM    sptcustbaseinfo
+    WHERE   1=1
+    AND     cmpy_typ = "RZB100"
+    GROUP BY natn_cd
+    )
+order by natn_nm
+  </select>
+  <select id="selectVipAudencPopAgency" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.SptCustBaseInfoMS04 기관마스터트리조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectVipAudencPopAgency */ 
+     cust_no ,
+     cmpy_typ ,
+     supt_clsf                                  as membr_clsf ,
+     fun_xodxcommst_cd_nm(dom_excpt_clsf, 0)    as dom_excpt_clsf_nm, 
+     fun_xodxcommst_cd_nm(agncy_clsf, 0)        as agncy_clsf_nm, 
+     natn_cd,
+     fun_xodxcommst_cd_nm(natn_cd, 0)           as natn_nm, 
+     cmpy_nm_krchar ,
+     cmpy_nm_eng ,
+     reprs_psn ,
+     reprs_psn_mobile_no ,
+     reprs_psn_email ,
+     estb_ymd ,
+     cmpy_post_no                               as cmpy_postmt_no ,
+     cmpy_addr ,
+     concat(cmpy_post_no, cmpy_addr)            as addr,
+     cmpy_fax_no ,
+     cmpy_reprs_tel,
+     homepg ,
+     closebiz_ex                                as closebiz_clsf ,
+     case when enp_scd = '04' then '교류안함' ELSE '교류중' end
+                                                as intrc_yn_nm,
+     closebiz_ymd ,
+     closebiz_cause                             as closebiz_resn 
+from sptcustbaseinfo
+where 1=1
+AND     cmpy_typ = "RZB100"
+AND     natn_cd  LIKE DECODE(#{natn_cd},'','%',#{natn_cd})
+AND use_yn <![CDATA[<>]]> 'N'
+  </select>
+  <select id="selectVipAudencPopSearch" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.SptCustBaseInfoMS02 기관조회(찾기 팝업) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectVipAudencPopSearch */ 
+    cust_no, cmpy_typ, supt_clsf , dom_excpt_clsf_nm, agncy_clsf_nm, natn_nm, 
+    natn_cd, cmpy_nm_krchar , cmpy_nm_eng , reprs_psn , reprs_psn_mobile_no ,
+    reprs_psn_email , estb_ymd , cmpy_post_no , cmpy_addr , cmpy_fax_no ,
+    cmpy_reprs_tel, homepg , closebiz_ex , intrc_yn_nm, closebiz_ymd ,
+    closebiz_cause , addr,  regst_daytm, relat_vend_cd, cmpy_nm_eng_short
+from
+    (
+    select
+        cust_no ,
+        cmpy_typ ,
+        supt_clsf ,
+        fun_xodxcommst_cd_nm(dom_excpt_clsf, 0) as dom_excpt_clsf_nm, 
+        fun_xodxcommst_cd_nm(agncy_clsf, 0) as agncy_clsf_nm, 
+        fun_xodxcommst_cd_nm(natn_cd, 0) as natn_nm, 
+        natn_cd,
+        cmpy_nm_krchar ,
+        cmpy_nm_eng ,
+        cmpy_nm_eng_short,
+        reprs_psn ,
+        reprs_psn_mobile_no ,
+        reprs_psn_email ,
+        estb_ymd ,
+        cmpy_post_no ,
+        cmpy_addr ,
+        cmpy_fax_no ,
+        cmpy_reprs_tel,
+        homepg ,
+        closebiz_ex ,
+        case when enp_scd = '04' then '교류안함' ELSE '교류중' end as intrc_yn_nm,
+        closebiz_ymd ,
+        closebiz_cause ,
+        case when cmpy_post_no <![CDATA[ <> ]]> "" and  cmpy_post_no is not null then concat("(", concat(cmpy_post_no, ")")) ||cmpy_addr else cmpy_addr end as addr, 
+        to_char(regst_daytm, '%Y%m%d') as regst_daytm,
+        relat_vend_cd
+    from sptcustbaseinfo
+    where 1=1
+    AND cmpy_typ LIKE DECODE(#{cmpy_typ},'','%',#{cmpy_typ})
+    AND dom_excpt_clsf LIKE DECODE(#{dom_excpt_clsf},'','%',#{dom_excpt_clsf})
+    AND natn_cd LIKE DECODE(#{natn_cd},'','%',#{natn_cd})
+    AND (upper(cmpy_nm_krchar) LIKE DECODE(#{cmpy_nm_krchar},'','%',#{cmpy_nm_krchar}) or upper(cmpy_nm_eng) LIKE DECODE(#{cmpy_nm_eng},'','%',#{cmpy_nm_eng}) or upper(cmpy_nm_eng_short) LIKE DECODE(#{cmpy_nm_eng},'','%',#{cmpy_nm_eng}))
+    and cust_no LIKE DECODE(#{cust_no},'','%',#{cust_no})
+    )
+ORDER BY natn_nm, cmpy_nm_krchar, cmpy_nm_eng
+  </select>
+  <insert id="insertLcpVipAudenc" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.LcpVipAudencSI01 국외귀빈접견등록 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lcp.insertLcpVipAudenc */ 
+		 INTO lcpvipaudenc
+(    audenc_no
+    ,visit_start_ymd
+    ,visit_cls_ymd
+    ,visit_clsf
+    ,visit_subj
+    ,charg_dept
+    ,charg_dept_new_ymd
+    ,charg_nm
+    ,charg_syspayno
+    ,visit_goal
+    ,visit_plc
+    ,audenc_psn
+    ,audenc_contnt
+    ,rmk
+    ,attach_file_no
+    ,regst_psn_syspayno
+    ,regst_daytm
+)
+VALUES(#{audenc_no}, #{visit_start_ymd}, #{visit_cls_ymd}, #{visit_clsf}, #{visit_subj}, #{charg_dept}, #{charg_dept_new_ymd}, #{charg_nm}, #{charg_syspayno}, #{visit_goal}, #{visit_plc}, #{audenc_psn}, #{audenc_contnt}, #{rmk}, #{attach_file_no}, #{regst_psn_syspayno},sysdate)
+  </insert>
+  <update id="updateLcpVipAudenc" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.LcpVipAudencSU01 국외귀빈접견 내역 업데이트 단건*/
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lcp.updateLcpVipAudenc */ 
+		    lcpvipaudenc
+SET       visit_start_ymd = #{visit_start_ymd}
+         ,visit_cls_ymd = #{visit_cls_ymd}
+         ,visit_clsf = #{visit_clsf}
+         ,visit_subj = #{visit_subj}
+         ,charg_syspayno = #{charg_syspayno}
+         ,charg_nm = #{charg_nm}
+         ,charg_dept = #{charg_dept}
+         ,charg_dept_new_ymd = #{charg_dept_new_ymd}
+         ,visit_goal = #{visit_goal}
+         ,visit_plc = #{visit_plc}
+         ,audenc_psn = #{audenc_psn}
+         ,audenc_contnt = #{audenc_contnt}
+         ,rmk = #{rmk}
+         ,attach_file_no = #{attach_file_no}
+WHERE    1=1
+AND      audenc_no = #{audenc_no}
+  </update>    
+  <insert id="insertLcpVipAudencAgncy" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.LcpVipAudencAgncySI01 국외귀빈접견 기관등록 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lcp.insertLcpVipAudencAgncy */ 
+		 INTO lcpvipaudencagncy
+(    audenc_no
+    ,odr
+    ,natn_cd
+    ,agncy_cd
+    ,reprs_psn_nm
+    ,regst_psn_syspayno
+    ,regst_daytm
+)
+VALUES(#{audenc_no}, (select nvl(max(odr),0)+1 from lcpvipaudencagncy where audenc_no = #{audenc_no}), #{natn_cd}, #{agncy_cd}, #{reprs_psn_nm}, #{regst_psn_syspayno},sysdate)
+  </insert>
+  <update id="updateLcpVipAudencAgncy" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.LcpVipAudencAgncySU01 국외귀빈접견등록 업데이트 단건*/
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lcp.updateLcpVipAudencAgncy */ 
+		    lcpvipaudencagncy
+SET       natn_cd = #{natn_cd}
+         ,agncy_cd = #{agncy_cd}
+         ,reprs_psn_nm = #{reprs_psn_nm}
+         ,updt_psn_syspayno = #{updt_psn_syspayno}
+         ,updt_daytm = sysdate
+WHERE    1=1
+AND      audenc_no = #{audenc_no}
+AND      odr = #{odr}
+  </update>
+  <delete id="deleteLcpVipAudencAgncy" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.LcpVipAudencAgncySD01 국외귀빈접견등록 삭제 단건*/
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lcp.deleteLcpVipAudencAgncy */ 
+		    lcpvipaudencagncy
+WHERE    1=1
+AND      audenc_no = #{audenc_no}
+<if test="del_odr != null and del_odr != ''">
+AND      odr = #{del_odr}
+</if>
+  </delete>
+  <delete id="deleteLcpVipAudenc" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpVipAudencVo">
+/* XDA : kitech.lpl.lcp.xda.LcpVipAudencSD01 국외귀빈접견 삭제 단건*/
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lcp.deleteLcpVipAudenc */ 
+		 lcpvipaudenc 
+WHERE  1=1
+AND    audenc_no = #{audenc_no}
+  </delete>                  
+</mapper>

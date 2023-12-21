@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.psr">
+  <select id="selectPatPsrMailL" parameterType="kr.re.kitech.biz.pat.psr.vo.PatPsrMailLVo" resultType="kr.re.kitech.biz.pat.psr.vo.PatPsrMailLVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.psr.selectPatPsrMailL */ 
+ DISTINCT
+        pmm.mail_id
+      , pmm.send_name
+      , pmm.mail_subject
+      , TO_CHAR(pmq.send_datetime, '%Y%m%d') AS send_date
+FROM patmailmain pmm
+      LEFT JOIN patmailque pmq
+          ON pmq.mail_id = pmm.mail_id 
+WHERE 1 = 1
+AND req_no = #{req_no}
+AND mngmt_no = #{mngmt_no}
+  </select>
+  <select id="selectPatPsrSta" parameterType="kr.re.kitech.biz.pat.psr.vo.PatPsrStaVo" resultType="kr.re.kitech.biz.pat.psr.vo.PatPsrStaVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.psr.selectPatPsrSta */ 
+		 pm.req_no
+      , pm.mngmt_no
+      , pm.state
+      , ps.state_desc
+      , ps.job_cd
+      , pm.dom_oversea_clsf
+      , psh.srh_id AS srh_key
+      , psh.job_state_cd AS srh_state
+      , (CASE WHEN NVL(psh.fnsh_daytm,'') != ''
+               THEN 'Y'
+               ELSE 'N'
+         END) AS srh_comp_yn  -- 선행기술조사
+      , pe.exam_id AS exam_key  -- 심의
+      , pe.job_state_cd AS exam_state
+      , (CASE WHEN NVL(pe.fnsh_daytm,'') != ''
+               THEN 'Y'
+               ELSE 'N'
+         END) AS exam_comp_yn
+      , psc.spec_id AS psc_key  -- 명세서
+      , psc.job_state_cd AS psc_state
+      , (CASE WHEN NVL(psc.fnsh_daytm,'') != ''
+               THEN 'Y'
+               ELSE 'N'
+         END) AS psc_comp_yn
+      , pap.app_id AS pap_key -- 출원지시
+      , pap.job_state_cd AS pap_state
+      , (CASE WHEN NVL(pap.job_state_cd,'') IN ('P1000')
+               THEN 'Y'
+               ELSE 'N'
+         END) AS pap_comp_yn
+      , pd.demnd_id AS pd_key -- 심사청구
+      , pd.job_state_cd AS pd_state
+      , (CASE WHEN NVL(pd.fnsh_daytm,'') != ''
+               THEN 'Y'
+               ELSE 'N'
+         END) AS pd_comp_yn
+      , ppd.prity_demnd_id AS ppd_key -- 우선심사청구
+      , ppd.job_state_cd AS ppd_state
+      , (CASE WHEN NVL(ppd.fnsh_daytm,'') != ''
+               THEN 'Y'
+               ELSE 'N'
+         END) AS ppd_comp_yn
+      , po.oa_id AS oa_key -- 중간사건
+      , po.job_state_cd AS oa_state
+      , (CASE WHEN NVL(po.fnsh_daytm,'') != ''
+               THEN 'Y'
+               ELSE 'N'
+         END) AS oa_comp_yn
+      , pr.reg_id AS reg_key -- 등록
+      , pr.job_state_cd AS reg_state
+      , (CASE WHEN NVL(pr.fnsh_daytm,'') != ''
+               THEN 'Y'
+               ELSE 'N'
+         END) AS reg_comp_yn
+FROM patmastr pm
+INNER JOIN patstatecode ps ON ps.state_cd = pm.state
+LEFT JOIN patsrh /*선행기술조사*/  psh ON psh.req_no = pm.req_no AND psh.mngmt_no = pm.mngmt_no
+LEFT JOIN (
+        SELECT a.exam_id, a.job_state_cd, b.req_no, b.mngmt_no, a.fnsh_daytm
+        FROM patexam /*심의*/ a
+        INNER JOIN patexamobj /*심의대상*/b ON b.exam_id = a.exam_id
+        WHERE exam_clsf IN ('S','J')
+      ) pe ON pe.req_no = pm.req_no AND pe.mngmt_no = pm.mngmt_no
+LEFT JOIN patspec psc ON psc.req_no = pm.req_no AND psc.mngmt_no = pm.mngmt_no
+LEFT JOIN patapp pap ON pap.req_no = pm.req_no AND pap.mngmt_no = pm.mngmt_no
+LEFT JOIN  patdemnd /*심사청구*/ pd ON pd.req_no = pm.req_no AND pd.mngmt_no = pm.mngmt_no
+LEFT JOIN patpritydemnd /*우선심사청구*/ ppd ON ppd.req_no = pm.req_no AND ppd.mngmt_no = pm.mngmt_no
+LEFT JOIN (
+   SELECT FIRST 1 oa_id, req_no, mngmt_no, job_state_cd, fnsh_daytm
+   FROM patoa /*중간사건*/ a
+   WHERE 1 = 1
+   AND a.req_no = #{req_no}
+   AND a.mngmt_no = #{mngmt_no} 
+   ORDER BY oa_sn desc     
+) po ON  po.req_no = pm.req_no AND po.mngmt_no = pm.mngmt_no
+LEFT JOIN patreg /*등록*/ pr ON pr.req_no = pm.req_no AND pr.mngmt_no = pm.mngmt_no
+WHERE 1 = 1
+  AND pm.req_no = #{req_no}
+  AND pm.mngmt_no = #{mngmt_no}
+  </select>
+</mapper>

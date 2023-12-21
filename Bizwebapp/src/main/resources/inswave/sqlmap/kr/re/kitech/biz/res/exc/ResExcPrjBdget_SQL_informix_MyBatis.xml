@@ -1,0 +1,900 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.res.exc">
+
+  <!-- PX프로젝트 계정 실행예산 편성 계정조회 -->
+  <!-- kitech.res.exc.xda.ResBgAcctmMS10 -->
+  <select id="selectResExcPrjBdgetList" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo" resultType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exc.selectResExcPrjBdgetList */ 
+		  accnt_no
+      , accnt_clsf
+      , accnt_rspns
+      , accnt_rspns_no
+      , accnt_rspns_nm
+      , bugt_ctrl_psn
+      , bugt_ctrl_psn_nm
+      , accnt_no_nm
+      , accnt_ymd
+      , accnt_state
+      , itm_solve_base
+      , tax_cd
+      , relat_accnt_no
+      , rsut_use_orign_ymd
+      , rsut_use_cls_ymd
+      , incom_amt
+      , cryfwd_amt
+      , trans_amt
+      , insd_tech_sup_incom
+      , imp_totl_amt
+      , rspns_dept_nm
+      , dept_typ_nm
+      , usg_clsf_nm
+      , frm_rt
+      , ROUND(incom_amt * frm_rt/100) * 100 AS frm_amt
+      , NVL(incom_enfrc_amt,0) AS incom_enfrc_amt
+      , amt
+      , enfrc_amt
+   FROM (
+SELECT a.accnt_no
+     , a.accnt_clsf
+     , a.accnt_rspns 
+     , fun_emp_no(a.accnt_rspns) AS accnt_rspns_no
+     , h1.nm AS accnt_rspns_nm
+     , a.bugt_ctrl_psn
+     , h2.nm AS bugt_ctrl_psn_nm
+     , a.accnt_no_nm
+     , a.start_ymd || '~'|| a.cls_ymd AS accnt_ymd
+     , a.accnt_state     
+     , a.itm_solve_base
+     , a.tax_cd
+     , b.relat_accnt_no
+     , b.rsut_use_orign_ymd 
+     , b.rsut_use_cls_ymd
+     , NVL(c.incom_amt,0 ) + NVL(t2.incom_amt, 0 ) + NVL(t3.incom_amt, 0 ) + NVL(t4.incom_amt, 0 ) + NVL(t8.incom_amt, 0) + NVL(t9.incom_amt, 0) - NVL(t5.tax_amt, 0 ) - NVL(t6.cnlamt, 0) AS incom_amt     
+     , NVL(e.cryfwd_amt,0) AS cryfwd_amt
+     , NVL(e.trans_amt,0) AS trans_amt
+     , NVL(t1.insd_tech_sup_incom, 0) AS insd_tech_sup_incom
+     , NVL(c.incom_amt,0) + NVL(e.cryfwd_amt,0) + NVL(t1.insd_tech_sup_incom,0) + NVL(t2.incom_amt, 0) + NVL(t3.incom_amt, 0) 
+       + NVL(t4.incom_amt, 0) + NVL(t8.incom_amt, 0) + NVL(t9.incom_amt, 0) + NVL(t10.incom_amt, 0)  - NVL(e.trans_amt,0) - NVL(t5.tax_amt, 0) - NVL(t6.cnlamt, 0) AS imp_totl_amt
+     , fun_dept_nm(h1.dept_cd) AS rspns_dept_nm
+     , fun_xodxcommst_cd_nm(x.dept_typ, 0) AS dept_typ_nm
+     , z.cd_nm AS usg_clsf_nm
+     , (SELECT  NVL(x1.enfrc_amt,0)  
+         FROM bblbugtactrslt x1
+        INNER JOIN xodfaccnt x2 ON x1.accnt_cd = x2.accnt_cd  AND x2.resch_accnt_clsf = 'FBL010'
+        WHERE x1.accnt_no = a.accnt_no) AS incom_enfrc_amt
+     , DECODE(NVL(b.frm_rt,'FRT030'),'FRT010',0.1,'FRT020',0.05,1) AS frm_rt
+     , NVL(SUM(f.amt), 0) AS amt
+     , NVL(SUM(g.cause_amt + g.enfrc_amt),0) AS enfrc_amt
+ FROM resbgacctm a
+INNER JOIN resadxreqm b ON a.accnt_no = b.creat_accnt_no
+INNER JOIN xodxcommst z ON a.usg_clsf = z.cd
+ LEFT JOIN humbasicinfo h1 ON a.accnt_rspns = h1.syspayno
+ LEFT JOIN humbasicinfo h2 ON a.bugt_ctrl_psn = h2.syspayno
+ LEFT JOIN xodhdeptinfo x ON h1.dept_cd = x.dept_cd AND NVL(x.abol_ymd,'') = ''
+ LEFT JOIN (SELECT accnt_no, MAX(exec_bugt_seq) AS exec_bugt_seq 
+              FROM resbgprjbugtm
+              <where>
+			  <if test="accnt_no != null and accnt_no !=''">
+				accnt_no = #{accnt_no}
+			  </if>              
+              </where>
+             GROUP BY 1) d ON a.accnt_no = d.accnt_no
+LEFT JOIN resbgprjbugtm e ON d.accnt_no = e.accnt_no AND d.exec_bugt_seq = e.exec_bugt_seq
+LEFT JOIN resbgprjbugt f ON e.accnt_no = f.accnt_no AND e.exec_bugt_seq = f.exec_bugt_seq
+LEFT JOIN bblbugtactrslt g ON a.accnt_no = g.accnt_no AND f.bugt_item = g.accnt_cd
+LEFT JOIN ( SELECT TRIM(a.ramt_mngmt_1) AS accnt_no, 
+                   SUM(a.unslip_amt) AS incom_amt
+            FROM fspslipdecsnd  a join fspslipd b            
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph c ON b.unslip_no = c.unslip_no
+            WHERE a.accnt_cd in ('21021082 ', '21021084 ')       
+            AND   SUBSTR(a.accnt_ymd, 5 , 4 ) != '0101 '
+            AND   a.base_debit_cr = '2 '
+		 <if test="accnt_no != null and accnt_no !=''">
+			AND a.ramt_mngmt_1 = #{accnt_no}
+		 </if>  
+            AND c.slip_typ_cd not in ('426')            
+            GROUP BY 1) c ON a.accnt_no = c.accnt_no
+LEFT JOIN ( SELECT accnt_no, SUM(unslip_amt) AS insd_tech_sup_incom
+            FROM fspslipdecsnd
+            WHERE unslip_no LIKE '210%'
+            AND   accnt_cd = '41015900'
+            AND   base_debit_cr ='2'
+		<if test="accnt_no != null and accnt_no !=''">
+			AND accnt_no = #{accnt_no} 
+		</if>
+            GROUP BY 1
+          ) t1 ON a.accnt_no = t1.accnt_no   
+LEFT JOIN ( SELECT  TRIM(a.ramt_mngmt_2) as accnt_no, SUM(a.unslip_amt) AS incom_amt
+                       FROM fspslipdecsnd a join fspslipd b
+                        ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+                JOIN fspsliph c ON b.unslip_no = c.unslip_no
+                        WHERE c.slip_typ_cd in ('')    --일반결의  중복집계로 인한 제외                         
+                       AND   a.accnt_cd = '11117020'
+                       AND   a.base_debit_cr ='2'   
+					<if test="accnt_no != null and accnt_no !=''">
+						AND a.ramt_mngmt_2  = #{accnt_no} 
+					</if>                                
+                       GROUP BY a.ramt_mngmt_2
+            ) t2 ON a.accnt_no = t2.accnt_no       
+LEFT JOIN ( SELECT  TRIM(a.accnt_no) as accnt_no,
+               CASE WHEN b.accnt_cd = '11117020' THEN 0 ELSE  SUM(a.unslip_amt) END AS incom_amt
+                       FROM fspslipdecsnd a join fspslipdecsnd b
+                       ON a.unslip_no = b.unslip_no AND b.ramt_mngmt_1 = a.accnt_no
+                       WHERE a.unslip_no LIKE '110%'
+                       AND   a.accnt_cd = '41015010'
+                       AND   a.base_debit_cr ='2'
+                       AND   b.base_debit_cr = '1'    
+					<if test="accnt_no != null and accnt_no !=''">
+						AND a.accnt_no  = #{accnt_no} 
+					</if>                                         
+                       GROUP BY a.accnt_no, b.accnt_cd
+            ) t3 ON a.accnt_no = t3.accnt_no
+LEFT JOIN (
+SELECT a.accnt_no, SUM(a.unslip_amt) AS incom_amt
+            FROM fspslipdecsnd a join fspslipd b
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph c ON b.unslip_no = c.unslip_no
+            WHERE c.slip_typ_cd in ('215', '456', '210')      
+            AND   a.accnt_cd  IN('41015010', '41015020', '41015900', '41015900')
+            AND   a.base_debit_cr ='2'
+		<if test="accnt_no != null and accnt_no !=''">
+			AND a.accnt_no  = #{accnt_no} 
+		</if>              
+            GROUP BY 1
+) t4 ON a.accnt_no = t4.accnt_no   
+LEFT JOIN (SELECT TRIM(a.ramt_mngmt_1) as accnt_no, SUM(a.unslip_amt)  AS tax_amt
+                       FROM fspslipdecsnd a join fspslipd b
+                        ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+                JOIN fspsliph c ON b.unslip_no = c.unslip_no
+                        WHERE c.slip_typ_cd in ('456')                             
+                       AND   a.accnt_cd = '21025100 '
+                       AND   a.base_debit_cr ='2 '    
+					<if test="accnt_no != null and accnt_no !=''">
+					   AND a.ramt_mngmt_1  = #{accnt_no} 
+					</if>                                  
+                       AND a.accnt_ymd like #{yr}||'%'
+                       GROUP BY a.ramt_mngmt_1
+)t5 ON a.accnt_no = t5.accnt_no     
+LEFT JOIN (SELECT TRIM(a.ramt_mngmt_1) as accnt_no, SUM(a.unslip_amt)  AS cnlamt
+           FROM fspslipdecsnd a join fspslipd b
+           ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+           JOIN fspsliph c ON b.unslip_no = c.unslip_no
+           WHERE c.slip_typ_cd in ('457')                                                    
+           AND   a.base_debit_cr ='1'            
+		<if test="accnt_no != null and accnt_no !=''">
+		   AND a.ramt_mngmt_1  = #{accnt_no} 
+		</if>                  
+           AND a.accnt_ymd like #{yr}||'%'
+           GROUP BY a.ramt_mngmt_1
+)t6 ON a.accnt_no = t6.accnt_no                     
+LEFT JOIN (SELECT TRIM(DECODE(MAX(a.accnt_cd), '41015030', a.accnt_no, a.ramt_mngmt_1)) AS accnt_no, SUM(a.unslip_amt) AS incom_amt
+            FROM fspslipdecsnd a JOIN fspslipd b
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph c ON b.unslip_no = c.unslip_no            
+            JOIN fspramtadjst d ON d.slip_no = a.slip_no AND d.slip_odr = 1
+            WHERE c.slip_typ_cd in ('426')      
+            AND a.accnt_cd in ('21021084', '21021082', '41015030', '41015020')
+            AND a.base_debit_cr = '2'
+		<if test="accnt_no != null and accnt_no !=''">
+		    AND (a.ramt_mngmt_1 = #{accnt_no} OR a.accnt_no  = #{accnt_no})
+		</if>              
+            GROUP BY a.ramt_mngmt_1, a.accnt_no
+)t8 ON a.accnt_no = t8.accnt_no
+LEFT JOIN (                
+SELECT a.accnt_no as accnt_no,  SUM(a.unslip_amt) AS incom_amt
+                    FROM fspslipdecsnd a   JOIN fspsliph c 
+                    ON a.unslip_no = c.unslip_no                                                            
+                    WHERE c.slip_typ_cd IN ('110', '210')
+                    AND a.base_debit_cr = 2
+                    AND a.accnt_cd IN ('41015010', '41015030', '41015040')
+                    AND a.accnt_ymd like #{yr}||'%'
+				<if test="accnt_no != null and accnt_no !=''">
+				    AND a.accnt_no  = #{accnt_no} 
+				</if>                     
+                    AND EXISTS (SELECT 1 FROM fspslipdecsnd WHERE unslip_no = a.unslip_no AND base_debit_cr = 1 AND accnt_cd NOT IN ('21021082'))
+                    GROUP BY a.accnt_no
+) t9 ON a.accnt_no = t9.accnt_no
+LEFT JOIN (SELECT  TRIM(a.ramt_mngmt_2) AS accnt_no, SUM(b.won_adjst_amt) AS incom_amt
+                    FROM fspslipdecsnd a join fspramtcreat b
+                    ON a.slip_no = b.slip_no
+                    AND a.slip_odr = b.slip_odr
+                    WHERE a.unslip_no LIKE '426%'
+                    AND a.accnt_cd = '11117020'
+                    AND a.base_debit_cr ='1'
+                    AND b.won_adjst_amt <![CDATA[ > ]]> 0
+                    AND a.accnt_ymd like #{yr}||'%'
+                    AND a.ramt_mngmt_2 like 'PD%'
+				<if test="accnt_no != null and accnt_no !=''">
+				    AND a.ramt_mngmt_2  = #{accnt_no} 
+				</if>                     
+                    GROUP BY a.ramt_mngmt_2) t10  ON a.accnt_no = t10.accnt_no
+<where>
+  <if test="accnt_clsf != null and accnt_clsf !=''">
+  a.accnt_clsf = #{accnt_clsf} AND a.accnt_clsf IN  ('FAK061','FAK080','FAK081', 'FAK082', 'FAK083')
+ </if>
+  <if test="relat_accnt_no != null and relat_accnt_no !=''">
+AND   b.relat_accnt_no LIKE #{relat_accnt_no}||'%'
+ </if>
+  <if test="accnt_no_nm != null and accnt_no_nm !=''">
+AND   a.accnt_no_nm LIKE '%'||#{accnt_no_nm}||'%' 
+ </if>
+  <if test="accnt_no != null and accnt_no !=''">
+AND  a.accnt_no = #{accnt_no}
+ </if>
+  <if test="accnt_rspns != null and accnt_rspns !=''">
+AND a.accnt_rspns = #{accnt_rspns}
+ </if>
+  <if test="yr != null and yr !=''">
+AND b.yr = #{yr} 
+ </if>
+  <if test="usg_clsf != null and usg_clsf !=''">
+AND a.usg_clsf = #{usg_clsf}
+ </if>
+  <if test="dept_typ != null and dept_typ !=''">
+AND x.dept_typ = #{dept_typ}
+ </if>
+	</where>
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
+ORDER BY a.accnt_no DESC
+)
+  </select> 
+
+  <!-- PX프로젝트 계정 실행예산 편성 계정조회 -->
+  <!-- kitech.res.exc.xda.ResBgAcctmMS08 -->
+  <select id="selectResExcPrjBdgetInfoList" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo" resultType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exc.selectResExcPrjBdgetInfo */ 
+		  accnt_no
+      , accnt_clsf
+      , accnt_rspns
+      , accnt_rspns_no
+      , accnt_rspns_nm
+      , bugt_ctrl_psn
+      , bugt_ctrl_psn_nm
+      , accnt_no_nm
+      , accnt_ymd
+      , accnt_state
+      , itm_solve_base
+      , tax_cd
+      , relat_accnt_no
+      , rsut_use_orign_ymd
+      , rsut_use_cls_ymd
+      , incom_amt
+      , cryfwd_amt
+      , trans_amt
+      , insd_tech_sup_incom
+      , imp_totl_amt
+      , rspns_dept_nm
+      , dept_typ_nm
+      , usg_clsf_nm
+      , frm_rt
+      , ROUND(incom_amt * frm_rt/100) * 100 AS frm_amt
+      , NVL(incom_enfrc_amt,0) AS incom_enfrc_amt
+      , amt
+      , enfrc_amt
+   FROM (
+SELECT a.accnt_no
+     , a.accnt_clsf
+     , a.accnt_rspns 
+     , fun_emp_no(a.accnt_rspns) AS accnt_rspns_no
+     , h1.nm AS accnt_rspns_nm
+     , a.bugt_ctrl_psn
+     , h2.nm AS bugt_ctrl_psn_nm
+     , a.accnt_no_nm
+     , a.start_ymd || '~'|| a.cls_ymd AS accnt_ymd
+     , a.accnt_state     
+     , a.itm_solve_base
+     , a.tax_cd
+     , b.relat_accnt_no
+     , b.rsut_use_orign_ymd 
+     , b.rsut_use_cls_ymd
+     , NVL(c.incom_amt,0 ) + NVL(t2.incom_amt, 0 ) + NVL(t3.incom_amt, 0 ) + NVL(t4.incom_amt, 0 ) + NVL(t8.incom_amt, 0) + NVL(t9.incom_amt, 0) - NVL(t5.tax_amt, 0 ) - NVL(t6.cnlamt, 0) AS incom_amt     
+     , NVL(e.cryfwd_amt,0) AS cryfwd_amt
+     , NVL(e.trans_amt,0) AS trans_amt
+     , NVL(t1.insd_tech_sup_incom, 0) AS insd_tech_sup_incom
+     , NVL(c.incom_amt,0) + NVL(e.cryfwd_amt,0) + NVL(t1.insd_tech_sup_incom,0) + NVL(t2.incom_amt, 0) + NVL(t3.incom_amt, 0) 
+       + NVL(t4.incom_amt, 0) + NVL(t8.incom_amt, 0) + NVL(t9.incom_amt, 0) + NVL(t10.incom_amt, 0)  - NVL(e.trans_amt,0) - NVL(t5.tax_amt, 0) - NVL(t6.cnlamt, 0) AS imp_totl_amt
+     , fun_dept_nm(h1.dept_cd) AS rspns_dept_nm
+     , fun_xodxcommst_cd_nm(x.dept_typ, 0) AS dept_typ_nm
+     , z.cd_nm AS usg_clsf_nm
+     , (SELECT  NVL(x1.enfrc_amt,0)  
+         FROM bblbugtactrslt x1
+        INNER JOIN xodfaccnt x2 ON x1.accnt_cd = x2.accnt_cd  AND x2.resch_accnt_clsf = 'FBL010'
+        WHERE x1.accnt_no = a.accnt_no) AS incom_enfrc_amt
+     , DECODE(NVL(b.frm_rt,'FRT030'),'FRT010',0.1,'FRT020',0.05,1) AS frm_rt
+     , NVL(SUM(f.amt), 0) AS amt
+     , NVL(SUM(g.cause_amt + g.enfrc_amt),0) AS enfrc_amt
+ FROM resbgacctm a
+INNER JOIN resadxreqm b ON a.accnt_no = b.creat_accnt_no
+INNER JOIN xodxcommst z ON a.usg_clsf = z.cd
+ LEFT JOIN humbasicinfo h1 ON a.accnt_rspns = h1.syspayno
+ LEFT JOIN humbasicinfo h2 ON a.bugt_ctrl_psn = h2.syspayno
+ LEFT JOIN xodhdeptinfo x ON h1.dept_cd = x.dept_cd AND NVL(x.abol_ymd,'') = ''
+ LEFT JOIN (SELECT accnt_no, MAX(exec_bugt_seq) AS exec_bugt_seq 
+              FROM resbgprjbugtm
+              <where>
+				<if test="accnt_no != null and accnt_no !=''">
+					accnt_no = #{accnt_no}
+				</if>                
+              </where>
+             GROUP BY 1) d ON a.accnt_no = d.accnt_no
+LEFT JOIN resbgprjbugtm e ON d.accnt_no = e.accnt_no AND d.exec_bugt_seq = e.exec_bugt_seq
+LEFT JOIN resbgprjbugt f ON e.accnt_no = f.accnt_no AND e.exec_bugt_seq = f.exec_bugt_seq
+LEFT JOIN bblbugtactrslt g ON a.accnt_no = g.accnt_no AND f.bugt_item = g.accnt_cd
+LEFT JOIN ( SELECT TRIM(a.ramt_mngmt_1) AS accnt_no, 
+                   SUM(a.unslip_amt) AS incom_amt
+            FROM fspslipdecsnd  a join fspslipd b            
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph c ON b.unslip_no = c.unslip_no
+            WHERE a.accnt_cd in ('21021082 ', '21021084 ')       
+            AND   SUBSTR(a.accnt_ymd, 5 , 4 ) != '0101 '
+            AND   a.base_debit_cr = '2 '
+		<if test="accnt_no != null and accnt_no !=''">
+			AND a.ramt_mngmt_1= #{accnt_no}
+		</if>                   
+            AND c.slip_typ_cd not in ('426')            
+            GROUP BY 1) c ON a.accnt_no = c.accnt_no
+LEFT JOIN ( SELECT accnt_no, SUM(unslip_amt) AS insd_tech_sup_incom
+            FROM fspslipdecsnd
+            WHERE unslip_no LIKE '210%'
+            AND   accnt_cd = '41015900'
+            AND   base_debit_cr ='2'
+		<if test="accnt_no != null and accnt_no !=''">
+			AND accnt_no= #{accnt_no}
+		</if>                   
+            GROUP BY 1
+          ) t1 ON a.accnt_no = t1.accnt_no   
+LEFT JOIN ( SELECT  TRIM(a.ramt_mngmt_2) as accnt_no, SUM(a.unslip_amt) AS incom_amt
+                       FROM fspslipdecsnd a join fspslipd b
+                        ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+                JOIN fspsliph c ON b.unslip_no = c.unslip_no
+                        WHERE c.slip_typ_cd in ('')    --일반결의  중복집계로 인한 제외                         
+                       AND   a.accnt_cd = '11117020'
+                       AND   a.base_debit_cr ='2'  
+					<if test="accnt_no != null and accnt_no !=''">
+						AND a.ramt_mngmt_2 = #{accnt_no}
+					</if>                                   
+                       GROUP BY a.ramt_mngmt_2
+            ) t2 ON a.accnt_no = t2.accnt_no       
+LEFT JOIN ( SELECT  TRIM(a.accnt_no) as accnt_no,
+               CASE WHEN b.accnt_cd = '11117020' THEN 0 ELSE  SUM(a.unslip_amt) END AS incom_amt
+                       FROM fspslipdecsnd a join fspslipdecsnd b
+                       ON a.unslip_no = b.unslip_no AND b.ramt_mngmt_1 = a.accnt_no
+                       WHERE a.unslip_no LIKE '110%'
+                       AND   a.accnt_cd = '41015010'
+                       AND   a.base_debit_cr ='2'
+                       AND   b.base_debit_cr = '1'  
+					<if test="accnt_no != null and accnt_no !=''">
+						AND a.accnt_no = #{accnt_no}
+					</if>                                            
+                       GROUP BY a.accnt_no, b.accnt_cd
+            ) t3 ON a.accnt_no = t3.accnt_no
+LEFT JOIN (
+SELECT a.accnt_no, SUM(a.unslip_amt) AS incom_amt
+            FROM fspslipdecsnd a join fspslipd b
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph c ON b.unslip_no = c.unslip_no
+            WHERE c.slip_typ_cd in ('215', '456')      
+            AND   a.accnt_cd = '41015010'
+            AND   a.base_debit_cr ='2'
+		<if test="accnt_no != null and accnt_no !=''">
+			AND a.accnt_no = #{accnt_no}
+		</if>               
+            GROUP BY 1
+) t4 ON a.accnt_no = t4.accnt_no   
+LEFT JOIN (SELECT TRIM(a.ramt_mngmt_1) as accnt_no, SUM(a.unslip_amt)  AS tax_amt
+                       FROM fspslipdecsnd a join fspslipd b
+                        ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+                JOIN fspsliph c ON b.unslip_no = c.unslip_no
+                        WHERE c.slip_typ_cd in ('456')                             
+                       AND   a.accnt_cd = '21025100 '
+                       AND   a.base_debit_cr ='2 ' 
+					<if test="accnt_no != null and accnt_no !=''">
+						AND a.ramt_mngmt_1 = #{accnt_no}
+					</if>                                      
+                       AND a.accnt_ymd like #{yr}||'%'
+                       GROUP BY a.ramt_mngmt_1
+)t5 ON a.accnt_no = t5.accnt_no     
+LEFT JOIN (SELECT TRIM(a.ramt_mngmt_1) as accnt_no, SUM(a.unslip_amt)  AS cnlamt
+           FROM fspslipdecsnd a join fspslipd b
+           ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+           JOIN fspsliph c ON b.unslip_no = c.unslip_no
+           WHERE c.slip_typ_cd in ('457')                                                    
+           AND   a.base_debit_cr ='1'           
+		<if test="accnt_no != null and accnt_no !=''">
+			AND a.ramt_mngmt_1 = #{accnt_no}
+		</if>              
+           AND a.accnt_ymd like #{yr}||'%'
+           GROUP BY a.ramt_mngmt_1
+)t6 ON a.accnt_no = t6.accnt_no                     
+LEFT JOIN (SELECT TRIM(DECODE(MAX(a.accnt_cd), '41015030', a.accnt_no, a.ramt_mngmt_1)) AS accnt_no, SUM(a.unslip_amt) AS incom_amt
+            FROM fspslipdecsnd a JOIN fspslipd b
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph c ON b.unslip_no = c.unslip_no            
+            JOIN fspramtadjst d ON d.slip_no = a.slip_no AND d.slip_odr = 1
+            WHERE c.slip_typ_cd in ('426')      
+            AND a.accnt_cd in ('21021084', '21021082', '41015030')
+            AND a.base_debit_cr = '2'
+		<if test="accnt_no != null and accnt_no !=''">
+			AND (a.ramt_mngmt_1 = #{accnt_no}  OR a.accnt_no = #{accnt_no})
+		</if>    
+            GROUP BY a.ramt_mngmt_1, a.accnt_no
+)t8 ON a.accnt_no = t8.accnt_no
+LEFT JOIN (  SELECT a.accnt_no as accnt_no,  SUM(a.unslip_amt) AS incom_amt
+                    FROM fspslipdecsnd a   JOIN fspsliph c 
+                    ON a.unslip_no = c.unslip_no
+                    JOIN fspslipdecsnd d
+                    ON a.unslip_no = d.unslip_no
+                    AND d.unslip_odr = a.unslip_odr-1
+                    AND d.base_debit_cr = 1
+                    AND d.accnt_cd not in ('21021082')
+                    WHERE c.slip_typ_cd IN ('110', '210')
+                    AND a.base_debit_cr = 2
+                    AND a.accnt_cd IN ('41015010', '41015030', '41015040')
+				<if test="accnt_no != null and accnt_no !=''">
+					AND a.accnt_no = #{accnt_no}
+				</if>                         
+                    GROUP BY a.accnt_no
+) t9 ON a.accnt_no = t9.accnt_no
+LEFT JOIN (SELECT  TRIM(a.ramt_mngmt_2) AS accnt_no, SUM(b.won_adjst_amt) AS incom_amt
+                    FROM fspslipdecsnd a join fspramtcreat b
+                    ON a.slip_no = b.slip_no
+                    AND a.slip_odr = b.slip_odr
+                    WHERE a.unslip_no LIKE '426%'
+                    AND a.accnt_cd = '11117020'
+                    AND a.base_debit_cr ='1'
+                    AND b.won_adjst_amt <![CDATA[ > ]]> 0
+                    AND a.accnt_ymd like #{accnt_no}||'%'
+                    AND a.ramt_mngmt_2 like 'PD%'
+				<if test="accnt_no != null and accnt_no !=''">
+					AND a.ramt_mngmt_2 = #{accnt_no}
+				</if>     
+                    GROUP BY a.ramt_mngmt_2) t10  ON a.accnt_no = t10.accnt_no
+<where>
+  <if test="accnt_clsf != null and accnt_clsf !=''">
+( a.accnt_clsf = #{accnt_clsf} OR a.accnt_clsf IN  ('FAK061','FAK080','FAK081', 'FAK082', 'FAK083') )
+ </if>
+  <if test="relat_accnt_no != null and relat_accnt_no !=''">
+AND  b.relat_accnt_no LIKE #{relat_accnt_no}||'%'
+ </if>
+  <if test="accnt_no_nm != null and accnt_no_nm !=''">
+AND  a.accnt_no_nm LIKE '%'||#{accnt_no_nm}||'%' 
+ </if>
+  <if test="accnt_no != null and accnt_no !=''">
+AND a.accnt_no = #{accnt_no}
+ </if>
+  <if test="accnt_rspns != null and accnt_rspns !=''">
+AND a.accnt_rspns = #{accnt_rspns}
+ </if>
+  <if test="yr != null and yr !=''">
+AND b.yr = #{yr}
+ </if>
+  <if test="usg_clsf != null and usg_clsf !=''">
+AND a.usg_clsf = #{usg_clsf}
+ </if>
+  <if test="dept_typ != null and dept_typ !=''">
+AND x.dept_typ = #{dept_typ}
+ </if>
+	</where>                    
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
+ORDER BY a.accnt_no DESC
+)
+  </select>  
+  
+  <!-- 프로젝트 예산 편성 계정정보 -->
+  <!-- kitech.res.exc.xda.ResBgAcctmSS03 -->
+  <select id="selectResExcPrjBdgetAcctm" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo" resultType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exc.selectResExcPrjBdgetAcctm */ 
+		 a.accnt_no
+     , a.start_ymd || '~' || a.cls_ymd AS prd_term
+     , a.accnt_state
+     , x2.cd_nm AS accnt_state_nm
+     , a.accnt_no_nm
+     , a.accnt_rspns
+     , h1.nm AS accnt_rspns_nm
+     , fun_posi_nm(h1.posi_cd) AS accnt_rspns_posi
+     , b.dept_nm AS accnt_rspns_dept
+     , a.bugt_ctrl_psn
+     , fun_xodxcommst_cd_nm(a.tax_cd, 0) AS tax_cd_nm
+     , h2.nm AS bugt_ctrl_psn_nm 
+     , NVL(c.incom_amt, 0) + NVL(t3.incom_amt, 0)  + NVL(t4.incom_amt, 0) + NVL(t5.incom_amt, 0) + NVL(t8.incom_amt, 0) + NVL(t9.incom_amt, 0) + NVL(t10.incom_amt, 0) - NVL(t6.tax_amt, 0) - NVL(t7.cnlamt, 0) AS incom_amt
+     , NVL(t1.insd_tech_sup_incom, 0) AS insd_tech_sup_incom
+     , a.usg_clsf
+     , NVL(r.frm_rt,'FRT030') AS frm_rt
+FROM resbgacctm a
+JOIN xodxcommst x2 ON a.accnt_state = x2.cd
+JOIN humbasicinfo h1 ON a.accnt_rspns = h1.syspayno
+JOIN xodhdeptinfo b ON h1.dept_cd = b.dept_cd AND h1.dept_new_ymd = b.dept_new_ymd
+JOIN humbasicinfo h2 ON a.bugt_ctrl_psn = h2.syspayno
+LEFT JOIN resadxreqm r ON a.accnt_no = r.creat_accnt_no
+LEFT JOIN ( SELECT TRIM(a.ramt_mngmt_1) AS accnt_no, 
+                         SUM(a.unslip_amt) AS incom_amt
+                  FROM fspslipdecsnd  a JOIN  fspslipd b
+                 ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+                 JOIN fspsliph c ON b.unslip_no = c.unslip_no
+                  WHERE a.ramt_mngmt_1 = #{accnt_no} 
+                  AND   a.accnt_cd in ('21021082', '21021084')
+                  AND   SUBSTR(a.accnt_ymd, 5, 4) <![CDATA[ <> ]]> '0101'
+                  AND   a.base_debit_cr = '2'
+                  AND   c.slip_typ_cd not in ('426')
+                  GROUP BY 1) c ON a.accnt_no = c.accnt_no
+LEFT JOIN ( SELECT accnt_no, SUM(unslip_amt) AS insd_tech_sup_incom
+            FROM fspslipdecsnd
+            WHERE unslip_no LIKE '210%'
+            AND   accnt_cd = '41015900'
+            AND   base_debit_cr ='2'
+            AND   accnt_no = #{accnt_no} 
+            GROUP BY 1
+          ) t1 ON a.accnt_no = t1.accnt_no
+LEFT JOIN (
+SELECT a.accnt_no, SUM(a.unslip_amt) AS incom_amt
+            FROM fspslipdecsnd a JOIN  fspslipd b
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph c ON b.unslip_no = c.unslip_no
+            WHERE c.slip_typ_cd in ('215', '456')      
+            AND   a.accnt_cd IN('41015010', '41015020', '41015900')
+            AND   a.base_debit_cr ='2'
+            AND   a.accnt_no = #{accnt_no}
+            GROUP BY 1
+) t3 ON a.accnt_no = t3.accnt_no   
+LEFT JOIN (
+SELECT TRIM(a.ramt_mngmt_2) as accnt_no, SUM(a.unslip_amt) AS incom_amt
+            FROM fspslipdecsnd a JOIN  fspslipd b
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph c ON b.unslip_no = c.unslip_no
+            WHERE c.slip_typ_cd in ('')      
+            AND   a.accnt_cd = '11117020'
+            AND   a.base_debit_cr ='2'
+            AND   a.ramt_mngmt_2 = #{accnt_no}
+            GROUP BY a.ramt_mngmt_2
+) t4 ON a.accnt_no = t4.accnt_no   
+LEFT JOIN (
+SELECT  TRIM(a.accnt_no) as accnt_no,
+             CASE WHEN c.accnt_cd = '11117020' THEN 0 ELSE  SUM(a.unslip_amt) END AS incom_amt
+            FROM fspslipdecsnd a JOIN  fspslipd b
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph d ON b.unslip_no = d.unslip_no
+            JOIN fspslipdecsnd c
+            ON a.unslip_no = c.unslip_no AND c.ramt_mngmt_1 = a.accnt_no
+            WHERE d.slip_typ_cd in ('110')      
+            AND   a.accnt_cd = '41015010'
+            AND   c.base_debit_cr = '1'       
+            AND   a.base_debit_cr ='2'
+            AND   a.accnt_no = #{accnt_no}
+            GROUP BY a.accnt_no, c.accnt_cd
+) t5 ON a.accnt_no = t5.accnt_no  
+LEFT JOIN (
+SELECT TRIM(a.ramt_mngmt_1) as accnt_no, SUM(a.unslip_amt)  AS tax_amt
+                       FROM fspslipdecsnd a join fspslipd b
+                        ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+                JOIN fspsliph c ON b.unslip_no = c.unslip_no
+                        WHERE c.slip_typ_cd in ('456')                             
+                       AND   a.accnt_cd = '21025100 '
+                       AND   a.base_debit_cr ='2 '            
+                       AND   a.ramt_mngmt_1 = #{accnt_no} 
+                       GROUP BY a.ramt_mngmt_1
+)t6 ON a.accnt_no = t6.accnt_no       
+LEFT JOIN (SELECT TRIM(a.ramt_mngmt_1) as accnt_no, SUM(a.unslip_amt)  AS cnlamt
+                       FROM fspslipdecsnd a join fspslipd b
+                        ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+                      JOIN fspsliph c ON b.unslip_no = c.unslip_no
+                        WHERE c.slip_typ_cd in ('457')                                                    
+                       AND   a.base_debit_cr ='1'          
+					<if test="accnt_no != null and accnt_no !=''">
+					   AND a.ramt_mngmt_1 = #{accnt_no}
+					</if>                         
+                       GROUP BY a.ramt_mngmt_1
+)t7 ON a.accnt_no = t6.accnt_no                      
+LEFT JOIN (SELECT TRIM(DECODE(MAX(a.accnt_cd), '41015030', a.accnt_no, a.ramt_mngmt_1)) as accnt_no, SUM(a.unslip_amt) AS incom_amt
+            FROM fspslipdecsnd a JOIN  fspslipd b
+            ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+            JOIN fspsliph c ON b.unslip_no = c.unslip_no            
+            JOIN fspramtadjst d ON d.slip_no = a.slip_no AND d.slip_odr = 1
+            WHERE c.slip_typ_cd in ('426')      
+            AND   a.accnt_cd in('21021084', '21021082', '41015030', '41015020', '41015900')
+            AND   a.base_debit_cr ='2'
+		<if test="accnt_no != null and accnt_no !=''">
+		   AND (a.ramt_mngmt_1 = #{accnt_no} OR a.accnt_no = #{accnt_no})
+		</if>             
+            GROUP BY a.ramt_mngmt_1, a.accnt_no
+)t8 ON a.accnt_no = t8.accnt_no
+LEFT JOIN (SELECT a.accnt_no as accnt_no,  SUM(a.unslip_amt) AS incom_amt
+                    FROM fspslipdecsnd a   JOIN fspsliph c 
+                    ON a.unslip_no = c.unslip_no                                                            
+                    WHERE c.slip_typ_cd IN ('110', '210')
+                    AND a.base_debit_cr = 2
+                    AND a.accnt_cd IN ('41015010', '41015020', '41015030', '41015040')
+                    AND  a.accnt_no = #{accnt_no}
+                    AND EXISTS (SELECT 1 FROM fspslipdecsnd WHERE unslip_no = a.unslip_no AND base_debit_cr = 1 AND accnt_cd NOT IN ('21021082'))
+                    GROUP BY a.accnt_no
+) t9 ON a.accnt_no = t9.accnt_no
+LEFT JOIN (SELECT  TRIM(a.ramt_mngmt_2) AS accnt_no, SUM(b.won_adjst_amt) AS incom_amt
+                    FROM fspslipdecsnd a join fspramtcreat b
+                    ON a.slip_no = b.slip_no
+                    AND a.slip_odr = b.slip_odr
+                    WHERE a.unslip_no LIKE '426%'
+                    AND a.accnt_cd = '11117020'
+                    AND a.base_debit_cr ='1'
+                    AND b.won_adjst_amt <![CDATA[ > ]]> 0  
+                    AND a.ramt_mngmt_2 like 'PD%'                  
+                    AND a.ramt_mngmt_2 = #{accnt_no} 
+                    GROUP BY a.ramt_mngmt_2) t10  ON a.accnt_no = t10.accnt_no                    
+WHERE a.accnt_no = #{accnt_no}
+  </select>
+  
+  <!-- 프로젝트 예산등록 기본정보 -->
+  <!-- kitech.res.exc.xda.ResBgPrjBugtSS01 -->
+  <select id="selectResExcPrjBudgetBasic" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo" resultType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exc.selectResExcPrjBudgetBasic */ 
+		 a.accnt_no  -- 계정번호
+     , a.state     -- 실행예산상태(RDC)
+     , a.exec_bugt_seq  -- 실행예산차수 MAX
+     , a.resn_contnt
+     , a.cryfwd_amt
+     , a.incom_amt
+     , a.trans_amt
+     , a.req_no            -- 전자결재신청번호
+     , a.req_ymd           -- 전자결재신청일자
+     , a.req_psn           -- 전자결재신청자
+     , d.apr_state
+     , a.attach_file_no
+FROM resbgprjbugtm a
+JOIN xomxintfatab d ON a.req_no = d.req_no
+WHERE a.accnt_no = #{accnt_no}
+AND   a.exec_bugt_seq = (SELECT MAX(exec_bugt_seq) FROM resbgprjbugtm WHERE accnt_no = #{accnt_no})
+  </select>   
+  
+  <!-- 계정별 대비목/세부비목에 대한 차수별 실행예산 내역 조회 -->
+  <!-- kitech.res.exc.xda.ResPrjAccntBugtMS02 -->
+  <select id="selectResPrjAccntBugt" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo" resultType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exc.selectResPrjAccntBugt */ 
+		 x1.itm_solve_base     -- 비목해소기준
+     , x1.seq                -- 순번(정렬순서)
+     , x1.bugt_item          -- 회계코드(예산항목)
+     , x1.bugt_item_nm       -- 회계코드명(대비목명)
+     , x1.itm_clsf           -- 비목구분(비목구분)
+     , x1.itm_clsf_nm        -- 비목구분명(세부비목명)
+     , x1.resch_accnt_clsf   -- 연구계정구분
+     , nvl(x2.accnt_no     , '')  as accnt_no          -- 계정번호
+     , nvl(x2.exec_bugt_seq, '')  as exec_bugt_seq     -- 실행예산차수
+     , nvl(x2.amt          , 0 )  as amt              -- 금액
+     , nvl(case when x2.exec_bugt_seq <![CDATA[ < ]]> 10 then to_char(x2.exec_bugt_seq, '0#') else to_char(x2.exec_bugt_seq, '##') end, 'XX')
+                                  as grid_column_id    -- 그리드 컬럼 ID
+FROM ( -- 비목해소기준 템플릿 목록 조회
+       SELECT a.itm_solve_base  -- 비목해소기준
+            , a.seq             -- 순번(정렬순서)
+            , a.accnt_cd          as bugt_item         -- 회계코드(예산항목)
+            , b.accnt_cd_abbr     as bugt_item_nm      -- 회계코드명(대비목명)
+            , a.itm_clsf          as itm_clsf          -- 비목구분(비목구분)
+            , c.cd_nm             as itm_clsf_nm       -- 비목구분명(세부비목명)
+            , b.resch_accnt_clsf   -- 연구계정구분
+       FROM fbaitmaccnt a 
+       join xodfaccnt  b on a.accnt_cd = b.accnt_cd 
+       join xodxcommst c on a.itm_clsf = c.cd AND c.cd_clsf  = 'FAE' 
+       WHERE a.itm_solve_base = #{itm_solve_base} 
+       ORDER BY a.itm_solve_base, a.seq
+   ) x1
+LEFT OUTER JOIN (
+         -- 계정별 대비목/세부비목에 대한 차수별 실행예산 내역 조회
+       SELECT a.accnt_no       -- 계정번호
+              , a.exec_bugt_seq   -- 실행예산차수
+              , a.bugt_item       -- 예산항목
+              , a.amt             -- 금액              
+       FROM resbgprjbugt a  -- 실행예산관리
+       WHERE a.accnt_no = #{accnt_no}   -- 계정번호
+       AND   a.exec_bugt_seq = #{exec_bugt_seq}  -- 실행예산차수
+       ORDER BY a.accnt_no, a.exec_bugt_seq, a.bugt_item
+  ) x2 ON x1.bugt_item = x2.bugt_item 
+ORDER BY x1.seq, x1.itm_clsf, x1.bugt_item
+  </select>
+  
+ <!-- 프로젝트 예산 편성 -->
+  <!-- kitech.res.exc.xda.ResPrjAccntBugtMS01 -->
+  <select id="selectResExcPrjAccntBuget" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo" resultType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exc.selectResExcPrjAccntBuget */ 
+		 x1.itm_solve_base   -- 비목해소기준
+     , x1.seq    -- 순번(정렬순서)
+     , x1.bugt_item     -- 회계코드(예산항목)
+     , x1.bugt_item_nm    -- 회계코드명(대비목명)
+     , x1.itm_clsf        -- 비목구분(비목구분)
+     , x1.itm_clsf_nm     -- 비목구분명(세부비목명)
+     , x1.resch_accnt_clsf     -- 연구계정구분
+     , x1.resch_accnt_clsf_nm  -- 연구계정구분명
+     , nvl(x3.accnt_no  , '')  AS accnt_no   -- 계정번호
+     , nvl(x3.enfrc_cause_amt , 0)    AS enfrc_cause_amt      -- 집행(+원인)금액
+FROM (  -- 비목해소기준 템플릿 목록 조회
+       SELECT a.itm_solve_base   -- 비목해소기준
+            , a.seq            -- 순번(정렬순서)
+            , a.accnt_cd       AS bugt_item     -- 회계코드(예산항목)
+            , b.accnt_cd_abbr  AS bugt_item_nm  -- 회계코드명(대비목명)
+            , a.itm_clsf      -- 비목구분(비목구분)
+            , c.cd_nm      AS itm_clsf_nm      -- 비목구분명(세부비목명)
+            , b.resch_accnt_clsf  -- 연구계정구분
+            , d.cd_nm     AS resch_accnt_clsf_nm  -- 연구계정구분명
+       FROM fbaitmaccnt a 
+       JOIN xodfaccnt  b ON a.accnt_cd = b.accnt_cd 
+       JOIN xodxcommst c ON a.itm_clsf = c.cd AND c.cd_clsf  = 'FAE' 
+       LEFT OUTER JOIN xodxcommst d ON b.resch_accnt_clsf = d.cd 
+       WHERE  a.itm_solve_base = #{itm_solve_base} 
+       ORDER BY a.itm_solve_base, a.seq
+     ) x1
+LEFT OUTER JOIN ( -- 집행금액(원인금액포함) 내역 조회
+       SELECT a.bugt_yr           -- 예산년도
+            , a.fomat_unit        -- 편성단위
+            , a.bugt_item_clsf    -- 예산항목구분
+            , a.accnt_no          -- 계정번호
+            , a.accnt_cd          -- 회계코드
+            , a.close_yr          -- 마감년도
+            , nvl(a.bugt_amt , 0)   AS bugt_amt             -- 예산금액
+            , nvl(a.cause_amt, 0)   AS cause_amt            -- 원인금액
+            , nvl(a.preyr_enfrc_amt, 0) + nvl(a.enfrc_amt, 0)  AS enfrc_amt  -- 집행금액
+            , nvl(a.cause_amt, 0) + nvl(a.preyr_enfrc_amt, 0) + nvl(a.enfrc_amt, 0) AS enfrc_cause_amt      -- 집행(+원인)금액
+      FROM bblbugtactrslt a
+      WHERE a.accnt_no = #{accnt_no}  
+      AND   TRIM( NVL(a.close_yr,''))  <![CDATA[ > ]]> ''      
+    ) x3 ON x1.bugt_item = x3.accnt_cd 
+ORDER BY x1.seq, x1.itm_clsf, x1.bugt_item
+  </select>  
+  
+  <!-- 신청번호로 계정번호 가져오기 -->
+  <!-- kitech.res.exc.xda.ResPrjAccntBugtSS01 -->
+  <select id="selectResPrjAccntBugtByReqno" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo" resultType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.res.exc.selectResPrjAccntBugtByReqno */ 
+		 accnt_no, itm_solve_base 
+FROM resbgacctm 
+WHERE accnt_no = (SELECT DISTINCT accnt_no FROM resbgprjbugtm WHERE req_no = #{req_no})
+  </select>  
+    
+  <!-- PX계정실행예산마스터 저장 -->
+  <!-- kitech.res.exc.xda.ResBgPrjbugtmSI01 -->
+  <insert id="insertResBgPrjbugtm" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.res.exc.insertResBgPrjbugtm */ 
+		 INTO resbgprjbugtm (
+       accnt_no        --계정번호
+     , exec_bugt_seq   --차수
+     , resn_contnt     --변경사유
+     , cryfwd_amt
+     , incom_amt
+     , insd_tech_sup_incom
+     , trans_amt
+     , req_no
+     , state
+     , req_psn
+     , req_ymd
+     , attach_file_no     --첨부파일
+     , regst_syspayno  --등록자
+     , regst_daytm     --등록일
+) VALUES ( 
+      #{accnt_no}              
+    , #{exec_bugt_seq}              
+    , #{resn_contnt}    
+    , #{cryfwd_amt}
+    , #{incom_amt}
+    , #{insd_tech_sup_incom}
+    , #{trans_amt}
+    , #{req_no} 
+    , #{state} 
+    , #{req_psn}
+    , #{req_ymd}
+    , #{attach_file_no}                
+    , #{regst_syspayno}              
+    , CURRENT )
+  </insert>  
+  
+  <!-- 프로젝트 예산 등록 (금액) -->
+  <!-- kitech.res.exc.xda.ResBgPrjbugtSI01 --> 
+  <insert id="insertResBgPrjbugt" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.res.exc.insertResBgPrjbugt */ 
+		 INTO resbgprjbugt (
+     accnt_no         --계정번호
+   , exec_bugt_seq    --차수
+   , bugt_item        --예산항목
+   , amt              --금액  
+   , regst_syspayno   --등록자
+   , regst_daytm      --등록일
+) VALUES (
+     #{accnt_no}         
+   , #{exec_bugt_seq}        
+   , #{bugt_item}        
+   , #{amt}        
+   , #{regst_syspayno}        
+   , CURRENT  )
+  </insert> 
+
+  <!-- 프로젝트 예산 수정 (금액) -->
+  <!-- kitech.res.exc.xda.ResBgPrjbugtSU02 -->
+  <update id="updateResBgPrjbugt" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.res.exc.updateResBgPrjbugt */ 
+		 resbgprjbugt SET amt = #{amt}
+, updt_syspayno = #{updt_syspayno}
+, updt_daytm = current
+WHERE accnt_no = #{accnt_no}
+AND exec_bugt_seq = #{exec_bugt_seq}
+AND bugt_item = #{bugt_item}
+  </update>
+  
+  
+  <!-- 실행예산 신청시 계정상태 변경 -->
+  <!-- kitech.res.exc.xda.ResBgExectSU04 -->
+  <update id="updateResBgAcctm" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.res.exc.updateResBgAcctm */ 
+		 resbgacctm 
+SET accnt_state = DECODE(#{exec_bugt_seq}, '1', 'RAK011', #{accnt_state}), 
+-- 삭제대상 차수가 1차일 경우 계정상태는 실행예산미편성으로 한다
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = SYSDATE   
+WHERE accnt_no = #{accnt_no}
+  </update>  
+  
+  <!-- PX계정실행예산마스터 수정 -->
+  <!-- kitech.res.exc.xda.ResBgPrjbugtmSU01 --> 
+  <update id="updateResBgPrjbugtm" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.res.exc.updateResBgPrjbugtm */ 
+		 resbgprjbugtm 
+SET <if test="resn_contnt != null and resn_contnt != ''">
+	  resn_contnt = #{resn_contnt},
+</if>
+    <if test="cryfwd_amt != null and cryfwd_amt != ''">
+	  cryfwd_amt = #{cryfwd_amt},
+</if>
+    <if test="incom_amt != null and incom_amt != ''">
+	  incom_amt = #{incom_amt} ,
+</if>
+    <if test="insd_tech_sup_incom != null and insd_tech_sup_incom != ''">
+	  insd_tech_sup_incom = #{insd_tech_sup_incom} ,
+</if>
+    <if test="trans_amt != null and trans_amt != ''">
+	  trans_amt = #{trans_amt} ,
+</if>
+    <if test="req_ymd != null and req_ymd != ''">
+	  req_ymd = #{req_ymd} ,
+</if>
+    <if test="attach_file_no != null and attach_file_no != ''">
+	  attach_file_no = #{attach_file_no},
+</if>
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = CURRENT
+WHERE accnt_no = #{accnt_no}
+AND   exec_bugt_seq = #{exec_bugt_seq}
+  </update>  
+
+  <!-- 프로젝트 예산편성삭제 -->
+  <!-- kitech.res.exc.xda.ResBgPrjBugtSD01 -->
+  <delete id="deleteResBgPrjBugt" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.res.exc.deleteResBgPrjBugt */ 
+		 FROM resbgprjbugt WHERE accnt_no = #{accnt_no} AND exec_bugt_seq = #{exec_bugt_seq}
+  </delete>  
+ 
+  <!-- 프로젝트 예산편성 마스터 삭제 -->
+  <!-- kitech.res.exc.xda.ResBgPrjBugtMSD01 -->
+  <delete id="deleteResBgPrjBugtm" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.res.exc.deleteResBgPrjBugtm */ 
+		 FROM resbgprjbugtm WHERE accnt_no = #{accnt_no} AND exec_bugt_seq = #{exec_bugt_seq}
+  </delete>  
+  
+  <!-- ADX계정 실행예산 내 이월금액 변경 -->
+  <!-- kitech.res.exc.xda.ResCryfwdAmtSU02 -->
+  <update id="updateResCryfwdAmt" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.res.exc.updateResCryfwdAmt */ 
+		 resbgprjbugtm
+SET cryfwd_amt = #{cryfwd_amt},
+        updt_syspayno = #{updt_syspayno},
+        updt_daytm = SYSDATE 
+WHERE accnt_no =  #{accnt_no}
+  AND exec_bugt_seq = #{exec_bugt_seq}
+  </update>  
+
+  <!-- fcommlog 테이블에서 log information 조회 -->
+  <!-- kitech.fin.fin.set.xda.FcommlogSS02 -->  
+  <select id="selectFcommlog" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo" resultType="kr.re.kitech.biz.res.exc.vo.ResExcPrjBdgetInfoVo">
+SELECT 
+SELECT /* QueryID : kr.re.kitech.biz.res.exc.selectFcommlog */ 
+		ss_sql, trim(ss_desc) as ss_desc
+FROM fcommlog
+WHERE log_no = #{log_no}
+  </select>   
+
+</mapper>

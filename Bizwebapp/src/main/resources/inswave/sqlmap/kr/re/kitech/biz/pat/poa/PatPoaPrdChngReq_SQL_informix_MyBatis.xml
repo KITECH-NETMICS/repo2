@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.poa">
+	<select id="selectPatOaPrdChngReqMS01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaPrdChngReqVo" resultType="kr.re.kitech.biz.pat.poa.vo.PatPoaPrdChngReqVo">
+	/* XDA : kitech.pat.poa.xda.PatOaPrdChngReqMS01 */
+	SELECT /* QueryID : kr.re.kitech.biz.pat.poa.selectPatOaPrdChngReqMS01 */ 
+			 a.oa_id
+	     , a.oa_sn
+	     , a.rcpt_clsf
+	     , DECODE(TRIM(NVL(a.rpn_attach_file, '')), '', '', 'Y') AS cmplt_yn
+	     , b.mngmt_no
+	     , b.invnt_krn_nm
+	     , c.nm AS invnt_nm
+	     , c.empno
+	     , fn_ofic_user_nm(a.rcpt_psn_id) rcpt_psn_nm -- 실무담당자
+	     , fn_ofic_user_nm(a.rcpt_charg_psn_id) rcpt_charg_psn_nm -- 담당변리사
+	     , d.patofic_nm
+	     , e.req_no
+	     , e.req_sn
+	     , h.empno AS req_empno
+	     , h.nm AS req_psn_nm
+	     , e.chng_ymd
+	     , e.bf_chng_ymd
+	     , x.apr_state
+	  FROM patoaprdchngreq e 
+	  JOIN patoa a ON a.oa_id = e.oa_id
+	  JOIN patmastr b ON a.req_no = b.req_no AND a.mngmt_no = b.mngmt_no
+	  JOIN humbasicinfo c ON b.invnt_syspayno = c.syspayno
+	  JOIN patoffice d ON a.rcpt_patofic_cd = d.patofic_cd
+	  JOIN humbasicinfo h ON e.req_psn = h.syspayno
+	  JOIN xomxintfatab x ON e.req_no = x.req_no
+	 WHERE a.rcpt_oa_date BETWEEN #{start_ymd} AND #{end_ymd}
+	   AND ('' = #{pat_clsf} OR b.pat_clsf = #{pat_clsf})
+	   AND ('' = #{invnt_krn_nm} OR b.invnt_krn_nm LIKE '%'||#{invnt_krn_nm}||'%')
+	   AND ('' = #{invnt_syspayno} OR b.invnt_syspayno = #{invnt_syspayno})
+	   AND ('' = #{req_no} OR b.req_no = #{req_no} OR b.mngmt_no = #{req_no})
+	 ORDER BY b.mngmt_no, a.oa_sn, e.req_sn
+	  </select>
+	<select id="selectPatOaPrdChngReqSS01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaPrdChngReqVo" resultType="kr.re.kitech.biz.pat.poa.vo.PatPoaPrdChngReqVo">
+	/* XDA : kitech.pat.poa.xda.PatOaPrdChngReqSS01 */
+	SELECT /* QueryID : kr.re.kitech.biz.pat.poa.selectPatOaPrdChngReqSS01 */ first 1
+			 a.oa_id
+	     , a.oa_sn
+	     , a.rcpt_clsf
+	     , (CASE WHEN a.rcpt_clsf IN ('0', '1') THEN '의견제출통지'
+	             WHEN a.rcpt_clsf = '2' THEN '거절결정통지'
+	             WHEN a.rcpt_clsf = '3' THEN '국외' END
+	        ) AS rcpt_clsf_nm    -- 구분     
+	     , a.rcpt_oa_date
+	     , a.rcpt_due_date
+	     , a.req_no AS doc_no
+	     , b.invnt_syspayno
+	     , b.mngmt_no
+	     , b.invnt_krn_nm
+	     , b.smitapp_no
+	     , b.smitapp_ymd
+	     , d.patofic_nm  -- 특허사무소
+	     , e.req_no
+	     , e.req_sn
+	     , e.req_psn
+	     , e.long_term
+	     , e.chng_rsn
+	     , e.req_ymd
+	     , e.rmk
+	     , e.attach_file_no
+	     , h.empno
+	     , h.nm
+	     , e.chng_ymd
+	     , e.bf_chng_ymd
+	     , x.dept_nm
+	     , xdc1.cd_nm AS pat_clsf_nm
+	     , pcm.cd_desc AS smitapp_natn_nm
+	     , xdc3.cd_nm AS smitapp_occr_clsf_nm
+	  FROM patoa a
+	  JOIN patmastr b ON a.req_no = b.req_no AND a.mngmt_no = b.mngmt_no
+	  JOIN xodxcommst xdc1 ON xdc1.cd = b.pat_clsf
+	  JOIN patoffice d ON a.rcpt_patofic_cd = d.patofic_cd
+	  LEFT JOIN patoaprdchngreq e ON a.oa_id = e.oa_id 
+	  LEFT JOIN humbasicinfo h ON e.req_psn = h.syspayno
+	  LEFT JOIN xodhdeptinfo x ON h.dept_cd = x.dept_cd AND h.dept_new_ymd = x.dept_new_ymd
+	  LEFT JOIN patcodemastr pcm ON pcm.cd_nm = b.smitapp_natn_cd
+	  LEFT JOIN xodxcommst xdc3 ON xdc3.cd = b.smitapp_occr_clsf
+	 WHERE ('' = #{oa_id} OR a.oa_id = #{oa_id})
+	   AND ('' = #{req_no} OR e.req_no = #{req_no} )
+	  </select>
+	<insert id="insertPatOaPrdChngReqSI" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaPrdChngReqVo">
+	/* XDA : kitech.pat.poa.xda.PatOaPrdChngReqSI */
+	INSERT /* QueryID : kr.re.kitech.biz.pat.poa.insertPatOaPrdChngReqSI */ 
+			 INTO patoaprdchngreq(
+	   req_no
+	 , oa_id
+	 , req_sn
+	 , req_psn
+	 , req_ymd
+	 , long_term
+	 , chng_ymd
+	 , bf_chng_ymd
+	 , chng_rsn
+	 , rmk
+	 , attach_file_no
+	 , regst_syspayno
+	 , regst_daytm
+	) VALUES (
+	   #{req_no}    -- req_no
+	 , #{oa_id}    -- oa_id
+	 , (SELECT NVL(MAX(req_sn), 0) + 1 FROM patoaprdchngreq WHERE oa_id = #{oa_id})
+	 , #{req_psn}     -- req_psn
+	 , TO_CHAR(CURRENT, '%Y%m%d') -- req_ymd
+	 , #{long_term}     -- long_term
+	 , #{chng_ymd}     -- chng_ymd
+	 , #{bf_chng_ymd}     -- bf_chng_ymd
+	 , #{chng_rsn}     -- chng_rsn
+	 , #{rmk}     -- rmk
+	 , #{attach_file_no}     -- attach_file_no
+	 , #{syspayno}     -- regst_syspayno
+	 , CURRENT    -- regst_daytm
+	)
+	  </insert>
+	<update id="updatePatOaPrdChngReqSU" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaPrdChngReqVo">
+	/* XDA : kitech.pat.poa.xda.PatOaPrdChngReqSU */
+	UPDATE /* QueryID : kr.re.kitech.biz.pat.poa.updatePatOaPrdChngReqSU */ 
+			 patoaprdchngreq
+	   SET long_term = #{long_term}
+	     , chng_ymd = #{chng_ymd}
+	     , chng_rsn = #{chng_rsn}
+	     , rmk = #{rmk}
+	     , attach_file_no = #{attach_file_no}
+	     , updt_syspayno = #{syspayno}
+	     , updt_daytm = CURRENT
+	 WHERE req_no = #{req_no}
+	  </update>
+	<insert id="insertXomxIntfaTabSI01" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaPrdChngReqVo">
+	/* XDA : kitech.fin.bud.frc.xda.XomxIntfaTabSI01 */
+	INSERT /* QueryID : kr.re.kitech.biz.pat.poa.insertXomxIntfaTabSI01 */ 
+			 INTO xomxintfatab ( req_no,
+	                           apr_state,
+	                           state_inform_flag,
+	                           last_execute_tim,
+	                           ui_id,
+	                           endpoints, 
+	                           mngmt_item_7
+	)VALUES( #{req_no},
+	        CASE WHEN #{apr_state} = '' THEN 'XAD005' ELSE #{apr_state} END,
+	        '1',
+	        current,
+	        #{ui_id},
+	        #{endpoints},
+	        #{mngmt_item_7})
+	  </insert>
+	<delete id="deletePatOaPrdChngReqSD" parameterType="kr.re.kitech.biz.pat.poa.vo.PatPoaPrdChngReqVo">
+	/* XDA : kitech.pat.poa.xda.PatOaPrdChngReqSD */
+	DELETE /* QueryID : kr.re.kitech.biz.pat.poa.deletePatOaPrdChngReqSD */ 
+			 FROM patoaprdchngreq
+	 WHERE req_no = #{req_no}
+	  </delete>
+</mapper>

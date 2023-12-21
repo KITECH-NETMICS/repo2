@@ -1,0 +1,738 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.pop">
+<!-- On-Line 가수반제, 채무반제 회계코드 조회 -->
+<select id="selectFspRamtCreatList" resultType="kr.re.kitech.biz.fin.spm.vo.FspRamtCreatVo" parameterType="kr.re.kitech.biz.fin.pop.vo.FinPopSearchVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectFspRamtCreatList */
+       a.accnt_no
+     , c.accnt_no_nm
+     , c.accnt_rspns
+     , c.fomat_unit
+     , c.tax_cd
+     , a.accnt_cd
+     , d.accnt_cd_abbr AS accnt_cd_nm
+     , a.mngmt_item_1
+     , a.mngmt_item_nm_1
+     , a.mngmt_item_2
+     , a.mngmt_item_nm_2
+     , a.accnt_ymd
+     , a.won_occr_amt
+     , a.won_adjst_amt
+     , (a.won_occr_amt - a.won_adjst_amt - a.unslip_repay_amt) AS unadjst_amt
+     , a.unslip_repay_amt
+     , a.rmk_1
+     , a.rmk_2
+     , a.final_adjst_ymd AS adjst_ymd
+     , a.relat_no
+     , a.slip_no
+     , a.slip_odr
+     , a.expns_cd
+  FROM fspramtcreat a
+  JOIN resbgacctm c ON c.accnt_no = a.accnt_no
+  JOIN xodfaccnt d ON a.accnt_cd = d.accnt_cd
+ WHERE (a.won_occr_amt - a.won_adjst_amt - a.unslip_repay_amt) > 0 
+   AND a.accnt_cd = #{accnt_cd}
+   AND d.caseby_adjst_ex = 'Y'
+ <if test='bond_debt_clsf != null and bond_debt_clsf != ""'> AND d.bond_debt_clsf = #{bond_debt_clsf} </if>
+ <if test='mngmt_item_1 != null and mngmt_item_1 != ""'> AND a.mngmt_item_1 LIKE '%'||#{mngmt_item_1}||'%' </if>
+ <if test='mngmt_item_2 != null and mngmt_item_2 != ""'> AND a.mngmt_item_2 LIKE '%'||#{mngmt_item_2}||'%' </if> 
+   /* 전기이월로 인하여 확정일자 1월 1일자 건들은 조회되지 않도록 하고 있는데, 확정번호 23100764에 대해서만 예외처리(재정운영실 구본준 사문원 요청)*/
+ <if test='accnt_cd != "21017911"'> AND (SUBSTR(a.accnt_ymd,5,4) != '0101' OR a.slip_no = '23100764') /* On-Line 가수반제가 아닐경우 */ </if> 
+   AND a.accnt_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+</select>
+
+<select id="selectFbaCardPopList" resultType="kr.re.kitech.biz.fin.std.vo.StdFbaCardVo" parameterType="kr.re.kitech.biz.fin.pop.vo.FinPopSearchVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectFbaCardPopList */
+       a.card_no 
+     , a.card_knd   
+     , a.card_clsf
+     , a.apprvl_ymd 
+     , a.accnt_no 
+     , a.keep_dept
+     , fun_dept_nm(a.keep_dept) AS dept_nm
+     , a.card_state
+     , b.nm ||'('|| b.empno ||')' AS emp_no_nm 
+  FROM fbacard a
+  JOIN humbasicinfo b ON a.keep_charg = b.syspayno
+ WHERE 1=1
+ <if test='card_knd != null and card_knd != ""'> AND a.card_knd  =#{card_knd} </if>
+ <if test='card_clsf != null and card_clsf != ""'> AND a.card_clsf  =#{card_clsf} </if>
+ <if test='card_no != null and card_no != ""'> AND a.card_no LIKE '%'|| #{card_no} ||'%' </if>
+ <if test='card_state != null and card_state != ""'> AND a.card_state = #{card_state} </if>
+ <if test='keep_charg != null and keep_charg != ""'> AND b.nm LIKE '%'||#{keep_charg} ||'%' </if>
+ORDER BY a.card_knd, a.card_no DESC
+</select>
+
+<!-- 연구장비집행확인 조회 -->
+<select id="selectAssReqEquipFeeReqList" parameterType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo" resultType="kr.re.kitech.biz.ass.eqip.vo.ResEquipFeeReqVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectAssReqEquipFeeReqList */
+       a.req_no
+     , fun_xodxcommst_cd_nm(a.intgr_mngmt_unit, 0) AS intgr_mngmt_unit
+     , a.accnt_no
+     , a.expns_cd
+     , a.req_amt
+     , a.req_ymd
+     , a.aset_no
+     , TRIM(h.nm ||'('||h.empno||')') AS req_psn_nm
+     , a.rvew_sbj  -- 심의명
+     , a.rvew_rst_cd
+     , a.enfrc_chk
+     , a.enfrc_chk2
+     , a.rmk
+     , a.appr_amt
+     , a.rvew_ymd
+     , d.aset_nm
+     , c.ntis_reg_no
+  FROM assresequipfeereq a
+  JOIN humbasicinfo h ON a.req_psn = h.syspayno
+  LEFT JOIN assmastrb d ON a.aset_no = d.aset_no
+  LEFT JOIN assmastrtech c ON a.aset_no = c.aset_no
+ WHERE SUBSTR(a.req_ymd, 1, 4) = #{req_yr}
+ <if test='req_no != null and req_no != ""'>  AND a.req_no = #{req_no} </if>
+   AND a.accnt_no = #{accnt_no} 
+   AND a.expns_cd = #{expns_cd}
+  <if test='req_psn != null and req_psn != ""'>  AND a.req_psn = #{req_psn} </if>
+   AND ( #{accnt_no} = 'FF210001' OR a.rvew_rst_cd= 'RBH001' )
+</select>
+
+<!-- 거래증빙조회(팝업화면) -->
+<select id="selectKtxIssuMstrPop" resultType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrVo" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectKtxIssuMstrPop */
+       issu_seqno
+     , issu_id
+     , regs_date
+     , tax_type
+     , TRIM(CASE WHEN tax_type IN ('0301', '0302') THEN '계산서'
+                       WHEN tax_type ='0501' THEN '영수증'
+                       WHEN tax_type ='0401' THEN '수정전자계산서'
+                       WHEN SUBSTR(tax_type, 3, 2) = '03' THEN '위수탁 전자세금계산서'
+                       ELSE '전자세금계산서' END) AS tax_type_nm 
+     , pops_code
+     , DECODE(pops_code, '01', '영수', '청구') AS pops_nm
+     , DECODE(mody_code, '01', '기재사항의 착오·정정', '02', '공급가액 변동', '03', '환입', '04', '계약의 해제', '05', '내국신용장 사후 개설','') AS mody_code_nm
+     , note1
+     , note2
+     <choose>
+      <when test='issu_id != null and issu_id != ""'> , note3 </when>
+      <otherwise> , DECODE(note3, '', issu_seqno, note3) note3 </otherwise>
+     </choose>
+     , selr_corp_no
+     , selr_code
+     , selr_corp_nm
+     , selr_ceo
+     , selr_addr
+     , selr_buss_cons /* 업태 */
+     , selr_buss_type /* 종목*/
+     , buyr_corp_no /* 공급받는자 등록번호*/
+     , buyr_code
+     , buyr_corp_nm
+     , buyr_ceo
+     , buyr_addr
+     , buyr_buss_cons
+     , buyr_buss_type
+     , pamt_amt1 /* 현금*/
+     , pamt_amt2 /* 수표*/
+     , pamt_amt3 /* 어음*/
+     , pamt_amt4 /* 외상미수금*/
+     , chrg_amt 
+     , tax_amt 
+     , totl_amt 
+     , recp_cd 
+     , bill_type
+     , unslip_no
+     , creation_date 
+     , wrte_dept 
+     , wrte_psn
+     , NVL(public_amt_yn,'N') AS public_amt_yn
+     , evid_cd  
+     , NVL(trans_amt, 0) trans_amt
+     , vend_cd
+     , 'U' AS cud_type
+  FROM ktx_issu_mstr 
+ WHERE (issu_seqno =#{issu_seqno} OR issu_id = #{issu_id})
+</select>
+
+<!-- 거래증빙 저장(팝업화면) -->
+<insert id="insertKtxIssuMstr" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrVo">
+INSERT /* kr.re.kitech.biz.fin.pop.insertKtxIssuMstr */
+  INTO ktx_issu_mstr( 
+           issu_seqno
+  <if test="issu_id         != null"> , issu_id          </if>
+  <if test="regs_date       != null"> , regs_date        </if>
+  <if test="tax_type        != null"> , tax_type         </if>
+  <if test="pops_code       != null"> , pops_code        </if>
+  <if test="mody_code       != null"> , mody_code        </if>
+  <if test="note1           != null"> , note1            </if>
+  <if test="note2           != null"> , note2            </if>
+  <if test="note3           != null"> , note3            </if>
+  <if test="impt_no         != null"> , impt_no          </if>
+  <if test="acep_stat_date  != null"> , acep_stat_date   </if>
+  <if test="acep_end_date   != null"> , acep_end_date    </if>
+  <if test="item_quant      != null"> , item_quant       </if>
+  <if test="selr_corp_no    != null"> , selr_corp_no     </if>
+  <if test="selr_code       != null"> , selr_code        </if>
+  <if test="selr_corp_nm    != null"> , selr_corp_nm     </if>
+  <if test="selr_ceo        != null"> , selr_ceo         </if>
+  <if test="selr_addr       != null"> , selr_addr        </if>
+  <if test="selr_buss_cons  != null"> , selr_buss_cons   </if>
+  <if test="selr_buss_type  != null"> , selr_buss_type   </if>
+  <if test="selr_chrg_post  != null"> , selr_chrg_post   </if>
+  <if test="selr_chrg_nm    != null"> , selr_chrg_nm     </if>
+  <if test="selr_chrg_tel   != null"> , selr_chrg_tel    </if>
+  <if test="selr_chrg_email != null"> , selr_chrg_email  </if>
+  <if test="buyr_gb         != null"> , buyr_gb          </if>
+  <if test="buyr_corp_no    != null"> , buyr_corp_no     </if>
+  <if test="buyr_code       != null"> , buyr_code        </if>
+  <if test="buyr_corp_nm    != null"> , buyr_corp_nm     </if>
+  <if test="buyr_ceo        != null"> , buyr_ceo         </if>
+  <if test="buyr_addr       != null"> , buyr_addr        </if>
+  <if test="buyr_buss_cons  != null"> , buyr_buss_cons   </if>
+  <if test="buyr_buss_type  != null"> , buyr_buss_type   </if>
+  <if test="buyr_chrg_post1 != null"> , buyr_chrg_post1  </if>
+  <if test="buyr_chrg_nm1   != null"> , buyr_chrg_nm1    </if>
+  <if test="buyr_chrg_tel1  != null"> , buyr_chrg_tel1   </if>
+  <if test="buyr_chrg_email1!= null"> , buyr_chrg_email1 </if>
+  <if test="buyr_chrg_post2 != null"> , buyr_chrg_post2  </if>
+  <if test="buyr_chrg_nm2   != null"> , buyr_chrg_nm2    </if>
+  <if test="buyr_chrg_tel2  != null"> , buyr_chrg_tel2   </if>
+  <if test="buyr_chrg_email2!= null"> , buyr_chrg_email2 </if>
+  <if test="brok_corp_no    != null"> , brok_corp_no     </if>
+  <if test="brok_code       != null"> , brok_code        </if>
+  <if test="brok_corp_nm    != null"> , brok_corp_nm     </if>
+  <if test="brok_ceo        != null"> , brok_ceo         </if>
+  <if test="brok_addr       != null"> , brok_addr        </if>
+  <if test="brok_buss_cons  != null"> , brok_buss_cons   </if>
+  <if test="brok_buss_type  != null"> , brok_buss_type   </if>
+  <if test="brok_chrg_post  != null"> , brok_chrg_post   </if>
+  <if test="brok_chrg_nm    != null"> , brok_chrg_nm     </if>
+  <if test="brok_chrg_tel   != null"> , brok_chrg_tel    </if>
+  <if test="brok_chrg_email != null"> , brok_chrg_email  </if>
+  <if test="pymt_type1      != null"> , pymt_type1       </if>
+  <if test="pamt_amt1       != null"> , pamt_amt1        </if>
+  <if test="pymt_type2      != null"> , pymt_type2       </if>
+  <if test="pamt_amt2       != null"> , pamt_amt2        </if>
+  <if test="pymt_type3      != null"> , pymt_type3       </if>
+  <if test="pamt_amt3       != null"> , pamt_amt3        </if>
+  <if test="pymt_type4      != null"> , pymt_type4       </if>
+  <if test="pamt_amt4       != null"> , pamt_amt4        </if>
+  <if test="chrg_amt        != null"> , chrg_amt         </if>
+  <if test="tax_amt         != null"> , tax_amt          </if>
+  <if test="totl_amt        != null"> , totl_amt         </if>
+  <if test="stat_code       != null"> , stat_code        </if>
+  <if test="recp_cd         != null"> , recp_cd          </if>
+  <if test="bill_type       != null"> , bill_type        </if>
+  <if test="err_cd          != null"> , err_cd           </if>
+  <if test="issu_date       != null"> , issu_date        </if>
+  <if test="asp_sdatetime   != null"> , asp_sdatetime    </if>
+  <if test="rst_rcp_yn      != null"> , rst_rcp_yn       </if>
+  <if test="bfo_issu_id     != null"> , bfo_issu_id      </if>
+  <if test="company_code    != null"> , company_code     </if>
+  <if test="sys_chk         != null"> , sys_chk          </if>
+  <if test="ech_code        != null"> , ech_code         </if>
+  <if test="pur_con_org_code!= null"> , pur_con_org_code </if>
+  <if test="pur_con_user_id != null"> , pur_con_user_id  </if>
+  <if test="creation_date   != null"> , creation_date    </if>
+  <if test="wrte_dept       != null"> , wrte_dept        </if>
+  <if test="wrte_psn        != null"> , wrte_psn         </if>
+  <if test="evid_cd         != null"> , evid_cd          </if>
+  <if test="vend_cd         != null"> , vend_cd          </if>
+  <if test="public_amt_yn   != null"> , public_amt_yn    </if>
+  <if test="loadstatus   != null"> , loadstatus    </if>
+    ) VALUES  
+    ( 
+       #{issu_seqno}
+       <if test="issu_id         != null"> , #{issu_id}          </if>       
+       <if test="regs_date       != null"> , #{regs_date}        </if>
+       <if test="tax_type        != null"> , #{tax_type}         </if>
+       <if test="pops_code       != null"> , #{pops_code}        </if>
+       <if test="mody_code       != null"> , #{mody_code}        </if>
+       <if test="note1           != null"> , #{note1}            </if>
+       <if test="note2           != null"> , #{note2}            </if>
+       <if test="note3           != null"> , #{note3}            </if>
+       <if test="impt_no         != null"> , #{impt_no}          </if>
+       <if test="acep_stat_date  != null"> , #{acep_stat_date}   </if>
+       <if test="acep_end_date   != null"> , #{acep_end_date}    </if>
+       <if test="item_quant      != null"> , #{item_quant}       </if>
+       <if test="selr_corp_no    != null"> , #{selr_corp_no}     </if>
+       <if test="selr_code       != null"> , #{selr_code}        </if>
+       <if test="selr_corp_nm    != null"> , #{selr_corp_nm}     </if>
+       <if test="selr_ceo        != null"> , #{selr_ceo}         </if>
+       <if test="selr_addr       != null"> , #{selr_addr}        </if>
+       <if test="selr_buss_cons  != null"> , #{selr_buss_cons}   </if>
+       <if test="selr_buss_type  != null"> , #{selr_buss_type}   </if>
+       <if test="selr_chrg_post  != null"> , #{selr_chrg_post}   </if>
+       <if test="selr_chrg_nm    != null"> , #{selr_chrg_nm}     </if>
+       <if test="selr_chrg_tel   != null"> , #{selr_chrg_tel}    </if>
+       <if test="selr_chrg_email != null"> , #{selr_chrg_email}  </if>
+       <if test="buyr_gb         != null"> , #{buyr_gb}          </if>
+       <if test="buyr_corp_no    != null"> , #{buyr_corp_no}     </if>
+       <if test="buyr_code       != null"> , #{buyr_code}        </if>
+       <if test="buyr_corp_nm    != null"> , #{buyr_corp_nm}     </if>
+       <if test="buyr_ceo        != null"> , #{buyr_ceo}         </if>
+       <if test="buyr_addr       != null"> , #{buyr_addr}        </if>
+       <if test="buyr_buss_cons  != null"> , #{buyr_buss_cons}   </if>
+       <if test="buyr_buss_type  != null"> , #{buyr_buss_type}   </if>
+       <if test="buyr_chrg_post1 != null"> , #{buyr_chrg_post1}  </if>
+       <if test="buyr_chrg_nm1   != null"> , #{buyr_chrg_nm1}    </if>
+       <if test="buyr_chrg_tel1  != null"> , #{buyr_chrg_tel1}   </if>
+       <if test="buyr_chrg_email1!= null"> , #{buyr_chrg_email1} </if>
+       <if test="buyr_chrg_post2 != null"> , #{buyr_chrg_post2}  </if>
+       <if test="buyr_chrg_nm2   != null"> , #{buyr_chrg_nm2}    </if>
+       <if test="buyr_chrg_tel2  != null"> , #{buyr_chrg_tel2}   </if>
+       <if test="buyr_chrg_email2!= null"> , #{buyr_chrg_email2} </if>
+       <if test="brok_corp_no    != null"> , #{brok_corp_no}     </if>
+       <if test="brok_code       != null"> , #{brok_code}        </if>
+       <if test="brok_corp_nm    != null"> , #{brok_corp_nm}     </if>
+       <if test="brok_ceo        != null"> , #{brok_ceo}         </if>
+       <if test="brok_addr       != null"> , #{brok_addr}        </if>
+       <if test="brok_buss_cons  != null"> , #{brok_buss_cons}   </if>
+       <if test="brok_buss_type  != null"> , #{brok_buss_type}   </if>
+       <if test="brok_chrg_post  != null"> , #{brok_chrg_post}   </if>
+       <if test="brok_chrg_nm    != null"> , #{brok_chrg_nm}     </if>
+       <if test="brok_chrg_tel   != null"> , #{brok_chrg_tel}    </if>
+       <if test="brok_chrg_email != null"> , #{brok_chrg_email}  </if>
+       <if test="pymt_type1      != null"> , #{pymt_type1}       </if>
+       <if test="pamt_amt1       != null"> , #{pamt_amt1}        </if>
+       <if test="pymt_type2      != null"> , #{pymt_type2}       </if>
+       <if test="pamt_amt2       != null"> , #{pamt_amt2}        </if>
+       <if test="pymt_type3      != null"> , #{pymt_type3}       </if>
+       <if test="pamt_amt3       != null"> , #{pamt_amt3}        </if>
+       <if test="pymt_type4      != null"> , #{pymt_type4}       </if>
+       <if test="pamt_amt4       != null"> , #{pamt_amt4}        </if>
+       <if test="chrg_amt        != null"> , #{chrg_amt}         </if>
+       <if test="tax_amt         != null"> , #{tax_amt}          </if>
+       <if test="totl_amt        != null"> , #{totl_amt}         </if>
+       <if test="stat_code       != null"> , #{stat_code}        </if>
+       <if test="recp_cd         != null"> , #{recp_cd}          </if>
+       <if test="bill_type       != null"> , #{bill_type}        </if>
+       <if test="err_cd          != null"> , #{err_cd}           </if>
+       <if test="issu_date       != null"> , #{issu_date}        </if>
+       <if test="asp_sdatetime   != null"> , #{asp_sdatetime}    </if>
+       <if test="rst_rcp_yn      != null"> , #{rst_rcp_yn}       </if>
+       <if test="bfo_issu_id     != null"> , #{bfo_issu_id}      </if>
+       <if test="company_code    != null"> , #{company_code}     </if>
+       <if test="sys_chk         != null"> , #{sys_chk}          </if>
+       <if test="ech_code        != null"> , #{ech_code}         </if>
+       <if test="pur_con_org_code!= null"> , #{pur_con_org_code} </if>
+       <if test="pur_con_user_id != null"> , #{pur_con_user_id}  </if>
+       <if test="creation_date   != null"> , #{creation_date}    </if>
+       <if test="wrte_dept       != null"> , #{wrte_dept}        </if>
+       <if test="wrte_psn        != null"> , #{wrte_psn}         </if>
+       <if test="evid_cd         != null"> , #{evid_cd}          </if>
+       <if test="vend_cd         != null"> , #{vend_cd}          </if>
+       <if test="public_amt_yn   != null"> , #{public_amt_yn}    </if>
+       <if test="loadstatus   != null"> , #{loadstatus}    </if>
+    )
+</insert>
+
+<!-- 거래증빙 수정(팝업화면) -->
+<update id="updateKtxIssuMstr" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrVo">
+UPDATE ktx_issu_mstr /* kr.re.kitech.biz.fin.pop.updateKtxIssuMstr */
+SET regs_date = #{regs_date} 
+  , tax_type = #{tax_type} 
+  , pops_code = #{pops_code} 
+  , note1 = #{note1} 
+  , note2 = #{note2} 
+  , selr_corp_no = #{selr_corp_no} 
+  , selr_corp_nm = #{selr_corp_nm} 
+  , selr_ceo = #{selr_ceo} 
+  , selr_addr = #{selr_addr} 
+  , selr_buss_cons = #{selr_buss_cons}
+  , selr_buss_type = #{selr_buss_type}
+  , buyr_gb = #{buyr_gb} 
+  , buyr_corp_no = #{buyr_corp_no} 
+  , buyr_corp_nm = #{buyr_corp_nm}
+  , buyr_ceo = #{buyr_ceo} 
+  , buyr_addr = #{buyr_addr} 
+  , chrg_amt = #{chrg_amt} 
+  , tax_amt = #{tax_amt} 
+  , totl_amt = #{totl_amt} 
+  , recp_cd = #{recp_cd} 
+  , bill_type = #{bill_type}
+  , evid_cd = #{evid_cd}
+  , public_amt_yn = #{public_amt_yn}
+  , note3 = #{note3}
+  , vend_cd = #{vend_cd} 
+WHERE issu_seqno = #{issu_seqno}
+</update>
+
+<!-- 거래증빙 삭제전 결의생성, 부가세신고여부 체크(팝업화면) -->
+<select id="selectKtxIssuMstrChk" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo" resultType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectKtxIssuMstrChk */
+      issu_seqno
+    , NVL(tax_returns_yn,'N') AS tax_returns_yn 
+    , TRIM(NVL(unslip_no, '')) AS unslip_no
+    , NVL(trans_amt, 0) AS trans_amt
+  FROM ktx_issu_mstr
+ WHERE issu_seqno = #{issu_seqno}
+</select>
+
+<!-- 계산서 삭제 -->
+<delete id="deleteKtxIssuMstr" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo">
+DELETE /* kr.re.kitech.biz.fin.pop.deleteKtxIssuMstr */
+  FROM ktx_issu_mstr
+WHERE issu_seqno = #{issu_seqno}
+;
+DELETE FROM ktx_issu_detail
+WHERE issu_seqno = #{issu_seqno}
+;
+</delete>
+
+<!-- 삭제이력 저장 -->
+<insert id="insertXomxDelHistory" parameterType="kr.re.kitech.biz.fin.pop.vo.XomxDelHistoryVo">
+INSERT INTO xomxdelhistory( /* kr.re.kitech.biz.fin.pop.insertXomxDelHistory */
+     req_no ,
+     doc_contnt ,
+     srv_id ,
+     delete_syspayno ,
+     delete_daytm
+) VALUES ( #{req_no}
+              , #{doc_contnt}
+              , #{srv_id}
+              , #{delete_syspayno}
+              , CURRENT
+              )
+</insert>
+
+<!-- 비용코드 검색 팝업 -->
+<select id="selectXodfExpnsList" resultType="kr.re.kitech.biz.fin.std.vo.XodfExpnsVo" parameterType="kr.re.kitech.biz.fin.pop.vo.FinPopSearchVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectXodfExpnsList */
+       expns_clsf
+     , expns_cd
+     , expns_cd_nm
+     , desc
+  FROM xodfexpns a
+ WHERE (expns_cd LIKE #{inqr_value}||'%' OR expns_cd_nm LIKE '%'||#{inqr_value} ||'%')
+</select>
+
+<!-- 일반결의 결의내역 대체처리 검색 팝업 -->
+<select id="selectTransSlipInfoList" resultType="kr.re.kitech.biz.fin.pop.vo.TransSlipVo" parameterType="kr.re.kitech.biz.fin.pop.vo.FinPopSearchVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectTransSlipInfoList */
+       a.slip_no
+     , a.slip_odr 
+     , a.accnt_no
+     , NVL(r.tax_cd,'FTX002') AS tax_cd
+     , r.accnt_no_nm
+     , r.accnt_rspns
+     , r.fomat_unit
+     , r.start_ymd
+     , r.cls_ymd
+     , r.accnt_state
+     , a.unslip_no
+     , a.unslip_odr
+     , a.accnt_ymd
+     , a.accnt_cd
+     , a.expns_cd
+     , c.expns_cd_nm
+     , a.total_amt AS bf_total_amt
+     , a.unslip_amt AS bf_unslip_amt
+     , a.tax_amt AS bf_tax_amt
+     , a.total_amt - a.trans_total_amt AS total_amt
+     , a.unslip_amt - a.trans_unslip_amt AS unslip_amt
+     , a.tax_amt - a.trans_tax_amt AS tax_amt
+     , a.ctrl_no
+     , a.rmk_1
+     , b.accnt_cd_abbr AS accnt_cd_nm
+  FROM (
+       SELECT a.slip_no
+            , a.slip_odr 
+            , a.accnt_no
+            , a.unslip_no
+            , a.unslip_odr
+            , a.accnt_ymd
+            , a.accnt_cd
+            , a.expns_cd
+            , DECODE(NVL(d.tax_amt,0), 0, d.unslip_amt, d.unslip_amt + NVL(d.tax_amt,0)) AS total_amt
+            , d.unslip_amt
+            , NVL(d.tax_amt,0) AS tax_amt
+            , a.ctrl_no
+            , a.rmk_1
+            , SUM(DECODE(NVL(b.tax_amt,0), 0, NVL(b.unslip_amt,0), NVL(b.unslip_amt,0) + NVL(b.tax_amt,0))) AS trans_total_amt
+            , SUM(NVL(b.unslip_amt,0)) AS trans_unslip_amt
+            , SUM(NVL(b.tax_amt,0)) AS trans_tax_amt
+         FROM fspslipdecsnd a
+         JOIN fspslipdecsnh h ON a.slip_no = h.slip_no
+         JOIN fspslipd d ON d.unslip_no = a.unslip_no AND d.unslip_odr = a.unslip_odr
+         LEFT JOIN fspslipd b ON a.slip_no = b.occr_slip_no AND a.slip_odr = b.occr_slip_odr AND b.base_debit_cr = 2  /* 다건으로 결의내역대체처리한 경우 고려 */  
+        WHERE a.accnt_no != 'FF030001'
+          AND SUBSTR(a.accnt_no, 1, 4) != 'FF21' /* 2021.10.19. 연구장비통합장비는 계정대체 불가  */
+          AND h.wrte_ymd BETWEEN #{from_ymd} AND #{to_ymd}
+          AND a.unslip_amt - a.trans_amt > 0 
+          AND a.base_debit_cr=1
+          AND NVL(d.rcms_rmk,'') = ''
+          AND NVL(d.rcms_pay_unslip_no,'') = '' -- rcms전송완료 건은 결의내역대체처리 안됨
+          <if test='accnt_no != null and accnt_no != ""'> AND a.accnt_no = #{accnt_no} </if>
+          <if test='expns_cd != null and expns_cd != ""'> AND a.expns_cd LIKE #{expns_cd} ||'%' </if>
+          <if test='unslip_no != null and unslip_no != ""'> AND a.unslip_no LIKE #{unslip_no} ||'%' </if>
+          <if test='accnt_cd != null and accnt_cd != ""'> AND a.accnt_cd LIKE #{accnt_cd} ||'%' </if>
+          <if test='slip_no != null and slip_no != ""'> AND a.slip_no LIKE #{slip_no}||'%' </if>
+         GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
+     ) a
+  JOIN xodfexpns c ON a.expns_cd = c.expns_cd
+  JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+  JOIN xodfaccnt b ON a.accnt_cd = b.accnt_cd
+</select>
+
+<!-- 일반결의 통제내역 결의처리 팝업 -->
+<select id="selectBblEnfrcForSlip" resultType="kr.re.kitech.biz.fin.pop.vo.CtrlSlipVo" parameterType="kr.re.kitech.biz.fin.pop.vo.FinPopSearchVo">
+/* 2017.06.14. start_ymd, cls_ymd 추가*/
+SELECT /* kr.re.kitech.biz.fin.pop.selectBblEnfrcForSlip */
+      a.ctrl_no
+    , a.ctrl_ymd
+    , a.enfrc_amt_cause
+    , (a.enfrc_amt_cause - a.trans_amt) AS unslip_amt
+    , a.accnt_no
+    , r.accnt_no_nm
+    , NVL(r.tax_cd,'FTX002') AS tax_cd
+    , r.mngmt_clsf
+    , a.accnt_cd
+    , e.accnt_cd_abbr AS accnt_cd_nm
+    , a.expns_cd
+    , b.expns_cd_nm
+    , r.accnt_rspns
+    , r.start_ymd
+    , r.cls_ymd
+    , r.fomat_unit
+    , r.accnt_state
+    , r.dept_res_psn
+    , a.req_no
+    , a.req_seq
+    , a.unslip_no
+    , a.unslip_odr
+    , a.trans_amt
+    , a.req_psn
+    , c.nm
+    , a.rmk
+  FROM bblenfrc a
+  JOIN xodfexpns b ON a.expns_cd = b.expns_cd
+  JOIN humbasicinfo c ON a.req_psn = c.syspayno
+  JOIN xomxintfatab d ON a.req_no = d.req_no
+  JOIN resbgacctm r ON r.accnt_no = a.accnt_no
+  JOIN xodfaccnt e ON a.accnt_cd = e.accnt_cd
+ WHERE a.req_clsf IN ('FBJ091', 'FBJ051', 'FBJ052', 'FBJ101')
+  AND a.part_all_clsf != 'F'
+  AND d.apr_state = 'XAD100'
+ <if test='inqr_value != null and inqr_value == "Fn0120"'> AND r.card_use_ex NOT IN ('FAJ004', 'FAJ005') /* 통제내역 결의처리 시 RCMS 및 POINT 계정을 선택할 수 없음 */ </if>
+ <if test='inqr_value != null and inqr_value == "Fn0126"'> AND r.card_use_ex IN ('FAJ004', 'FAJ005') </if>
+  AND a.req_ymd BETWEEN #{from_ymd} AND #{to_ymd} 
+  AND a.enfrc_amt_cause - a.trans_amt <![CDATA[ > ]]> 0
+  <if test='accnt_no != null and accnt_no != ""'> AND a.accnt_no = #{accnt_no} </if>
+  <if test='ctrl_no != null and ctrl_no != ""'> AND a.ctrl_no LIKE #{ctrl_no} ||'%' </if>
+  <if test='req_no != null and req_no != ""'> AND a.req_no LIKE #{req_no} ||'%' </if>
+</select>
+<select id="selectXodfAccntCdForDebt" resultType="kr.re.kitech.biz.fin.pop.vo.AccntCdVo" parameterType="kr.re.kitech.biz.fin.com.vo.FinCodeNmVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectXodfAccntCdForDebt */
+       a.accnt_cd 
+     , a.accnt_cd_abbr
+     , a.mngmt_item_cd_1
+     , b.mngmt_item_nm AS mngmt_item_nm_1
+     , b.data_form as data_form_1
+     , a.mngmt_item_cd_2
+     , c.mngmt_item_nm AS mngmt_item_nm_2
+     , c.data_form as data_form_2
+  FROM  xodfaccnt a
+  LEFT JOIN fbamngmtitem b ON a.mngmt_item_cd_1 = b.mngmt_item_cd
+  LEFT JOIN fbamngmtitem c ON a.mngmt_item_cd_2 = c.mngmt_item_cd
+ WHERE level = '5'
+   <if test='caseby_adjst_ex != null and caseby_adjst_ex != ""'> AND a.caseby_adjst_ex = 'Y' </if>
+  <if test='bond_debt_clsf != null and bond_debt_clsf != ""'> AND bond_debt_clsf =  #{bond_debt_clsf} /*채권채무현황 병용사용*/</if>
+</select>
+<select id="selectFspItmEvidDetlsList" parameterType="kr.re.kitech.biz.fin.spm.vo.FinSlipSearchVo" resultType="kr.re.kitech.biz.fin.pop.vo.FspItmEvidDetlsVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectFspItmEvidDetlsList */
+       a.unslip_no
+     , a.unslip_odr
+     , a.expns_cd
+     , a.inout_clsf
+     , CASE WHEN a.inout_clsf  ='FEH001' THEN a.syspayno ELSE '99999999' END AS syspayno
+     , NVL(b.empno, '999999') AS empno
+     , a.nm
+     , b.res_person_no
+     , a.odr
+     , a.dept_nm
+     , a.title_nm
+     , a.plc_nm
+     , a.start_ymd
+     , a.cls_ymd
+     , a.cls_ymd
+     , a.start_time
+     , a.cls_time
+     , a.rmk_1
+     , a.rmk_2
+     , a.meet_clsf
+     , a.nation_inout_cd
+     , a.confnation
+     , a.confarea
+  FROM fspitmeviddetls a
+  LEFT JOIN humbasicinfo b ON a.syspayno = b.syspayno
+ WHERE a.unslip_no = #{unslip_no}
+   AND a.unslip_odr = #{unslip_odr}
+   AND a.expns_cd = #{expns_cd}
+ ORDER BY a.odr
+</select>
+
+<!-- 전자세금계산서 팝업 조회 -->
+
+<select id="selectKtxIssuDetailList" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo" resultType="kr.re.kitech.biz.fin.pop.vo.KtxIssuDetailVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectKtxIssuDetailList */
+       buy_date
+     , item_nm
+     , item_infm /* 규격*/
+     , item_qunt /* 수량*/
+     , to_Number(DECODE(NVL(unit_prce,''),'','0',unit_prce)) AS unit_prce /* 단가*/
+     , item_amt /* 공급가액*/
+     , item_tax
+     , item_desp /* 비고*/
+     , CASE WHEN LENGTH(buy_date) = 8 THEN SUBSTR(buy_date, 5, 2) 
+               WHEN LENGTH(buy_date) = 4 THEN SUBSTR(buy_date, 1, 2) END AS buy_mon
+     , CASE WHEN LENGTH(buy_date) = 8 THEN SUBSTR(buy_date, 7, 2) 
+               WHEN LENGTH(buy_date) = 4 THEN SUBSTR(buy_date, 3, 2) END AS buy_day
+  FROM ktx_issu_detail
+ WHERE issu_seqno = #{issu_seqno}
+</select>
+
+<select id="selectXodfVendList" resultType="kr.re.kitech.biz.fin.std.vo.XodfVendVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.pop.selectXodfVendList */
+         vend_cd 
+        , vend_abbr
+        , reprs_psn_nm
+        , addr
+        , trim(tran_stop_ymd) as tran_stop_ymd
+        , tran_stop_cause
+  FROM xodfvend
+WHERE REPLACE(bsns_psn_regst_no,'-','') = #{bsns_psn_regst_no}
+   AND use_yn = 'Y'
+</select>
+
+<!-- 전자세금계산서 품목내역 저장 -->
+<insert id="insertKtxIssuDetail" parameterType="kr.re.kitech.biz.fin.pop.vo.KtxIssuDetailVo">
+INSERT INTO ktx_issu_detail   /* QueryID : kr.re.kitech.biz.fin.pop.insertKtxIssuDetail */
+    ( 
+        issu_seqno
+        , seq_no
+        <if test="item_amt   != null"> , item_amt    </if>
+        <if test="item_tax   != null"> , item_tax    </if>
+        <if test="item_code  != null"> , item_code   </if>
+        <if test="item_nm    != null"> , item_nm     </if>
+        <if test="item_qunt  != null"> , item_qunt   </if>
+        <if test="unit_prce  != null"> , unit_prce   </if>
+        <if test="buy_date   != null"> , buy_date    </if>
+        <if test="item_infm  != null"> , item_infm   </if>
+        <if test="item_desp  != null"> , item_desp   </if>
+    )
+    VALUES  
+    ( 
+        #{issu_seqno}
+        , #{seq_no}
+        <if test="item_amt   != null"> , #{item_amt}    </if>
+        <if test="item_tax   != null"> , #{item_tax}    </if>
+        <if test="item_code  != null"> , #{item_code}   </if>
+        <if test="item_nm    != null"> , #{item_nm}     </if>
+        <if test="item_qunt  != null"> , #{item_qunt}   </if>
+        <if test="unit_prce  != null"> , #{unit_prce}   </if>
+        <if test="buy_date   != null"> , #{buy_date}    </if>
+        <if test="item_infm  != null"> , #{item_infm}   </if>
+        <if test="item_desp  != null"> , #{item_desp}   </if>
+    )
+</insert>
+
+<!-- 어음번호 조회 -->
+<select id="selectFcpPrmsntList" parameterType="kr.re.kitech.biz.fin.com.vo.FcpPrmsntVo" resultType="kr.re.kitech.biz.fin.com.vo.FcpPrmsntVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectFcpPrmsntList */
+       a.prmsnt_clsf
+     , TRIM(a.prmsnt_no) AS prmsnt_no
+     , a.expir_ymd
+     , a.amt
+     , a.accnt_no
+     , a.contpat_accnt_cd
+     , a.vend_cd
+     , b.vend_abbr
+     , TRIM(a.issu_psn) AS issu_psn
+     , a.rmk
+     , a.depst_req_no
+     , a.pay_bank_nm
+     , a.issu_ymd
+  FROM fcpprmsnt a
+  JOIN xodfvend b ON a.vend_cd = b.vend_cd
+ WHERE a.prmsnt_clsf = #{prmsnt_clsf}
+  <if test ='vend_cd != null and vend_cd != ""'> AND a.vend_cd = #{vend_cd} </if>
+  <if test ='expir_ymd != null and expir_ymd != ""'> AND a.expir_ymd = #{expir_ymd} </if>
+</select>
+
+<!-- 회의록조회(팝업 F244) -->
+<select id="selectFspMeetPopList" parameterType="kr.re.kitech.biz.fin.pop.vo.FinPopSearchVo" resultType="kr.re.kitech.biz.fin.pop.vo.FspMeetMntPopVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectFspMeetPopList */
+       a.meet_req_no
+     , b.nm AS req_psn_nm
+     , b.res_person_no
+     , b.sci_tech_regst_no
+     , TRIM(TO_CHAR(TO_DATE(a.meet_start_ymd,'%Y%m%d'),'%Y-%m-%d') || '~' || TO_CHAR(TO_DATE(a.meet_cls_ymd,'%Y%m%d'),'%Y-%m-%d')) AS meet_ymd
+     , DECODE(NVL(a.meet_start_time,''),'','',SUBSTR(a.meet_start_time,1,2) || ':'||SUBSTR(a.meet_start_time,3,2) )
+       || '~' || DECODE(NVL(a.meet_cls_time,''),'','',SUBSTR(a.meet_cls_time,1,2) ||':'|| SUBSTR(a.meet_cls_time,3,2) ) AS meet_time
+     , a.meet_subject
+     , DECODE(e.evid_clsf,'2','계산서','1','카드','') AS evid_clsf_nm
+     , DECODE(e.evid_clsf,'2',e.issu_seqno,'1',e.cardno,'') AS evid_no
+     , a.accnt_no
+     , fun_res_prj_evid(a.accnt_no,'', 3) AS evid_chk
+     , group_concat(DISTINCT d.unslip_no) AS unslip_no
+FROM fspmeetmnth a
+JOIN humbasicinfo b ON b.syspayno=a.req_syspayno
+LEFT JOIN fspmeetevidh e ON e.meet_req_no=a.meet_req_no
+LEFT JOIN (SELECT d.key_val, f.unslip_no 
+             FROM fspevidrptkey d  
+             JOIN fspevidattach f ON d.evid_mngmt_no = f.evid_mngmt_no AND d.evid_item_cd = f.evid_item_cd AND d.evid_mngmt_seq = f.evid_mngmt_seq AND d.evid_item_cd ='F014' AND  d.key_val LIKE'F25%'
+             JOIN fspmeetmnth d2 ON d2.meet_req_no = d.key_val and (d2.meet_start_ymd BETWEEN #{from_ymd} AND #{to_ymd} OR d2.meet_cls_ymd BETWEEN #{from_ymd} AND #{to_ymd})
+          ) d ON a.meet_req_no = d.key_val 
+WHERE (a.meet_start_ymd BETWEEN #{from_ymd} AND #{to_ymd} OR a.meet_cls_ymd BETWEEN #{from_ymd} AND #{to_ymd})
+<if test = 'syspayno != null and syspayno !=""'> 
+    AND (a.req_syspayno = #{syspayno} OR EXISTS ( SELECT '' FROM fspmeetmntd WHERE meet_req_no=a.meet_req_no AND syspayno = #{syspayno}))
+</if >
+<if test = 'card_no != null and card_no != ""'>
+    AND EXISTS ( SELECT '' FROM fspmeetevidh WHERE meet_req_no=a.meet_req_no AND cardno LIKE '%'||#{card_no}||'%')
+</if >
+<if test ='inqr_value != null and inqr_value != ""'> AND a.meet_subject LIKE '%'||#{inqr_value} ||'%' </if >
+<if test ='req_no != null and req_no != ""'> AND a.meet_req_no = #{req_no} </if >
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11
+ORDER BY meet_ymd DESC, a.meet_req_no
+</select>
+<select id="selectNoSciTechNoPsn" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.pop.selectNoSciTechNoPsn */
+       group_concat(c.nm) AS no_sci_tech_psn
+FROM fspmeetmntd b 
+JOIN humbasicinfo c on b.syspayno = c.syspayno
+WHERE b.meet_req_no = #{req_no}
+AND b.user_clsf = '1'
+AND NVL(c.sci_tech_regst_no, '') = ''
+</select>
+
+<!-- 전자세금계산서 등록여부 체크 -->
+<select id="selectKtxIssuMstrCnt" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.pop.vo.KtxIssuMstrCntVo">
+SELECT /* kr.re.kitech.biz.fin.pop.selectKtxIssuMstrCnt */
+       TRIM(MAX(unslip_no)) AS unslip_no
+     , COUNT(1) AS cnt
+  FROM ktx_issu_mstr
+ WHERE issu_id = #{issu_id}
+</select>
+
+<!-- 등록자 수정 -->
+<update id="updateKtxIssuMstrPsn" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrVo">
+UPDATE /* kr.re.kitech.biz.fin.pop.updateKtxIssuMstrPsn */
+       ktx_issu_mstr
+   SET pur_con_user_id = #{pur_con_user_id}
+       , wrte_psn = #{wrte_psn}
+       , wrte_dept = #{wrte_dept}
+WHERE issu_seqno = #{issu_seqno}
+</update>
+
+<!-- 매입계산서(관) 팝업호출시 결의번호 업데이트 -->
+<update id="updateKtxIssuMstrUnslipNo" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo">
+UPDATE ktx_issu_mstr /* kr.re.kitech.biz.fin.pop.updateKtxIssuMstrUnslipNo */
+   SET unslip_no = #{unslip_no}
+WHERE issu_seqno = #{issu_seqno}
+</update>
+<!-- 매입계산서(관) 팝업호출시 결의번호 삭제 -->
+<delete id="deleteKtxIssuMstrUnslipNo" parameterType="kr.re.kitech.biz.fin.spm.vo.KtxIssuMstrComVo">
+UPDATE ktx_issu_mstr /* kr.re.kitech.biz.fin.pop.deleteKtxIssuMstrUnslipNo */
+   SET unslip_no = NULL
+ WHERE issu_seqno = #{issu_seqno}
+</delete>
+</mapper>

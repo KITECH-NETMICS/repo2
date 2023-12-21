@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.sup.mail">
+<!-- 미수수탁정산결의 정산신청 이메일 발송을 위한 조회 -->
+<select id="selectSptTecRcptInfoMail" resultType="kr.re.kitech.biz.sup.mail.vo.SptUnPaidMailVo" parameterType="kr.re.kitech.biz.sup.mail.vo.SptUnPaidMailVo">
+SELECT /* kr.re.kitech.biz.sup.mail.selectSptTecRcptInfoMail */
+       c.nm AS accnt_rspns_nm 
+     , a.unslip_no
+     , a.unslip_odr
+     , a.kolas_no
+     , a.bill_issu_ymd
+     , a.bill_no 
+     , d.nm AS rcpt_psn_nm       -- 지원담당자 이름
+     , d.email AS rcpt_psn_email  -- 지원담당자 이메일 
+     , NVL(a.decsn_amt,0) AS decsn_amt  -- 접수건별 지원금액
+  FROM spttecrcptinfo a
+  JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+  JOIN humbasicinfo c ON b.accnt_rspns = c.syspayno
+  JOIN humbasicinfo d ON a.rcpt_psn_syspayno = d.syspayno
+ WHERE a.unslip_no = #{unslip_no}
+   AND a.unslip_odr = #{unslip_odr}
+   AND a.bill_no = #{bill_no}
+</select>
+</mapper>

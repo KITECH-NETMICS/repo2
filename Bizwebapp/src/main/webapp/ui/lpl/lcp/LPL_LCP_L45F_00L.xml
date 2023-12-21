@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="국제공동연구과제현황">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_search">
+					<w2:keyInfo>
+						<w2:key id="natn_cd" name="natn_cd" dataType="text"></w2:key>
+						<w2:key id="cmpy_nm_krchar" name="cmpy_nm_krchar" dataType="text"></w2:key>
+						<w2:key id="vend_nm" name="vend_nm" dataType="text"></w2:key>
+						<w2:key id="accnt_no" name="accnt_no" dataType="text"></w2:key>
+						<w2:key id="accnt_no_nm" name="accnt_no_nm" dataType="text"></w2:key>
+						<w2:key id="start_ymd" name="start_ymd" dataType="text"></w2:key>
+						<w2:key id="cls_ymd" name="cls_ymd" dataType="text"></w2:key>
+						<w2:key id="ez_srch" name="ez_srch" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="accnt_no" name="accnt_no" dataType="text"></w2:column>
+				       <w2:column id="prj_no" name="prj_no" dataType="text"></w2:column>
+				       <w2:column id="accnt_no_nm" name="accnt_no_nm" dataType="text"></w2:column>
+				       <w2:column id="resch_rspns_main" name="resch_rspns_main" dataType="text"></w2:column>
+				       <w2:column id="accnt_ymd" name="accnt_ymd" dataType="text"></w2:column>
+				       <w2:column id="prj_bugt" name="prj_bugt" dataType="text"></w2:column>
+				       <w2:column id="attnce_clsf" name="attnce_clsf" dataType="text"></w2:column>
+				       <w2:column id="vend_cd" name="vend_cd" dataType="text"></w2:column>
+				       <w2:column id="vend_nm" name="vend_nm" dataType="text"></w2:column>
+				       <w2:column id="natn_cd_nm" name="natn_cd_nm" dataType="text"></w2:column>
+				       <w2:column id="cust_no" name="cust_no" dataType="text"></w2:column>
+				       <w2:column id="cmpy_nm_krchar" name="cmpy_nm_krchar" dataType="text"></w2:column>
+				       <w2:column id="cmpy_nm_eng" name="cmpy_nm_eng" dataType="text"></w2:column>
+				       <w2:column id="cmpy_nm_eng_short" name="cmpy_nm_eng_short" dataType="text"></w2:column>
+				       <w2:column id="cust_natn_cd_nm" name="cust_natn_cd_nm" dataType="text"></w2:column>
+				       <w2:column id="natn_nm" name="natn_nm" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>			            
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <!-- 조회 -->
+            <xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' 
+        	    action="SvcLPLLCPLCPR01.pwkjson" method="post" mediatype="application/json"
+        		encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+        		ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>             
+        </xf:model>
+         <script src="/cm/js/biz/lpl.js" cache="false" />
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		grd_list2.hide();
+		// 기간 역전 체크
+		com.checkPeriod(ica_start_ymd, ica_cls_ymd);		
+		// 공통코드
+		var codeOptions = [{ code : "FDA", compID :"sbx_natn_cd" }];
+		com.setCmnCd(codeOptions, function() {
+		// enter key event
+		com.setEnterKeyEvent(grp_search, scwin.btn_search_onclick);						
+		});					
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	//조회
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();		
+	};
+	
+	/**	
+     *	조회
+     **/
+	scwin.search = function() {
+		var tmpCmpyNmKrcharOdr = "";
+		var tmpAccntNo = "";
+		var tmpAccntNoNm = "";
+		
+		if (ibx_cmpy_nm_krchar_odr.getValue().trim() != "" ) {
+			tmpCmpyNmKrcharOdr = "%"+ibx_cmpy_nm_krchar_odr.getValue().trim()+"%";
+		}
+		if (ibx_accnt_no.getValue().trim() != "" ) {
+			tmpAccntNo = "%"+ibx_accnt_no.getValue().trim()+"%";
+		}
+		if (ibx_accnt_no_nm.getValue().trim() != "" ) {
+			tmpAccntNoNm = "%"+ibx_accnt_no_nm.getValue().trim()+"%";
+		}
+		dma_search.set("natn_cd", sbx_natn_cd.getValue());
+		dma_search.set("cmpy_nm_krchar", tmpCmpyNmKrcharOdr);
+		dma_search.set("vend_nm", tmpCmpyNmKrcharOdr);
+		dma_search.set("accnt_no", tmpAccntNo);
+		dma_search.set("accnt_no_nm", tmpAccntNoNm);
+		dma_search.set("start_ymd", ica_start_ymd.getValue());
+		dma_search.set("cls_ymd", ica_cls_ymd.getValue());
+		dma_search.set("ez_srch", checkbox.getValue());			
+		com.execute(sbm_selectData, {				
+			successCallback : function(e){
+				if ( checkbox.getValue() == "1" ) {
+           			dlt_list.setJSON(e.responseJSON.elData.lcpOvsResMouVoList);
+           			grd_list.hide();
+            		grd_list2.show("");
+				} else {
+					//gridAccntList01 포커스를 아웃 시킨다.
+           			dlt_list.setJSON(e.responseJSON.elData.lcpOvsResMouVoList);
+            		grd_list.show("");
+            		grd_list2.hide();           		
+				}				
+				
+				tbx_result.setValue(dlt_list.getTotalRow());
+							
+			}	
+		});		
+	};		
+		
+	scwin.checkbox_onchange = function(info) {
+		if (dlt_list.getTotalRow()==0) {
+			if (checkbox.getValue() == "1" ) {
+				grd_list.hide();
+				grd_list2.show();
+			} else {
+				grd_list.show();
+				grd_list2.hide();			
+			}			
+		} else {
+			scwin.search();
+		}
+	};
+	
+	scwin.btn_excel_onclick = function(e) {
+		var option = {fileName : "국제공동연구과제현황.xlsx", hiddenVisible : "true"};
+		if (checkbox.getValue() == "1" ) {
+			com.downloadGridExcel(grd_list2, option);			
+		} else {
+			com.downloadGridExcel(grd_list, option);		
+		}		
+	};
+	
+	scwin.grd_list_oncellclick = function(row,col,colId) {
+		if (colId == "accnt_no") {
+			if (colId == "accnt_no") {
+				var data = {};
+				data.prj_no = dlt_list.getCellData(row, "prj_no");
+				biz.lpl.pop.open(biz.lpl.pop.TYPE.PROJEC, data, function() {});	
+			}		
+		}		
+	};
+	
+	scwin.grd_list2_oncellclick = function(row,col,colId) {
+		if (colId == "accnt_no") {
+			var data = {};
+			data.prj_no = dlt_list.getCellData(row, "prj_no");
+			biz.lpl.pop.open(biz.lpl.pop.TYPE.PROJEC, data, function() {});	
+		}		
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group class="pageWrap" id="" style="">
+    		<xf:group class="searchSection" id="" style="">
+    			<xf:group class="schbox" id="" style="">
+    				<xf:group class="w2tb tbl" id="grp_search" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:60px;" tagname="col"></xf:group>
+    						<xf:group style="width:240px;" tagname="col"></xf:group>
+    						<xf:group style="width:92px;" tagname="col"></xf:group>
+    						<xf:group style="width:279px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="계정번호" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:group class="inpcalWrap" id="" style=""></xf:group>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_accnt_no" style="width: 150px;"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="과제명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_accnt_no_nm" style="width:179px;"></xf:input>
+    						</xf:group>
+    						<xf:group class="w2tb_th" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="국가명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" tagname="td">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<xf:select1 appearance="minimal" chooseOption="true" class="sel" direction="auto"
+    								disabled="false" disabledClass="w2selectbox_disabled" id="sbx_natn_cd" ref="" style="width:150px;" submenuSize="auto" chooseOptionLabel="-선택-">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[new row]]></xf:label>
+    										<xf:value></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr">
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="연구기간" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes></w2:attributes>
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="ica_start_ymd" placeholder="시작일" renderDiv="true" rightAlign="false" style="">
+    							</w2:inputCalendar>
+    							<xf:group class="inpcalWrap" id="" style="">
+
+    								<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    								<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    									footerDiv="false" id="ica_cls_ymd" placeholder="종료일" renderDiv="true" rightAlign="false" style="">
+    								</w2:inputCalendar>
+    							</xf:group>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="공동연구기관명" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" class="inp" id="ibx_cmpy_nm_krchar_odr" style="width:180px;"></xf:input>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="비교조회용" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select appearance="full" class="chkGroup" cols="" id="checkbox" ref="" renderType="checkboxgroup" rows=""
+    								selectedindex="-1" style="" ev:onchange="scwin.checkbox_onchange">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[]]></xf:label>
+    										<xf:value><![CDATA[1]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="">
+    			<xf:group class="le" id="">
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:group class="btnarea" id="" style="">
+    					<xf:trigger class="btn icon down" id="btn_excel" style="" type="button" ev:onclick="scwin.btn_excel_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_list" defaultCellHeight="28"
+    			evenRowBackgroundColor="#f7faff" id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb"
+    			rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태"
+    			rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    			selectedRowColor="#fbf2cd" style="height: 85px;" visibleRowNum="20" readOnly="true" sortable="true" ev:oncellclick="scwin.grd_list_oncellclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="계정번호" width="68"></w2:column>
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="과제명" width="259"></w2:column>
+    					<w2:column displayMode="label" id="column39" inputType="text" style="height:28px" value="연구책임자" width="89"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="연구기간" width="115"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" sortable="true" style="height:28px;" value="연구비"
+    						width="95">
+    					</w2:column>
+    					<w2:column colSpan="5" displayMode="label" id="column20" inputType="text" rowSpan="" style="height:28px;"
+    						value="공동연구기관" width="404">
+    					</w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" id="accnt_no" inputType="link" readOnly="true" style="height:28px;" width="114"></w2:column>
+    					<w2:column displayMode="label" id="accnt_no_nm" inputType="text" readOnly="true" style="height:28px;" value=""
+    						width="100">
+    					</w2:column>
+    					<w2:column displayMode="label" id="resch_rspns_main" inputType="text" style="height:28px" value="" width="100"></w2:column>
+    					<w2:column class="le" displayMode="label" escape="false" id="accnt_ymd" inputType="text" readOnly="true"
+    						style="height:28px;" width="70">
+    					</w2:column>
+    					<w2:column displayMode="label" id="prj_bugt" inputType="text" readOnly="true" style="height:28px;" width="100" displayFormat="###,###,###,###,###" dataType="number" textAlign="right"></w2:column>
+    					<w2:column colSpan="5" displayMode="label" id="natn_nm" inputType="text" readOnly="true" rowSpan=""
+    						style="height:28px;" width="800" skipKeyMoveEditMode="false" textAlign="left">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_list" defaultCellHeight="28"
+    			evenRowBackgroundColor="#f7faff" id="grd_list2" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb"
+    			rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태"
+    			rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    			selectedRowColor="#fbf2cd" style="height: 85px;" visibleRowNum="20" readOnly="true" ev:oncellclick="scwin.grd_list2_oncellclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column9" inputType="text" style="height:29px;" value="계정번호" width="75" colSpan=""
+    						rowSpan="2">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:29px;" value="과제명" width="259" colSpan=""
+    						rowSpan="2">
+    					</w2:column>
+    					<w2:column width="101" inputType="text" style="height:29px;" id="column39" value="연구책임자" displayMode="label"
+    						colSpan="" rowSpan="2">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:29px;" value="연구기간" width="115"
+    						colSpan="" rowSpan="2">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" sortable="true" style="height:29px;" value="연구비"
+    						width="95" colSpan="" rowSpan="2">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:29px;" id="column41" value="참여구분" displayMode="label"
+    						colSpan="" rowSpan="2">
+    					</w2:column>
+    					<w2:column displayMode="label" id="column20" inputType="text" style="height:20px;" value="거래처 정보" width="404"
+    						colSpan="5" rowSpan="">
+    					</w2:column>
+    					<w2:column width="357" inputType="text" style="height:20px;" id="column69" value="고객정보" displayMode="label"
+    						colSpan="4" rowSpan="">
+    					</w2:column>
+    				</w2:row>
+    				<w2:row style="" id="row4">
+    					<w2:column width="70" inputType="text" style="height:20px;" id="column58" value="거래처코드" displayMode="label"></w2:column>
+    					<w2:column width="210" inputType="text" style="height:20px;" id="column57" value="거래처명" displayMode="label"
+    						colSpan="3" rowSpan="">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:20px;" id="column54" value="거래처국가" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:20px" id="column70" value="고객코드" displayMode="label"></w2:column>
+    					<w2:column width="110" inputType="text" style="height:20px" id="column73" value="고객명(한글)" displayMode="label"></w2:column>
+    					<w2:column width="115" inputType="text" style="height:20px" id="column76" value="고객명(영문)" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:20px" id="column79" value="고객국가" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" id="accnt_no" inputType="link" readOnly="true" style="height:28px;" width="50"></w2:column>
+    					<w2:column displayMode="label" id="accnt_no_nm" inputType="text" readOnly="true" style="height:28px;" value=""
+    						width="100">
+    					</w2:column>
+    					<w2:column width="77" inputType="text" style="height:28px" id="resch_rspns_main" value="" displayMode="label"></w2:column>
+    					<w2:column class="le" displayMode="label" escape="false" id="accnt_ymd" inputType="text" readOnly="true"
+    						style="height:28px;" width="70">
+    					</w2:column>
+    					<w2:column displayMode="label" id="prj_bugt" inputType="text" readOnly="true" style="height:28px;" width="100" dataType="number" textAlign="right" displayFormat="###,###,###,###,###"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="attnce_clsf" value="" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="vend_cd" inputType="text" readOnly="true" style="height:28px;" width="50" colSpan=""
+    						rowSpan="">
+    					</w2:column>
+    					<w2:column hidden="false" width="210" inputType="text" style="height:0px;" id="vend_nm" value=""
+    						displayMode="label" colSpan="3" rowSpan="">
+    					</w2:column>
+    					<w2:column hidden="false" width="70" inputType="text" style="" id="natn_cd_nm" value="" displayMode="label"></w2:column>
+    					<w2:column width="72" inputType="text" style="height:28px" id="cust_no" value="" displayMode="label"></w2:column>
+    					<w2:column width="106" inputType="text" style="height:28px" id="cmpy_nm_krchar" value="" displayMode="label"></w2:column>
+    					<w2:column width="126" inputType="text" style="height:28px" id="cmpy_nm_eng" value="" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="cust_natn_cd_nm" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+
+    	</xf:group>
+    </body>
+</html>

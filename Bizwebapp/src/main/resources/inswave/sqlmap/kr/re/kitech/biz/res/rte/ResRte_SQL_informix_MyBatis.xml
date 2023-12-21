@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.res.rte">
+<!-- 소연심의 저장 -->
+<update id="updateResSmlRvewD" parameterType="kr.re.kitech.biz.res.rte.vo.ResSmlRvewDVo">
+/* 2018.04.17. sub_biz_clsf 추가 */
+MERGE /* kr.re.kitech.biz.res.rte.updateResSmlRvewD */
+   INTO ressmlrvewd AS a
+USING dual AS b ON 1=1 
+        AND a.key_1 = #{key_1} 
+        AND a.key_2 = #{key_2} 
+WHEN MATCHED THEN
+   UPDATE 
+   SET a.biz_clsf = #{biz_clsf}
+   <if test ='sub_biz_clsf != null'>, sub_biz_clsf = #{sub_biz_clsf} </if>
+   <if test ='item_clsf != null'>, item_clsf = #{item_clsf} </if>
+   <if test ='rvew_objct != null'>, rvew_objct = #{rvew_objct} </if>
+   <if test ='syspayno != null'>, syspayno = #{syspayno} </if>
+   <if test ='accnt_no != null'>, accnt_no = #{accnt_no} </if>
+   <if test ='chrg_psn != null'>, chrg_psn = #{chrg_psn} </if>
+   <if test ='rmk != null'>, rmk = #{rmk} </if>
+   <if test ='cmt_clsf != null'>, cmt_clsf = #{cmt_clsf} </if>
+   <if test ='attach_file_no!= null'>, attach_file_no= #{attach_file_no} </if>
+     , a.updt_syspayno = #{updt_syspayno}
+     , a.updt_daytm = CURRENT
+WHEN NOT MATCHED THEN
+   INSERT ( a.key_1   
+          , a.key_2
+          , a.biz_clsf
+      <if test='sub_biz_clsf != null'> , a.sub_biz_clsf </if>
+      <if test='item_clsf != null'> , a.item_clsf </if>
+      <if test='rvew_objct   != null'> , a.rvew_objct   </if>
+      <if test='syspayno != null'> , a.syspayno </if>
+      <if test='accnt_no   != null'> , a.accnt_no   </if>
+      <if test='chrg_psn   != null'> , a.chrg_psn   </if>
+      <if test='rmk != null'> , a.rmk </if>
+      <if test='cmt_clsf  != null'> , a.cmt_clsf  /* G(총괄위), P(지심위)*/ </if> 
+      <if test='attach_file_no != null'> , a.attach_file_no </if>
+          , a.regst_syspayno  
+          , a.regst_daytm  )
+   VALUES(
+          #{key_1}
+        , #{key_2}
+        , #{biz_clsf}
+      <if test='sub_biz_clsf != null'> ,#{sub_biz_clsf} </if>
+      <if test='item_clsf != null'> , #{item_clsf} </if>
+      <if test='rvew_objct != null'> , #{rvew_objct} </if>
+      <if test='syspayno != null'> , #{syspayno} </if>
+      <if test='accnt_no != null'> , #{accnt_no} </if>
+      <if test='chrg_psn != null'> , #{chrg_psn} </if>
+      <if test='rmk != null'> , #{rmk} </if>
+      <if test='cmt_clsf != null'> , #{cmt_clsf} </if>
+      <if test='attach_file_no != null'> , #{attach_file_no} </if>
+        , #{regst_syspayno}
+        , SYSDATE        
+        )
+</update>
+
+<!-- 총괄위 저장 -->
+<update id="updateResSuperRvewD" parameterType="kr.re.kitech.biz.res.rte.vo.ResSmlRvewDVo">
+MERGE /* kr.re.kitech.biz.res.rte.updateResSuperRvewD */
+   INTO ressuperrvewd AS a
+USING dual AS b ON 1=1 
+        AND a.key_1 = #{key_1} 
+        AND a.key_2 = #{key_2} 
+        AND a.seq = #{seq}
+WHEN MATCHED THEN
+   UPDATE 
+   SET a.biz_clsf = #{biz_clsf}   
+   <if test ='item_clsf != null'>, item_clsf = #{item_clsf} </if>
+   <if test ='rvew_objct != null'>, rvew_objct = #{rvew_objct} </if>  
+   <if test ='cmt_clsf != null'>, cmt_clsf = #{cmt_clsf} </if>
+   <if test ='rmk != null'>, rmk= #{rmk} </if>
+   <if test ='attach_file_no!= null'>, attach_file_no= #{attach_file_no} </if>
+     , a.updt_syspayno = #{updt_syspayno}
+     , a.updt_daytm = CURRENT
+WHEN NOT MATCHED THEN
+   INSERT ( a.key_1   
+          , a.key_2
+          , a.seq
+          , a.biz_clsf      
+      <if test='item_clsf != null'> , a.item_clsf </if>
+      <if test='rvew_objct   != null'> , a.rvew_objct   </if>
+      <if test='chrg_psn   != null'> , a.chrg_psn   </if>
+      <if test='cmt_clsf  != null'> , a.cmt_clsf  /* G(총괄위), P(지심위)*/ </if> 
+	  <if test='rmk  != null'> , a.rmk </if> 
+      <if test='attach_file_no != null'> , a.attach_file_no </if>
+          , a.regst_syspayno  
+          , a.regst_daytm  )
+   VALUES(
+          #{key_1}
+        , #{key_2}
+        , #{seq}
+        , #{biz_clsf}
+      <if test='item_clsf != null'> , #{item_clsf} </if>
+      <if test='rvew_objct != null'> , #{rvew_objct} </if>
+      <if test='chrg_psn != null'> , #{chrg_psn} </if>
+      <if test='cmt_clsf != null'> , #{cmt_clsf} </if>
+      <if test='rmk != null'> , #{rmk} </if>
+      <if test='attach_file_no != null'> , #{attach_file_no} </if>
+        , #{regst_syspayno}
+        , SYSDATE        
+        )
+</update>
+
+
+</mapper>

@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.apr">
+
+    <select id="getSnapshotLinkurl" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.getSnapshotLinkurl */
+			linkurl 
+		FROM appv_snapshot_final WHERE reqno = #{reqNo}	
+    </select>    
+    
+    <select id="getXomxintfatab" parameterType="java.lang.String" resultType="kr.re.kitech.biz.apr.vo.IntfatabVo">
+		    SELECT /* QueryID : kr.re.kitech.biz.apr.getXomxintfatab */
+				  req_no AS reqNo
+				, ui_id AS uiId
+				, apr_state AS aprState
+				, endpoints As endpoints
+				, info_cd AS infoCd
+				, state_inform_flag AS stateInformFlag
+				, execute_flag AS executeFlag
+				, last_execute_tim AS lastExecuteTim
+			FROM xomxintfatab 
+			WHERE req_no = #{reqNo}
+    </select>
+
+    <insert id="putXomxintfatab" parameterType="kr.re.kitech.biz.apr.vo.IntfatabVo">
+INSERT INTO xomxintfatab   /* QueryID : kr.re.kitech.biz.apr.putXomxintfatab */
+        ( 
+              req_no
+            , ui_id
+            , apr_state
+            , endpoints
+            , state_inform_flag
+            , last_execute_tim
+        <if test="executeFlag != null">, execute_flag </if>
+        <if test="infoCd != null">, info_cd </if>
+        )
+        VALUES  
+        ( 
+              #{reqNo}
+            , #{uiId}
+            , #{aprState}
+            , #{endpoints}
+            , 1
+            , CURRENT
+            <if test="executeFlag  != null"> , #{executeFlag}   </if> 
+            <if test="infoCd != null">, #{infoCd} </if>
+        )
+</insert>
+    
+    <update id="modXomxintfatab" parameterType="kr.re.kitech.biz.apr.vo.IntfatabVo">
+        UPDATE xomxintfatab    /* QueryID : kr.re.kitech.biz.apr.modXomxintfatab */      
+      	  SET  
+	          last_execute_tim  = CURRENT
+            <if test="uiId         		!= null and uiId != '' "> , ui_id             = #{uiId}          	</if>
+            <if test="aprState 			!= null and aprState != ''"> , apr_state         = #{aprState}      </if>
+            <if test="endpoints       	!= null and aprState != ''" > , endpoints         = #{endpoints}    </if>
+            <if test="infoCd       	    != null and infoCd != ''" > , info_cd         = #{infoCd}           </if>
+            <if test="stateInformFlag   != null"> , state_inform_flag = #{stateInformFlag}  </if>
+            <if test="executeFlag       != null"> , execute_flag      = #{executeFlag}      </if>
+        WHERE req_no = #{reqNo}         
+    </update>
+    
+    <delete id="delXomxintfatab" parameterType="java.lang.String">
+        DELETE FROM xomxintfatab   /* QueryID : kr.re.kitech.biz.apr.delXomxintfatab */ 
+        WHERE req_no = #{reqNo}           
+    </delete>
+	
+	<!-- 문서별 사후결재여부 조회 -->
+	<select id="selectXomxAprMgr" parameterType="kr.re.kitech.biz.apr.vo.PostAprVo" resultType="kr.re.kitech.biz.apr.vo.PostAprVo">
+		SELECT /* kr.re.kitech.biz.apr.selectXomxAprMgr */
+		      docu_id
+		    , docu_nm
+		    , sys_midclsf_nm
+		    , sys_bigclsf_nm
+		    , table_nm
+		    , date_col_nm
+		    , key_col_nm
+		    , allow_days
+		    , rmk
+		    , is_apr_after
+		FROM imis.xomxaprmgr
+		WHERE is_apr_after
+		AND docu_id = #{docu_id}
+	</select>
+	
+	<!-- 사후결재 사유 조회 -->
+	<select id="selectAprAfterReason" resultType="kr.re.kitech.biz.apr.vo.PostAprVo" parameterType="java.lang.String">
+		SELECT /* kr.re.kitech.biz.apr.selectAprAfterReason */
+		      req_no
+		    , reason
+		    , req_ymd
+		    , action_ymd
+		FROM aprafterreason
+		WHERE req_no = #{req_no}
+	</select>
+	
+	<!-- 사후결재사유 저장 -->
+	<update id="mergeAprAfterReason" parameterType="kr.re.kitech.biz.apr.vo.PostAprVo">
+		MERGE /* kr.re.kitech.biz.apr.mergeAprAfterReason */
+			  INTO aprafterreason AS d
+			USING dual AS s ON d.req_no = #{req_no}
+			WHEN MATCHED THEN
+			    UPDATE SET
+			        d.reason = #{reason}
+			      , d.req_ymd = #{req_ymd}
+			      , d.action_ymd = #{action_ymd}
+			      , d.updt_syspayno = #{syspayno}
+			      , d.updt_daytm = SYSDATE
+			WHEN NOT MATCHED THEN
+			    INSERT ( d.req_no
+			           , d.reason
+			           , d.req_ymd
+			           , d.action_ymd
+			           , d.regst_syspayno
+			           , d.regst_daytm)
+			    VALUES ( #{req_no}
+			           , #{reason}
+			           , #{req_ymd}
+			           , #{action_ymd}
+			           , #{syspayno}
+			           , SYSDATE
+	           )
+	</update>
+	
+	<!-- 결재의견 저장 -->
+	<insert id="insertDocComments" parameterType="kr.re.kitech.biz.apr.vo.DocCommentsVo">
+		INSERT INTO doc_comments
+		(
+			  id
+			, instance_id
+			, req_no
+			, contents
+			, opt_type
+			, empno
+			, empname
+			, emptitle
+			, tracingtag
+			, created_date
+			, created_by
+			, updated_date
+			, updated_by
+		)
+  		VALUES
+  		(
+  			  seq_doc_comments.nextval
+  			, #{instance_id}
+  			, #{req_no}
+  			, #{contents}
+  			, #{opt_type}
+  			, #{empno}
+  			, #{empname}
+  			, #{emptitle}
+  			, ''
+  			, CURRENT
+  			, #{created_by}
+  			, CURRENT
+  			, #{updated_by}
+  		)
+    </insert>
+    
+    <!-- 결재의견 조회 -->
+	<select id="selectDocComments" parameterType="kr.re.kitech.biz.apr.vo.DocCommentsVo" resultType="kr.re.kitech.biz.apr.vo.DocCommentsVo">
+		SELECT /* kr.re.kitech.biz.apr.selectDocComments */
+		       a.id
+		     , a.instance_id
+		     , a.req_no
+		     , a.contents
+		     , a.empno
+		     , a.empname
+		     , a.emptitle
+		     , a.tracingtag
+		     , a.created_date
+		     , a.created_by
+		     , a.updated_date
+		     , a.updated_by
+		     , DECODE(a.opt_type, 'transfer','전달','rejecttop','반려', 'top','상신','approve','업무', 'report', '결재', '') AS opt_type
+		  FROM doc_comments a
+		 WHERE req_no = #{req_no}
+		<if test='opt_type != null'>  AND a.opt_type = #{opt_type} </if>
+	</select>
+    
+    <update id="mergeSnapShotFileUrl" parameterType="java.util.HashMap">
+		MERGE /* QueryID : kr.re.kitech.biz.apr.mergeSnapShotFileUrl */
+		INTO appv_snapshot_final AS a
+		USING dual AS b ON 1 = 1 AND a.reqno = #{reqno}
+		WHEN MATCHED 
+		THEN UPDATE 
+				SET a.linkurl = #{linkurl}
+				,   a.lastupdate = CURRENT
+		WHEN NOT MATCHED
+		THEN INSERT 
+			(
+					a.reqno
+				,   a.linkurl
+				,   a.instanceid
+				,   a.aprlinett 
+				,   a.lastupdate
+			) 
+			VALUES
+			( 
+					#{reqno}
+				,	#{linkurl}
+				,   ''
+				,   ''
+				,	CURRENT
+			)
+	</update>
+	
+	<select id="selectRegulationUrl" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.selectRegulationUrl */
+			regulation_url 
+		FROM appv_applicationmap
+		WHERE procdefalias = #{procDefAlias}
+    </select>
+	
+	<resultMap type="map" id="appMap">
+		<id property="serviceId" column="scapp_cd" />
+		<result property="xslUrl" column="xslurl" />
+		<result property="xslUrlReady" column="xslurl_ready" />
+	</resultMap>
+	
+    <select id="searchXslUrl" parameterType="java.lang.String" resultMap="appMap">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.searchXslUrl */
+		      scapp_cd, xslurl, xslurl_ready
+		FROM appv_applicationmap
+		WHERE procdefalias = #{procDefAlias}
+    </select>
+	
+	<select id="selectGetMainKey" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT /* QueryID : kr.re.kitech.biz.apr.selectGetMainKey */
+			TRIM(CASE WHEN mainkey = "Y" THEN procdefalias||'M' ELSE procdefalias END) AS procdefalias
+		FROM appv_applicationmap
+		where req_mapping LIKE '%' || #{reqNo} || '%'
+    </select>
+    
+	<delete id="delDocComments" parameterType="java.lang.String">
+        DELETE FROM doc_comments   /* QueryID : kr.re.kitech.biz.apr.delDocComments */ 
+        WHERE id = (
+        	SELECT max(id)
+        	  FROM doc_comments
+        	 WHERE req_no = #{reqNo}
+        	   AND opt_type = 'top'
+        )
+                   
+    </delete>
+</mapper>

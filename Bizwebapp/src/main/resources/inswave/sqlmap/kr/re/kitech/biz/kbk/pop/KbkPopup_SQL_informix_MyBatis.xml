@@ -1,0 +1,851 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.kbk.pop">
+<!-- 단행본 기본정보 등록 팝업 조회 -->
+<select id="selectBookDetail" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopSearchVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopBookDetailVo">
+SELECT /* kr.re.kitech.biz.kbk.pop.selectBookDetail */
+       a.regst_no,
+       a.regst_ymd,
+       TRIM(a.centr_cd) AS centr_cd,
+       a.pur_way_cd,
+       a.accnt_no,
+       a.expns_cd,
+       a.curncy_unit,
+       a.pur_amt,
+       a.isbn,
+       a.book_nm,
+       a.data_typ_cd,
+       a.natn_cd,
+       a.publ_form,
+       a.auth_nm,
+       a.publ_yr,
+       a.publ_vend,
+       a.clsfsgn,
+       a.authcd,
+       a.copy,
+       a.page,
+       a.ill,
+       a.photo,
+       a.tbl,
+       a.size,
+       a.kwd,
+       a.contnt,
+       a.apdix_cdrom,
+       a.apdix_book,
+       b.accnt_no_nm,
+       c.checkup_req_no,
+       d.contrct_nm,
+       e.apr_state
+FROM kbkbook a 
+LEFT JOIN resbgacctm b ON a.accnt_no = b.accnt_no
+LEFT JOIN epucheckupmastr c ON a.checkup_req_no = c.checkup_req_no
+LEFT JOIN epucontrctmastr d ON c.contrct_no = d.contrct_no AND c.chng_seq = d.chng_seq
+LEFT JOIN xomxintfatab e ON c.checkup_req_no = e.req_no
+WHERE a.regst_no = #{regst_no}
+</select>
+	
+	<insert id="insertBook" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopBookDetailVo">
+INSERT /* kr.re.kitech.biz.kbk.pop.insertBook */
+  INTO kbkbook (
+      regst_no
+     , regst_ymd
+     , centr_cd
+     , pur_way_cd
+     <if test="accnt_no != null"> , accnt_no </if>
+     <if test="expns_cd != null"> , expns_cd </if>
+     <if test="curncy_unit != null"> , curncy_unit </if>
+     <if test="pur_amt != null"> , pur_amt </if>
+     <if test="isbn != null"> , isbn </if>
+     , book_nm
+     <if test="data_typ_cd != null"> , data_typ_cd </if>
+     <if test="natn_cd != null"> , natn_cd </if>
+     <if test="publ_form != null"> , publ_form </if>
+     <if test="auth_nm != null"> , auth_nm </if>
+     <if test="publ_yr != null"> , publ_yr </if>
+     <if test="publ_vend != null"> , publ_vend </if>
+     <if test="clsfsgn != null"> , clsfsgn </if>
+     <if test="authcd != null"> , authcd </if>
+     <if test="copy != null"> , copy </if>
+     <if test="page != null"> , page </if>
+     <if test="ill != null"> , ill </if>
+     <if test="photo != null"> , photo </if>
+     <if test="tbl != null"> , tbl </if>
+     <if test="size != null"> , size </if>
+     <if test="kwd != null"> , kwd </if>
+     <if test="contnt != null"> , contnt </if>
+     <if test="apdix_cdrom != null"> , apdix_cdrom </if>
+     <if test="apdix_book != null"> , apdix_book </if>
+     <if test="checkup_req_no != null"> , checkup_req_no </if>
+      , regst_psn_syspayno 
+      , regst_daytm
+ ) VALUES(      
+      (SELECT "H" ||  LPAD(TRUNC(NVL(MAX(TO_NUMBER(SUBSTR(regst_no ,2,7)))+1, 0)), 6, "0") FROM kbkbook)
+      , #{regst_ymd}
+      , #{centr_cd} 
+      , #{pur_way_cd} 
+     <if test="accnt_no != null"> , #{accnt_no} </if>
+     <if test="expns_cd != null"> , #{expns_cd} </if>
+     <if test="curncy_unit != null"> , #{curncy_unit} </if>
+     <if test="pur_amt != null"> , #{pur_amt} </if>
+     <if test="isbn != null"> , #{isbn} </if>
+      , #{book_nm} 
+     <if test="data_typ_cd != null"> , #{data_typ_cd} </if>
+     <if test="natn_cd != null"> , #{natn_cd} </if>
+     <if test="publ_form != null"> , #{publ_form} </if>
+     <if test="auth_nm != null"> , #{auth_nm} </if>
+     <if test="publ_yr != null"> , #{publ_yr} </if>
+     <if test="publ_vend != null"> , #{publ_vend} </if>
+     <if test="clsfsgn != null"> , #{clsfsgn} </if>
+     <if test="authcd != null"> , #{authcd} </if>
+     <if test="copy != null"> , #{copy} </if>
+     <if test="page != null"> , #{page} </if>
+     <if test="ill != null"> , #{ill} </if>
+     <if test="photo != null"> , #{photo} </if>
+     <if test="tbl != null"> , #{tbl} </if>
+     <if test="size != null"> , #{size} </if>
+     <if test="kwd != null"> , #{kwd} </if>
+     <if test="contnt != null"> , #{contnt} </if>
+     <if test="apdix_cdrom != null"> , #{apdix_cdrom} </if>
+     <if test="apdix_book != null"> , #{apdix_book} </if>
+     <if test="checkup_req_no != null"> , #{checkup_req_no} </if>
+     , #{regst_syspayno} 
+     , SYSDATE 
+  )
+  
+  <selectKey keyProperty="regst_no" resultType="java.lang.String" order="AFTER">
+    SELECT MAX(regst_no) as regst_no
+    FROM kbkbook
+  </selectKey>
+</insert>
+	
+	<update id="updateBook" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopBookDetailVo">
+UPDATE /* kr.re.kitech.biz.kbk.pop.updateBook */
+    kbkbook
+   SET regst_no = #{regst_no}
+     , updt_psn_syspayno = #{updt_syspayno}
+     , updt_daytm = #{updt_daytm}
+    <if test="regst_ymd != null"> , regst_ymd = #{regst_ymd} </if>
+    <if test="centr_cd != null"> , centr_cd = #{centr_cd} </if>
+    <if test="pur_way_cd != null"> , pur_way_cd = #{pur_way_cd} </if>
+    <if test="accnt_no != null"> , accnt_no = #{accnt_no} </if>
+    <if test="expns_cd != null"> , expns_cd = #{expns_cd} </if>
+    <if test="curncy_unit != null"> , curncy_unit = #{curncy_unit} </if>
+    <if test="pur_amt != null"> , pur_amt = #{pur_amt} </if>
+    <if test="isbn != null"> , isbn = #{isbn} </if>
+    <if test="book_nm != null"> , book_nm = #{book_nm} </if>
+    <if test="data_typ_cd != null"> , data_typ_cd = #{data_typ_cd} </if>
+    <if test="natn_cd != null"> , natn_cd = #{natn_cd} </if>
+    <if test="publ_form != null"> , publ_form = #{publ_form} </if>
+    <if test="auth_nm != null"> , auth_nm = #{auth_nm} </if>
+    <if test="publ_yr != null"> , publ_yr = #{publ_yr} </if>
+    <if test="publ_vend != null"> , publ_vend = #{publ_vend} </if>
+    <if test="clsfsgn != null"> , clsfsgn = #{clsfsgn} </if>
+    <if test="authcd != null"> , authcd = #{authcd} </if>
+    <if test="copy != null"> , copy = #{copy} </if>
+    <if test="page != null"> , page = #{page} </if>
+    <if test="ill != null"> , ill = #{ill} </if>
+    <if test="photo != null"> , photo = #{photo} </if>
+    <if test="tbl != null"> , tbl = #{tbl} </if>
+    <if test="size != null"> , size = #{size} </if>
+    <if test="kwd != null"> , kwd = #{kwd} </if>
+    <if test="contnt != null"> , contnt = #{contnt} </if>
+    <if test="apdix_cdrom != null"> , apdix_cdrom = #{apdix_cdrom} </if>
+    <if test="apdix_book != null"> , apdix_book = #{apdix_book} </if>
+    <if test="checkup_req_no != null"> , checkup_req_no = #{checkup_req_no} </if>
+ WHERE regst_no = #{regst_no}
+</update>
+	
+	<delete id="deleteBook" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopBookDetailVo" >
+DELETE /* kr.re.kitech.biz.kbk.pop.deleteBook */
+  FROM kbkbook
+WHERE regst_no = #{regst_no}
+</delete>
+	
+	<select id="selectReportDetail" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopSearchVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopReportDetailVo">
+		select 
+		   regst_no,
+		   rcpt_no, 
+		   regst_ymd,
+		   centr_cd,
+		   rptp_nm,  
+		   eng_rptp_nm,
+		   resch_respn_psn, 
+		   attnce_reschr_psn,
+		   prj_no,
+		   rptp_no,
+		   publ_yr,
+		   trim(bsns_cd_1) as bsns_cd_inout,
+		   trim(bsns_cd_2) as bsns_cd_ofic,
+		   trim(bsns_cd_3) as bsns_cd_exclsv_agncy,
+		   trim(bsns_cd_4) as bsns_cd_bsns,
+		   trim(bsns_cd_5) as bsns_cd_detls_bsns,
+		   outsd_open_yn,   
+		   outsd_unopn_cls_ymd,
+		   insd_open_yn,  
+		   insd_unopn_cls_ymd,
+		   page,
+		   kitech_publc_yn,
+		   idx ,
+		   abst,
+		   rmk,
+		   attach_file_no
+		from kbkreschrptp
+		where 1 = 1   
+		and regst_no = #{regst_no}
+	</select>
+	
+<!-- 단행본 저장 -->
+<insert id="insertReport" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopReportDetailVo">
+INSERT /* kr.re.kitech.biz.kbk.pop.insertReport */
+  INTO kbkreschrptp( 
+     regst_no 
+     <if test="rcpt_no != null"> , rcpt_no  </if>  
+     <if test="regst_ymd != null"> , regst_ymd  </if> 
+     <if test="centr_cd != null"> , centr_cd  </if> 
+     <if test="rptp_nm != null"> , rptp_nm  </if>   
+     <if test="eng_rptp_nm != null"> , eng_rptp_nm  </if> 
+     <if test="resch_respn_psn != null"> , resch_respn_psn  </if> 
+     <if test="attnce_reschr_psn != null"> , attnce_reschr_psn  </if> 
+     <if test="prj_no != null"> , prj_no  </if> 
+     <if test="rptp_no != null"> , rptp_no  </if> 
+     <if test="publ_yr != null"> , publ_yr  </if> 
+     <if test="bsns_cd_inout != null"> , bsns_cd_1  </if>  
+     <if test="bsns_cd_ofic != null"> , bsns_cd_2  </if> 
+     <if test="bsns_cd_exclsv_agncy != null"> , bsns_cd_3  </if> 
+     <if test="bsns_cd_bsns != null"> , bsns_cd_4  </if>  
+     <if test="bsns_cd_detls_bsns != null"> , bsns_cd_5  </if>  
+     <if test="page != null"> , page  </if>
+     <if test="kitech_publc_yn != null"> , kitech_publc_yn  </if> 
+     <if test="outsd_open_yn != null"> , outsd_open_yn  </if>    
+     <if test="outsd_unopn_cls_ymd != null"> , outsd_unopn_cls_ymd  </if>
+     <if test="insd_open_yn != null"> , insd_open_yn  </if>   
+     <if test="insd_unopn_cls_ymd != null"> , insd_unopn_cls_ymd  </if>
+     <if test="idx  != null"> , idx  </if> 
+     <if test="abst != null"> , abst  </if> 
+     <if test="rmk != null"> , rmk  </if>
+     <if test="attach_file_no != null"> , attach_file_no  </if> 
+     , regst_psn_syspayno
+     , regst_daytm 
+  ) VALUES (
+    (SELECT "P" || LPAD(TRUNC(NVL(MAX(TO_NUMBER(SUBSTR(regst_no ,2,7)))+1, 0)), 6, "0") FROM kbkreschrptp)
+     <if test="rcpt_no != null"> , #{rcpt_no} </if>
+     <if test="regst_ymd != null"> , #{regst_ymd} </if>
+     <if test="centr_cd != null"> , #{centr_cd} </if>
+     <if test="rptp_nm != null"> , #{rptp_nm} </if>
+     <if test="eng_rptp_nm != null"> , #{eng_rptp_nm} </if>
+     <if test="resch_respn_psn != null"> , #{resch_respn_psn} </if>
+     <if test="attnce_reschr_psn != null"> , #{attnce_reschr_psn} </if>
+     <if test="prj_no != null"> , #{prj_no} </if>
+     <if test="rptp_no != null"> , #{rptp_no} </if>
+     <if test="publ_yr != null"> , #{publ_yr} </if>
+     <if test="bsns_cd_inout != null"> , #{bsns_cd_inout} </if>
+     <if test="bsns_cd_ofic != null"> , #{bsns_cd_ofic} </if>
+     <if test="bsns_cd_exclsv_agncy != null"> , #{bsns_cd_exclsv_agncy} </if>
+     <if test="bsns_cd_bsns != null"> , #{bsns_cd_bsns} </if>
+     <if test="bsns_cd_detls_bsns != null"> , #{bsns_cd_detls_bsns} </if>
+     <if test="page != null"> , #{page} </if>
+     <if test="kitech_publc_yn != null"> , #{kitech_publc_yn} </if>
+     <if test="outsd_open_yn != null"> , #{outsd_open_yn} </if>
+     <if test="outsd_unopn_cls_ymd != null"> , #{outsd_unopn_cls_ymd} </if>
+     <if test="insd_open_yn != null"> , #{insd_open_yn} </if>
+     <if test="insd_unopn_cls_ymd != null"> , #{insd_unopn_cls_ymd} </if>
+     <if test="idx  != null"> , #{idx} </if>
+     <if test="abst != null"> , #{abst} </if>
+     <if test="rmk != null"> , #{rmk} </if>
+     <if test="attach_file_no != null"> , #{attach_file_no} </if>
+     , #{regst_syspayno} 
+     , SYSDATE
+   )
+</insert>
+
+<!-- 단행본관리 수정 -->
+<update id="updateReport" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopReportDetailVo">
+UPDATE /* kr.re.kitech.biz.kbk.pop.updateReport */
+       kbkreschrptp 
+   SET rptp_nm = #{rptp_nm}
+     <if test="rcpt_no != null"> , rcpt_no = #{rcpt_no}  </if>
+     <if test="regst_ymd != null"> , regst_ymd = #{regst_ymd} </if>
+     <if test="centr_cd != null"> , centr_cd = #{centr_cd} </if>
+     <if test="eng_rptp_nm != null"> , eng_rptp_nm = #{eng_rptp_nm} </if>
+     <if test="resch_respn_psn != null"> , resch_respn_psn = #{resch_respn_psn}  </if>
+     <if test="attnce_reschr_psn != null"> , attnce_reschr_psn = #{attnce_reschr_psn} </if>
+     <if test="prj_no != null"> , prj_no = #{prj_no} </if>
+     <if test="rptp_no != null"> , rptp_no = #{rptp_no} </if>
+     <if test="publ_yr != null"> , publ_yr = #{publ_yr} </if>
+     <if test="bsns_cd_inout != null"> , bsns_cd_1 = #{bsns_cd_inout} </if>
+     <if test="bsns_cd_ofic != null"> , bsns_cd_2 = #{bsns_cd_ofic} </if>
+     <if test="bsns_cd_exclsv_agncy != null"> , bsns_cd_3 = #{bsns_cd_exclsv_agncy} </if>
+     <if test="bsns_cd_bsns != null"> , bsns_cd_4 = #{bsns_cd_bsns} </if>
+     <if test="bsns_cd_detls_bsns != null"> , bsns_cd_5 = #{bsns_cd_detls_bsns} </if>
+     <if test="page != null"> , page = #{page} </if>
+     <if test="kitech_publc_yn != null"> , kitech_publc_yn = #{kitech_publc_yn} </if>
+     <if test="outsd_open_yn != null"> , outsd_open_yn = #{outsd_open_yn}    </if>
+     <if test="outsd_unopn_cls_ymd != null"> , outsd_unopn_cls_ymd = #{outsd_unopn_cls_ymd} </if>
+     <if test="insd_open_yn != null"> , insd_open_yn = #{insd_open_yn}   </if>
+     <if test="insd_unopn_cls_ymd != null"> , insd_unopn_cls_ymd = #{insd_unopn_cls_ymd} </if>
+     <if test="idx != null"> , idx  = #{idx} </if>
+     <if test="abst != null"> , abst = #{abst} </if>
+     <if test="rmk != null"> , rmk = #{rmk} </if>
+     <if test="attach_file_no != null"> , attach_file_no = #{attach_file_no} </if>
+     , updt_psn_syspayno = #{updt_syspayno} 
+     , updt_daytm = sysdate
+WHERE regst_no = #{regst_no}
+</update>
+	
+<delete id="deleteReport" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopReportDetailVo" >
+DELETE /* kr.re.kitech.biz.kbk.pop.deleteReport */
+  FROM kbkreschrptp
+WHERE regst_no = #{regst_no}
+</delete>
+
+<!-- 이관정보 저장 -->	
+<insert id="insertBookTrans" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopBookTransVo" >
+INSERT /* kr.re.kitech.biz.kbk.pop.insertBookTrans */
+  INTO kbkbooktrans(
+      regst_no
+     <if test="centr_cd != null"> , centr_cd  </if>
+     <if test="regst_ymd != null"> , regst_ymd  </if>
+     <if test="data_typ_cd != null"> , data_typ_cd  </if>
+     <if test="pur_way_cd != null"> , pur_way_cd  </if>
+     <if test="accnt_no != null"> , accnt_no  </if>
+     <if test="expns_cd != null"> , expns_cd  </if>
+     <if test="curncy_unit != null"> , curncy_unit  </if>
+     <if test="pur_amt != null"> , pur_amt  </if>
+     <if test="isbn != null"> , isbn  </if>
+     , contnt_nm
+     <if test="book_nm != null"> , book_nm  </if>
+     <if test="auth_nm != null"> , auth_nm  </if>
+     <if test="natn_cd != null"> , natn_cd  </if>
+     <if test="publ_form != null"> , publ_form  </if>
+     <if test="publ_yr != null"> , publ_yr  </if>
+     <if test="publ_vend != null"> , publ_vend  </if>
+     <if test="clsfsgn != null"> , clsfsgn  </if>
+     <if test="authcd != null"> , authcd  </if>
+     <if test="copy != null"> , copy  </if>
+     <if test="page != null"> , page  </if>
+     <if test="ill != null"> , ill  </if>
+     <if test="photo != null"> , photo  </if>
+     <if test="tbl != null"> , tbl  </if>
+     <if test="size != null"> , size  </if>
+     <if test="kwd != null"> , kwd  </if>
+     <if test="contnt != null"> , contnt  </if>
+     <if test="apdix_cdrom != null"> , apdix_cdrom  </if>
+     <if test="apdix_book != null"> , apdix_book  </if>
+     <if test="abol_trans_clsf != null"> , abol_trans_clsf  </if>
+     <if test="abol_trans_ymd != null"> , abol_trans_ymd  </if>
+     <if test="abol_trans_resn != null"> , abol_trans_resn  </if>
+     <if test="trans != null"> , trans  </if>
+     <if test="vol != null"> , vol </if>
+     , regst_psn_syspayno
+     , regst_daytm
+) values (
+    #{regst_no}
+     <if test="centr_cd != null"> , #{centr_cd} </if>
+     <if test="regst_ymd != null"> , #{regst_ymd} </if>
+     <if test="data_typ_cd != null"> , #{data_typ_cd} </if>
+     <if test="pur_way_cd != null"> , #{pur_way_cd} </if>
+     <if test="accnt_no != null"> , #{accnt_no} </if>
+     <if test="expns_cd != null"> , #{expns_cd} </if>
+     <if test="curncy_unit != null"> , #{curncy_unit} </if>
+     <if test="pur_amt != null"> , #{pur_amt} </if>
+     <if test="isbn != null"> , #{isbn} </if>
+     ,""
+     <if test="book_nm != null"> , #{book_nm} </if>
+     <if test="auth_nm != null"> , #{auth_nm} </if>
+     <if test="natn_cd != null"> , #{natn_cd} </if>
+     <if test="publ_form != null"> , #{publ_form} </if>
+     <if test="publ_yr != null"> , #{publ_yr} </if>
+     <if test="publ_vend != null"> , #{publ_vend} </if>
+     <if test="clsfsgn != null"> , #{clsfsgn} </if>
+     <if test="authcd != null"> , #{authcd} </if>
+     <if test="copy != null"> , #{copy} </if>
+     <if test="page != null"> , #{page} </if>
+     <if test="ill != null"> , #{ill} </if>
+     <if test="photo != null"> , #{photo} </if>
+     <if test="tbl != null"> , #{tbl} </if>
+     <if test="size != null"> , #{size} </if>
+     <if test="kwd != null"> , #{kwd} </if>
+     <if test="contnt != null"> , #{contnt} </if>
+     <if test="apdix_cdrom != null"> , #{apdix_cdrom} </if>
+     <if test="apdix_book != null"> , #{apdix_book} </if>
+     <if test="abol_trans_clsf != null"> , #{abol_trans_clsf} </if>
+     <if test="abol_trans_ymd != null"> , #{abol_trans_ymd} </if>
+     <if test="abol_trans_resn != null"> , #{abol_trans_resn} </if>
+     <if test="trans != null"> , #{trans} </if>
+     <if test="vol != null"> , #{vol} </if>
+     , #{regst_syspayno}
+     , SYSDATE
+)
+</insert>
+
+<!-- 이관정보 삭제 -->
+<delete id="deleteBookTrans" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopBookTransVo">
+DELETE /* kr.re.kitech.biz.kbk.pop.deleteBookTrans */
+  FROM kbkbooktrans
+ WHERE regst_no = #{regst_no}
+</delete>
+
+<!-- 복구를 위한 이관정보 조회 -->	
+<select id="selectTransBook" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopBookTransVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopBookDetailVo">
+SELECT /* kr.re.kitech.biz.kbk.pop.selectTransBook */
+       regst_no 
+     , regst_ymd 
+     , centr_cd 
+     , pur_way_cd 
+     , accnt_no 
+     , expns_cd 
+     , curncy_unit 
+     , pur_amt 
+     , isbn 
+     , book_nm 
+     , data_typ_cd 
+     , natn_cd
+     , publ_form 
+     , auth_nm 
+     , publ_yr 
+     , publ_vend 
+     , clsfsgn 
+     , authcd 
+     , copy 
+     , page 
+     , ill 
+     , photo 
+     , tbl 
+     , size 
+     , kwd
+     , contnt 
+     , apdix_cdrom
+     , apdix_book 
+ FROM kbkbooktrans
+ WHERE regst_no = #{regst_no}
+</select>
+	
+	<select id="selectReschRptp" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopReportDetailVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopReportDetailVo">
+		SELECT
+		    a.rcpt_no,  --접수번호 
+		    a.rptp_nm,      --보고서명 
+		    fun_res_pj_respn_list(a.prj_no ) AS prj_no_mst,     --연구책임자 
+		    fun_res_pj_not_respn_list(a.prj_no) AS prj_no_sub,  --참여연구원
+		    a.prj_no,     -- 과제번호
+		    a.accnt_no,   --계정번호   
+		    c.bsns_cd_inout,
+		    fun_xodxcommst_cd_nm(c.bsns_cd_inout,0) AS bsns_cd_inout_nm,  --내외구분
+		    TRIM(c.bsns_cd_ofic) AS bsns_cd_ofic,
+		    fun_res_bsns_nm(c.bsns_cd_ofic) AS bsns_cd_ofic_nm,          --관계부처
+		    TRIM(c.bsns_cd_exclsv_agncy) AS bsns_cd_exclsv_agncy,
+		    fun_xodxcommst_cd_nm(c.bsns_cd_exclsv_agncy,0) AS bsns_cd_exclsv_agncy_nm,  --전담기관  
+		    TRIM(c.bsns_cd_bsns) AS bsns_cd_bsns,
+		    fun_res_bsns_nm(c.bsns_cd_bsns) AS bsns_cd_bsns_nm,              --사업분류 
+		    TRIM(c.bsns_cd_detls_bsns) AS bsns_cd_detls_bsns,
+		    fun_res_bsns_nm(c.bsns_cd_detls_bsns) AS bsns_cd_detls_bsns_nm,  --세부사업
+		    a.outsd_rptp_open_yn, --원외공개
+		    a.insd_rptp_open_yn, --원내공개
+		    d.resch_contnt, --연구내용
+		    DECODE(NVL(TRIM(d.kwd_eng),''),'',NVL(TRIM(d.kwd_krchar),''),NVL(TRIM(d.kwd_krchar),'')||' / '||NVL(TRIM(d.kwd_eng),'')) AS kwd, --키워드
+		    a.attach_file,   --원문파일
+		    a.outsd_unopn_prd_cls_ymd,   --대외비만료일자
+		    a.insd_unopn_prd_cls_ymd     --대내비완료일자 
+		FROM resrtrepor a 
+		LEFT OUTER JOIN resinpmast c ON a.prj_no = c.prj_no 
+		LEFT OUTER JOIN resinptgct d ON a.prj_no = d.prj_no
+		WHERE 1=1 
+		<if test="rcpt_no != null and rcpt_no != ''"> AND a.rcpt_no LIKE '%' || #{rcpt_no} || '%' </if>
+		<if test="prj_no != null and prj_no != ''"> AND a.prj_no LIKE '%' || #{prj_no} || '%' </if>
+		<if test="rptp_nm != null and rptp_nm != ''"> AND a.rptp_nm LIKE '%' || #{rptp_nm} || '%' </if>
+	</select>
+	
+	<select id="selectJournal" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopJournalDetailVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopJournalDetailVo">
+		SELECT regst_no,
+		       jurnl_no,
+		       jurnl_clsf_cd,
+		       regst_ymd,
+		       jurnl_subj,
+		       publ_vend,
+		       clsf_cd,
+		       natn_cd,
+		       clsf,
+		       agent_vend,
+		       cont_yn,
+		       startpubl_ymd,
+		       pur_clsf,
+		       issn,
+		       imprnt,
+		       fun_xodxcommst_cd_nm(imprnt, 0) as imprnt_nm,
+		       recent_wrhsg_schdl_ymd,
+		       pspnmt_time,
+		       tong_yn,
+		       subj_fild,
+		       kitech_owshp_yn,
+		       kitech_owshp_yr,
+		       centr_cd,
+		       out_agncy_owshp_item,
+		       electr_jurnl_homepg,
+		       homepg,
+		       rmk
+		  FROM kbkjurnlno
+		 WHERE 1 = 1
+		   AND jurnl_no = #{jurnl_no}
+	</select>
+		
+	<select id="selectPaper" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo">
+SELECT regst_no,
+		       regst_ymd,
+		       rcpt_no, 
+		       accnt_no,
+		       prj_no,
+		       resch_respn_psn,
+		       attnce_reschr_psn,
+		       paper_nm,
+		       publpapr_nm,
+		       ed,
+		       issu_ymd,
+		       orign_page,
+		       end_page,
+		       clsf as clsf_cd,
+		       fun_xodxcommst_cd_nm(paper_clsf,0) as paper_clsf,
+		       krf_grd_grant,
+		       data_typ_cd,
+		       abst,
+		       contnt,
+		       cycle_item,
+		       attach_file_no,
+		       paper_clsf as paper_clsf_cd
+		  FROM kbkpaper
+		 WHERE 1 = 1
+		   AND regst_no = #{regst_no}
+</select>
+	
+<delete id="deletePaper" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo">
+DELETE /* kr.re.kitech.biz.kbk.pop.deletePaper */
+  FROM kbkpaper
+WHERE regst_no = #{regst_no}
+</delete>
+	
+<update id="updatePaper" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo">
+UPDATE /* kr.re.kitech.biz.kbk.pop.updatePaper */
+     kbkpaper
+   SET <if test="clsf_cd != null"> clsf = #{clsf_cd}, </if>
+       <if test="krf_grd_grant != null"> krf_grd_grant = #{krf_grd_grant}, </if>
+       <if test="data_typ_cd != null"> data_typ_cd = #{data_typ_cd},  </if>
+       <if test="abst != null"> abst = #{abst},  </if>
+       <if test="contnt != null"> contnt = #{contnt},  </if>
+       <if test="cycle_item != null"> cycle_item = #{cycle_item},  </if>
+       <if test="attach_file_no != null"> attach_file_no = #{attach_file_no},  </if>
+       updt_psn_syspayno = #{updt_syspayno},
+       updt_daytm = CURRENT
+ WHERE regst_no = #{regst_no}
+</update>
+	
+<insert id="insertPaper" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo">
+INSERT /* kr.re.kitech.biz.kbk.pop.insertPaper */
+  INTO kbkpaper(
+      regst_no
+     <if test="regst_ymd != null"> , regst_ymd  </if>
+     <if test="rcpt_no != null"> ,rcpt_no  </if>
+     <if test="accnt_no != null"> ,accnt_no  </if>
+     <if test="prj_no != null"> ,prj_no  </if>
+     <if test="resch_respn_psn != null"> ,resch_respn_psn  </if>
+     <if test="attnce_reschr_psn != null"> ,attnce_reschr_psn  </if>
+     <if test="paper_nm != null"> ,paper_nm  </if>
+     <if test="publpapr_nm != null"> ,publpapr_nm  </if>
+     <if test="ed != null"> ,ed  </if>
+     <if test="issu_ymd != null"> ,issu_ymd  </if>
+     <if test="orign_page != null"> ,orign_page  </if>
+     <if test="end_page != null"> ,end_page  </if>
+     <if test="clsf_cd != null"> ,clsf  </if>
+     <if test="paper_clsf != null"> ,paper_clsf  </if>
+     <if test="krf_grd_grant != null"> ,krf_grd_grant  </if>
+     <if test="data_typ_cd != null"> ,data_typ_cd  </if>
+     <if test="abst != null"> ,abst  </if>
+     <if test="contnt != null"> ,contnt  </if>
+     <if test="cycle_item != null"> ,cycle_item  </if>
+     <if test="attach_file_no != null"> ,attach_file_no  </if>
+     <if test="rcpt_clsf != null"> ,rcpt_clsf  </if>
+     ,regst_psn_syspayno
+     ,regst_daytm  
+  ) VALUES ( 
+    (SELECT 'P' || LPAD(TRUNC(NVL(MAX(TO_NUMBER(SUBSTR(regst_no ,2,7)))+1, 0)), 6, '0') FROM kbkpaper)
+    <if test="regst_ymd != null">, #{regst_ymd}  </if>
+    <if test="rcpt_no != null">, #{rcpt_no}  </if>
+    <if test="accnt_no != null">, #{accnt_no}  </if>
+    <if test="prj_no != null">, #{prj_no}  </if>
+    <if test="resch_respn_psn != null">, #{resch_respn_psn}  </if>
+    <if test="attnce_reschr_psn != null">,#{attnce_reschr_psn}  </if>
+    <if test="paper_nm != null">, #{paper_nm}  </if>
+    <if test="publpapr_nm != null">, #{publpapr_nm}  </if>
+    <if test="ed != null">, #{ed}  </if>
+    <if test="issu_ymd != null">, #{issu_ymd}  </if>
+    <if test="orign_page != null">,#{orign_page}  </if>
+    <if test="end_page != null">, #{end_page}  </if>
+    <if test="clsf_cd != null">, #{clsf_cd}  </if>
+    <if test="paper_clsf != null">, #{paper_clsf}  </if>
+    <if test="krf_grd_grant != null">, #{krf_grd_grant}  </if>
+    <if test="data_typ_cd != null">, #{data_typ_cd}  </if>
+    <if test="abst != null">, #{abst}  </if>
+    <if test="contnt != null">, #{contnt}  </if>
+    <if test="cycle_item != null">, #{cycle_item}  </if>
+    <if test="attach_file_no != null">, #{attach_file_no}  </if>
+    <if test="rcpt_clsf != null">, #{rcpt_clsf}  </if>
+   , #{regst_syspayno}
+   , CURRENT
+   )
+</insert>
+	
+	<select id="selectRegstNo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo">
+		SELECT regst_no
+		         FROM kbkpaper
+		 WHERE 1 = 1
+		   AND regst_no = (select max(regst_no) from kbkpaper)
+	</select>
+	
+	<select id="selectAttnceInfo" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo">
+		SELECT fun_res_hrt_list (#{rcpt_no}, 12) AS attnce_reschr_psn FROM dual
+	</select>
+	
+	<select id="selectPaperPopList" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopPaperDetailVo">
+select a.rcpt_no,    --접수번호,  
+		   a.accnt_no,  --계정번호,  
+		   a.prj_no  ,  --과제번호 ,  
+		   fun_emp_nm( b.accnt_rspns) as accnt_rspns, --연구책임자 , 
+		   fun_res_pj_not_respn_list(a.prj_no) as prj_no_nm,  --참여연구원,
+		    a.paper_nm  ,  --논문명 , 
+		    a.publpapr_nm ,    --게재지명, 
+		    a.ed    ,--권호,  
+		    a.issu_ymd,  --게재일자,  
+		    a.issu_page_start ,  --시작페이지,  
+		    a.issu_page_end  , --끝페이지, 
+		  fun_xodxcommst_cd_nm ( a.clsf, 0) as clsf,   --SCI구분, 
+		  fun_xodxcommst_cd_nm ( a.paper_clsf, 0) as paper_clsf, --논문구분  ,
+		  a.socty_yn  ,  --학술진흥재단등급부여 , 
+		  a.attach_file, --원문파일
+		  a.clsf as clsf_cd,
+		  a.paper_clsf as paper_clsf_cd,
+		  a.rcpt_state as rcpt_clsf
+		 from  resrtpaper  a  left outer join  resbgacctm b  on  a.accnt_no = b.accnt_no 
+		where 1 = 1 
+		  <if test="rcpt_no != null and rcpt_no != ''"> AND a.rcpt_no LIKE '%' || #{rcpt_no} || '%' </if>  --접수번호
+		  <if test="paper_nm != null and paper_nm != ''"> AND a.paper_nm LIKE '%' || #{paper_nm} || '%' </if>  --논문명
+		  <if test="accnt_rspns != null and accnt_rspns != ''"> AND fun_emp_nm( b.accnt_rspns) LIKE '%' || #{accnt_rspns} || '%' </if>  --연구책임자
+		UNION
+		select a.rcpt_no,    --접수번호,  
+		   a.accnt_no,  --계정번호,  
+		   a.prj_no  ,  --과제번호 ,  
+		   a.presntr_nm as accnt_rspns, --발표자명 , 
+		   fun_res_pj_not_respn_list(a.prj_no) as prj_no_nm,  --참여연구원,
+		    a.anoun_nm as paper_nm  ,  --발표명 , 
+		    a.notice_socty_nm as publpapr_nm ,    --발표학회명, 
+		    '' as ed,  --권호,  
+		    a.notice_ymd as issu_ymd,  --발표일자,  
+		    a.data_colct_start as issu_page_start ,  --자료수록 시작,  
+		    a.data_colct_end as issu_page_end  , --자료수록 끝, 
+		  '' as clsf,   --SCI구분, 
+		  fun_xodxcommst_cd_nm ( a.socty_anoun_clsf, 0) as paper_clsf, --학회발표구분  ,
+		  a.socty_yn  ,  --학회여부 , 
+		  a.attach_file, --원문파일
+		  '' as clsf_cd,
+		  a.socty_anoun_clsf as paper_clsf_cd,
+		  a.rcpt_state as rcpt_clsf
+		 from  resrtsemin  a  left outer join  resbgacctm b  on  a.accnt_no = b.accnt_no 
+		where 1 = 1 
+		  <if test="rcpt_no != null and rcpt_no != ''"> AND a.rcpt_no LIKE '%' || #{rcpt_no} || '%' </if>
+		  <if test="paper_nm != null and paper_nm != ''"> AND a.presntr_nm LIKE '%' || #{paper_nm} || '%' </if>
+		  <if test="accnt_rspns != null and accnt_rspns != ''"> AND a.presntr_nm LIKE '%' || #{accnt_rspns} || '%' </if>
+</select>
+<select id="selectCopyPop" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopCopyVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopCopyVo">
+SELECT /* kr.re.kitech.biz.kbk.pop.selectCopyPop */
+       a.regst_no,
+       a.regst_ymd,
+       a.ymd,
+       a.req_psn_syspayno,
+       fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 0) AS req_psn_syspaynm,
+       fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 1) AS req_psn_empno,  
+       a.origntxt_copy_typ,
+       a.jurnl_nm,
+       a.paper_nm_pat,
+       a.std_pat_no,
+       a.auth_nm,
+       a.issu_agncy,
+       a.publ_yr,
+       a.vol, 
+       a.no,
+       a.orign_page,
+       a.end_page,
+       a.req_scop,
+       a.accnt_no,
+       b.accnt_no_nm,
+       a.accnt_expir_ymd,
+       a.cycle_item,
+       a.attach_file_nm,
+       a.prcs_state,
+       a.rcpt_ymd,
+       a.prcs_complt_ymd,
+       a.attach_file_no
+  FROM kbkorgltxtcopyreq a 
+  LEFT JOIN resbgacctm b ON a.accnt_no = b.accnt_no  
+ WHERE regst_no = #{regst_no}
+</select>
+
+<delete id="deleteCopyPop" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopCopyVo">
+DELETE FROM kbkorgltxtcopyreq
+ WHERE regst_no = #{regst_no}
+</delete>
+
+<!-- 복사 수정 -->
+<update id="updateCopyPop" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopCopyVo">
+UPDATE /* kr.re.kitech.biz.kbk.pop.updateCopyPop */
+      kbkorgltxtcopyreq
+   SET origntxt_copy_typ=#{origntxt_copy_typ} ,
+     jurnl_nm=#{jurnl_nm} ,
+     paper_nm_pat=#{paper_nm_pat} ,
+     std_pat_no=#{std_pat_no} ,
+     auth_nm=#{auth_nm} ,
+     issu_agncy=#{issu_agncy} ,
+     publ_yr=#{publ_yr} ,
+     vol=#{vol} ,
+     no=#{no} ,
+     orign_page=#{orign_page} ,
+     end_page=#{end_page} ,
+     req_scop=#{req_scop} ,
+     accnt_no=#{accnt_no} ,
+     accnt_expir_ymd=#{accnt_expir_ymd} ,
+     attach_file_no=#{attach_file_no} ,
+     cycle_item=#{cycle_item} ,
+     prcs_state=#{prcs_state} ,
+     rcpt_ymd=#{rcpt_ymd} ,
+     prcs_complt_ymd=#{prcs_complt_ymd} ,
+     loan_psn_syspayno=#{loan_psn_syspayno} ,
+     updt_psn_syspayno=#{updt_syspayno},
+     updt_daytm=SYSDATE
+WHERE regst_no=#{regst_no}
+</update>
+<insert id="insertCopyPop" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopCopyVo">
+insert into kbkorgltxtcopyreq
+(
+     regst_no ,
+     regst_ymd ,
+     ymd ,
+     origntxt_copy_typ ,
+     jurnl_nm ,
+     paper_nm_pat ,
+     std_pat_no ,
+     auth_nm ,
+     issu_agncy ,
+     publ_yr ,
+     vol ,
+     no ,
+     orign_page ,
+     end_page ,
+     req_scop ,
+     accnt_no ,
+     accnt_expir_ymd ,
+     cycle_item ,
+     prcs_state ,
+     rcpt_ymd ,
+     prcs_complt_ymd ,
+     req_psn_syspayno ,
+     loan_psn_syspayno ,
+     regst_psn_syspayno ,
+     attach_file_no,
+     regst_daytm 
+) values ( (select max(regst_no)+1 from kbkorgltxtcopyreq where regst_no like '11%'), #{regst_ymd}, #{ymd}, #{origntxt_copy_typ}, #{jurnl_nm}, #{paper_nm_pat}, #{std_pat_no}, #{auth_nm}, #{issu_agncy}, #{publ_yr}, #{vol}, #{no}, #{orign_page}, #{end_page}, #{req_scop}, #{accnt_no}, #{accnt_expir_ymd}, #{cycle_item}, #{prcs_state},#{rcpt_ymd}, #{prcs_complt_ymd}, #{req_psn_syspayno}, #{loan_psn_syspayno}, #{regst_psn_syspayno}, #{attach_file_no},  sysdate)
+</insert>
+<select id="selectJurlNoList" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopJurnlVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopJurnlVo">
+SELECT  /* kr.re.kitech.biz.kbk.pop.selectJurlNoList */
+      jurnl_no,
+      regst_no,
+      jurnl_clsf_cd,
+      fun_xodxcommst_cd_nm(jurnl_clsf_cd, 0) AS jurnl_clsf_nm,
+      jurnl_subj,
+      publ_vend
+  FROM kbkjurnlno
+ WHERE 1=1
+   <if test="regst_no != null and regst_no != ''"> AND regst_no LIKE '%' || #{regst_no} || '%' </if> 
+   <if test="centr_cd != null and centr_cd != ''"> AND centr_cd LIKE #{centr_cd} </if> 
+   <if test="jurnl_subj != null and jurnl_subj != ''"> AND (replace(upper(jurnl_subj), ' ', '')   LIKE '%' || #{jurnl_subj} || '%'
+   OR upper(jurnl_subj) LIKE '%' || upper(#{jurnl_subj}) || '%') </if>
+   <if test="issn != null and issn != ''"> AND issn  LIKE '%' || #{issn} || '%' </if> 
+   <if test="publ_vend != null and publ_vend != ''"> AND replace(upper(publ_vend),' ','')  LIKE  '%' || replace(upper(#{publ_vend}),' ','') || '%'  </if> 
+   <if test="cont_yn != null and cont_yn != ''"> AND cont_yn = #{cont_yn} </if> 
+ORDER BY jurnl_no DESC
+</select>
+<select id="selectJurnlDetailList" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopJurnlDetailVo" resultType="kr.re.kitech.biz.kbk.pop.vo.KbkPopJurnlDetailVo">
+SELECT /* kr.re.kitech.biz.kbk.pop.selectJurnlDetailNo */
+       a.jurnl_no
+     , a.jurnl_subj
+     , a.imprnt
+     , fun_xodxcommst_cd_nm(a.imprnt, 0) AS imprnt_nm
+    <if test='cmd != null and cmd =="Vw"'>
+     , b.vol
+     , b.no
+     , b.publ_yr
+     , b.publ_month
+     , b.wrhsg_ymd
+     , b.wrhsg_schdl_ymd
+     , b.cycle_item
+     , b.missno_yn
+     , b.attach_file_no
+    </if>
+  FROM kbkjurnlno a
+ <if test='cmd != null and cmd =="Vw"'>
+  LEFT JOIN kbkjurnlcontnt b ON a.jurnl_no = b.jurnl_no
+ </if>
+ WHERE a.jurnl_no = #{jurnl_no}
+  <if test='no != null and no !=""'> AND b.no = #{no} </if>
+  <if test='vol != null and vol !=""'> AND b.vol = #{vol} </if>
+</select>
+
+<insert id="insertJurnlDetail" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopJurnlDetailVo">
+INSERT /* kr.re.kitech.biz.kbk.pop.insertJurnlDetail */
+  INTO kbkjurnlcontnt
+(   jurnl_no, 
+    vol, 
+    no, 
+    publ_yr, 
+    publ_month, 
+    wrhsg_ymd, 
+    wrhsg_schdl_ymd, 
+    cycle_item, 
+    missno_yn,
+    attach_file_no,
+    regst_psn_syspayno, 
+    regst_daytm   )
+ VALUES (
+    #{jurnl_no}
+  , #{vol}
+  , #{no}
+  , #{publ_yr}
+  , #{publ_month}
+  , #{wrhsg_ymd}
+  , #{wrhsg_schdl_ymd}
+  , #{cycle_item}
+  , #{missno_yn}
+  , #{attach_file_no}
+  , #{regst_syspayno}
+  , sysdate)
+</insert>
+<delete id="deleteJurnlDetail" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopJurnlDetailVo">
+DELETE /* kr.re.kitech.biz.kbk.pop.deleteJurnlDetail */
+  FROM kbkjurnlcontnt
+ WHERE jurnl_no = #{jurnl_no}
+   AND vol      = #{vol}
+   AND no       = #{no}
+</delete>
+<update id="updateJurnlDetail" parameterType="kr.re.kitech.biz.kbk.pop.vo.KbkPopJurnlDetailVo">
+UPDATE /* kr.re.kitech.biz.kbk.pop.updateJurnlDetail */
+      kbkjurnlcontnt
+   SET vol = #{vol},
+       no  = #{no},
+       publ_yr = #{publ_yr},
+       publ_month = #{publ_month},
+       wrhsg_ymd  = #{wrhsg_ymd},
+       wrhsg_schdl_ymd =#{wrhsg_schdl_ymd},
+       cycle_item = #{cycle_item},
+       missno_yn  =#{missno_yn},
+        attach_file_no=#{attach_file_no},
+       updt_psn_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE    
+ WHERE jurnl_no = #{jurnl_no}
+   AND vol = #{vol}
+   AND no  = #{no}
+</update>
+</mapper>

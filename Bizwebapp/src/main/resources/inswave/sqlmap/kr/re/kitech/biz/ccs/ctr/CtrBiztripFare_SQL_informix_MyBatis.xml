@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.ctr">
+  <select id="selectListCtrBiztripFare" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrBiztripFareVo" resultType="kr.re.kitech.biz.ccs.ctr.vo.CtrBiztripFareVo">
+SELECT /* QueryID : kr.re.kitech.biz.ccs.ctr.selectListCtrBiztripFare */ 
+		   biztrip_expns_clsf
+        ,fun_xodxcommst_cd_nm(biztrip_expns_clsf, 0) as biztrip_expns_clsf_nm
+        ,biztrip_clsf 
+        ,fun_xodxcommst_cd_nm(biztrip_clsf, 0) as biztrip_clsf_nm
+        ,region_clsf
+        ,fun_xodxcommst_cd_nm(region_clsf, 0) as region_clsf_nm
+        ,start_region
+        ,fun_xodxcommst_cd_nm(start_region, 0) as start_region_nm
+        ,arriv_region
+        ,fun_xodxcommst_cd_nm(arriv_region, 0) as arriv_region_nm
+        ,arriv_city_nm
+        ,grd_clsf
+        ,fun_xodxcommst_cd_nm(grd_clsf, 0) as grd_clsf_nm
+        ,trunc(biztrip_daycnt) as biztrip_daycnt
+        ,trunc(biztrip_Fee) as biztrip_fee
+        ,trunc(week_biztrip_fee) as week_biztrip_fee
+        ,rmk
+        ,trunc(move_dist) as move_dist
+FROM   ctrbiztripfare
+WHERE  1=1
+AND biztrip_clsf LIKE DECODE(#{biztrip_clsf},'','%',#{biztrip_clsf})
+AND biztrip_expns_clsf LIKE DECODE(#{biztrip_expns_clsf},'','%',#{biztrip_expns_clsf})
+and start_region like DECODE(#{start_region},'','%',#{start_region})
+and arriv_region like DECODE(#{arriv_region},'','%',#{arriv_region})
+ORDER BY biztrip_expns_clsf,
+         biztrip_clsf,
+         start_region,
+         arriv_region,
+         region_clsf,
+         grd_clsf
+  </select>
+  
+  
+  
+  <insert id="insertItem01" parameterType="kr.re.kitech.biz.ccs.ctr.vo.CtrBiztripFareVo">
+INSERT /* QueryID : kr.re.kitech.biz.ccs.ctr.insertItem01 */ 
+		 INTO ctrbiztripfare
+(    biztrip_expns_clsf
+    ,biztrip_clsf
+    ,region_clsf
+    ,start_region
+    ,arriv_region
+    ,move_dist
+    ,grd_clsf
+    ,biztrip_daycnt
+    ,biztrip_fee
+    ,week_biztrip_fee
+    ,rmk
+    ,regst_psn_syspayno
+    ,regst_daytm
+    ,arriv_city_nm
+)
+VALUES (#{biztrip_expns_clsf}, #{biztrip_clsf}, #{region_clsf}, #{start_region}, #{arriv_region}, #{move_dist}, #{grd_clsf}, #{biztrip_daycnt}, #{biztrip_fee}, #{week_biztrip_fee}, #{rmk}, '123456789', sysdate, '')
+  </insert>
+  
+  
+</mapper>

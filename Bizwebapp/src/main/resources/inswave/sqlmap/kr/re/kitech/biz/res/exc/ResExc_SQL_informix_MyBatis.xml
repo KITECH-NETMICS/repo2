@@ -1,0 +1,696 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.res.exc">
+<!-- 연구비입금관리 목록 조회 -->
+<select id="selectResBgDepstMntList" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcSrcVo" resultType="kr.re.kitech.biz.res.exc.vo.ResBgDepstMntVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectResBgDepstMntList */
+       b.accnt_no
+     , a.depst_odr
+     , a.reschamt_clsf
+     , c.nm AS accnt_rspns_nm
+     , b.prj_no
+     , b.accnt_no_nm
+     , b.start_ymd ||'~' || b.cls_ymd AS prd
+     , b.tax_cd
+     , b.accnt_state
+     , d.bsns_req_no
+     , e.vend_abbr
+     , f.odr
+     , f.demnd_req_no
+     , f.depst_req_no 
+     , f.unslip_no AS depst_unslip_no
+     , f.demnd_bill_no
+     , f.recv_bill_no
+     , g.unslip_no AS demnd_unslip_no    
+     , fun_emp_nm(b.bugt_ctrl_psn) AS bugt_ctrl_nm -- 예통자
+     , fun_xodxcommst_cd_nm(a.reschamt_clsf,0) as reschamt_nm -- 연구비구분
+     , a.depst_schdl_amt --입금예정액
+     , a.depst_schdl_ymd -- 입금예정일  
+     , f.ofic_depst_amt -- 실입금금액
+FROM resbgacctm b 
+JOIN resinpmast d ON b.prj_no = d.prj_no
+JOIN humbasicinfo c ON b.accnt_rspns = c.syspayno
+JOIN xodhdeptinfo dept ON c.dept_cd = dept.dept_cd AND c.dept_new_ymd = dept.dept_new_ymd
+LEFT JOIN resbgrecve a ON b.accnt_no = a.accnt_no
+LEFT JOIN xodfvend e ON a.depst_loc = e.vend_cd
+LEFT JOIN resbgrectl f ON a.accnt_no = f.accnt_no AND a.depst_odr = f.depst_odr
+LEFT JOIN resdemndreq g ON f.accnt_no = g.accnt_no AND f.depst_odr = g.depst_odr AND f.odr = g.odr
+WHERE 1=1 
+<if test='accnt_no != null and accnt_no !=""'> AND b.accnt_no LIKE #{accnt_no}||'%' </if>
+<if test='prj_no != null and prj_no != ""'> AND b.prj_no = #{prj_no} </if>
+<if test='accnt_rspns != null and accnt_rspns != ""'> AND b.accnt_rspns = #{accnt_rspns} </if>
+<if test='divsn_dept != null and divsn_dept != ""'> AND dept.divsn_dept = #{divsn_dept} </if>
+<if test='from_ymd != null and from_ymd != ""'> AND a.depst_schdl_ymd >= #{from_ymd} </if>
+<if test='to_ymd != null and to_ymd != ""'> AND a.depst_schdl_ymd <![CDATA[ <= ]]> #{to_ymd} </if>
+<if test='bugt_ctrl_psn != null and bugt_ctrl_psn != ""'> AND b.bugt_ctrl_psn = #{bugt_ctrl_psn} </if>
+ORDER BY b.accnt_no, a.depst_odr, f.odr
+</select>
+
+<!-- 연구비 입금 결재신청번호로 계정번호 조회 -->
+<select id="selectResBgRectlAccntNo" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.exc.vo.ResExcSrcVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectResBgRectlAccntNo */
+          DISTINCT accnt_no
+        , depst_odr
+        , req_no
+  FROM resbgrectl
+ WHERE req_no = #{req_no}
+</select>
+
+<!-- 통합이지바로과제 협약예산(위탁연구비) 조회 -->
+<select id="selectResBgAgreeTotAmt" parameterType="kr.re.kitech.biz.fin.std.vo.ComResBgAcctmVo" resultType="long">
+SELECT /* kr.re.kitech.biz.res.exc.selectResBgAgreeTotAmt */
+       NVL(SUM(a.tot_amt), 0) AS agree_amt
+  FROM fbaitmaccnt b
+  JOIN resbgagree a ON b.accnt_cd = a.bugt_item
+ WHERE b.itm_solve_base = #{itm_solve_base}
+   AND b.itm_clsf IN ('FAE051','FAE055') -- FAE051 위탁연구비, FAE055 위탁연구개발비
+   AND a.accnt_no = #{accnt_no}
+</select>
+
+<!-- 입금예정정보 조회 -->
+<select id="selectResBgRecveList" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.exc.vo.ResBgRecveVo">
+-- 입금예정정보 조회
+SELECT /* kr.re.kitech.biz.res.exc.selectResBgRecveList */
+       a.accnt_no      -- 계정번호
+     , a.depst_odr     -- 입금순번
+     , a.reschamt_clsf -- 연구비구분(RDD)
+     , x.cd_nm AS reschamt_clsf_nm      -- 연구비구분명
+     , a.depst_schdl_amt  -- 입금예정금액
+     , a.depst_schdl_ymd  -- 입금예정일자
+     , a.ofic_depst_amt   -- 실입금금액
+     , a.ofic_depst_ymd   -- 실입금일자
+     , a.depst_loc        -- 입금처
+     , b.vend_abbr AS depst_loc_nm  -- 입금처명
+     , a.unusual_item      -- 특이사항
+     , NVL(a.depst_schdl_amt, 0) - NVL(a.ofic_depst_amt, 0) AS uncollected_amt   -- 미수총액
+     , 'U' AS cud_type
+FROM resbgrecve a  -- 입금관리
+LEFT JOIN xodxcommst x ON a.reschamt_clsf = x.cd 
+LEFT JOIN xodfvend b ON a.depst_loc = b.vend_cd
+WHERE a.accnt_no = #{accnt_no}
+ORDER BY a.depst_odr
+</select>
+
+<!-- 연구비입금내역 조회 -->
+<select id="selectResBgRectlList" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcSrcVo" resultType="kr.re.kitech.biz.res.exc.vo.ResBgRectlVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectResBgRectlList */
+       a.accnt_no -- 계정번호
+     , a.depst_odr -- 입금순번
+     , a.odr -- 순번
+     , a.ofic_depst_amt -- 실입금금액
+     , a.ofic_depst_ymd -- 실입금일
+     , a.depst_clsf -- 입금구분(RDE)
+     , TRIM(a.prmsnt_no) AS prmsnt_no -- 어음번호
+     , a.depst_loc -- 입금처
+     , TRIM(NVL(v.vend_abbr, '')) AS depst_loc_nm
+     , TRIM(a.demnd_bill_no) AS demnd_bill_no  -- 청구계산서번호
+     ,TRIM(DECODE(a.recv_bill_no, '발행', '', a.recv_bill_no)) AS  recv_bill_no -- 영수계산서번호
+     , a.bankaccnt_no -- 계좌번호
+     , TRIM(CASE WHEN c.unslip_no != '' THEN c.unslip_no
+                 WHEN b.unslip_no != '' THEN b.unslip_no
+                 ELSE a.unslip_no END ) AS unslip_no -- 결의번호
+     , a.depst_state -- 입금상태(RDF)
+     , TRIM(CASE WHEN c.depst_req_no != '' THEN c.depst_req_no ELSE b.req_no END) AS depst_req_no -- 입금의뢰번호
+     , TRIM(CASE WHEN c.stor_bank != '' THEN c.stor_bank ELSE b.bank_cd END) AS bank
+     , fun_xodxcommst_cd_nm(b.bank_cd, 0) AS bank_nm
+     , a.req_ymd -- 신청일자
+     , a.req_psn -- 신청자
+     , a.demnd_req_no
+     , a.req_no -- 결재신청번호
+     , TRIM(CASE WHEN SUBSTR(a.demnd_req_no,1,3) = 'R08' THEN b.attach_file_no ELSE a.attach_file END) AS attach_file -- 첨부파일ID
+     , NVL(CASE WHEN a.depst_clsf IN ('RDE001','RDE002','RDE004') THEN c.amt -- 입금구분이 어음종류면 받을어음대장 금액
+                WHEN a.depst_clsf IN ('RDE003','RDE005') THEN b.depst_liq -- 입금구분이 현금/기타면 입금의뢰 입금액
+                ELSE 0 END, 0) AS depst_req_amt -- 입금의뢰금액
+     , a.old_data_yn
+     , CASE WHEN c.rmk != '' THEN c.rmk ELSE b.rmk END AS rmk
+     , e.demnd_liq
+     , e.unslip_no AS demnd_unslip_no
+     , t1.issu_ymd  -- 청구계산서 발행일자
+     , f.slip_no
+     , f.slip_odr
+     , f.accnt_ymd
+     , x.apr_state  -- 입금의뢰 결재상태
+     , (t2.suply_value + t2.taxamt) AS recv_liq -- 영수금액
+     , d.slip_ymd
+     , CASE WHEN a.demnd_bill_no != '' THEN fun_fin_tax_bill_state(a.demnd_bill_no, 1)  
+            WHEN a.recv_bill_no != '' THEN fun_fin_tax_bill_state(a.recv_bill_no, 1) 
+            ELSE '' END AS state_nm
+     , 'U' AS cud_type
+  FROM resbgrectl a
+  LEFT JOIN fcpdepstreq b ON b.req_no = a.depst_req_no -- 입금의뢰
+  LEFT JOIN fcpprmsnt c ON c.prmsnt_no = a.prmsnt_no
+  LEFT JOIN resdemndreq e ON e.req_no = a.demnd_req_no AND e.req_no LIKE 'R08%'  
+  LEFT JOIN fspslipdecsnd f ON f.unslip_no = e.unslip_no AND f.unslip_odr = e.unslip_odr
+  LEFT JOIN xomxintfatab x ON x.req_no = a.req_no
+  LEFT JOIN xodfvend v ON v.vend_cd = a.depst_loc
+  LEFT JOIN ftxbillh t1 ON a.demnd_bill_no = t1.tax_bill_no
+  LEFT JOIN ftxbillh t2 ON a.recv_bill_no = t2.tax_bill_no
+  LEFT JOIN fspsliph d ON d.unslip_no 
+                   = (CASE WHEN c.unslip_no != '' THEN c.unslip_no
+                           WHEN b.unslip_no != '' THEN b.unslip_no
+                           ELSE a.unslip_no END)
+  WHERE a.accnt_no = #{accnt_no}
+    AND a.depst_odr = #{depst_odr}
+  ORDER BY a.odr
+</select>
+
+<!-- 연구비 입금예정정보 저장 -->
+<update id="mergeResBgRecve" parameterType="kr.re.kitech.biz.res.exc.vo.ResBgRecveVo">
+MERGE /* kr.re.kitech.biz.res.exc.mergeResBgRecve */
+ INTO resbgrecve AS a
+USING dual AS b ON 1=1 AND a.accnt_no = #{accnt_no} AND a.depst_odr = #{depst_odr}
+WHEN MATCHED  THEN
+ UPDATE
+    SET reschamt_clsf = #{reschamt_clsf}    -- 연구비구분
+      , depst_schdl_amt = #{depst_schdl_amt}  -- 입금예정금액
+     <if test='depst_schdl_ymd != null'> , depst_schdl_ymd = #{depst_schdl_ymd}  /* 입금예정일자*/ </if>
+      , ofic_depst_amt = #{ofic_depst_amt}   -- 실입금금액
+     <if test='ofic_depst_ymd != null'>, ofic_depst_ymd  = #{ofic_depst_ymd}   /* 실입금일자 */ </if>
+      , depst_loc = #{depst_loc}   -- 입금처
+     <if test='unusual_item != null and unusual_item !=""'>, unusual_item = #{unusual_item, jdbcType=CLOB, typeHandler=kr.re.kitech.biz.xom.core.ext.CustomTypeHandler} /*특이사항 */ </if>
+      , updt_syspayno = #{updt_syspayno}       -- 수정시스템개인번호
+      , updt_daytm = SYSDATE  -- 수정일시
+WHEN NOT MATCHED THEN
+INSERT (
+         accnt_no         -- 계정번호
+       , depst_odr        -- 입금순번
+       , reschamt_clsf    -- 연구비구분
+       , depst_schdl_amt  -- 입금예정금액
+      <if test='depst_schdl_ymd != null'> , depst_schdl_ymd /* 입금예정일자*/ </if>
+       , ofic_depst_amt   -- 실입금금액
+      <if test='ofic_depst_ymd != null'>, ofic_depst_ymd /* 실입금일자 */ </if>
+       , depst_loc        -- 입금처
+      <if test='unusual_item != null and unusual_item !=""'>, unusual_item /*특이사항 */ </if>
+       , regst_syspayno 
+       , regst_daytm
+  ) VALUES(
+         #{accnt_no}        
+       , #{depst_odr}       
+       , #{reschamt_clsf}   
+       , #{depst_schdl_amt} 
+      <if test='depst_schdl_ymd != null'> , #{depst_schdl_ymd} </if>
+       , #{ofic_depst_amt} 
+      <if test='ofic_depst_ymd != null'>, #{ofic_depst_ymd} </if>
+       , #{depst_loc}            -- 입금처
+      <if test='unusual_item != null and unusual_item !=""'>, #{unusual_item, jdbcType=CLOB, typeHandler=kr.re.kitech.biz.xom.core.ext.CustomTypeHandler} </if>
+       , #{regst_syspayno} 
+       , SYSDATE 
+  )
+</update>
+
+<!-- 입금예정내역 삭제 가능여부 조회 -->
+<select id="selectResBgRectlDelYn" parameterType="kr.re.kitech.biz.res.exc.vo.ResBgRectlVo" resultType="int">
+SELECT /* kr.re.kitech.biz.res.exc.selectResBgRectlDelYn */
+       COUNT(*) AS cnt
+  FROM resbgrectl
+ WHERE accnt_no = #{accnt_no}
+   AND depst_odr =#{depst_odr}
+   AND (demnd_bill_no != '' OR recv_bill_no !='' OR demnd_req_no != '' OR depst_req_no != '')
+</select>
+
+<!-- 연구비 입금예정내역 삭제 -->
+<delete id="deleteResBgRecve" parameterType="kr.re.kitech.biz.res.exc.vo.ResBgRecveVo">
+DELETE /* kr.re.kitech.biz.res.exc.deleteResBgRecve */
+  FROM resbgrecve
+ WHERE accnt_no = #{accnt_no}
+   AND depst_odr = #{depst_odr}
+</delete>
+
+<!-- 연구비 입금상세 저장 -->
+<insert id="insertResBgRectl" parameterType="kr.re.kitech.biz.res.exc.vo.ResBgRectlVo">
+INSERT /* kr.re.kitech.biz.res.exc.insertResBgRectl */
+  INTO resbgrectl
+  (   accnt_no        -- 계정번호
+    , depst_odr       -- 입금순번
+    , odr             -- 순번
+    , depst_loc       -- 입금처
+    , ofic_depst_amt  -- 실입금금액
+   <if test='ofic_depst_ymd != null'> , ofic_depst_ymd  /* 실입금일 */ </if>
+   <if test='depst_clsf != null'> , depst_clsf      /* 입금구분 */ </if>
+   <if test='demnd_bill_no != null'> , demnd_bill_no /* 청구계산서번호 */ </if>
+   <if test='recv_bill_no != null'> , recv_bill_no   /* 영수계산서번호 */ </if>
+   <if test='bankaccnt_no != null'> , bankaccnt_no   /* 계좌번호 */ </if>
+   <if test='unslip_no != null'> , unslip_no     /* 결의번호 */ </if>
+   <if test='depst_state != null'> , depst_state /* 입금상태 */ </if>
+   <if test='req_ymd != null'> , req_ymd   /* 신청일자 */ </if>
+   <if test='old_data_yn != null'> , old_data_yn   /* 수기입력여부 */ </if>
+    , req_psn         -- 신청자
+    , regst_syspayno  -- 등록시스템개인번호
+    , regst_daytm     -- 등록일시    
+  ) VALUES (
+      #{accnt_no}        -- 계정번호
+    , #{depst_odr}       -- 입금순번
+    , (SELECT NVL(MAX(odr), 0) +1 FROM resbgrectl WHERE accnt_no = #{accnt_no} AND depst_odr = #{depst_odr})     -- 순번
+    , #{depst_loc}       -- 입금처
+    , #{ofic_depst_amt}  -- 실입금금액
+   <if test='ofic_depst_ymd != null'> , #{ofic_depst_ymd}  /* 실입금일 */ </if>
+   <if test='depst_clsf != null'> , #{depst_clsf}      /* 입금구분 */ </if>
+   <if test='demnd_bill_no != null'> , #{demnd_bill_no}   /* 청구계산서번호 */ </if>
+   <if test='recv_bill_no != null'> , #{recv_bill_no}    /* 영수계산서번호 */ </if>
+   <if test='bankaccnt_no != null'> , #{bankaccnt_no}    /* 계좌번호 */ </if>
+   <if test='unslip_no != null'> , #{unslip_no}       /* 결의번호 */ </if>
+   <if test='depst_state != null'> , #{depst_state}     /* 입금상태 */ </if>
+   <if test='req_ymd != null'> , #{req_ymd}         /* 신청일자 */ </if>
+   <if test='old_data_yn != null'> , #{old_data_yn}   /* 수기입력여부 */ </if>
+    , #{req_psn}         -- 신청자
+    , #{regst_syspayno}  -- 등록시스템개인번호
+    , SYSDATE         -- 등록일시   
+  )
+</insert>
+
+<!-- 입금관리상세 내역 수정  -->
+<update id="updateResBgRectl" parameterType="kr.re.kitech.biz.res.exc.vo.ResBgRectlVo">
+-- 입금관리상세 내역 수정 
+UPDATE /* kr.re.kitech.biz.res.exc.updateResBgRectl */
+      resbgrectl
+   SET ofic_depst_amt = #{ofic_depst_amt}  /* 실입금금액 */
+     <if test='ofic_depst_ymd != null'> , ofic_depst_ymd = #{ofic_depst_ymd} /* 실입금일 */ </if> 
+     <if test='depst_clsf != null'> , depst_clsf = #{depst_clsf} /* 입금구분 */ </if> 
+     <if test='depst_loc != null'> , depst_loc = #{depst_loc} /* 입금처 */ </if> 
+     <if test='demnd_bill_no != null'> , demnd_bill_no = #{demnd_bill_no} /* 청구계산서번호 */ </if> 
+     <if test='recv_bill_no != null'> , recv_bill_no = #{recv_bill_no}  /* 영수계산서번호 */ </if> 
+     <if test='bankaccnt_no != null'> , bankaccnt_no = #{bankaccnt_no} /* 계좌번호*/ </if> 
+     <if test='unslip_no != null'> , unslip_no = #{unslip_no} /* 결의번호*/ </if> 
+     <if test='depst_state != null'> , depst_state = #{depst_state} /* 입금상태*/ </if> 
+     <if test='demnd_req_no != null'> , demnd_req_no = #{demnd_req_no} </if>
+     <if test='depst_req_no != null'> , depst_req_no = #{depst_req_no} /* 입금의뢰번호*/ </if> 
+     <if test='req_ymd != null'> , req_ymd = #{req_ymd} /* 신청일자*/ </if> 
+     <if test='req_psn != null'> , req_psn = #{req_psn} /* 신청자 */ </if> 
+     <if test='req_no != null'> , req_no = #{req_no} /* 결재신청번호 */ </if> 
+     <if test='attach_file != null'> , attach_file = #{attach_file} /* 첨부파일 */ </if> 
+     <if test='old_data_yn != null'> , old_data_yn = #{old_data_yn} /* 수기입력여부 */ </if> 
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE 
+ WHERE accnt_no = #{accnt_no}
+  AND depst_odr = #{depst_odr}
+  AND odr = #{odr}
+</update>
+
+<!-- 연구비 청구의뢰조회 -->
+<select id="selectResDemndReq" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcSrcVo" resultType="kr.re.kitech.biz.res.exc.vo.ResDemndReqVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectResDemndReq */
+       c.accnt_no
+     , c.depst_odr
+     , c.depst_loc
+     , d.vend_abbr
+     , d.reprs_psn_nm
+     , d.bsns_psn_regst_no
+     , d.addr ||d.detls_addr as addr
+ <if test='req_no != null and req_no != ""'>
+     , b.req_no
+     , b.odr
+     , b.bill_no      
+     , b.req_ymd
+     , b.req_psn
+     , b.demnd_liq
+     , b.suply_value
+     , b.tax_amt
+     , b.depst_clsf
+     , TRIM(b.unslip_no) AS unslip_no
+     , NVL(e.decsn_ex,'N') AS decsn_ex
+     , b.evid_cd   
+     , TRIM(b.attach_file_no) AS attach_file_no
+     , h.empno AS req_psn_empno
+     , h.nm AS req_psn_nm
+     , f.issu_ymd
+     , CASE WHEN TRIM(f.decsn_no) != '' THEN 'Y' ELSE 'N' END AS recp_yn
+     , TRIM(fun_fin_tax_bill_state(b.bill_no, 1)) AS state_nm
+     , x.apr_state
+     , a.issu_id
+  </if>
+  FROM resbgrecve c 
+  JOIN xodfvend d ON c.depst_loc = d.vend_cd
+ <if test='req_no != null and req_no != ""'>
+  JOIN resdemndreq b ON c.accnt_no = b.accnt_no AND c.depst_odr = b.depst_odr
+  JOIN humbasicinfo h ON b.req_psn = h.syspayno
+  LEFT JOIN ftxbillh f ON b.bill_no = f.tax_bill_no
+  LEFT JOIN itis_issu_mstr a ON f.tax_bill_no = a.issu_seqno
+  LEFT JOIN fspsliph e ON b.unslip_no = e.unslip_no
+  JOIN xomxintfatab x ON b.req_no = x.req_no  
+ </if>
+ WHERE 1=1
+<choose>
+ <when test='req_no != null and req_no != ""'> AND b.req_no = #{req_no} </when>
+ <otherwise> 
+   AND c.accnt_no = #{accnt_no}
+   AND c.depst_odr = #{depst_odr}
+ </otherwise>
+</choose>
+</select>
+
+<!-- 연구비 청구의뢰 저장  -->
+<insert id="insertResDemndReq" parameterType="kr.re.kitech.biz.res.exc.vo.ResDemndReqVo">
+INSERT /* kr.re.kitech.biz.res.exc.insertResDemndReq */
+  INTO resdemndreq(
+     req_no 
+   , accnt_no 
+   , depst_odr
+   , odr
+   , bill_no 
+   , vend_cd 
+   , vend_abbr 
+   , demnd_liq 
+   , suply_value 
+   , tax_amt  
+   , req_psn 
+  <if test ='req_ymd != null'> , req_ymd  </if>
+   , depst_clsf
+   , evid_cd 
+  <if test ='attach_file_no != null'>, attach_file_no </if>
+  <if test ='rmk != null'>, rmk </if>
+   , regst_syspayno 
+   , regst_daytm) 
+VALUES( #{req_no} 
+      , #{accnt_no} 
+      , #{depst_odr}
+      , #{odr}
+      , #{bill_no} 
+      , #{depst_loc} 
+      , #{vend_abbr} 
+      , #{demnd_liq} 
+      , #{suply_value} 
+      , #{tax_amt}  
+      , #{req_psn} 
+     <if test ='req_ymd != null'> , #{req_ymd} </if>
+      , #{depst_clsf}
+      , #{evid_cd} 
+     <if test ='attach_file_no != null'>, #{attach_file_no} </if>
+     <if test ='rmk != null'> , #{rmk} </if>
+      , #{regst_syspayno} 
+      , SYSDATE)
+</insert>
+
+<!-- 연구비청구의뢰 수정 -->
+<update id="updateResDemndReq" parameterType="kr.re.kitech.biz.res.exc.vo.ResDemndReqVo">
+UPDATE /* kr.re.kitech.biz.res.exc.updateResDemndReq */
+      resdemndreq
+  SET bill_no = #{bill_no}
+    , demnd_liq = #{demnd_liq} 
+    , suply_value = #{suply_value}
+    , tax_amt = #{tax_amt}
+   <if test='attach_file_no != null'>, attach_file_no = #{attach_file_no} </if>
+   <if test='req_ymd != null'>, req_ymd = #{req_ymd} </if>
+   <if test='rmk != null'>, rmk = #{rmk} </if>
+    , updt_syspayno = #{updt_syspayno}
+    , updt_daytm = SYSDATE
+ WHERE req_no = #{req_no}
+</update>
+
+<!-- 연구비청구의뢰시 입금상세내역 저장 -->
+<update id="updateResBgRectlDemnd" parameterType="kr.re.kitech.biz.res.exc.vo.ResDemndReqVo">
+UPDATE /* kr.re.kitech.biz.res.exc.updateResBgRectlDemnd */
+      resbgrectl
+  SET demnd_bill_no  = #{bill_no}  
+    , demnd_req_no = #{req_no} 
+    , updt_syspayno  = #{updt_syspayno}
+    , updt_daytm = SYSDATE 
+WHERE accnt_no = #{accnt_no}
+  AND depst_odr = #{depst_odr}
+  AND odr = #{odr}
+</update>
+
+<!-- 연구비 청구의뢰 삭제 -->
+<delete id="deleteResDemndReq" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.res.exc.deleteResDemndReq */
+  FROM resdemndreq
+WHERE req_no = #{req_no}
+</delete>
+
+<!-- 연구비 미수반제신청 조회 -->
+<select id="selectFcpDepstReqList" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcSrcVo" resultType="kr.re.kitech.biz.fin.com.vo.FcpDepstReqVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectFcpDepstReqList */
+       a.req_no 
+     , a.accnt_no 
+     , a.acct_txday 
+     , a.acct_txday_seq 
+     , a.depst_schdl_seq
+     , a.depst_schdl_detls_seq
+     , a.depst_ymd   
+     , d.demnd_req_no
+     , a.req_dept
+     , a.req_dept_new_ymd
+     , a.req_psn
+     , fun_emp_nm(a.req_psn) AS req_psn_nm
+     , a.bankaccnt_no
+     , a.bank_cd  
+     , a.vend_cd
+     , a.vend_abbr    
+     , a.depst_liq   
+     , a.depst_liq AS bf_depst_liq   
+     , a.recv_bill_no
+     , a.depst_unslip_no
+     , a.depst_unslip_odr
+     , a.rmk 
+     , a.depst_clsf
+     , TRIM(a.attach_file_no) AS attach_file_no
+     , a.unslip_no -- 미수반제결의번호
+     , f.slip_no -- 온라인가수 확정결의번호
+     , f.slip_odr -- 온라인가수 확정결의순번
+     , d.req_no AS apr_req_no
+     , g.apr_state
+     , 'U' AS cud_type  
+FROM fcpdepstreq a
+JOIN resbgrectl d ON a.req_no = d.depst_req_no
+JOIN fspslipdecsnd f ON a.depst_unslip_no = f.unslip_no AND a.depst_unslip_odr = f.unslip_odr   
+LEFT JOIN xomxintfatab g ON d.req_no = g.req_no 
+WHERE demnd_req_no = #{demnd_req_no}
+<choose>
+  <when test='req_no != null and req_no != ""'> AND d.req_no = #{req_no} </when>
+  <otherwise> 
+  AND d.accnt_no = #{accnt_no} 
+  AND d.depst_odr = #{depst_odr}
+  </otherwise>
+</choose>
+</select>
+<select id="selectResDemndForRepay" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcSrcVo" resultType="kr.re.kitech.biz.res.exc.vo.ResDemndReqVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectResDemndForRepay */
+       a.req_no
+     , a.unslip_no
+     , a.unslip_odr
+     , b.slip_no
+     , b.slip_odr
+     , a.accnt_no
+     , a.bill_no
+     , a.demnd_liq
+     , a.suply_value
+     , a.tax_amt
+     , a.bill_no
+     , a.vend_cd AS depst_loc
+     , a.vend_abbr
+     , a.depst_clsf
+     , d.won_adjst_amt  -- 미수정산금액
+     , d.won_occr_amt - NVL(d.unslip_repay_amt, 0) - NVL(d.won_adjst_amt, 0) AS ramt_amt  --미수금잔액
+     , a.depst_odr
+     , a.odr
+     , r.accnt_no_nm
+     , r.start_ymd
+     , r.cls_ymd
+     , r.tax_cd
+     , h.nm AS accnt_rspns_nm
+FROM resdemndreq a
+JOIN resbgacctm r ON a.accnt_no = r.accnt_no
+JOIN humbasicinfo h ON r.accnt_rspns = h.syspayno
+JOIN fspslipdecsnd b ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+JOIN fspramtcreat d ON b.slip_no = d.slip_no AND b.slip_odr = d.slip_odr
+WHERE a.req_no = #{demnd_req_no} 
+</select>
+
+<!-- 입금의뢰 후 입금상세 저장 -->
+<update id="mergeResBgRectl" parameterType="kr.re.kitech.biz.fin.com.vo.FcpDepstReqVo">
+MERGE /* kr.re.kitech.biz.res.exc.mergeResBgRectl */
+ INTO resbgrectl AS a
+USING dual AS b ON 1=1 AND a.accnt_no = #{accnt_no} AND a.depst_odr = #{depst_schdl_seq} AND a.odr = #{depst_schdl_detls_seq}
+WHEN MATCHED THEN
+UPDATE 
+  SET ofic_depst_amt  = NVL(ofic_depst_amt, 0) - #{bf_depst_liq} + #{depst_liq} 
+    , ofic_depst_ymd = #{depst_ymd}
+    , bankaccnt_no = #{bankaccnt_no}
+    , depst_state = 'RDF003'
+    , depst_req_no = #{req_no} 
+  <if test='recv_bill_no != null'> , recv_bill_no =#{recv_bill_no} </if>
+  <if test='attach_file_no != null and attach_file_no != ""'> , attach_file =#{attach_file_no} </if>
+    , req_ymd = TO_CHAR(SYSDATE, '%Y%m%d')
+    , req_psn = #{req_psn}
+    , updt_syspayno  = #{updt_syspayno}
+    , updt_daytm = SYSDATE 
+WHEN NOT MATCHED THEN
+INSERT (
+      accnt_no
+    , depst_odr
+    , odr
+    , ofic_depst_amt
+    , ofic_depst_ymd
+    , depst_clsf
+    , depst_loc
+    , demnd_bill_no
+    , demnd_req_no
+    , bankaccnt_no
+    , depst_req_no
+    , depst_state
+  <if test='recv_bill_no != null'> , recv_bill_no </if>
+  <if test='attach_file_no != null and attach_file_no != ""'> , attach_file</if>
+    , req_ymd
+    , req_psn
+    , regst_syspayno
+    , regst_daytm
+) VALUES(
+      #{accnt_no}
+    , #{depst_schdl_seq}
+    , #{depst_schdl_detls_seq}
+    , #{depst_liq}
+    , #{depst_ymd}
+    , 'RDE003'
+    , #{vend_cd}
+    , #{demnd_bill_no}
+    , #{demnd_req_no}
+    , #{bankaccnt_no}
+    , #{req_no}
+    , 'RDF003'
+  <if test='recv_bill_no != null'> , #{recv_bill_no} </if>
+  <if test='attach_file_no != null and attach_file_no != ""'> , #{attach_file_no} </if>
+    , TO_CHAR(SYSDATE, '%Y%m%d')
+    , #{req_psn}
+    , #{regst_syspayno}
+    , SYSDATE
+)
+</update>
+
+<!-- 입금의뢰 후 입금관리내역 수정-->
+<update id="updateResBgRecve" parameterType="kr.re.kitech.biz.res.exc.vo.ResBgRecveVo">
+UPDATE /* kr.re.kitech.biz.res.exc.updateResBgRecve */
+       resbgrecve
+   SET ofic_depst_amt = (SELECT SUM(ofic_depst_amt) FROM resbgrectl WHERE accnt_no = #{accnt_no} AND depst_odr = #{depst_odr})   -- 실입금금액
+     , ofic_depst_ymd = (SELECT MAX(ofic_depst_ymd) FROM resbgrectl WHERE accnt_no = #{accnt_no} AND depst_odr = #{depst_odr})  -- 실입금일자   
+     , updt_syspayno = #{updt_syspayno}   -- 수정시스템개인번호
+     , updt_daytm = SYSDATE  -- 수정일시
+ WHERE accnt_no = #{accnt_no}  -- 계정번호
+   AND depst_odr = #{depst_odr}  -- 입금순번
+</update>
+
+<!-- 입금상세내역 삭제 -->
+<delete id="deleteResBgRectl" parameterType="kr.re.kitech.biz.res.exc.vo.ResBgRectlVo">
+DELETE /* kr.re.kitech.biz.res.exc.deleteResBgRectl */
+  FROM resbgrectl
+WHERE accnt_no = #{accnt_no}
+  AND depst_odr = #{depst_odr}
+  AND odr = #{odr}
+</delete>
+<update id="updateResBgRectlUnslip">
+-- 결재신청시 입금관리상세 내역 수정 
+UPDATE /* kr.re.kitech.biz.res.exc.updateResBgRectlUnslip */
+      resbgrectl
+   SET  req_no = #{req_no} /* 결재신청번호 */
+     <if test='req_ymd != null'>, req_ymd = #{req_ymd} /* 신청일자*/  </if> 
+     <if test='req_psn != null'> , req_psn = #{req_psn} /* 신청자 */ </if> 
+     <if test='unslip_no != null'> , unslip_no = #{unslip_no} /* 결의번호*/ </if> 
+     <if test='depst_state != null'> , depst_state = #{depst_state} /* 입금상태*/ </if>    
+     <if test='attach_file != null'> , attach_file = #{attach_file} /* 첨부파일 */ </if> 
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = SYSDATE 
+ WHERE accnt_no = #{accnt_no}
+  AND depst_odr = #{depst_odr}
+  AND odr = #{odr}
+</update>
+
+<!-- 연구비반제 결재신청 청구정보 조회 -->
+<select id="selectResRepayDemndApr" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcSrcVo" resultType="kr.re.kitech.biz.res.exc.vo.ResDemndReqVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectResRepayDemndApr */
+       c.req_no
+     , c.req_ymd
+     , c.req_psn_nm
+     , c.req_dept_nm
+     , b.accnt_ymd
+     , a.bill_no
+     , a.demnd_liq
+     , a.suply_value
+     , a.tax_amt
+     , a.bill_no
+     , a.vend_cd AS depst_loc
+     , a.vend_abbr
+     , d.won_adjst_amt  -- 미수정산금액
+     , d.won_occr_amt - NVL(d.unslip_repay_amt, 0) - NVL(d.won_adjst_amt, 0) AS ramt_amt  --미수금잔액
+     , fun_xodxcommst_cd_nm(e.reschamt_clsf, 0) AS reschamt_clsf
+     , fun_xodxcommst_cd_nm(a.depst_clsf, 0) AS depst_clsf
+     , f.bsns_psn_regst_no
+     , e.depst_odr
+     , (SELECT MAX(depst_odr) FROM resbgrecve WHERE accnt_no = a.accnt_no) AS max_depst_odr
+FROM resdemndreq a
+JOIN (SELECT DISTINCT a.req_no
+           , a.accnt_no
+           , a.depst_odr
+           , a.demnd_req_no
+           , h.nm AS req_psn_nm
+           , a.req_ymd
+           , x.dept_nm AS req_dept_nm
+        FROM resbgrectl a
+        JOIN humbasicinfo h ON a.req_psn = h.syspayno
+        JOIN xodhdeptinfo x ON h.dept_cd = x.dept_cd AND h.dept_new_ymd = x.dept_new_ymd
+       WHERE a.req_no = #{req_no}
+     ) c ON a.req_no = c.demnd_req_no
+JOIN resbgrecve e ON c.accnt_no = e.accnt_no AND c.depst_odr = e.depst_odr
+JOIN fspslipdecsnd b ON a.unslip_no = b.unslip_no AND a.unslip_odr = b.unslip_odr
+JOIN fspramtcreat d ON b.slip_no = d.slip_no AND b.slip_odr = d.slip_odr
+JOIN xodfvend f ON a.vend_cd = f.vend_cd
+WHERE a.req_no = #{demnd_req_no}
+</select>
+
+<!-- 연구비 입금 결재신청을 위한 입금예정정보 조회 -->
+<select id="selectResBgRecveApr" resultType="kr.re.kitech.biz.res.exc.vo.ResBgRecveVo" parameterType="kr.re.kitech.biz.res.exc.vo.ResExcSrcVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectResBgRecveApr */
+       a.accnt_no      -- 계정번호
+     , a.depst_odr     -- 입금순번
+     , a.reschamt_clsf -- 연구비구분(RDD)
+     , x.cd_nm AS reschamt_clsf_nm      -- 연구비구분명
+     , a.depst_schdl_amt  -- 입금예정금액
+     , a.depst_schdl_ymd  -- 입금예정일자
+     , a.ofic_depst_amt   -- 실입금금액
+     , a.ofic_depst_ymd   -- 실입금일자
+     , a.depst_loc        -- 입금처
+     , b.vend_abbr AS depst_loc_nm  -- 입금처명
+     , NVL(a.depst_schdl_amt, 0) - NVL(a.ofic_depst_amt, 0) AS uncollected_amt   -- 미수총액
+     , c.req_no
+     , c.req_dept_nm
+     , c.req_ymd
+     , c.req_psn_nm
+     , c.depst_clsf_nm
+     , c.ofic_depst_amt_sum
+     , (SELECT MAX(depst_odr) FROM resbgrecve WHERE accnt_no = a.accnt_no) AS max_depst_odr
+  FROM resbgrecve a  -- 입금관리
+  JOIN (SELECT sa.req_no
+             , sa.req_ymd
+             , sb.nm AS req_psn_nm
+             , fun_dept_nm(sb.dept_cd) AS req_dept_nm
+             , fun_xodxcommst_cd_nm(sc.depst_clsf, 0) AS depst_clsf_nm
+             , SUM(sa.ofic_depst_amt) AS ofic_depst_amt_sum
+          FROM resbgrectl sa
+          JOIN humbasicinfo sb ON sa.req_psn = sb.syspayno
+          JOIN fcpdepstreq sc ON sa.depst_req_no = sc.req_no
+         WHERE sa.req_no = #{req_no}
+         GROUP BY 1,2,3,4,5
+       ) c ON 1=1
+  JOIN xodxcommst x ON a.reschamt_clsf = x.cd 
+  LEFT JOIN xodfvend b ON a.depst_loc = b.vend_cd  
+ WHERE a.accnt_no = #{accnt_no}
+   AND a.depst_odr = #{depst_odr}
+</select>
+
+<!-- 과세 계정일 경우 계산서 공급가액, 세액 조회 -->
+<select id="selectDepstAmtCheck" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.exc.vo.ResDepstAmtChkVo">
+SELECT /* kr.re.kitech.biz.res.exc.selectDepstAmtCheck */
+       SUM(b.taxamt) AS taxamt
+     , SUM(b.suply_value) AS suply_value
+  FROM (SELECT DISTINCT CASE WHEN demnd_bill_no != '' THEN demnd_bill_no ELSE recv_bill_no END AS bill_no
+          FROM resbgrectl 
+         WHERE accnt_no = #{accnt_no}
+           AND (demnd_bill_no != '' OR (recv_bill_no != '' AND recv_bill_no != '발행' ))
+       ) a
+  JOIN ftxbillh b ON b.tax_bill_no = a.bill_no
+</select>
+<update id="updateResBgRecveTest" parameterType="kr.re.kitech.biz.res.exc.vo.ResBgRecveVo">
+UPDATE resbgrecve
+set unusual_item = #{unusual_item,jdbcType=CLOB}
+, depst_schdl_amt = #{depst_schdl_amt}
+where accnt_no = #{accnt_no}
+and depst_odr = #{depst_odr}
+</update>
+</mapper>

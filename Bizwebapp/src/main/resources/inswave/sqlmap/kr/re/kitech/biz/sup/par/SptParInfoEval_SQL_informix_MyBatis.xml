@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.par">
+  <select id="selectSptParInfoEvalList" parameterType="kr.re.kitech.biz.sup.par.vo.SptParInfoEvalVo" resultType="kr.re.kitech.biz.sup.par.vo.SptParInfoEvalVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSptParInfoEvalList */ 
+		 t1.par_eval_req_no
+        , t1.appont_no
+        , t1.cmpy_nm_krchar
+        , t1.bsns_psn_regst_no
+        , t1.eval_daytm AS eval_updt_daytm
+        , TO_CHAR(t2.regst_daytm, '%Y%m%d') AS par_regst_daytm
+        , CASE WHEN t1.updt_syspayno IS NULL THEN t3.nm
+            ELSE t4.nm END AS regst_syspayno
+FROM sptparevalinfo t1
+JOIN sptparbaseinfo t2 ON t1.appont_no = t2.appont_no
+LEFT JOIN humbasicinfo t3 ON t1.regst_syspayno = t3.syspayno AND t3.retire_ymd = ''
+LEFT JOIN humbasicinfo t4 ON t1.updt_syspayno = t4.syspayno AND t4.retire_ymd = ''
+WHERE 1=1
+<if test="par_eval_req_no != null and par_eval_req_no != ''">
+AND t1.par_eval_req_no = #{par_eval_req_no}
+</if>
+<if test="appont_no != null and appont_no != ''">
+AND t1.appont_no LIKE #{appont_no} ||'%'
+</if>
+<if test="cmpy_nm_krchar != null and cmpy_nm_krchar != ''">
+AND t1.cmpy_nm_krchar LIKE '%'|| #{cmpy_nm_krchar} ||'%'
+</if>
+<if test="bsns_psn_regst_no != null and bsns_psn_regst_no != ''">
+AND t1.bsns_psn_regst_no LIKE #{bsns_psn_regst_no} ||'%'
+</if>
+<if test="eval_ymd_st != null and eval_ymd_st != ''">
+AND t1.eval_daytm <![CDATA[ >= ]]> #{eval_ymd_st}
+</if>
+<if test="eval_ymd_end != null and eval_ymd_end != ''">
+AND t1.eval_daytm <![CDATA[ <= ]]> #{eval_ymd_end}
+</if>
+<if test="appont_ymd_st != null and appont_ymd_st != ''">
+AND TO_CHAR(t2.regst_daytm, '%Y%m%d') <![CDATA[ >= ]]> #{appont_ymd_st}
+</if>
+<if test="appont_ymd_end != null and appont_ymd_end != ''">
+AND TO_CHAR(t2.regst_daytm, '%Y%m%d') <![CDATA[ <= ]]> #{appont_ymd_end}
+</if>
+<if test="regst_syspayno != null and regst_syspayno != ''">
+AND t1.regst_syspayno = #{regst_syspayno}
+</if>
+  </select>
+  
+  <select id="selectSptParInfoEvalDetail" parameterType="kr.re.kitech.biz.sup.par.vo.SptParInfoEvalVo" resultType="kr.re.kitech.biz.sup.par.vo.SptParInfoEvalVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.par.selectSptParInfoEvalDetail */ 
+		  first 1 t1.appont_no
+        , t1.cust_no
+        , t1.cmpy_nm_krchar
+        , t1.bsns_psn_regst_no
+        , t1.reprs_psn
+        , t1.cmpy_reprs_tel
+        , t1.program_etc
+        , t1.mento_keep_yn
+        , t4.syspayno AS mento_syspayno
+        , t4.empno AS mento_empno
+        , t4.nm AS mento_nm
+        , t1.rec_mento_reason
+        , t1.eval_daytm
+        , t1.regst_syspayno
+        , t3.nm AS regst_nm
+        , TO_CHAR(t1.regst_daytm, '%Y%m%d') AS regst_daytm
+        , t5.apr_state
+        , t1.par_eval_req_no
+FROM sptparevalinfo t1
+LEFT JOIN sptcustmentrinfo t2 ON t1.cust_no = t2.cust_no
+LEFT JOIN humbasicinfo t3 ON t1.regst_syspayno = t3.syspayno AND t3.retire_ymd = ''
+LEFT JOIN humbasicinfo t4 ON t1.rec_mento_syspayno = t4.syspayno AND t4.retire_ymd = ''
+LEFT JOIN xomxintfatab t5 ON t1.par_eval_req_no = t5.req_no
+WHERE t1.par_eval_req_no = #{par_eval_req_no}
+order by t2.regst_daytm desc
+  </select>
+  
+	<update id="mergeSptParInfoEval" parameterType="kr.re.kitech.biz.sup.par.vo.SptParInfoEvalVo">
+		MERGE /* kr.re.kitech.biz.sup.par.mergeSptParInfoEval */
+		 INTO sptparevalinfo AS t1
+		USING dual AS t2 ON t1.par_eval_req_no = #{par_eval_req_no}
+		 WHEN MATCHED  THEN
+		 UPDATE
+		    SET appont_no = #{appont_no}, 
+		    	cust_no = #{cust_no}, 
+			    cmpy_nm_krchar = #{cmpy_nm_krchar}, 
+			    bsns_psn_regst_no = #{bsns_psn_regst_no}, 
+			    reprs_psn = #{reprs_psn}, 
+			    cmpy_reprs_tel = #{cmpy_reprs_tel}, 
+			    program_etc = #{program_etc}, 
+			    mento_keep_yn = #{mento_keep_yn}, 
+			    rec_mento_syspayno = #{mento_syspayno}, 
+			    rec_mento_reason = #{rec_mento_reason}, 
+			    eval_daytm = #{eval_daytm},
+	  			updt_syspayno   = #{updt_syspayno},
+	  			updt_daytm   = SYSDATE
+		 WHEN NOT MATCHED THEN
+		 INSERT (
+		 	par_eval_req_no,
+		 	appont_no,
+	    	cust_no,
+		    cmpy_nm_krchar,
+		    bsns_psn_regst_no,
+		    reprs_psn,
+		    cmpy_reprs_tel,
+		    program_etc,
+		    mento_keep_yn,
+		    rec_mento_syspayno,
+		    rec_mento_reason,
+		    eval_daytm,
+		 	regst_syspayno,
+		 	regst_daytm
+		 ) VALUES(
+		 	#{par_eval_req_no},		/* par_eval_req_no */
+		 	#{appont_no}, 			/* appont_no */
+	    	#{cust_no}, 			/* cust_no */
+		    #{cmpy_nm_krchar},		/* cmpy_nm_krchar */ 
+		    #{bsns_psn_regst_no},	/* bsns_psn_regst_no */ 
+		    #{reprs_psn},			/* reprs_psn */ 
+		    #{cmpy_reprs_tel},		/* cmpy_reprs_tel */ 
+		    #{program_etc},			/* program_etc */ 
+		    #{mento_keep_yn},		/* mento_keep_yn */ 
+		    #{mento_syspayno},		/* rec_mento_syspayno */ 
+		    #{rec_mento_reason},	/* rec_mento_reason */ 
+		    #{eval_daytm},			/* eval_daytm */
+		 	#{regst_syspayno},		/* regst_syspayno */
+		 	SYSDATE					/* regst_daytm|now */
+		 )
+	</update>
+	
+	<delete id="deleteSptParInfoEval" parameterType="kr.re.kitech.biz.sup.par.vo.SptParInfoEvalVo">
+DELETE /* QueryID : kr.re.kitech.biz.sup.par.deleteSptParInfoEval */ 
+FROM sptparevalinfo 
+WHERE par_eval_req_no = #{par_eval_req_no} 
+	</delete>
+
+</mapper>

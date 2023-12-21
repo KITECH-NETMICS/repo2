@@ -1,0 +1,884 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.com">
+
+<!-- 결의서 헤더 저장  -->
+<insert id="insertFspSlipH" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipHVo">
+INSERT /* QueryId : kr.re.kitech.biz.fin.com.insertFspSlipH */
+  INTO fspsliph (
+            unslip_no
+          , slip_typ_cd
+          , wrte_dept
+          , wrte_dept_new_ymd
+          , wrte_psn
+          , slip_ymd
+          , wrte_ymd
+          , decsn_ex
+          , rmk
+          , regst_syspayno
+          , regst_daytm)
+VALUES
+        (#{unslip_no}    /* 결의번호 */
+       , #{slip_typ_cd}  /*  결의유형 */
+       , #{wrte_dept}  /*  작성부서 */
+       , <choose> 
+	       <when test= 'wrte_dept_new_ymd != null'> #{wrte_dept_new_ymd} /* 작성부서일자 */ </when>
+		   <otherwise> (SELECT dept_new_ymd FROM xodhdeptinfo WHERE dept_cd = #{wrte_dept} AND NVL(abol_ymd, '') = '') </otherwise>
+		 </choose>	 
+       , #{wrte_psn}  /* 작성자 */
+       , #{slip_ymd}  /* 결의일자 */
+       ,  TO_CHAR(SYSDATE, '%Y%m%d')     /* 작성일자*/
+       , 'N'                               /* 확정여부 */
+       , #{rmk}    /* 비고 */
+       , #{regst_syspayno}    /* 작성자 시스템개인번호 */
+       , CURRENT )
+</insert>
+
+<!-- 결의서 헤더 수정 -->
+<update id="updateFspSlipH" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipHVo">
+UPDATE fspsliph /* QueryId : kr.re.kitech.biz.fin.com.updateFspSlipH */
+SET <if test='slip_ymd != null'> slip_ymd = #{slip_ymd}, </if>
+      rmk = #{rmk},
+      updt_syspayno = #{updt_syspayno},
+      updt_daytm = CURRENT
+WHERE  unslip_no = #{unslip_no}
+</update>
+
+<!-- 결의서 디테일 저장 -->
+<insert id="insertFspSlipD" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+INSERT INTO fspslipd (  /* QueryId : kr.re.kitech.biz.fin.com.insertFspSlipD */
+             unslip_no
+           , unslip_odr           
+           , fomat_unit
+           , journ_cd
+           , journ_odr
+           , base_debit_cr
+           , accnt_no
+           , accnt_rspns
+           , accnt_cd
+           , expns_cd
+           <if test="total_amt != null"> , total_amt </if>
+           , unslip_amt
+           <if test="tax_amt != null"> , tax_amt     </if>
+           <if test="ctrl_no != null"> , ctrl_no </if>
+           <if test="evid_cd != null"> , evid_cd </if>
+           <if test="ramt_mngmt_1 != null"> , ramt_mngmt_1 </if>
+           <if test="ramt_mngmt_2 != null"> , ramt_mngmt_2 </if>
+           , rmk_1
+           , rmk_2
+           , rmk_3
+           <if test="req_no != null"> , req_no </if>
+           <if test="attach_file_no != null"> , attach_file_no </if>
+           <if test="pay_clsf != null"> , pay_clsf </if>
+           <if test="bsns_psn_regst_no != null"> , bsns_psn_regst_no </if>
+           <if test="bill_no != null"> , bill_no  </if>
+           <if test="part_all_clsf != null"> , part_all_clsf </if>
+           <if test="occr_slip_no != null"> , occr_slip_no     </if>
+           <if test="occr_slip_odr != null and occr_slip_odr != 0"> , occr_slip_odr   </if>
+           <if test="accnt_no_clsf != null"> , accnt_no_clsf   </if>
+           <if test="pay_accnt_cd != null"> , pay_accnt_cd     </if>
+           <if test="rcms_pay_clsf != null"> , rcms_pay_clsf   </if>
+           <if test="rcms_pay_state != null"> , rcms_pay_state </if>    
+		   , regst_syspayno
+           , regst_daytm
+)             
+VALUES (
+             #{unslip_no}
+           , #{unslip_odr}         
+           , #{fomat_unit}
+           , #{journ_cd}
+           , #{journ_odr}
+           , #{base_debit_cr}
+           , #{accnt_no}
+           , #{accnt_rspns}
+           , #{accnt_cd}
+           , #{expns_cd}
+           <if test="total_amt != null">   , #{total_amt} </if>
+           , #{unslip_amt}  
+           <if test="tax_amt != null">     , #{tax_amt}      </if>
+           <if test="ctrl_no != null"> , #{ctrl_no} </if>
+           <if test="evid_cd != null">     , #{evid_cd}      </if>
+           <if test="ramt_mngmt_1 != null">, #{ramt_mngmt_1} </if>
+           <if test="ramt_mngmt_2 != null">, #{ramt_mngmt_2} </if>
+           , #{rmk_1}
+           , #{rmk_2}
+           , #{rmk_3}
+           <if test="req_no != null">        , #{req_no}            </if>
+           <if test="attach_file_no != null">, #{attach_file_no}    </if>
+           <if test="pay_clsf != null">      , #{pay_clsf}          </if>
+           <if test="bsns_psn_regst_no != null">, #{bsns_psn_regst_no} </if>
+           <if test="bill_no != null">       , #{bill_no}           </if>
+           <if test="part_all_clsf != null"> , #{part_all_clsf}     </if>
+           <if test="occr_slip_no != null">  , #{occr_slip_no}      </if>
+           <if test="occr_slip_odr != null and occr_slip_odr != 0"> , #{occr_slip_odr}     </if>
+           <if test="accnt_no_clsf != null"> , #{accnt_no_clsf}     </if>
+           <if test="pay_accnt_cd != null">  , #{pay_accnt_cd}      </if>
+           <if test="rcms_pay_clsf != null"> , #{rcms_pay_clsf}     </if>
+           <if test="rcms_pay_state != null">, #{rcms_pay_state}    </if>
+		   , #{regst_syspayno}
+           , CURRENT
+)
+</insert>
+
+<!-- 결의서 디테일 수정 -->
+<update id="updateFspSlipD" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE fspslipd /* QueryId : kr.re.kitech.biz.fin.com.updateFspSlipD */
+   SET total_amt = #{total_amt},
+       unslip_amt = #{unslip_amt},
+       tax_amt = #{tax_amt},
+       rmk_1 = #{rmk_1},
+       rmk_2 = #{rmk_2},       
+      <if test='part_all_clsf != null and part_all_clsf != ""'> part_all_clsf = #{part_all_clsf}, </if>
+      <if test='ramt_mngmt_1 != null'> ramt_mngmt_1 = #{ramt_mngmt_1}, </if>
+      <if test='ramt_mngmt_2 != null'> ramt_mngmt_2 = #{ramt_mngmt_2}, </if>
+      <if test='rmk_3 != null'> rmk_3 = #{rmk_3}, </if>
+      <if test='attach_file_no != null'> attach_file_no = #{attach_file_no}, </if>
+      <if test='bill_no != null'> bill_no = #{bill_no}, </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = current
+ WHERE unslip_no = #{unslip_no} 
+   AND unslip_odr = #{unslip_odr}
+</update>
+
+<!-- 2018.08.23. 연구수당반납결의 : 차변 예수금 차동생성으로 인하여 unslip_odr=1부터 생성되도록 수정 -->
+<select id="selectUnslipOdr" parameterType="kr.re.kitech.biz.fin.spm.vo.FinSlipSearchVo" resultType="int">
+SELECT /* QueryId : kr.re.kitech.biz.fin.com.selectUnslipOdr */
+     NVL(MAX(unslip_odr),0) + 1 AS unslip_odr 
+FROM fspslipd
+WHERE unslip_no = #{unslip_no}
+AND ( SUBSTR(#{unslip_no}, 1, 3) != '182'        
+       OR ( base_debit_cr = '1' AND accnt_cd NOT IN ('21025010', '21025020', '21025015', '21025025')))
+</select>
+
+<!-- 경비결의(결의순번조회) - 과제계정 홀수, 부가세 짝수 -->
+<select id="selectExpnsUnslipOdr" parameterType="kr.re.kitech.biz.fin.spm.vo.FinSlipSearchVo" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.com.selectExpnsUnslipOdr */
+      CASE WHEN #{slip_typ_cd}='113' THEN DECODE(NVL(MAX(unslip_odr), 0), 0, 1, DECODE(MOD(MAX(unslip_odr), 2), 1, MAX(unslip_odr) + 2, MAX(unslip_odr) + 1)) 
+           ELSE NVL(MAX(unslip_odr),0) + 1 
+      END AS unslip_odr
+  FROM fspslipd
+ WHERE unslip_no= #{unslip_no}
+ <if test='slip_typ_cd != null and slip_typ_cd = "113"'> AND unslip_odr NOT IN (998, 999) </if>
+ <if test='slip_typ_cd != null and slip_typ_cd = "117"'> AND base_debit_cr = #{base_debit_cr} </if>
+</select>
+
+<select id="selectFspAccntTransResson" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* QueryId : kr.re.kitech.biz.fin.com.selectFspAccntTransResson */
+       unslip_no
+     , frc_trsc_yn
+     , trans_reason
+FROM fspaccnttransreason
+WHERE unslip_no = #{unslip_no}
+</select>
+
+<!-- 일반결의, 카드결의시 자계좌이체가능여부 조회 -->
+<select id="selectFrcmsItm" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+SELECT /* QueryId : kr.re.kitech.biz.fin.com.selectFrcmsItm */
+          FIRST 1 a.itxp_cd
+        , a.self_trsc_yn
+        , count(*) cnt
+FROM resinpyear b
+JOIN if_rnd_agin_l_a c ON b.reschamt_card_prj_no = c.agrmt_seq_no
+LEFT JOIN frcmsitm a ON a.pms_id = c.pms_id
+      AND a.accnt_expns_cd = (CASE WHEN EXISTS (SELECT 1 FROM frcmsitm WHERE pms_id = a.pms_id AND accnt_expns_cd= #{accnt_expns_cd} ) THEN #{accnt_expns_cd} ELSE #{accnt_cd} END)
+WHERE b.accnt_no = #{accnt_no}
+group by a.itxp_cd, a.self_trsc_yn
+</select>
+
+<!-- RCMS집행전송(117인데 선집행 정보 조회) -->
+<select id="selectIfRndCbaeLA02" parameterType="java.util.HashMap" resultType="int">
+SELECT /* QueryId : kr.re.kitech.biz.fin.com.selectIfRndCbaeLA02 */
+       count(*) as cnt
+FROM resinpyear b
+JOIN if_rnd_arca_l_a c ON c.agrmt_seq_no = b.reschamt_card_prj_no AND c.crd_no = #{crd_no}
+WHERE b.accnt_no = #{accnt_no}
+</select>
+
+<!-- 일반,경비결의 계산서내역 결의번호 Update -->
+<update id="updateKtxIssuMstr" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE ktx_issu_mstr /* QueryId : kr.re.kitech.biz.fin.com.updateKtxIssuMstr */
+      SET unslip_no = #{unslip_no}
+          , trans_amt = nvl(trans_amt, 0) - #{bf_total_amt} + #{total_amt} 
+WHERE issu_seqno = #{bill_no}
+</update>
+
+<!--  일반경비결의 계산서내역 결의번호 Update(삭제시) -->
+<update id="updateKixIssuMstrForDel" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo">
+UPDATE ktx_issu_mstr /* kr.re.kitech.biz.fin.com.updateKixIssuMstrForDel */
+   SET trans_amt = trans_amt - #{unslip_amt}
+       , unslip_no = CASE WHEN trans_amt - #{unslip_amt} = 0 THEN '' ELSE unslip_no END
+ WHERE issu_seqno = #{issu_seqno}
+</update>
+
+<!-- 잔액관리항목 조회 -->
+<select id="selectRamtMngmtItem" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* QueryId : kr.re.kitech.biz.fin.com.selectRamtMngmtItem */
+       NVL(mngmt_item_cd_1, '') AS mngmt_item_cd_1,
+       NVL(mngmt_item_cd_2, '') AS mngmt_item_cd_2
+  FROM xodfaccnt
+ WHERE accnt_cd = #{accnt_cd}
+   AND (NVL(mngmt_item_cd_1, '') <![CDATA[<>]]> '' OR NVL(mngmt_item_cd_2, '') <![CDATA[<>]]> '')
+</select>
+
+<!-- 결의서 관리항목 저장 -->
+<insert id="insertFspSlipMngmt" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipMngmtVo">
+INSERT INTO fspslipmngmt ( /* QueryId : kr.re.kitech.biz.fin.com.insertFspSlipMngmt */
+             unslip_no
+           , unslip_odr
+           , mngmt_item_cd
+           <if test='mngmt_detls_cd != null'> , mngmt_detls_cd </if>
+           <if test='mngmt_detls_nm != null'> , mngmt_detls_nm </if>
+           , regst_syspayno
+           , regst_daytm
+) VALUES (
+          #{unslip_no}
+        , #{unslip_odr}
+        , #{mngmt_item_cd}
+        <if test='mngmt_detls_cd != null'>, #{mngmt_detls_cd} </if>
+        <if test='mngmt_detls_nm != null'>, #{mngmt_detls_nm} </if>
+        , #{regst_syspayno}
+        , CURRENT
+)
+</insert>
+
+<!-- 결의서 관리항목 저장 -->
+<update id="updateFspSlipMngmt" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipMngmtVo">
+UPDATE fspslipmngmt  /* QueryId : kr.re.kitech.biz.fin.com.updateFspSlipMngmt */
+   SET mngmt_detls_cd = #{mngmt_detls_cd},
+       <if test='mngmt_detls_nm != null'>  mngmt_detls_nm = #{mngmt_detls_nm}, </if>
+         updt_syspayno = #{updt_syspayno},
+         updt_daytm = current
+WHERE unslip_no = #{unslip_no}
+   AND unslip_odr = #{unslip_odr}
+   AND mngmt_item_cd = #{mngmt_item_cd}
+</update>
+
+<!-- 결의디테일 수정 시, 부가세등록여부 체크 -->
+<select id="selectFspSlipDCnt" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo" resultType="int">
+SELECT /* QueryId : kr.re.kitech.biz.fin.com.selectFspSlipDCnt */
+       COUNT(*) AS cnt  
+  FROM fspslipd
+WHERE accnt_cd IN ('11149015', '21025100')  /* 부가세대급금, 부가세예수금 */
+  AND unslip_no = #{unslip_no}
+  AND unslip_odr = #{unslip_odr}
+  AND journ_cd IN ('Fn9910','Fn9920')
+</select>
+
+<!-- 결의서 디테일 삭제 -->
+<delete id="deleteFspSlipD" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo">
+DELETE  /* QueryId : kr.re.kitech.biz.fin.com.deleteFspSlipD */
+  FROM fspslipd
+ WHERE unslip_no = #{unslip_no}
+<if test='unslip_odr != null and unslip_odr != 0'>
+   AND unslip_odr = #{unslip_odr}
+</if>
+</delete>
+
+<!-- 결의서 디테일 삭제 -->
+<delete id="deleteFspSlipMngmt" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo">
+DELETE  /* QueryId : kr.re.kitech.biz.fin.com.deleteFspSlipMngmt */
+  FROM fspslipmngmt
+ WHERE unslip_no = #{unslip_no}
+<if test='unslip_no != null and unslip_odr != 0'>
+     AND unslip_odr = #{unslip_odr}
+</if>
+</delete>
+
+<!-- 결의서 송금내역 삭제 -->
+<delete id="deleteFspSendReq" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo">
+DELETE  /* kr.re.kitech.biz.fin.com.deleteFspSendReq */
+  FROM fspsendreq
+ WHERE unslip_no = #{unslip_no}
+<if test='unslip_odr != null and unslip_odr != 0'> AND unslip_odr = #{unslip_odr} </if>
+<if test='send_odr != null and send_odr != 0'> AND send_odr = #{send_odr} </if>
+</delete>
+
+<!-- 결의서 헤더 삭제 -->
+<delete id="deleteFspSlipH" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo">
+DELETE /* kr.re.kitech.biz.fin.com.deleteFspSlipH */ 
+  FROM fspsliph
+ WHERE unslip_no = #{unslip_no}
+</delete>
+
+<!-- 송금내역 수정 -->
+<update id="updateFspSendReq" parameterType="kr.re.kitech.biz.fin.com.vo.FspSendReqVo">
+UPDATE fspsendreq  /* kr.re.kitech.biz.fin.com.updateFspSendReq */
+   SET pay_clsf = #{pay_clsf},
+       send_req_amt = #{send_req_amt},
+       send_amt = #{send_amt},
+     <if test='vend_cd != null'> vend_cd = #{vend_cd}, </if>
+     <if test='vend_nm != null'> vend_nm = #{vend_nm}, </if>
+     <if test='syspayno != null'> syspayno = #{syspayno}, </if>
+     <if test='bankaccnt_no != null'> bankaccnt_no = #{bankaccnt_no}, </if>
+     <if test='bank != null'> bank = #{bank}, </if>
+     <if test='depstr_nm != null'> depstr_nm = #{depstr_nm}, </if>
+     <if test='rmk != null'> rmk = #{rmk}, </if>
+     <if test='card_no != null'> card_no = #{card_no}, </if>
+     <if test='use_ymd != null'> use_ymd = #{use_ymd}, </if>
+     <if test='apprvl_no != null'> apprvl_no = #{apprvl_no}, </if>
+     <if test='bsns_psn_regst_no != null'> bsns_psn_regst_no = #{bsns_psn_regst_no}, </if>
+     <if test='joinsto_nm != null'> joinsto_nm = #{joinsto_nm}, </if>
+     <if test='is_account != null'> is_account = #{is_account}, </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = current
+ WHERE unslip_no = #{unslip_no}
+   AND unslip_odr = #{unslip_odr}
+   AND send_odr = #{send_odr}
+</update>
+
+<!-- 송금내역 저장 -->
+<insert id="insertFspSendReq" parameterType="kr.re.kitech.biz.fin.com.vo.FspSendReqVo">
+INSERT INTO fspsendreq ( /* kr.re.kitech.biz.fin.com.insertFspSendReq */
+       unslip_no
+     , unslip_odr
+     , send_odr
+     , pay_clsf
+     , send_req_amt
+     , send_amt
+     <if test="vend_cd != null">, vend_cd </if>
+     <if test="vend_nm != null">, vend_nm </if>    
+     , syspayno
+     , bankaccnt_no
+     , bank
+     , depstr_nm
+     , focurr_send_req_amt
+     , focurr_send_amt
+     , exchgr
+     , rmk
+     <if test="card_no != null">, card_no  </if>
+     <if test="use_ymd != null">, use_ymd  </if>
+     <if test="apprvl_no != null">, apprvl_no  </if>
+     <if test="bsns_psn_regst_no != null">, bsns_psn_regst_no </if>
+     <if test="joinsto_nm != null">, joinsto_nm </if>
+     <if test="is_account  != null">, is_account </if>
+     , regst_syspayno
+     , regst_daytm
+ )VALUES (
+       #{unslip_no}
+     , #{unslip_odr}
+     , (SELECT NVL(MAX(send_odr), 0) +1 FROM fspsendreq WHERE unslip_no = #{unslip_no} AND unslip_odr = #{unslip_odr})
+     , #{pay_clsf}
+     , #{send_req_amt}
+     , #{send_amt}
+     <if test="vend_cd != null">, #{vend_cd} </if>
+     <if test="vend_nm != null">, #{vend_nm} </if>
+     <choose>
+      <when test='syspayno != null'> , #{syspayno} </when>
+      <otherwise>, '' </otherwise>
+     </choose>
+     , #{bankaccnt_no}
+     , #{bank}
+     , #{depstr_nm}
+     , 0
+     , 0
+     , 0
+     , #{rmk}
+     <if test="card_no != null">, #{card_no}   </if>
+     <if test="use_ymd != null">, #{use_ymd}   </if>
+     <if test="apprvl_no != null">, #{apprvl_no} </if>
+     <if test="bsns_psn_regst_no != null">, #{bsns_psn_regst_no} </if>
+     <if test="joinsto_nm != null">, #{joinsto_nm} </if>
+     <if test="is_account != null">, #{is_account} </if>
+     , #{regst_syspayno}
+     , CURRENT
+	 )
+</insert>
+
+<!-- 회계코드 조회(분개유형별 회계코드 체크-일반결의, 경비결의) -->
+<select id="selectXodfAccntChk" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.fin.com.selectXodfAccntChk */ 
+       accnt_cd 
+     , accnt_cd_abbr
+     , expns_cd
+     , caseby_adjst_ex  /*건별정산유무 */
+     , bond_debt_clsf   /* 채권채무구분 */
+     , mngmt_item_cd_1
+     , mngmt_item_cd_2
+  FROM xodfaccnt
+ WHERE accnt_cd = #{accnt_cd}
+</select>
+
+<!-- 일반결의처리(일반결의수정시 증빙내역 총금액 체크) -->
+<select id="selectKtxIssuMstrChk" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo" resultType="kr.re.kitech.biz.fin.com.vo.FinComBillCheckVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectKtxIssuMstrChk */
+       unslip_no,
+       totl_amt,
+       trans_amt, 
+       NVL(tax_returns_yn,'N') AS tax_returns_yn,
+       CASE WHEN (NVL(trans_amt,0) - #{bf_total_amt} + #{total_amt}) <![CDATA[ > ]]> NVL(totl_amt,0) THEN 'F'
+            ELSE 'T' END AS totl_amt_chk
+ FROM ktx_issu_mstr
+WHERE issu_seqno = #{bill_no}
+</select>
+
+<!-- 결의확정테이블 수정 - 일반결의(결의내역대체처리) -->
+<update id="updateFspSlipDecsnd" parameterType="java.util.HashMap">
+UPDATE fspslipdecsnd  /* kr.re.kitech.biz.fin.com.updateFspSlipDecsnd */
+   SET trans_amt = (SELECT SUM(NVL(unslip_amt,0)) FROM fspslipd WHERE occr_slip_no = #{occr_slip_no} AND occr_slip_odr = #{occr_slip_odr}),
+   <if test="trans_unslip_no != null"> trans_unslip_no = #{trans_unslip_no} , </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = CURRENT
+WHERE slip_no = #{occr_slip_no}
+  AND slip_odr = #{occr_slip_odr}
+</update>
+
+<!-- 결의확정테이블 삭제 - 일반결의(결의내역대체처리) -->
+<update id="updateFspSlipDecsndDel" parameterType="java.util.HashMap">
+UPDATE fspslipdecsnd  /* kr.re.kitech.biz.fin.com.updateFspSlipDecsndDel */
+   SET trans_amt = (SELECT NVL(SUM(unslip_amt),0) FROM fspslipd WHERE occr_slip_no = #{occr_slip_no} AND occr_slip_odr = #{occr_slip_odr} AND unslip_no != #{trans_unslip_no}),
+   <if test="trans_unslip_no != null"> trans_unslip_no = (CASE WHEN trans_unslip_no = #{trans_unslip_no} THEN '' ELSE trans_unslip_no END) , </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = CURRENT
+WHERE slip_no = #{occr_slip_no}
+  AND slip_odr = #{occr_slip_odr}
+</update>
+
+<!-- 일반결의(통제내역결의처리 신규입력시 예산집행내역 UPDATE) -->
+<update id="updateBblEnfrc" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE bblenfrc /* kr.re.kitech.biz.fin.com.updateBblEnfrc */
+SET    unslip_no = #{unslip_no}
+     , unslip_odr = #{unslip_odr}
+     , unslip_amt = unslip_amt - #{bf_unslip_amt} + #{unslip_amt}
+     , part_all_clsf = #{part_all_clsf}
+     , trans_amt = trans_amt - #{bf_unslip_amt} + #{unslip_amt}
+     , trans_unslip_no = #{unslip_no}
+     , trans_unslip_odr = #{unslip_odr}
+	 , updt_syspayno = #{updt_syspayno}
+	 , updt_daytm = current 
+WHERE  req_no = #{req_no}
+AND    req_seq = #{req_seq}
+</update>
+
+<!-- 일반결의(통제내역결의처리 삭제시 예산집행내역 UPDATE) -->
+<update id="updateBblEnfrcDel" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE bblenfrc /* kr.re.kitech.biz.fin.com.updateBblEnfrcDel */
+SET    unslip_no = DECODE(unslip_no, #{unslip_no}, '', unslip_no) /* 결의번호가 같을 경우에만 초기화 */
+     , unslip_odr = DECODE(unslip_odr, #{unslip_odr}, NULL, unslip_odr)
+     , unslip_amt = unslip_amt - #{unslip_amt}
+     , part_all_clsf = 'P'
+     , trans_amt = trans_amt - #{unslip_amt}
+     , trans_unslip_no = DECODE(trans_unslip_no, #{unslip_no}, '', trans_unslip_no)
+     , trans_unslip_odr = DECODE(trans_unslip_odr, #{unslip_odr}, null, trans_unslip_odr)
+	 , updt_syspayno = #{updt_syspayno}
+	 , updt_daytm = current 
+WHERE  req_no = #{req_no}
+AND    req_seq = #{req_seq}
+</update>
+
+<!-- 통제내역결의처리 잔액체크 -->
+<select id="selectBblEnfrcChk" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo" resultType="kr.re.kitech.biz.fin.com.vo.FinComAmtChkVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectBblEnfrcChk */
+           enfrc_amt_cause - NVL(unslip_amt, 0) AS ramt_amt
+         , enfrc_amt_cause 
+	     , unslip_amt
+ FROM bblenfrc 
+WHERE req_no = #{req_no}
+  AND req_seq = #{req_seq}
+</select>
+
+<!-- 결의서 디테일 건수 조회 -->
+<select id="selectFspSlipDTCnt" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.com.selectFspSlipDTCnt */
+         count(*) cnt
+  FROM fspslipd
+ WHERE unslip_no = #{unslip_no}
+</select>
+
+<!-- 어음처리 수정 -->
+<update id="updateFcpprmsnt" parameterType="kr.re.kitech.biz.fin.com.vo.FcpPrmsntVo">
+UPDATE fcpprmsnt /* kr.re.kitech.biz.fin.com.updateFcpprmsnt */
+SET  unslip_cr_amt = #{unslip_cr_amt}
+    <if test="prmsnt_state_cd != null">  , prmsnt_state_cd = #{prmsnt_state_cd} </if>
+    <if test="contpat_accnt_cd != null">  , contpat_accnt_cd = #{contpat_accnt_cd} </if>
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+WHERE  prmsnt_no = #{prmsnt_no}
+</update>
+
+<!-- 법인카드 결의금액 업데이트 -->
+<update id="updateFbcRecogn" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE fbc_recogn /* kr.re.kitech.biz.fin.com.updateFbcRecogn */
+SET    compcost = nvl(compcost,0) - #{bf_total_amt} + #{total_amt},
+       compyn = 'Y',  
+       unslip_no = #{unslip_no},
+       unslip_seq = #{unslip_odr},
+       <if test ='conf_accnt_cd != null' > conf_accnt_cd = #{conf_accnt_cd}, </if>
+       updt_payno = SUBSTR(#{updt_syspayno}, 3, 6),
+       updt_dt = current
+WHERE  cardno =  replace(#{card_no},'-','')
+AND    apprno = #{apprvl_no}
+AND    rectime = #{use_ymd}
+</update>
+
+<!-- 결의삭제시 법인카드 결의금액 초기화 -->
+<update id="updateFbcRecognDel" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE fbc_recogn /* kr.re.kitech.biz.fin.com.updateFbcRecognDel */
+SET  compcost = nvl(compcost,0) - #{total_amt},
+       compyn = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN 'N' ELSE 'Y' END,  
+       unslip_no = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN '' ELSE unslip_no END,
+       unslip_seq = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN 0 ELSE unslip_seq END,
+       conf_accnt_cd = '',
+       updt_payno = SUBSTR(#{updt_syspayno}, 3, 6),
+       updt_dt = current
+WHERE  cardno = replace(#{card_no},'-','')
+AND    apprno = #{apprvl_no}
+AND    rectime = #{use_ymd}
+AND unslip_no = #{unslip_no}
+</update>
+
+<!-- 연구비BC카드 결의금액 업데이트 -->
+<update id="updateFbcRndAuth" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE fbcrndauth /* kr.re.kitech.biz.fin.com.updateFbcRndAuth */
+SET    compcost = nvl(compcost,0) - #{bf_total_amt} + #{total_amt},
+       compyn = 'Y',  
+       unslip_no = #{unslip_no},
+       unslip_seq = #{unslip_odr},
+       <if test ='conf_accnt_cd != null' > conf_accnt_cd = #{conf_accnt_cd}, </if>
+       updt_payno = SUBSTR(#{updt_syspayno}, 3, 6),
+       updt_dt = current
+WHERE  cardno =  replace(#{card_no},'-','')
+AND    auth_date = SUBSTR(#{use_ymd},1,8)
+AND    use_no = #{apprvl_no}
+</update>
+
+<!-- 결의삭제시 연구비BC카드 결의금액 초기화 -->
+<update id="updateFbcRndAuthDel" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE fbcrndauth /* kr.re.kitech.biz.fin.com.updateFbcRndAuthDel */
+SET  compcost = nvl(compcost,0) - #{total_amt},
+       compyn = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN 'N' ELSE 'Y' END,  
+       unslip_no = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN '' ELSE unslip_no END,
+       unslip_seq = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN 0 ELSE unslip_seq END,
+       conf_accnt_cd = '',
+       updt_payno = SUBSTR(#{updt_syspayno}, 3, 6),
+       updt_dt = current
+WHERE  cardno = replace(#{card_no},'-','')
+AND    auth_date = SUBSTR(#{use_ymd}, 1, 8)
+AND    use_no = #{apprvl_no}
+AND unslip_no = #{unslip_no}
+</update>
+
+<!-- 연구비신한카드 결의금액 업데이트 -->
+<update id="updateFlgRndRecogn" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE flgrnd_recogn /* kr.re.kitech.biz.fin.com.updateFlgRndRecogn */
+SET    compcost = nvl(compcost,0) - #{bf_total_amt} + #{total_amt},
+       compyn = 'Y',  
+       unslip_no = #{unslip_no},
+       unslip_seq = #{unslip_odr},
+       <if test ='conf_accnt_cd != null' > conf_accnt_cd = #{conf_accnt_cd}, </if>
+       updt_payno = SUBSTR(#{updt_syspayno}, 3, 6),
+       updt_dt = current
+WHERE  cardno =  replace(#{card_no},'-','')
+AND    apprno = #{apprvl_no}
+AND    rectime = #{use_ymd}
+</update>
+
+<!-- 결의삭제시 연구비신한카드 결의금액 초기화 -->
+<update id="updateFlgRndRecognDel" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE flgrnd_recogn /* kr.re.kitech.biz.fin.com.updateFlgRndRecognDel */
+SET  compcost = nvl(compcost,0) - #{total_amt},
+       compyn = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN 'N' ELSE 'Y' END,  
+       unslip_no = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN '' ELSE unslip_no END,
+       unslip_seq = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN 0 ELSE unslip_seq END,
+       conf_accnt_cd = '',
+       updt_payno = SUBSTR(#{updt_syspayno}, 3, 6),
+       updt_dt = current
+WHERE  cardno = replace(#{card_no},'-','')
+AND    apprno = #{apprvl_no}
+AND    rectime = #{use_ymd}
+AND unslip_no = #{unslip_no}
+</update>
+
+<!-- 연구비 통합이지바로카드 결의금액 업데이트 -->
+<update id="updateEzCardOrgn" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE ezbaro_cardorgn /* kr.re.kitech.biz.fin.com.updateEzCardOrgn */
+SET    compcost = nvl(compcost,0) - #{bf_total_amt} + #{total_amt},
+       compyn = 'Y',  
+       unslip_no = #{unslip_no},
+       unslip_seq = #{unslip_odr},
+       <if test ='conf_accnt_cd != null' > conf_accnt_cd = #{conf_accnt_cd}, </if>
+       updt_syspayno = SUBSTR(#{updt_syspayno}, 3, 6),
+       updt_daytm = current
+WHERE  cardno =  replace(#{card_no},'-','')
+AND    apprno = #{apprvl_no}
+AND    rectime = #{use_ymd}
+AND purchdivcd = '01' /* 승인*/
+</update>
+
+<!-- 연구비 통합이지바로카드 결의금액 초기화 -->
+<update id="updateEzCardOrgnDel" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo">
+UPDATE ezbaro_cardorgn /* kr.re.kitech.biz.fin.com.updateEzCardOrgnDel */
+SET  compcost = nvl(compcost,0) - #{total_amt},
+       compyn = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN 'N' ELSE 'Y' END,  
+       unslip_no = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN '' ELSE unslip_no END,
+       unslip_seq = CASE WHEN nvl(compcost,0) - #{total_amt} = 0 THEN 0 ELSE unslip_seq END,
+       conf_accnt_cd = '',
+       updt_syspayno = SUBSTR(#{updt_syspayno}, 3, 6),
+       updt_daytm = current
+WHERE  cardno = replace(#{card_no},'-','')
+AND    apprno = #{apprvl_no}
+AND    rectime = #{use_ymd}
+AND purchdivcd = '01' /* 승인*/
+AND unslip_no = #{unslip_no}
+</update>
+
+<!-- 받을어음내역 조회 -->
+<select id="selectFcpPrmsnt" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.com.vo.FcpPrmsntVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectFcpPrmsnt */
+       a.prmsnt_no
+     , a.prmsnt_clsf
+     , a.amt
+     , a.times_liq
+     , a.unslip_amt
+     , a.unslip_cr_amt
+	 , a.depst_clsf
+	 , f.mngmt_item_1
+	 , f.mngmt_item_2
+	 , f.mngmt_item_3
+  FROM fcpprmsnt a
+  JOIN xodxcommst f ON a.depst_clsf = f.cd AND f.cd_clsf = 'FBD'
+ WHERE prmsnt_no = #{prmsnt_no}
+</select>
+
+<!-- (구)이지바로 과제 증빙여부 조회 -->
+<select id="selectFspItmEvidDetlsCnt" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.com.selectFspItmEvidDetlsCnt */
+      COUNT(*) AS cnt
+  FROM fspitmeviddetls
+ WHERE unslip_no = #{unslip_no}
+   AND unslip_odr = #{unslip_odr}
+   AND expns_cd != #{expns_cd}
+</select>
+
+<!-- 결의삭제시 (구)이지바로 과제 증빙 삭제 -->
+<delete id="deleteFspItmEvidDetls" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo">
+DELETE /* kr.re.kitech.biz.fin.com.deleteFspItmEvidDetls */
+  FROM fspitmeviddetls
+ WHERE unslip_no = #{unslip_no}
+   AND unslip_odr = #{unslip_odr}
+</delete>
+
+<!-- 경비결의 삭제시 같은 증빙으로 대변내역 존재여부 조회 -->
+<select id="selectFspSlipDBillNoCnt" parameterType="kr.re.kitech.biz.fin.com.vo.SlipBaseVo" resultType="int">
+SELECT /* kr.re.kitech.biz.fin.com.selectFspSlipDBillNoCnt */
+      COUNT(*) AS cnt 
+  FROM fspslipd
+ WHERE unslip_no = #{unslip_no}
+   AND unslip_odr NOT IN (998, 999)
+   AND base_debit_cr = '2' 
+   AND bill_no = #{bill_no}
+</select>
+
+<!-- 경비결의 일반 대변변생성을 위한 조회  -->
+<select id="selectExpnsSlipDForCr" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.com.vo.FspSlipDCrVo">
+SELECT  /* kr.re.kitech.biz.fin.com.selectExpnsSlipDForCr */
+        a.unslip_no
+      , c.unslip_odr
+      , c.accnt_cd    
+      , c.unslip_amt 
+      , a.rmk_1 || (CASE WHEN b.cnt1 <![CDATA[> ]]> 1 THEN ' 외' || b.cnt1-1 ||'건' ELSE '' END) AS rmk_1
+      , a.rmk_2 || (CASE WHEN e.cnt2 <![CDATA[> ]]> 1 THEN ' 외' || e.cnt2-1 ||'건' ELSE '' END) AS rmk_2 
+      , b.cnt1 AS cnt
+      , a.rmk_1  AS rmk                   
+FROM  fspslipd a     
+JOIN (SELECT COUNT(*) AS cnt1
+        FROM fspslipd
+       WHERE unslip_no = #{unslip_no}
+         AND base_debit_cr = '1'
+     ) b ON 1=1
+JOIN (SELECT DECODE(rcms_pay_clsf,'FDC010', '998', '999') AS unslip_odr
+		   , DECODE(NVL(pay_accnt_cd,''), '', '21009010',pay_accnt_cd) AS accnt_cd
+           , SUM(DECODE(base_debit_cr, 1, unslip_amt, -unslip_amt)) AS unslip_amt             
+        FROM fspslipd 
+       WHERE unslip_no = #{unslip_no}
+         AND unslip_odr NOT IN (998, 999) 
+       GROUP BY 1,2
+      ) c ON 1=1
+JOIN (SELECT COUNT(send_odr) AS cnt2 
+        FROM fspsendreq b      
+       WHERE unslip_no = #{unslip_no} 
+      ) e ON 1=1
+WHERE a.unslip_no = #{unslip_no}
+  AND a.unslip_odr = ( SELECT MIN(unslip_odr) FROM fspslipd WHERE unslip_no = a.unslip_no)
+ORDER BY c.unslip_odr
+</select>
+
+<!-- 경비결의 카드 대변변생성을 위한 조회  -->
+<select id="selectExpnsSlipCardCr" parameterType="java.util.HashMap" resultType="kr.re.kitech.biz.fin.com.vo.FspSlipDCrVo">
+SELECT  /* kr.re.kitech.biz.fin.com.selectExpnsSlipCardCr */
+        a.unslip_no
+      , CASE WHEN e.card_clsf = 'FAI001' THEN 999
+             ELSE CASE WHEN e.card_knd = 'FAJ002' THEN 998
+                       WHEN e.card_knd IN ('FAJ003','FAJ006') THEN 997
+                       WHEN e.card_knd = 'FAJ007' THEN 996
+                       WHEN e.card_knd IN ('FAJ008','FAJ009') THEN 995
+                  END  
+             END AS unslip_odr
+      , DECODE(e.card_clsf,'FAI001', '21009030', '21009060') AS accnt_cd    
+      , c.unslip_amt 
+      , a.rmk_1 || (CASE WHEN b.cnt >  1 THEN ' 외' || b.cnt -1 ||'건' ELSE '' END) AS rmk_1
+      , NVL(x.cd_nm, '기업은행') AS rmk_2
+      , b.cnt_2 AS cnt
+      , a.rmk_1  AS rmk 
+      , DECODE(e.card_clsf, 'FAI001', 'BC', DECODE(e.card_knd, 'FAJ002', 'BC', 'FAJ008', 'BC(보탬e-예치)', 'FAJ009', 'BC(보탬e-비예치)', '신한')) AS ramt_mngmt_1
+  FROM  fspslipd a     
+  JOIN (SELECT COUNT(*) AS cnt
+             , SUM(DECODE(accnt_cd, '11149015', 0, 1)) as cnt_2
+          FROM fspslipd
+         WHERE unslip_no = #{unslip_no}
+           AND base_debit_cr = '1'
+       ) b ON 1=1
+  JOIN (SELECT SUM(DECODE(base_debit_cr, '1', unslip_amt, -unslip_amt)) as unslip_amt
+          FROM fspslipd
+         WHERE unslip_no = #{unslip_no}
+       ) c ON 1=1
+  JOIN fbacard e ON e.card_no = #{card_no}
+  LEFT JOIN xodxcommst x ON e.apprvl_bank = x.cd AND x.cd_clsf = 'FAA'
+ WHERE a.unslip_no = #{unslip_no}
+   AND a.unslip_odr NOT IN ('995','996','997','998', '999')
+   AND a.unslip_odr = ( SELECT MIN(unslip_odr) FROM fspslipd WHERE unslip_no = a.unslip_no)
+</select>
+
+<!-- 카드사용잔액 체크 -->
+<select id="selectCardUseCheck" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.fin.com.selectCardUseCheck */
+       CASE WHEN recamt <![CDATA[< ]]> (nvl(compcost,0) - #{bf_total_amt} + #{total_amt}) THEN 'N' ELSE 'Y' END AS chk_amt
+     , unslip_no 
+  FROM fbc_recogn  /* 법인카드 OR BC(보탬e-예치) OR BC(보탬e-비예치)*/
+ WHERE cardno = REPLACE(#{card_no}, '-','')
+   AND apprno = #{apprvl_no}
+   AND rectime = #{use_ymd}
+   AND ('FAI001' = #{card_clsf} OR ('FAI003' = #{card_clsf} AND ('FAJ008' = #{card_knd} OR 'FAJ009' = #{card_knd})))
+UNION 
+SELECT CASE WHEN auth_amt <![CDATA[< ]]> (nvl(compcost,0) - #{bf_total_amt} + #{total_amt}) THEN 'N' ELSE 'Y' END AS chk_amt
+     , unslip_no 
+  FROM fbcrndauth /* 연구비BC카드*/
+ WHERE cardno = REPLACE(#{card_no}, '-','')
+   AND use_no = #{apprvl_no}
+   AND auth_date = SUBSTR(#{use_ymd},1,8)
+   AND 'FAI001' != #{card_clsf}
+   AND 'FAJ002' = #{card_knd}
+UNION
+SELECT CASE WHEN recamt <![CDATA[< ]]> (nvl(compcost,0) - #{bf_total_amt} + #{total_amt}) THEN 'N' ELSE 'Y' END AS chk_amt
+     , unslip_no 
+  FROM flgrnd_recogn /* 연구비신한카드 */
+ WHERE cardno = REPLACE(#{card_no}, '-','')
+   AND apprno = #{apprvl_no}
+   AND rectime = #{use_ymd}
+   AND 'FAI001' != #{card_clsf}
+   AND #{card_knd} IN ('FAJ003', 'FAJ006')
+UNION 
+SELECT CASE WHEN demcost <![CDATA[< ]]> (nvl(compcost,0) - #{bf_total_amt} + #{total_amt}) THEN 'N' ELSE 'Y' END AS chk_amt
+     , unslip_no 
+  FROM ezbaro_cardorgn /* 연구비BC카드*/
+ WHERE cardno = REPLACE(#{card_no}, '-','')
+   AND apprno = #{apprvl_no}
+   AND rectime = #{use_ymd}
+   AND 'FAI001' != #{card_clsf}
+   AND 'FAJ007' = #{card_knd}
+   AND purchdivcd = '01'
+</select>
+
+<!-- 예산통제모듈 호출 후 통제번호 수정 -->
+<update id="updateFspSlipDCtrlNo" parameterType="kr.re.kitech.biz.fin.com.vo.BblenfrcVo">
+UPDATE fspslipd /* kr.re.kitech.biz.fin.com.updateFspSlipDCtrlNo */
+   SET bugt_ctrl_way= #{bugt_ctrl_way},     
+       ctrl_no= #{ctrl_no},     
+       updt_syspayno= #{updt_syspayno},
+       updt_daytm=CURRENT
+ WHERE unslip_no = #{unslip_no}
+   AND unslip_odr = #{unslip_odr}
+</update>
+
+<!-- 카드결의 대변 자동생성 후 대변금액 체크 -->
+<select id="selectCrUnslipAmtChk" parameterType="java.lang.String" resultType="kr.re.kitech.biz.fin.com.vo.FinComAmtChkVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectCrUnslipAmtChk */
+       SUM(DECODE(base_debit_cr,1, unslip_amt, 0)) as dr_amt
+     ,  SUM(DECODE(base_debit_cr,2, unslip_amt, 0)) as cr_amt
+     ,  SUM(DECODE(base_debit_cr,1, unslip_amt, 2, -unslip_amt)) as ramt_amt 
+ FROM fspslipd
+WHERE unslip_no = #{unslip_no}
+</select>
+
+<!-- 결의서 확정여부 조회 -->
+<select id="selectFspSlipHDecsnEx" parameterType="java.lang.String" resultType="java.util.HashMap">
+SELECT /* kr.re.kitech.biz.fin.com.selectFspSlipHDecsnEx */
+       unslip_no
+     , decsn_ex 
+     , accnt_ymd 
+  FROM fspsliph 
+ WHERE unslip_no = #{unslip_no}
+</select>
+
+<!-- 자동결의 여부조회 -->
+<select id="selectAutoSlipCnt" resultType="int" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.com.selectAutoSlipCnt */
+       COUNT(*) AS cnt
+FROM   fspslipd
+WHERE  unslip_no = #{unslip_no}
+AND    journ_cd NOT IN ('Fn9910', 'Fn9920')
+</select>
+<select id="selectSlipAttachFileNo" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo" resultType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.com.selectSlipAttachFileNo */
+          NVL(MAX(a.attach_file_no), '') AS attach_file_no
+  FROM fspslipd a
+  JOIN xomxcomattachfile b ON a.attach_file_no = b.attach_file_no
+ WHERE unslip_no = #{unslip_no} 
+   AND unslip_odr = #{unslip_odr}
+</select>
+
+<!-- 결의서 디테일 카드정보 누락시 다시 조회 -->
+<select id="selectCardInfo" parameterType="kr.re.kitech.biz.fin.com.vo.FspSlipDVo" resultType="kr.re.kitech.biz.fin.spm.vo.CardInfoVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectCardInfo */
+      a.cardno 
+     , a.apprvl_no
+     , a.use_ymd
+     , b.card_knd
+     , b.card_clsf
+  FROM (
+        SELECT cardno, use_no AS apprvl_no, auth_date||auth_time AS use_ymd
+          FROM fbcrndauth
+         WHERE unslip_no = #{unslip_no}
+           AND unslip_seq = #{unslip_odr}
+        UNION
+        SELECT cardno, apprno, rectime
+          FROM flgrnd_recogn
+         WHERE unslip_no = #{unslip_no}
+           AND unslip_seq = #{unslip_odr}
+        UNION
+        SELECT cardno, apprno, rectime
+          FROM fbc_recogn
+         WHERE unslip_no = #{unslip_no}
+           AND unslip_seq = #{unslip_odr}
+        UNION
+        SELECT cardno, apprno, rectime
+          FROM ezbaro_cardorgn
+         WHERE unslip_no = #{unslip_no}
+           AND unslip_seq = #{unslip_odr}
+     ) a
+  JOIN fbacard b ON b.card_no = #{card_no}
+</select>
+<select id="selectDupSlipCrtCnt" resultType="kr.re.kitech.biz.fin.spa.vo.FinAutoSlipCrtVo" parameterType="kr.re.kitech.biz.fin.spa.vo.FinAutoSlipCrtVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectDupSlipCrtCnt */
+       COUNT(1) AS cnt,
+       MAX(unslip_no) AS unslip_no
+  FROM fspslipd
+ WHERE unslip_no LIKE #{slip_typ_cd} ||'%'
+<choose>
+ <when test='req_no != null and req_no != ""'> AND req_no = #{req_no} </when>
+ <otherwise>
+   AND req_no IN
+    <foreach collection ='reqNoList' index ='index' item='item' open='(' close=')' separator=','>
+        #{item.req_no}
+    </foreach>
+ </otherwise>
+</choose>
+</select>
+
+<!-- 자동결의 삭제시 매입계산서 결의번호 초기화 -->
+<update id="updateKixIssuMstrAutoDel" parameterType="java.lang.String">
+UPDATE ktx_issu_mstr /* kr.re.kitech.biz.fin.com.updateKixIssuMstrAutoDel */
+   SET trans_amt = 0
+     , unslip_no = ''
+ WHERE unslip_no = #{unslip_no}
+</update>
+</mapper>

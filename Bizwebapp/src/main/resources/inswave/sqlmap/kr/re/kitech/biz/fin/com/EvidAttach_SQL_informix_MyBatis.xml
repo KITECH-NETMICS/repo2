@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.fin.com">
+<!-- 전자증빙 관리번호 조회 -->
+<select id="selectEvidMngmtNo" resultType="java.lang.String" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.fin.com.selectEvidMngmtNo */
+       MAX(evid_mngmt_no) AS evid_mngmt_no
+FROM fspevidattach
+WHERE req_no = #{req_no}
+</select>
+
+<!-- doc_id별로 증빙조회 -->
+<select id="selectFbaExpnsEvidList" parameterType="kr.re.kitech.biz.fin.com.vo.FbaExpnsEvidVo" resultType="kr.re.kitech.biz.fin.com.vo.FspEvidAttachVo">
+SELECT /* kr.re.kitech.biz.fin.com.selectFbaExpnsEvidList */
+       a.doc_id
+     , a.evid_item_cd
+     , b.item_seq
+     , b.evid_item_nm
+     , b.evid_type 
+     , a.essen_ex
+     , c.unique_yn
+     , b.mngmt_item_cd
+     , b.auto_yn
+     , b.service_id
+     , c.key_col
+    <if test='(req_no != null and req_no != "") or (evid_mngmt_no != null and evid_mngmt_no != "")'>
+     , d.evid_mngmt_no
+     , d.evid_mngmt_seq
+     , d.req_no
+     , d.unslip_no
+     , d.unslip_odr
+     , TRIM(NVL(d.attach_file_no, DECODE(b.evid_type, 'attach', '첨부', ''))) as attach_file_no     
+     , e.key_val
+    </if>
+  FROM fbaexpnsevid a
+  JOIN fbaevidmngmt b ON a.evid_item_cd = b.evid_item_cd
+  LEFT JOIN (SELECT evid_item_cd
+                  , unique_yn
+                  , group_concat(key_col) AS key_col
+              FROM fbaevidozkcol c 
+             GROUP BY evid_item_cd, unique_yn
+            )c ON a.evid_item_cd = c.evid_item_cd
+ <if test='(req_no != null and req_no != "") or (evid_mngmt_no != null and evid_mngmt_no != "")'>
+  LEFT JOIN imis.fspevidattach d ON b.evid_item_cd = d.evid_item_cd 
+    <if test='req_no != null and req_no != ""'> AND d.req_no = #{req_no}  </if>
+    <if test='evid_mngmt_no != null and evid_mngmt_no != ""'> AND d.evid_mngmt_no = #{evid_mngmt_no} </if>
+  	<if test='unslip_odr != null and unslip_odr != 0'> and d.unslip_odr = #{unslip_odr} </if>
+  LEFT JOIN fspevidrptkey e ON d.evid_mngmt_no =e.evid_mngmt_no AND d.evid_item_cd = e.evid_item_cd AND d.evid_mngmt_seq = e.evid_mngmt_seq and c.unique_yn='Y'
+ </if>
+ WHERE a.doc_id = #{doc_id}  
+  <choose>
+   <when test='(req_no != null and req_no != "") or (evid_mngmt_no != null and evid_mngmt_no != "")'>
+      AND TO_CHAR(NVL(d.regst_daytm,SYSDATE), '%Y%m%d') BETWEEN a.start_ymd AND NVL(a.cls_ymd,'29991231')
+   </when>
+   <when test='evid_item_cd != null and evid_item_cd != ""'>  AND a.evid_item_cd = #{evid_item_cd} /* 기업지원정산결의완전오픈전까지 필요*/ </when>  
+   <otherwise>
+      AND a.use_yn ='Y'
+   </otherwise>
+  </choose>
+ <if test='expns_cd != null and expns_cd != ""'>  AND a.expns_cd IN ('000', #{expns_cd}) </if>   
+ <choose>
+    <when test='auto_yn != null and auto_yn != ""'>  AND  b.auto_yn = #{auto_yn} </when>
+    <otherwise> AND b.auto_yn = 'Y' </otherwise>
+ </choose>
+ <if test='clsf != null and clsf != ""'> AND (NVL(b.clsf, '') = '' OR b.clsf = #{clsf}) </if>
+ <if test='common_yn != null and common_yn != ""'> AND a.common_yn = #{common_yn} </if> 
+ ORDER BY a.evid_item_cd
+</select>
+
+<!-- 전자증빙 저장 -->
+<update id="mergeFspEvidAttach" parameterType="kr.re.kitech.biz.fin.com.vo.FspEvidAttachVo">
+MERGE  /* kr.re.kitech.biz.fin.com.mergeFspEvidAttach */
+  INTO fspevidattach AS a
+USING dual AS b ON 1=1 AND a.evid_mngmt_no = #{evid_mngmt_no} AND a.evid_item_cd = #{evid_item_cd} AND evid_mngmt_seq = #{evid_mngmt_seq}
+WHEN MATCHED THEN
+   UPDATE 
+   SET <if test='attach_file_no != null'> a.attach_file_no = DECODE(#{attach_file_no}, '첨부', '', #{attach_file_no}), </if>
+    <if test='req_no != null'> a.req_no = #{req_no}, </if>
+     <if test='unslip_no != null'> unslip_no = #{unslip_no}, </if>
+     <if test='unslip_odr != null and unslip_odr != 0'> unslip_odr = #{unslip_odr}, </if>
+      a.updt_syspayno = #{updt_syspayno},
+      a.updt_daytm = CURRENT
+      
+WHEN NOT MATCHED THEN
+   INSERT (a.evid_mngmt_no
+         , a.evid_item_cd
+         , a.evid_mngmt_seq
+         , a.item_seq
+         , a.evid_type
+         , a.doc_id
+         , a.req_no
+         <if test='unslip_no != null'>, a.unslip_no </if>
+         <if test='unslip_odr != null and unslip_odr != 0'>, a.unslip_odr </if>
+         <if test='attach_file_no != null'>, a.attach_file_no </if>
+         , a.regst_syspayno
+         , a.regst_daytm)
+   VALUES (#{evid_mngmt_no}
+         , #{evid_item_cd}
+         , #{evid_mngmt_seq}
+         , #{item_seq}
+         , #{evid_type}
+         , #{doc_id}
+         , #{req_no}
+         <if test='unslip_no != null'>, #{unslip_no} </if>
+         <if test='unslip_odr != null and unslip_odr != 0'>, #{unslip_odr} </if>
+         <if test='attach_file_no != null'>, DECODE(#{attach_file_no}, '첨부', '', #{attach_file_no}) </if>
+         , #{regst_syspayno}
+         , CURRENT)
+</update>
+
+<!-- 전자증빙 레포트키 저장 -->
+<update id="updateFspEvidRptKey" parameterType="kr.re.kitech.biz.fin.com.vo.FspEvidRptKeyVo">
+MERGE INTO fspevidrptkey AS a /* kr.re.kitech.biz.fin.com.updateFspEvidRptKey */
+USING dual AS b ON 1=1 
+		    AND a.evid_mngmt_no = #{evid_mngmt_no} 
+			AND a.evid_item_cd = #{evid_item_cd} 
+			AND seq = #{seq} 
+			AND evid_mngmt_seq = #{evid_mngmt_seq} 
+			AND key_col = #{key_col}
+WHEN MATCHED THEN
+   UPDATE 
+   SET a.key_val = #{key_val}
+     , a.updt_syspayno = #{updt_syspayno}
+     , a.updt_daytm = CURRENT
+     
+WHEN NOT MATCHED THEN
+   INSERT (a.evid_mngmt_no
+         , a.evid_item_cd
+         , a.seq
+         , a.evid_mngmt_seq
+         , a.key_col
+         , a.key_val
+         , a.regst_syspayno
+         , a.regst_daytm)
+   VALUES (#{evid_mngmt_no}
+         , #{evid_item_cd}
+         , #{seq}
+         , #{evid_mngmt_seq}
+         , #{key_col}
+         , #{key_val}
+         , #{regst_syspayno}
+         , CURRENT
+         )
+</update>
+
+<!-- 전자증빙 레포트키 삭제 -->
+<delete id="deleteFspEvidRptKey" parameterType="kr.re.kitech.biz.fin.com.vo.FbaExpnsEvidVo">
+DELETE /* kr.re.kitech.biz.fin.com.deleteFspEvidRptKey */
+  FROM fspevidrptkey a
+ WHERE EXISTS (SELECT 1 FROM fspevidattach                        
+                WHERE evid_mngmt_no = a.evid_mngmt_no
+                  AND evid_item_cd = a.evid_item_cd
+                  AND evid_mngmt_seq = a.evid_mngmt_seq
+                  AND req_no = #{req_no} 
+                <if test ='unslip_odr !=0'> AND unslip_odr = #{unslip_odr} </if>
+              )
+</delete>
+
+<!-- 전자증빙 삭제 -->
+<delete id="deleteFspEvidAttach" parameterType="kr.re.kitech.biz.fin.com.vo.FbaExpnsEvidVo">
+DELETE /* kr.re.kitech.biz.fin.com.deleteFspEvidAttach */
+  FROM fspevidattach
+ WHERE req_no = #{req_no}
+  <if test ='unslip_odr !=0'> AND unslip_odr = #{unslip_odr} </if>
+</delete>
+
+<!-- 결의생성 또는 삭제시 결의번호 업데이트 -->
+<update id="updateFspEvidAttach" parameterType="kr.re.kitech.biz.fin.spa.vo.FinSpaSlipUpdVo">
+UPDATE /* kr.re.kitech.biz.fin.com.updateFspEvidAttach */
+        fspevidattach
+SET unslip_no = #{unslip_no},
+    unslip_odr = #{unslip_odr},
+    updt_syspayno = #{updt_syspayno},
+    updt_daytm = SYSDATE
+WHERE req_no = #{req_no}
+</update>
+
+<!-- 삭제대상 테이블에 데이터 입력 -->
+<insert id="insertJobConvDelList" parameterType="kr.re.kitech.biz.fin.com.vo.EvidAttachVo">
+insert /* kr.re.kitech.biz.fin.com.insertJobConvDelList */
+   into evid:job_conv_del_list 
+select * from evid:job_conv where mis_pk = #{rqst_no} and file_cls != 'after'
+</insert>
+
+<!-- job_conv 테이블 삭제 -->
+<delete id="deleteJobConv" parameterType="kr.re.kitech.biz.fin.com.vo.EvidAttachVo">
+delete /* kr.re.kitech.biz.fin.com.deleteJobConv */
+      evid:job_conv where mis_pk = #{rqst_no} AND file_cls != 'after'
+</delete>
+
+<!-- ACT_PDF_FILE_ALL 테이블 삭제 -->
+<delete id="deleteActPdfFileAll" parameterType="kr.re.kitech.biz.fin.com.vo.EvidAttachVo">
+DELETE /* kr.re.kitech.biz.fin.com.deleteActPdfFileAll */
+         evid:ACT_PDF_FILE_ALL 
+WHERE RQST_NO = #{rqst_no}
+AND file_cls_cd != 'after'
+</delete>
+<select id="selectCallSpActPdfFileall" parameterType="kr.re.kitech.biz.fin.com.vo.EvidAttachVo">
+/* kr.re.kitech.biz.fin.com.selectCallSpActPdfFileall */
+{ call evid:sp_act_pdf_file_all(#{slip_no,mode=IN,jdbcType=VARCHAR}
+                          , #{unslip_no,mode=IN,jdbcType=VARCHAR}
+                          , #{req_no,mode=IN,jdbcType=VARCHAR}
+                          )
+}
+</select>
+<select id="selectEvidMngmtSeq" parameterType="kr.re.kitech.biz.fin.com.vo.FspEvidAttachVo" resultType="int">
+ SELECT /* kr.re.kitech.biz.fin.com.selectEvidMngmtSeq */
+          NVL(MAX(evid_mngmt_seq), 0) + 1 AS evid_mngmt_seq
+ FROM fspevidattach 
+ WHERE evid_mngmt_no = #{evid_mngmt_no} 
+ AND evid_item_cd = #{evid_item_cd} 
+ AND unslip_odr IS NOT NULL
+</select>
+</mapper>

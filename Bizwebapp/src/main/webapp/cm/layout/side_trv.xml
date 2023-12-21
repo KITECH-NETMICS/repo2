@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head>
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_menu" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="serviceCode" name="서비스코드" dataType="text"></w2:column>
+        				<w2:column id="parentDivCode" name="부모코드" dataType="text"></w2:column>
+        				<w2:column id="childNode" name="자식유무" dataType="text"></w2:column>
+        				<w2:column id="serviceLevel" name="레벨" dataType="text"></w2:column>
+        				<w2:column id="serviceOrder" name="정렬순서" dataType="text"></w2:column>
+        				<w2:column id="cn" name="메뉴명" dataType="text"></w2:column>
+        				<w2:column id="serviceUrl" name="화면경로" dataType="text"></w2:column>
+        				<w2:column id="permission" name="버튼권한" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_myMenu" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="menu_id" name="메뉴아이디" dataType="text"></w2:column>
+        				<w2:column id="menu_lvl" name="레벨" dataType="text"></w2:column>
+        				<w2:column id="menu_seq" name="정렬순서" dataType="text"></w2:column>
+        				<w2:column id="menu_folder_nm" name="메뉴명" dataType="text"></w2:column>
+        				<w2:column id="service_id" name="메뉴서비스코드" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        		<w2:dataMap baseNode="map" id="dma_search">
+        			<w2:keyInfo>
+        				<w2:key id="cn" name="성명" dataType="text"></w2:key>
+        				<w2:key id="uid" name="로그인아이디" dataType="text"></w2:key>
+        				<w2:key id="syspayno" name="사번아이디" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:linkedDataList bind="dlt_menu" id="ldt_menuLeaf">
+        			<w2:condition type="filter"><![CDATA[childNode == 'N']]></w2:condition>
+        			<w2:condition type="sort"><![CDATA[]]></w2:condition>
+        		</w2:linkedDataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+         	<xf:submission id="sbm_menu" ref='data:json,dma_search'
+        		target='data:json,{"id":"dlt_menu","key":"serviceVoList"}' action="/SvcMenuList.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        	<xf:submission id="sbm_myMenu" ref='data:json,dma_search'
+        		target='data:json,{"id":"dlt_myMenu","key":"mymenuVoList"}' action="/MymenuClassList.pwkjson" method="post"
+        		mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		// 메뉴 조회 (세션의 아이디로 처리)
+		com.execute(sbm_menu, {
+			successCallback : function(e) {
+				// 샘플 메뉴 추가
+				if (location.hostname == "127.0.0.1" || location.hostname == "localhost" || location.hostname == "bizdev.kitech.re.kr") {
+					var arrSample = $p.top().wdc_layout.getWindow("SAMPLE").dlt_sample.getAllJSON();
+					var arrMenu = [];
+					var menuObj = {};
+					menuObj[gcm.MENU_INFO.MENU_ID] = "S";
+					menuObj[gcm.MENU_INFO.MENU_NM] = "UI 공통 샘플";
+					menuObj[gcm.MENU_INFO.LEVEL] = 1;
+					arrMenu.push(menuObj);
+					for (i=0; i<arrSample.length; i++) {
+						menuObj = {};
+						menuObj[gcm.MENU_INFO.MENU_ID] = arrSample[i]["MENU_ID"];
+						menuObj[gcm.MENU_INFO.P_MENU_ID] = arrSample[i]["P_MENU_ID"];
+						menuObj[gcm.MENU_INFO.MENU_NM] = arrSample[i]["MENU_NM"];
+						menuObj[gcm.MENU_INFO.SRC_PATH] = arrSample[i]["SRC_PATH"];
+						menuObj[gcm.MENU_INFO.LEVEL] = arrSample[i]["LEVEL"] + 1;
+						menuObj[gcm.MENU_INFO.AUTH] = arrSample[i]["permission"];
+						arrMenu.push(menuObj);
+					}
+					dlt_menu.setJSON(arrMenu, true);
+				}
+			}
+		});
+		
+		// 나의메뉴 조회
+		scwin.searchMyMenu();
+	};
+
+	/**
+	 * 나의메뉴 조회 (사번으로 조회)
+	 */
+	scwin.searchMyMenu = function() {
+//		dma_search.set("syspayno", "20170701");
+		dma_search.set("syspayno", com.getLoginInfo("sn"));
+		com.execute(sbm_myMenu);
+	};
+
+	/**
+	 * LNB 토글
+	 */
+	scwin.btn_lnb_onclick = function() {
+		grp_side.toggleClass("more");
+		if (!grp_side.hasClass("more") && $p.top().grp_container.hasClass("fix")) {
+			$p.top().grp_container.removeClass("fix")
+		}
+	};
+	
+	/**
+	 * LNB 고정
+	 */
+	scwin.btn_fix_onclick = function() {
+		$p.top().grp_container.toggleClass("fix");
+	};
+	
+	/**
+	 * 전체메뉴 아이콘 클릭 이벤트
+	 */
+	scwin.btn_menu_onclick = function() {
+		btn_menu.addClass("on");
+		btn_myMenu.removeClass("on");
+		trv_menu.show("");
+		trv_myMenu.hide();
+	};
+	
+	/**
+	 * 나의메뉴 아이콘 클릭 이벤트
+	 */
+	scwin.btn_myMenu_onclick = function() {
+		btn_myMenu.addClass("on");
+		btn_menu.removeClass("on");
+		trv_myMenu.show("");
+		trv_menu.hide();
+	};
+	
+	/**
+	 * 메뉴검색 토글
+	 */
+	scwin.btn_srch_onclick = function() {
+		if (btn_srch.hasClass("on")) {
+			acb_menu.hide();
+			
+		} else {
+			acb_menu.show("")
+		}
+		btn_srch.toggleClass("on");
+	};
+	
+	/**
+	 * 메뉴 접기
+	 */
+	scwin.btn_fold_onclick = function() {
+		if (btn_menu.hasClass("on")) {
+			trv_menu.collapseNode(0, true);
+		} else if (btn_myMenu.hasClass("on")) {
+			trv_myMenu.collapseNode(0, true);
+		}
+	};
+	
+	/**
+	 * 메뉴 펼치기
+	 */
+	scwin.btn_expand_onclick = function() {
+		if (btn_menu.hasClass("on")) {
+			trv_menu.expandNode(0, true);
+		} else if (btn_myMenu.hasClass("on")) {
+			trv_myMenu.expandNode(0, true);
+		}
+	};
+	
+	/**
+	 * 전체 메뉴 트리 클릭 이벤트
+	 */
+	scwin.trv_menu_onclick = function() {
+		if (trv_menu.isLeaf()) {
+			var menuObj = dlt_menu.getMatchedJSON(gcm.MENU_INFO.MENU_ID, trv_menu.getSelectedValue())[0];
+			if (com.isEmpty(menuObj[gcm.MENU_INFO.SRC_PATH])) {
+				com.warn("message.xom.wq.024");
+			} else {
+				com.openMenu(menuObj);
+				scwin.btn_lnb_onclick(); // LNB 접기
+			}
+		}
+	};
+	
+	/**
+	 * 나의 메뉴 트리 클릭 이벤트
+	 */
+	scwin.trv_myMenu_onclick = function() {
+		
+	};
+]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group class="side" id="grp_side" style="">
+    		<w2:anchor class="side_drawer" id="btn_lnb" outerDiv="false" style="" ev:onclick="scwin.btn_lnb_onclick">
+    			<xf:label><![CDATA[메뉴펼침]]></xf:label>
+    		</w2:anchor>
+    		<xf:group class="menu" id="" style="" tagname="ul">
+    			<xf:group class="on" id="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[신청서<br>양식함]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    			<xf:group id="" style="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[업무<br>대기함]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    			<xf:group id="" style="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[결재<br>대기함]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    			<xf:group id="" style="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[결재<br/>진행함]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    			<xf:group id="" style="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[결재<br/>완료함]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    			<xf:group id="" style="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[대결<br/>완료함]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    			<xf:group class="" id="" style="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[담당자<br/>완료함]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    			<xf:group id="" style="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[결재<br/>반려함]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    			<xf:group id="" style="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[저장중<br/>문서함]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    			<xf:group id="" style="" tagname="li">
+    				<w2:anchor escape="false" id="" outerDiv="false" style="">
+    					<xf:label><![CDATA[환경설정]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group class="menuBox" id="" style="">
+    		<xf:group class="basis" id="">
+    			<w2:anchor class="on" id="btn_menu" outerDiv="false" style="" ev:onclick="scwin.btn_menu_onclick">
+    				<xf:label><![CDATA[전체메뉴]]></xf:label>
+    			</w2:anchor>
+    			<w2:anchor id="" outerDiv="false" style="" class="">
+    				<xf:label><![CDATA[추천메뉴]]></xf:label>
+    			</w2:anchor>
+    			<w2:anchor id="btn_myMenu" outerDiv="false" style="" ev:onclick="scwin.btn_myMenu_onclick">
+    				<xf:label><![CDATA[나의메뉴]]></xf:label>
+    			</w2:anchor>
+    		</xf:group>
+    		<xf:group class="bartit" id="">
+    			<xf:group class="txt_menu" id="">
+    				<w2:span id="" label="메뉴" style=""></w2:span>
+    			</xf:group>
+    			<xf:group class="btns" id="">
+    				<w2:anchor class="ico_search" id="btn_srch" outerDiv="false" style=""
+    					tooltip="메뉴검색" ev:onclick="scwin.btn_srch_onclick">
+    					<xf:label><![CDATA[메뉴검색]]></xf:label>
+    				</w2:anchor>
+    				<w2:anchor class="ico_fold" id="btn_fold" outerDiv="false" style="" tooltip="메뉴접기" ev:onclick="scwin.btn_fold_onclick">
+    					<xf:label><![CDATA[메뉴접기]]></xf:label>
+    				</w2:anchor>
+    				<w2:anchor class="ico_list" id="btn_expand" outerDiv="false" style="" tooltip="메뉴펼치기" ev:onclick="scwin.btn_expand_onclick">
+    					<xf:label><![CDATA[메뉴펼치기]]></xf:label>
+    				</w2:anchor>
+    				<w2:anchor class="ico_fix" ev:onclick="scwin.btn_fix_onclick" id="btn_fix" outerDiv="false" style="" tooltip="메뉴고정">
+    					<xf:label><![CDATA[메뉴고정]]></xf:label>
+    				</w2:anchor>
+    			</xf:group>
+    		</xf:group>
+    		<w2:autoComplete allOption="" chooseOption="true" class="allmenu" editType="select" id="acb_menu" ref="" search="contain"
+    			style="display: none;" submenuSize="auto" useKeywordHighlight="true" visibleRowNum="10" chooseOptionLabel="" placeholder="메뉴명 검색">
+    			<w2:choices>
+    				<w2:itemset nodeset="data:ldt_menuLeaf">
+    					<w2:label ref="cn"></w2:label>
+    					<w2:value ref="serviceCode"></w2:value>
+    				</w2:itemset>
+    			</w2:choices>
+    		</w2:autoComplete>
+    		<xf:group id="" class="treevWrap">
+    			<w2:treeview showTreeDepth="0" tooltipGroupClass="false" dataType="listed" style="" id="trv_menu" class="treev"
+    				ev:onclick="scwin.trv_menu_onclick" toggleEvent="onclick">
+    				<w2:itemset nodeset="data:dlt_menu">
+    					<w2:label ref="cn"></w2:label>
+    					<w2:value ref="serviceCode"></w2:value>
+    					<w2:depth ref="serviceLevel"></w2:depth>
+    					<w2:folder ref=""></w2:folder>
+    					<w2:checkbox ref=""></w2:checkbox>
+    					<w2:checkboxDisabled ref=""></w2:checkboxDisabled>
+    					<w2:image ref=""></w2:image>
+    					<w2:iconImage ref=""></w2:iconImage>
+    					<w2:selectedImage ref=""></w2:selectedImage>
+    					<w2:expandedImage ref=""></w2:expandedImage>
+    					<w2:leafImage ref=""></w2:leafImage>
+    				</w2:itemset>
+    			</w2:treeview>
+    			<w2:treeview class="treev" dataType="listed" id="trv_myMenu" showTreeDepth="0"
+    				style="display:none;" toggleEvent="onclick" tooltipGroupClass="false" ev:onclick="scwin.trv_myMenu_onclick">
+    				<w2:itemset nodeset="data:dlt_myMenu">
+    					<w2:label ref="menu_folder_nm"></w2:label>
+    					<w2:value ref="menu_id"></w2:value>
+    					<w2:depth ref="menu_lvl"></w2:depth>
+    					<w2:folder ref=""></w2:folder>
+    					<w2:checkbox ref=""></w2:checkbox>
+    					<w2:checkboxDisabled ref=""></w2:checkboxDisabled>
+    					<w2:image ref=""></w2:image>
+    					<w2:iconImage ref=""></w2:iconImage>
+    					<w2:selectedImage ref=""></w2:selectedImage>
+    					<w2:expandedImage ref=""></w2:expandedImage>
+    					<w2:leafImage ref=""></w2:leafImage>
+    				</w2:itemset>
+    			</w2:treeview>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

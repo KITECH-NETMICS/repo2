@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.lpl.lcp">
+  <select id="selectLcpEvent" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventMS01 국제행사결과조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpEvent */ 
+     a.event_no
+    ,a.charg
+    ,a.charg_syspayno
+    ,a.event_nm
+    ,a.event_supvis
+    ,a.event_open
+    ,a.event_start_ymd
+    ,a.attach_file_no
+    ,a.event_cls_ymd
+    ,a.event_plc
+    ,a.event_contnt
+    ,b.cr
+    ,c.krchar_agncy_nm
+    ,c.cmpy_nm_eng
+FROM  lcpevent a LEFT JOIN  (SELECT event_no, sum(cr) as cr 
+                             FROM lcpeventexpns  GROUP BY event_no) b 
+ON a.event_no = b.event_no
+LEFT JOIN (select   a.event_no, a.agncy_cd, b.cmpy_nm_krchar as krchar_agncy_nm, cmpy_nm_eng
+      from lcpeventagncy a  JOIN sptcustbaseinfo b
+      ON a.agncy_cd = b. cust_no
+      where a.event_no in (
+                           select
+                                  event_no
+                           from lcpeventagncy
+                            WHERE 1=1 
+                            AND  natn_cd LIKE DECODE(#{natn_cd},'','%',#{natn_cd})
+                            AND  agncy_cd IN (SELECT cust_no as agncy_cd FROM sptcustbaseinfo WHERE 1=1 AND (cmpy_nm_krchar LIKE #{cmpy_nm_krchar} OR cmpy_nm_eng LIKE #{cmpy_nm_eng}))
+                                            )
+                           ) c ON a.event_no = c.event_no
+WHERE      1=1
+AND        a.event_start_ymd between #{event_start_ymd1} AND #{event_start_ymd2}
+<if test="event_nm != null and event_nm != ''">
+AND        a.event_nm LIKE #{event_nm}
+</if>
+AND        (c.krchar_agncy_nm LIKE #{cmpy_nm_krchar}  OR c.cmpy_nm_eng LIKE #{cmpy_nm_eng})
+ORDER BY event_no
+  </select>
+  <select id="selectLcpEventNan" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventAgncyMS02  국제행사나라조회 다건*/
+SELECT   natn_cd /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpEventNan */ 
+        ,fun_xodxcommst_cd_nm(natn_cd, 0) as natn_nm
+FROM     lcpeventagncy
+WHERE    1=1
+group by natn_cd
+  </select>
+  <select id="selectLcpEventDetail" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventMS02 국제행사결과 상세 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpEventDetail */ 
+		           event_no
+                ,charg
+                ,charg_syspayno
+                ,fun_humbasicinfo_cd_nm(charg_syspayno, 1) as charg_empno
+                ,event_nm
+                ,event_supvis
+                ,event_open
+                ,event_start_ymd
+                ,attach_file_no
+                ,event_cls_ymd
+                ,event_plc
+                ,event_contnt
+                ,regst_psn_syspayno
+                ,regst_daytm
+                ,updt_psn_syspayno
+                ,updt_daytm
+FROM       lcpevent
+WHERE      1=1
+AND        event_no = #{event_no}
+  </select>
+  <select id="selectLcpEventExpen" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventExpnsMS01 국제행사비용 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpEventExpen */ 
+		           event_no
+                ,seq
+                ,ymd
+                ,decsn_slip_no
+                ,vend_cd
+                ,vend_nm
+                ,rmk
+                ,expns_cd
+                ,debit
+                ,cr
+                ,ramt
+                ,accnt_no
+                ,accnt_cd
+                ,regst_psn_syspayno
+                ,regst_daytm
+                ,updt_psn_syspayno
+                ,updt_daytm
+FROM        lcpeventexpns
+WHERE       1=1
+AND         event_no = #{event_no}
+  </select>
+  <select id="selectLcpEventAgncy" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventAgncyMS01 국제행사기관정보 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpEventAgncy */ 
+		    a.event_no
+         ,a.seq
+         ,a.natn_cd
+         ,a.agncy_cd
+         ,a.reprs_psn_nm
+         ,b.cmpy_nm_krchar as krchar_agncy_nm
+         ,fun_xodxcommst_cd_nm(a.natn_cd, 0) as natn_nm
+FROM     lcpeventagncy a left join (SELECT cust_no, cmpy_nm_krchar
+                               FROM   sptcustbaseinfo)b
+ON a.agncy_cd = b.cust_no
+WHERE 1=1
+AND   event_no = #{event_no}
+  </select>
+  <select id="selectLcpOverseas" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.los.xda.FspSlipdMS01 해외사무소 예산등록 원장 팝업 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.los.selectFspSlipd */ 
+    h.slip_ymd, --결의일자 
+ d.accnt_no, --계정번호 
+ d.accnt_rspns, --계정책임자
+ d.unslip_no, --결의번호 k
+ d.rmk_2, --거래처 
+ d.rmk_1, --적요
+ d.expns_cd, --비용코드
+ d.unslip_amt, --금액
+ h.slip_no --확정결의번호
+from fspslipd d, fspsliph h
+where h.slip_ymd <![CDATA[ >= ]]> #{slip_ymd1} and h.slip_ymd <![CDATA[ <= ]]> #{slip_ymd2} --기간
+  and h.decsn_ex = 'Y'
+  and h.unslip_no = d.unslip_no
+  and d.base_debit_cr = '1' and d.accnt_cd <![CDATA[ >= ]]> '500000000'
+  and d.accnt_rspns LIKE DECODE(#{accnt_rspns},'','%',#{accnt_rspns})
+  and d.accnt_no LIKE DECODE(#{accnt_no},'','%',#{accnt_no})
+  and d.expns_cd LIKE DECODE(#{expns_cd},'','%',#{expns_cd})
+  and d.unslip_no not in (select
+                                b.unslip_no
+                            from losoffibudmst a, losoffibud b
+                            where a.mngmt_no = b.mngmt_no
+                            and a.mngmt_no = #{mngmt_no})
+  </select>
+  
+  <select id="selectLcpEventPop" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo" resultType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.FspSlipdMS01 국제행사 계정원장 조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.lpl.lcp.selectLcpEventPop */ 
+    h.slip_ymd, --결의일자 
+ d.accnt_no, --계정번호 
+ d.accnt_rspns, --계정책임자
+ d.unslip_no, --결의번호 k
+ d.rmk_2, --거래처 
+ d.rmk_1, --적요
+ d.expns_cd, --비용코드
+ d.unslip_amt, --금액
+ h.slip_no --확정결의번호
+from fspslipd d, fspsliph h
+where h.slip_ymd <![CDATA[ >= ]]> #{slip_ymd1} and h.slip_ymd <![CDATA[ <= ]]> #{slip_ymd2} --기간
+  and h.decsn_ex = 'Y'
+  and h.unslip_no = d.unslip_no
+  and d.base_debit_cr = '1' and d.accnt_cd <![CDATA[ >= ]]> '500000000'
+  and d.accnt_rspns LIKE DECODE(#{accnt_rspns},'','%',#{accnt_rspns})
+  and d.accnt_no LIKE DECODE(#{accnt_no},'','%',#{accnt_no})
+  and d.expns_cd LIKE DECODE(#{expns_cd},'','%',#{expns_cd})
+  and d.unslip_no not in (select
+                                b.decsn_slip_no
+                            from lcpevent a, lcpeventexpns b
+                            where a.event_no = b.event_no
+                            and  a.event_no LIKE DECODE(#{event_no},'','%',#{event_no})                           
+)
+  </select>
+  <insert id="insertLcpEventAudenc" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventSI01 국제행사결과 등록 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lcp.insertLcpEventAudenc */ 
+		 INTO    lcpevent
+(                event_no
+                ,charg
+                ,charg_syspayno
+                ,event_nm
+                ,event_supvis
+                ,event_open
+                ,event_start_ymd
+                ,attach_file_no
+                ,event_cls_ymd
+                ,event_plc
+                ,event_contnt
+                ,regst_psn_syspayno
+                ,regst_daytm
+)
+VALUES(#{event_no},#{charg},#{charg_syspayno},#{event_nm},#{event_supvis},#{event_open},#{event_start_ymd},#{attach_file_no},#{event_cls_ymd},#{event_plc},#{event_contnt},#{regst_psn_syspayno},sysdate)
+  </insert>
+  <insert id="insertLcpEventExpAgncy" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventExpnsVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventExpnsSI01 국제행사비용 등록 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lcp.insertLcpEventExpns */ 
+		 INTO lcpeventexpns
+(               event_no
+                ,seq
+                ,ymd
+                ,decsn_slip_no
+                ,vend_cd
+                ,vend_nm
+                ,rmk
+                ,expns_cd
+                ,debit
+                ,cr
+                ,ramt
+                ,accnt_no
+                ,accnt_cd
+                ,regst_psn_syspayno
+                ,regst_daytm
+  )
+VALUES(#{event_no},(SELECT nvl(max(seq),0)+1 FROM lcpeventexpns WHERE event_no = #{event_no}),#{ymd},#{decsn_slip_no},#{vend_cd},#{vend_nm},#{rmk},#{expns_cd},#{debit},#{cr},#{ramt},#{accnt_no},#{accnt_cd},#{regst_psn_syspayno},sysdate)
+  </insert>  
+  <insert id="insertLcpEventAudencAgncy" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventAgncySI01 국제행사기관정보 등록 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.lpl.lcp.insertLcpEventAudencAgncy */ 
+		 INTO    lcpeventagncy
+(event_no, 
+ seq, 
+ natn_cd, 
+ agncy_cd, 
+ reprs_psn_nm, 
+ regst_psn_syspayno, 
+ regst_daytm)
+VALUES(#{event_no}, (select nvl(max(seq),0)+1 from lcpeventagncy where event_no =#{event_no} ), #{natn_cd}, #{agncy_cd}, #{reprs_psn_nm}, #{regst_psn_syspayno}, sysdate)
+  </insert>
+  <update id="updateLcpEvent" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventSU01 국제행사결과 수정 단건*/
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lcp.updateLcpEvent */ 
+		    lcpevent
+SET              charg = #{charg}
+                ,charg_syspayno = #{charg_syspayno}
+                ,event_nm = #{event_nm}
+                ,event_supvis = #{event_supvis}
+                ,event_open = #{event_open}
+                ,event_start_ymd = #{event_start_ymd}
+                ,attach_file_no = #{attach_file_no}
+                ,event_cls_ymd = #{event_cls_ymd}
+                ,event_plc = #{event_plc}
+                ,event_contnt = #{event_contnt}
+                ,updt_psn_syspayno = #{updt_psn_syspayno}
+                ,updt_daytm = sysdate
+WHERE     1=1
+AND       event_no = #{event_no}
+  </update>
+  <update id="updateLcpEventExpns" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventExpnsVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventExpnsSU01 국제행사비용 수정 단건*/
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lcp.updateLcpEventExpns */ 
+		       lcpeventexpns
+SET           ymd = #{charg}
+             ,decsn_slip_no = #{charg_syspayno}
+             ,vend_cd = #{event_nm}
+             ,vend_nm = #{event_supvis}
+             ,rmk = #{event_open}
+             ,expns_cd = #{event_start_ymd}
+             ,debit = #{attach_file_mngmt_no}
+             ,cr = #{event_cls_ymd}
+             ,ramt = #{event_plc}
+             ,accnt_no = #{event_contnt}
+             ,accnt_cd = #{updt_psn_syspayno}
+             ,updt_psn_syspayno = #{event_no}
+             ,updt_daytm  = sysdate
+WHERE      1=1
+AND        event_no = #{event_no}
+AND        seq = #{seq}
+  </update>
+  <update id="updateLcpEventAgncy" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventAgncySU01 국제행사기관정보 수정 단건*/
+UPDATE /* QueryID : kr.re.kitech.biz.lpl.lcp.updateLcpEventAgncy */ 
+		   lcpeventagncy
+SET      natn_cd = #{natn_cd}
+        ,agncy_cd = #{agncy_cd}
+        ,reprs_psn_nm = #{reprs_psn_nm}
+        ,updt_psn_syspayno = #{updt_psn_syspayno}
+        ,updt_daytm = sysdate
+WHERE   1=1
+AND     event_no = #{event_no}
+AND     seq = #{seq}
+  </update>
+  <delete id="deleteLcpAgncyEvent" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventAgncySD01 국제행사기관정보 삭제 단건*/
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lcp.deleteLcpAgncyEvent */ 
+		  lcpeventagncy
+WHERE   1=1
+AND     event_no = #{event_no}
+<if test="agy_del_odr != null and agy_del_odr != ''">
+AND     seq = #{agy_del_odr}
+</if>
+  </delete>
+  <delete id="deleteLcpExpnsEvent" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventExpnsSD01 국제행사비용 삭제 단건*/
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lcp.deleteLcpExpnsEvent */ 
+		    lcpeventexpns
+WHERE     1=1
+AND       event_no = #{event_no}
+<if test="exp_del_odr != null and exp_del_odr != ''">
+AND       seq = #{exp_del_odr}
+</if>
+  </delete>
+  <delete id="deleteLcpEvent" parameterType="kr.re.kitech.biz.lpl.lcp.vo.LcpEventVo">
+/* XDA : kitech.lpl.lcp.xda.LcpEventSD01 국제행사결과 삭제 단건*/
+DELETE /* QueryID : kr.re.kitech.biz.lpl.lcp.deleteLcpEvent */ 
+		    lcpevent
+WHERE     1=1
+AND       event_no = #{event_no}
+  </delete>                            
+</mapper>

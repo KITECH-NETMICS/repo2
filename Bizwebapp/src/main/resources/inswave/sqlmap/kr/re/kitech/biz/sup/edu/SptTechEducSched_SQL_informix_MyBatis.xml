@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.edu">
+  <select id="selectSptTechEducSchedList" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducSchedVo" resultType="kr.re.kitech.biz.sup.edu.vo.SptTechEducSchedVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.edu.selectSptTechEducSchedList */ 
+		  biz_clsf,
+        fun_xodxcommst_cd_nm(biz_clsf, 0) AS biz_clsf_nm,
+        mngmt_no,
+        seq,
+        start_ymd,
+        start_tm,
+        end_ymd,
+        end_tm,
+        contnt,
+        lectr_nm,
+        rmk
+FROM    spttecheducsched
+WHERE   biz_clsf = #{biz_clsf}
+AND     mngmt_no = #{mngmt_no}
+ORDER BY seq
+  </select>
+  
+	<update id="mergeSptTechEducSched" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducSchedVo">
+		MERGE /* kr.re.kitech.biz.sup.edu.mergeSptTechEducSched */
+		 INTO spttecheducsched AS t1
+		USING dual AS t2 ON t1.biz_clsf = #{biz_clsf} AND t1.mngmt_no = #{mngmt_no} AND t1.seq = #{seq}
+		 WHEN MATCHED  THEN
+		 UPDATE
+		    SET start_ymd = #{start_ymd},
+		        start_tm = #{start_tm},
+		        end_ymd = #{end_ymd},
+		        end_tm = #{end_tm},
+		        contnt = #{contnt},
+		        lectr_nm = #{lectr_nm},
+		        rmk = #{rmk},
+		        updt_daytm    = SYSDATE
+		 WHEN NOT MATCHED THEN
+		 INSERT (
+            biz_clsf,
+            mngmt_no,
+            seq,
+            start_ymd,
+            start_tm,
+            end_ymd,
+            end_tm,
+            contnt,
+            lectr_nm,
+            rmk,
+            regst_syspayno,
+            regst_daytm
+		 ) VALUES(
+            #{biz_clsf}, 		/* biz_clsf */
+            #{mngmt_no}, 		/* mngmt_no */
+            #{seq}, 			/* seq */
+            #{start_ymd}, 		/* start_ymd */
+            #{start_tm}, 		/* start_tm */
+            #{end_ymd}, 		/* end_ymd */
+            #{end_tm}, 			/* end_tm */
+            #{contnt}, 			/* contnt */
+            #{lectr_nm}, 		/* lectr_nm */
+            #{rmk}, 			/* rmk */
+            #{regst_syspayno}, 	/* regst_syspayno */
+            SYSDATE 			/* regst_daytm|now */
+		 )
+	</update>
+	
+	<delete id="deletePartSptTechEducSched" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducSchedVo">
+		DELETE /* QueryID : kr.re.kitech.biz.sup.edu.deletePartSptTechEducSched */ 
+		  FROM spttecheducsched
+		 WHERE biz_clsf = #{biz_clsf}
+		   AND mngmt_no = #{mngmt_no}
+	</delete>
+</mapper>

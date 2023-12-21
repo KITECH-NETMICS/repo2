@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/cm/css/sample.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare"
+	xmlns:xf="http://www.w3.org/2002/xforms">
+	<head meta_programName="유효성 체크">
+		<w2:type>DEFAULT</w2:type>
+		<w2:buildDate />
+		<xf:model>
+			<xf:instance>
+				<data xmlns="" />
+			</xf:instance>
+			<w2:dataCollection baseNode="map">
+				<w2:dataMap baseNode="map" id="dma_sample" firstSet="" firstSetSubmission="true">
+					<w2:keyInfo>
+						<w2:key id="key1" name="name1" dataType="text"></w2:key>
+						<w2:key id="key2" name="name2" dataType="text"></w2:key>
+						<w2:key id="key3" name="name3" dataType="text"></w2:key>
+						<w2:key id="key4" name="name4" dataType="text"></w2:key>
+						<w2:key id="key5" name="name5" dataType="text"></w2:key>
+						<w2:key id="key6" name="name6" dataType="text"></w2:key>
+						<w2:key id="key7" name="name7" dataType="text"></w2:key>
+						<w2:key id="key8" name="name8" dataType="text"></w2:key>
+						<w2:key id="key9" name="name9" dataType="text"></w2:key>
+						<w2:key id="key10" name="name10" dataType="text"></w2:key>
+						<w2:key id="key11" name="name11" dataType="text"></w2:key>
+						<w2:key id="key12" name="name12" dataType="text"></w2:key>
+						<w2:key id="key13" name="name13" dataType="text"></w2:key>
+						<w2:key id="key14" name="name14" dataType="text"></w2:key>
+						<w2:key id="key15" name="name15" dataType="text"></w2:key>
+						<w2:key id="popS" name="name16" dataType="text"></w2:key>
+					</w2:keyInfo>
+				</w2:dataMap>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_sample" saveRemovedData="true">
+					<w2:columnInfo>
+						<w2:column id="col1" name="name1" dataType="text"></w2:column>
+						<w2:column id="col2" name="name2" dataType="text"></w2:column>
+						<w2:column id="col3" name="name3" dataType="text"></w2:column>
+						<w2:column id="col4" name="name4" dataType="text"></w2:column>
+						<w2:column id="col5" name="name5" dataType="text"></w2:column>
+						<w2:column id="col6" name="name6" dataType="text"></w2:column>
+						<w2:column id="col7" name="name7" dataType="text"></w2:column>
+						<w2:column id="col8" name="name8" dataType="text"></w2:column>
+						<w2:column id="col9" name="name9" dataType="text"></w2:column>
+						<w2:column id="col10" name="name10" dataType="text"></w2:column>
+						<w2:column id="col11" name="name11" dataType="text"></w2:column>
+						<w2:column id="col12" name="name12" dataType="text"></w2:column>
+					</w2:columnInfo>
+				</w2:dataList>
+			</w2:dataCollection>
+			<w2:workflowCollection></w2:workflowCollection>
+			<xf:submission id="sbm_dma" ref="" target='data:json,{"id":"dma_sample","key":"body"}' action="/forwarding/json/test.json" method="get" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+ 	/****************************************************
+ 	 * 화면 설명 : 유효성 체크
+ 	 * 변경 이력 : 2021-11-01	문철주	최초작성
+ 	 ****************************************************/
+
+	/**
+	 * 도움말
+	 */
+	scwin.help	= `
+사용자 입력 데이터의 유효성을 체크하는 샘플입니다.
+
+scwin.onpageload 이벤트에서 com.setValidGroup, com.setValidGrid 함수로 검사 조건을 설정하고,
+저장 버튼 클릭 이벤트에서 com.validateGroup, com.validateGrid 함수로 일괄 체크하는 방식입니다.
+
+※ 테이블의 경우 com.setValidGroup, com.validateGroup 함수 활용
+  (com.isModified 함수로 변경여부 체크 필요)
+  - 신규일 경우 : com.initDataMap 함수로 초기화 필요
+  - 수정일 경우 : dataMap의 setEmptyValue 함수로 초기화 후에 조회 submission에서 자동 바인딩하거나 dataMap의 setJSON 함수로 조회된 값을 셋팅
+   (참고로 dataMap의 firstSetSubmission=true로 공통 설정되어 있어, dataMap에 setJSON을 호출하거나 submission을 통해 dataMap 데이터가 갱신된 경우 그 갱신된 값을 original 값으로 설정한다.)
+
+※ 그리드의 경우 com.setValidGrid, com.validateGrid 함수 활용
+  (함수 내에서 변경여부 체크 수행. 변경여부 체크를 원하지 않는 경우 isCheckModified 옵션을 false로 지정)
+
+※ com.setValidGroup, com.setValidGrid 함수는 컴포넌트의 유효성 관련 속성과, valInfoArr 유효성 설정을 동기화 한다.
+ (유효설 설정 방식은 valInfoArr 설정 방식을 사용한다.)
+
+※ 유효하지 않을 때는 DataCollection 컬럼명으로 출력한다.
+ (단, label 옵션 설정시 설정한 다국어 코드에 해당되는 레이블로 출력)
+
+※ 키 입력시 한글이 입력되지 않게 하기 위해서는 com.keydownIgnoreHan 함수 활용
+ - inputBox의 onkeydown 이벤트에 설정
+ - gridView의 oneditkeydown 이벤트에서 호출
+	`;
+		
+	/**
+	 * 페이지 로딩 이벤트
+	 */
+	scwin.onpageload = function() {
+		// 신규 상태로
+		rad_status.setValue("C");
+		
+		// 그리드 조회값 
+		dlt_sample.setJSON([
+			{ "col1": "1", "col2": "1" }
+		]);
+		
+		// 공통코드 팝업 셋팅
+		com.setCmnCdPop("TEST_STEP1", wfm_cmnCdSingle, {
+			  ref : "dma_sample.popS"
+//			, displayMode : "value" // value|label, null(기본값)이면 둘다 
+			, selectCallback : function(retObj) {
+				// 선택 콜백
+				console.log(retObj);
+			}  
+		});
+		
+		// Group내 데이터의 유효성 설정
+		com.setValidGroup(grp_sample, [  
+			 { id : "key1", mandatory : true }
+			,{ id : "key2", mandatory : true, label : "label.xom.wq.etc.ALERT" }
+			,{ id : "key3", minLength : 2 }
+			,{ id : "key4", minByteLength : 6 }
+			,{ id : "key5", maxLength : 4 }
+			,{ id : "key6", maxByteLength : 6 }
+			,{ id : "key7", allowChar : "a-zA-Z0-9" }
+			,{ id : "key8", allowChar : "ㄱ-힣" }
+			,{ id : "key9", ignoreChar : "!@#$%^&*()" }
+			,{ id : "key10", isPhone : true, allowChar : "0-9" }
+			,{ id : "key11", isEmail : true, allowChar : "a-zA-Z0-9@." }
+			,{ id : "key12", valFunc : function(value) {
+				if (!com.isEmpty(value) && Number(value) < 50) {
+					return "값이 50이상이어야 합니다.";
+				}
+			}, allowChar : "0-9"}
+			,{ id : "key13", maxLength : 4 }
+			,{ id : "key15", allowChar : "a-zA-Z0-9" }
+			,{ id : "key14", ignoreChar : "!@#$%^&*()" }
+//			,{ id : "key14", allowChar : "a-zA-Z0-9" }
+			,{ id : "popS", mandatory : true}
+		]);
+		
+		// GridView의 데이터 유효성 설정
+		com.setValidGrid(grd_sample, [
+			 { id : "col1", mandatory : true }
+			,{ id : "col2", mandatory : true, label : "label.xom.wq.etc.ALERT" }
+			,{ id : "col3", minLength : 2 }
+			,{ id : "col4", minByteLength : 6 }
+			,{ id : "col5", maxLength : 4 }
+			,{ id : "col6", maxByteLength : 6 }
+			,{ id : "col7", allowChar : "a-zA-Z0-9" }
+			,{ id : "col8", allowChar : "ㄱ-힣" }
+			,{ id : "col9", ignoreChar : "!@#$%^&*()" }
+			,{ id : "col10", isPhone : true, allowChar : "0-9" }
+			,{ id : "col11", isEmail : true, allowChar : "a-zA-Z0-9@." }
+			,{ id : "col12", valFunc : function(value) {
+				if (!com.isEmpty(value) && Number(value) < 50) {
+					return "값이 50이상이어야 합니다.";
+				}
+			}, allowChar : "0-9"}
+		]);
+	};
+	
+	/**
+	 * dataMap의 신규/수정 상태 테스트용
+	 */
+	scwin.rad_status_onchange = function(info) {
+		if (info.newValue == "C") {
+			// 신규인 경우 original data 빈값으로 셋팅
+			com.initDataMap(dma_sample)
+		} else if (info.newValue == "U") {
+			// 수정인 경우 조회 결과 셋팅 (빈값으로 초기화 후 setJSON 사용)
+			dma_sample.setEmptyValue();
+//			com.execute("sbm_dma", {isSampleUrl : true});
+			dma_sample.setJSON({
+				 "key3": "1"
+				,"key4": "1"
+			});
+		}
+		// inputbox bold 해제
+		com.initBold("grp_sample");
+	};
+	
+	/**
+	 * Group내 데이터의 유효성 확인
+	 */
+	scwin.btn_valGroup_onclick = function() {
+		if (!com.isModified(dma_sample)) {
+			com.warn("변경된 정보가 없습니다.");
+			return;
+		};
+		// com.setValidGroup으로 설정한 정보로 유효성 체크
+		if (com.validateGroup(grp_sample)) {
+			com.alert("모두 유효함.");
+		}
+	};
+
+	/**
+	 * gridView의 데이터 유효성 확인
+	 */
+	scwin.btn_valGrid_onclick = function() {
+		// com.setValidGrid로 설정한 정보로 유효성 체크
+		if (com.validateGrid(grd_sample)) {
+//		if (com.validateGrid(grd_sample, {isCheckModified : false})) {
+			com.alert("모두 유효함.");
+		}
+	};
+	
+	/**
+	 * 그리드 셀 편집시 keydown 이벤트
+	 */
+	scwin.grd_sample_oneditkeydown = function(info) {
+	    if (info.colID == "col7" || info.colID == "col11") {
+		    // 한글 입력 방지
+		    com.keydownIgnoreHan();
+		}	
+	};
+	
+	/**
+	 * 그리드 행추가
+	 */
+	scwin.btn_add_onclick = function() {
+		com.addRow(grd_sample);
+	};
+	]]></script>
+
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe><xf:group class="pageWrap" id="" style="">
+			
+			<xf:group class="dfbox" id="" style="">
+				<w2:textbox class="df_tit fl" id="" label="Group내 입력컴포넌트의 데이터 유효성 체크" style="" tagname="h2"></w2:textbox>
+				<xf:group class="fr" id="" style="">
+					
+					<xf:select1 appearance="full" class="wq_radio" cols="" id="rad_status" ref="" renderType="radiogroup" rows="" selectedIndex="" style="" ev:onviewchange="" ev:onchange="scwin.rad_status_onchange">
+						<xf:choices>
+							<xf:item>
+								<xf:label><![CDATA[신규]]></xf:label>
+								<xf:value><![CDATA[C]]></xf:value>
+							</xf:item>
+							<xf:item>
+								<xf:label><![CDATA[수정]]></xf:label>
+								<xf:value><![CDATA[U]]></xf:value>
+							</xf:item>
+						</xf:choices>
+					</xf:select1><w2:anchor class="btn_cm" ev:onclick="scwin.btn_valGroup_onclick" id="btn_valGroup" outerDiv="false" style=""
+						toolTip="">
+						<xf:label><![CDATA[유효성 체크]]></xf:label>
+					</w2:anchor>
+				</xf:group>
+			</xf:group>
+			<xf:group class="tbbox" id="" style="">
+				<xf:group class="tb_inner" id="">
+					<xf:group class="w2tb tb" id="grp_sample" style="width:100%" tagname="table" adaptive="layout" adaptiveThreshold="600">
+						<w2:attributes>
+							<w2:summary></w2:summary>
+						</w2:attributes>
+						<xf:group tagname="colgroup">
+							<xf:group style="width:180px;" tagname="col"></xf:group>
+							<xf:group style="" tagname="col"></xf:group>
+							<xf:group style="width:150px;" tagname="col"></xf:group>
+							<xf:group style="" tagname="col"></xf:group>
+						</xf:group>
+						<xf:group tagname="tr" style="">
+							<xf:group tagname="th" class="w2tb_th tac" style="">com.setValidGrop&amp;nbsp;함수의&amp;nbsp;valInfoArr&amp;nbsp;설정<w2:attributes>
+									<w2:scope>row</w2:scope>
+									<w2:colspan>4</w2:colspan>
+									<w2:rowspan>1</w2:rowspan>
+								</w2:attributes></xf:group>
+						</xf:group>
+						<xf:group style="" tagname="tr">
+							<xf:group class="w2tb_th req" style="" tagname="th">
+
+								<w2:textbox ref="" style="" userData2="" id="" label="mandatory" class="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+
+								<xf:input ref="data:dma_sample.key1" customModelUnformatter="" autocomplete="" style="" id="ibx_key1"
+									allowChar="" enterBlur="" class="req" placeholder="필수 입력" ev:onblur="">
+								</xf:input>
+							</xf:group>
+							<xf:group class="w2tb_th req" style="" tagname="th">
+								<w2:textbox class="" id="" label="label" ref="" style="" tagname="p" userData2=""></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+								<xf:input allowChar="" class="req" id="" mandatory="" placeholder="label 지정" ref="data:dma_sample.key2"
+									style="">
+								</xf:input>
+								<w2:span id="" label="(다국어 적용시 필수)" style=""></w2:span>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr" style="">
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+
+								<w2:textbox class="" id="" label="minLength" ref="" style="" tagname="p" userData2=""></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" tagname="td">
+								<w2:attributes></w2:attributes>
+
+
+								<xf:input allowChar="" class="" id="" maxlength="" placeholder="최소 2자리"
+									ref="data:dma_sample.key3" style="">
+								</xf:input>
+
+							</xf:group>
+							<xf:group class="w2tb_th" tagname="th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+
+
+
+
+								<w2:textbox ref="" style="" userData2="" id="" label="minByteLength" class="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" tagname="td">
+								<w2:attributes></w2:attributes>
+								<xf:input allowChar="" class="" id="" mandatory="" maxByteLength="" maxlength="" placeholder="최소 6바이트"
+									ref="data:dma_sample.key4" style="">
+								</xf:input>
+							</xf:group>
+						</xf:group>
+						<xf:group style="" tagname="tr">
+							<xf:group class="w2tb_th" style="" tagname="th">
+
+
+
+
+								<w2:textbox ref="" style="" userData2="" id="" label="maxLength" class="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+
+
+
+								<xf:input allowChar="" class="" id="" mandatory="" placeholder="최대 4자리" ref="data:dma_sample.key5"
+									style="">
+								</xf:input>
+							</xf:group>
+							<xf:group class="w2tb_th" style="" tagname="th">
+								<w2:textbox ref="" style="" userData2="" id="" label="maxByteLength" class="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+								<xf:input allowChar="" class="" id="" mandatory="" maxlength="" placeholder="최대 6바이트"
+									ref="data:dma_sample.key6" style="">
+								</xf:input>
+							</xf:group>
+						</xf:group>
+						<xf:group style="" tagname="tr">
+							<xf:group class="w2tb_th" style="" tagname="th">
+
+
+
+
+								<w2:textbox ref="" style="" userData2="" id="" label="allowChar (영문,숫자)" class="" tagname="p"></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+
+
+
+								<xf:input ref="data:dma_sample.key7" style="" id="" placeholder="영문, 숫자만 입력가능" class="" mandatory=""
+									ev:onkeydown="com.keydownIgnoreHan">
+								</xf:input>
+								<w2:span label="(a-zA-Z0-9)" style="" id=""></w2:span>
+							</xf:group>
+							<xf:group class="w2tb_th req" style="" tagname="th">
+
+
+
+								<w2:textbox class="" id="" label="allowChar" ref="" style="" tagname="p" userData2=""></w2:textbox>
+							</xf:group>
+							<xf:group class="w2tb_td" style="" tagname="td">
+
+
+								<xf:input class="" id="" mandatory="" placeholder="한글만 입력가능" ref="data:dma_sample.key8" style=""></xf:input>
+								<w2:span id="" label="(ㄱ-힣)" style=""></w2:span>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+
+
+								<w2:textbox class="" id="" label="ignoreChar" ref="" style="" tagname="p" userData2=""></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes></w2:attributes>
+
+
+								<xf:input allowChar="" class="" id="" mandatory="" placeholder="특수문자 입력 불가" ref="data:dma_sample.key9"
+									style="">
+								</xf:input>
+								<w2:span id="" label="(!@#$%^&amp;*())" style=""></w2:span>
+							</xf:group>
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+
+								<w2:textbox class="" id="" label="isPhone" ref="" style="" tagname="p" userData2=""></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes></w2:attributes>
+
+								<xf:input class="" id="" mandatory="" maxlength="" minlength="" placeholder="전화번호 (숫자만)"
+									ref="data:dma_sample.key10" style="" ev:onkeydown="com.keydownIgnoreHan">
+								</xf:input>
+								<w2:span id="" label="(0-9)" style=""></w2:span>
+							</xf:group>
+						</xf:group>
+						<xf:group tagname="tr">
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+
+
+
+								<w2:textbox class="" id="" label="isEmail" ref="" style="" tagname="p" userData2=""></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes></w2:attributes>
+
+
+
+								<xf:input class="" id="" mandatory="" maxlength="" minlength="" placeholder="Email 형식"
+									ref="data:dma_sample.key11" style="">
+								</xf:input>
+								<w2:span id="" label="(a-zA-Z0-9@.)" style=""></w2:span>
+							</xf:group>
+							<xf:group tagname="th" class="w2tb_th">
+								<w2:attributes>
+									<w2:scope>row</w2:scope>
+								</w2:attributes>
+
+
+								<w2:textbox class="" id="" label="valFunc" ref="" style="" tagname="p" userData2=""></w2:textbox>
+							</xf:group>
+							<xf:group tagname="td" class="w2tb_td">
+								<w2:attributes></w2:attributes>
+
+
+								<xf:input class="" id="" mandatory="" maxlength="" minlength="" placeholder="지정 함수로 체크"
+									ref="data:dma_sample.key12" style="">
+								</xf:input>
+								<w2:span id="" label="(0-9)" style=""></w2:span>
+							</xf:group>
+						</xf:group>
+					<xf:group tagname="tr" style=""><xf:group tagname="th" class="w2tb_th tac">Input&amp;nbsp;이외의&amp;nbsp;입력&amp;nbsp;컴포넌트<w2:attributes><w2:scope>row</w2:scope><w2:colspan>4</w2:colspan><w2:rowspan>1</w2:rowspan></w2:attributes></xf:group></xf:group><xf:group tagname="tr">
+						<xf:group tagname="th" class="w2tb_th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+							<w2:textbox class="" id="" label="SearchBox" ref="" style="" tagname="p" userData2=""></w2:textbox>
+						</xf:group>
+						<xf:group tagname="td" class="w2tb_td">
+							<w2:attributes></w2:attributes>
+							<w2:searchbox id="" style="width: 150px;height: 21px;" ref="data:dma_sample.key13" placeholder="최대 4자리"></w2:searchbox>
+						</xf:group>
+						<xf:group tagname="th" class="w2tb_th">
+							<w2:attributes>
+								<w2:scope>row</w2:scope>
+							</w2:attributes>
+
+							<w2:textbox class="" id="" label="Secret" ref="" style="" tagname="p" userData2=""></w2:textbox>
+						</xf:group>
+						<xf:group tagname="td" class="w2tb_td">
+							<w2:attributes></w2:attributes>
+
+							<xf:secret id="" style="" ref="data:dma_sample.key14" placeholder="영문, 숫자만 입력가능"></xf:secret>
+							<w2:span id="" label="(한/영 전환 불가, 영문 입력)" style=""></w2:span>
+						</xf:group></xf:group><xf:group tagname="tr">
+	<xf:group tagname="th" class="w2tb_th">
+		<w2:attributes>
+			<w2:scope>row</w2:scope>
+		</w2:attributes>
+
+		<w2:textbox class="" id="" label="Textarea" ref="" style="" tagname="p" userData2=""></w2:textbox>
+	</xf:group>
+	<xf:group tagname="td" class="w2tb_td">
+		<w2:attributes></w2:attributes>
+
+		<xf:textarea id="" style="width : 100%;height: 20px;" ref="data:dma_sample.key15" placeholder="특수문자 입력 불가"></xf:textarea>
+	</xf:group>
+	<xf:group tagname="th" class="w2tb_th">
+		<w2:attributes>
+			<w2:scope>row</w2:scope>
+		</w2:attributes>
+		<w2:textbox class="" id="" label="공통코드 팝업" ref="" style="" tagname="p" userData2=""></w2:textbox>
+	</xf:group>
+	<xf:group tagname="td" class="w2tb_td">
+		<w2:attributes></w2:attributes>
+		<w2:wframe id="wfm_cmnCdSingle" src="/cm/xml/cmnCdWfm.xml" style=""></w2:wframe>
+	</xf:group></xf:group></xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group class="dfbox" id="" style="">
+				<w2:textbox class="df_tit fl" id="" label="GridView의 데이터 유효성 체크" style="" tagname="h2"></w2:textbox>
+				<xf:group class="fr" id="" style="">
+					<w2:anchor class="btn_cm" id="btn_add" outerDiv="false" style="" toolTip="" ev:onclick="scwin.btn_add_onclick">
+						<xf:label><![CDATA[행추가]]></xf:label>
+					</w2:anchor><w2:anchor class="btn_cm" ev:onclick="scwin.btn_valGrid_onclick" id="btn_valGrid" outerDiv="false" style=""
+						toolTip="">
+						<xf:label><![CDATA[유효성 체크]]></xf:label>
+					</w2:anchor>
+
+					
+				</xf:group>
+			</xf:group>
+			<xf:group adaptiveThreshold="" class="gvwbox" id="" style="height : 150px;" tabIndex="">
+				<w2:gridView adaptive="" class="wq_gvw"
+					dataList="data:dlt_sample" id="grd_sample"
+					readOnly="" rowNumVisible="" style="height:100%;"
+					ev:oneditkeydown="scwin.grd_sample_oneditkeydown" autoFit="allColumn" editModeEvent="onclick" rowStatusVisible="true">
+					<w2:header id="header1" style="">
+						<w2:row style="" id="row6">
+							<w2:column inputType="text" style="" id="column37" value="com.setValidGrid 함수의 valInfoArr 설정" displayMode="label"
+								colSpan="12" rowSpan="">
+							</w2:column>
+						</w2:row>
+						<w2:row id="row2" style="">
+							<w2:column inputType="text" style="" id="column38" value="mandatory" width="100">
+							</w2:column>
+							<w2:column class="" id="column11" inputType="text" style=""
+								value="label" width="100">
+							</w2:column>
+							<w2:column class="" id="column7" inputType="text" style=""
+								value="minLength" width="100">
+							</w2:column>
+							<w2:column class="" id="column3" inputType="text" style=""
+								value="minByteLength" width="100">
+							</w2:column>
+							<w2:column class="" id="column12" inputType="text" style="" value="maxLength" width="100">
+							</w2:column>
+							<w2:column removeBorderStyle="false" inputType="text" style="" id="column18"
+								value="maxByteLength" class="" width="100">
+							</w2:column>
+							<w2:column removeBorderStyle="false" inputType="text" style="" id="column21"
+								value="allowChar" class="" width="100">
+							</w2:column>
+							<w2:column removeBorderStyle="false" inputType="text" style="" id="column24"
+								value="allowChar" width="100">
+							</w2:column>
+							<w2:column removeBorderStyle="false" inputType="text" style="" id="column27"
+								value="ignoreChar" width="100">
+							</w2:column>
+							<w2:column removeBorderStyle="false" inputType="text" style="" id="column30"
+								value="isPhone" width="100">
+							</w2:column>
+							<w2:column removeBorderStyle="false" inputType="text" style="" id="column33"
+								value="isEmail" width="100">
+							</w2:column>
+							<w2:column removeBorderStyle="false" inputType="text" style="" id="column36"
+								value="valFunc" width="100">
+							</w2:column>
+						</w2:row>
+					</w2:header>
+					<w2:gBody style="" id="gBody1">
+						<w2:row style="" id="row7">
+							<w2:column inputType="text" style="" id="col1" value="" class="req" placeholder="필수 입력" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col2" value="" class="req" placeholder="label 지정" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col3" value="" placeholder="최소 2자리" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col4" value="" placeholder="최소 6바이트" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col5" value="" placeholder="최대 4자리" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col6" value="" placeholder="최대 6바이트" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col7" value="" placeholder="영문, 숫자만 입력가능" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col8" value="" placeholder="한글만 입력가능" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col9" value="" placeholder="특수문자 입력 불가" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col10" value="" placeholder="전화번호 (숫자만)" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col11" value="" placeholder="Email 형식" width="100"></w2:column>
+							<w2:column inputType="text" style="" id="col12" value="" placeholder="지정 함수로 체크" width="100"></w2:column>
+						</w2:row>
+					</w2:gBody>
+				</w2:gridView>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

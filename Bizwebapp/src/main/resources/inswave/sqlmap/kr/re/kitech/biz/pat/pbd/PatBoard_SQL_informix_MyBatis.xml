@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.pbd">	
+<!-- 공지사항 LIST 조회 -->
+<select id="selectNoticeBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatNoticeVo" resultType="kr.re.kitech.biz.pat.pbd.vo.PatNoticeVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pbd.selectNoticeBoard */   
+       notice_id,                   
+       notice_title,
+       ntc.wri_psn_syspayno,
+       TO_CHAR(ntc.wri_daytm, '%Y%m%d') AS wri_daytm, 
+       TO_CHAR(to_date(ntc.notice_start_date, '%Y%m%d'), '%Y%m%d') AS notice_start_date,
+       TO_CHAR(to_date(ntc.notice_end_date, '%Y%m%d'), '%Y%m%d') AS notice_end_date,       
+       TO_CHAR(TO_DATE(ntc.notice_start_date, '%Y%m%d'), '%Y-%m-%d') || ' ~ ' || TO_CHAR(TO_DATE(ntc.notice_end_date, '%Y%m%d'), '%Y-%m-%d')  AS notice_period,
+       notice_ex,
+       ntc.notice_title, 
+       ntc.regst_syspayno, 
+       TO_CHAR(ntc.regst_daytm, '%Y%m%d') AS regst_daytm,
+       hum.nm AS wri_psn_syspaynm,
+       ntc.important,
+       hum.empno
+  FROM patboardnotice ntc
+ INNER JOIN humbasicinfo hum ON hum.syspayno = ntc.wri_psn_syspayno
+ WHERE 1=1
+  <if test="notice_title != null and notice_title != ''"> AND ntc.notice_title like '%' || #{notice_title} || '%'</if>
+  <if test="wri_psn_syspayno != null and wri_psn_syspayno != ''"> AND ntc.wri_psn_syspayno = #{wri_psn_syspayno}</if>
+ ORDER BY ntc.regst_daytm DESC 
+</select>
+
+<!-- 자주묻는질문 LIST 조회 -->
+<select id="selectFaqBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFaqVo" resultType="kr.re.kitech.biz.pat.pbd.vo.PatFaqVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pbd.selectFaqBoard */   
+       faq.faq_id,                   
+       faq.faq_title,
+       faq.wri_psn_syspayno,
+       TO_CHAR(faq.wri_daytm, '%Y%m%d') AS wri_daytm, 
+       faq.regst_syspayno, 
+       TO_CHAR(faq.regst_daytm, '%Y%m%d') AS regst_daytm,
+       hum.nm AS wri_psn_syspaynm,
+       hum.empno
+  FROM patboardfaq faq
+ INNER JOIN humbasicinfo hum ON hum.syspayno = faq.wri_psn_syspayno
+ WHERE 1=1
+  <if test="faq_title != null and faq_title != ''"> AND faq.faq_title like '%' || #{faq_title} || '%'</if>
+  <if test="wri_psn_syspayno != null and wri_psn_syspayno != ''"> AND faq.wri_psn_syspayno = #{wri_psn_syspayno}</if> 
+</select>
+
+<!-- 양식함 LIST 조회 -->
+<select id="selectFrmBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFrmVo" resultType="kr.re.kitech.biz.pat.pbd.vo.PatFrmVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pbd.selectFrmBoard */   
+       frm.frm_id,                   
+       frm.frm_title,
+       frm.wri_psn_syspayno,
+       TO_CHAR(frm.wri_daytm, '%Y%m%d') AS wri_daytm, 
+       frm.regst_syspayno, 
+       TO_CHAR(frm.regst_daytm, '%Y%m%d') AS regst_daytm,
+       hum.nm AS wri_psn_syspaynm,
+       hum.empno
+  FROM patboardfrm frm
+ INNER JOIN humbasicinfo hum ON hum.syspayno = frm.wri_psn_syspayno
+ WHERE 1=1
+  <if test="frm_title != null and frm_title != ''"> AND frm.frm_title like '%' || #{frm_title} || '%'</if>
+  <if test="wri_psn_syspayno != null and wri_psn_syspayno != ''"> AND frm.wri_psn_syspayno = #{wri_psn_syspayno}</if> 
+</select>
+
+<!-- 묻고답하기 LIST 조회 -->
+<select id="selectQnaBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo" resultType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pbd.selectFrmBoard */   
+       qna.qna_id,
+       qna.quest_psn_syspayno, 
+       TO_CHAR(qna.regst_daytm, '%Y%m%d') AS quest_daytm, 
+       qna.quest_title,
+       qna.regst_syspayno, 
+       ofi.nm AS wri_psn_syspaynm,
+       qna.answer_psn_syspayno,
+       hum.nm AS answer_psn_syspaynm,
+       TO_CHAR(qna.answer_daytm, '%Y%m%d') AS answer_daytm,
+       qna.answer_ex,
+       CASE NVL(qna.answer_ex, 'N') WHEN 'N' THEN '답변준비중' ELSE '답변완료' END answer_ex_stat,
+       qna.send_clsf,
+       CASE NVL(qna.send_clsf, 'N') WHEN 'N' THEN '' ELSE '이관완료'END send_clsf_stat,
+       pof.patofic_nm
+FROM   patboardqna qna
+INNER JOIN patoficcharg ofi ON ofi.id = qna.quest_psn_syspayno
+INNER JOIN patoffice pof ON pof.patofic_cd = ofi.patofic_cd
+LEFT  JOIN humbasicinfo hum ON hum.syspayno = qna.answer_psn_syspayno
+WHERE 1=1
+  <if test="quest_title != null and quest_title != ''"> AND qna.quest_title LIKE '%' || #{quest_title} || '%'</if>
+  <if test="patofic_charg_id != null and patofic_charg_id != ''"> AND qna.quest_psn_syspayno = #{patofic_charg_id}</if> 
+  <if test="start_daytm != null and start_daytm != ''"> AND qna.quest_daytm <![CDATA[>=]]> TO_DATE(#{start_daytm}, '%Y%m%d')</if>
+  <if test="end_daytm != null and end_daytm != ''"> AND qna.quest_daytm <![CDATA[<=]]> TO_DATE(#{end_daytm}, '%Y%m%d')</if>
+  <if test="answer_ex != null and answer_ex != ''"> AND qna.answer_ex = #{answer_ex}</if>
+  <if test="patofic_cd != null and patofic_cd != ''"> AND pof.patofic_cd = #{patofic_cd}</if>
+ ORDER BY qna.quest_daytm DESC
+</select>
+
+
+
+<!-- 공지사항 단건 조회 -->
+<select id="selectItemNoticeBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatNoticeVo" resultType="kr.re.kitech.biz.pat.pbd.vo.PatNoticeVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pbd.selectItemNoticeBoard */   
+       notice_id,                   
+       notice_title,
+       ntc.wri_psn_syspayno,
+       TO_CHAR(ntc.wri_daytm, '%Y%m%d') AS wri_daytm, 
+       TO_CHAR(to_date(ntc.notice_start_date, '%Y%m%d'), '%Y%m%d') AS notice_start_date,
+       TO_CHAR(to_date(ntc.notice_end_date, '%Y%m%d'), '%Y%m%d') AS notice_end_date,       
+       TO_CHAR(TO_DATE(ntc.notice_start_date, '%Y%m%d'), '%Y-%m-%d') || ' ~ ' || TO_CHAR(TO_DATE(ntc.notice_end_date, '%Y%m%d'), '%Y-%m-%d')  AS notice_period,
+       notice_ex,
+       ntc.notice_title, 
+       ntc.notice_comment,
+       ntc.regst_syspayno, 
+       TO_CHAR(ntc.regst_daytm, '%Y%m%d') AS regst_daytm,
+       hum.nm AS wri_psn_syspaynm,
+       ntc.important,
+       ntc.notice_attach_file,
+       hum.empno
+  FROM patboardnotice ntc
+ INNER JOIN humbasicinfo hum ON hum.syspayno = ntc.wri_psn_syspayno
+ WHERE 1=1
+   AND ntc.notice_id = #{notice_id}
+</select>
+
+<!-- 자주묻는질문 단건 조회 -->
+<select id="selectItemFaqBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFaqVo" resultType="kr.re.kitech.biz.pat.pbd.vo.PatFaqVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pbd.selectItemFaqBoard */   
+       faq.faq_id,                   
+       faq.faq_title,
+       faq.wri_psn_syspayno,
+       TO_CHAR(faq.wri_daytm, '%Y%m%d') AS wri_daytm, 
+       faq.faq_comment,
+       faq.regst_syspayno, 
+       TO_CHAR(faq.regst_daytm, '%Y%m%d') AS regst_daytm,
+       hum.nm AS wri_psn_syspaynm,
+       faq.faq_attach_file,
+       hum.empno
+  FROM patboardfaq faq
+ INNER JOIN humbasicinfo hum ON hum.syspayno = faq.wri_psn_syspayno
+ WHERE 1=1
+   AND faq.faq_id = #{faq_id}
+</select>
+
+<!-- 양식함 단건 조회 -->
+<select id="selectItemFrmBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFrmVo" resultType="kr.re.kitech.biz.pat.pbd.vo.PatFrmVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pbd.selectItemFrmBoard */   
+       frm.frm_id,                   
+       frm.frm_title,
+       frm.wri_psn_syspayno,
+       TO_CHAR(frm.wri_daytm, '%Y%m%d') AS wri_daytm, 
+       frm.frm_comment,
+       frm.regst_syspayno, 
+       TO_CHAR(frm.regst_daytm, '%Y%m%d') AS regst_daytm,
+       hum.nm AS wri_psn_syspaynm,
+       frm.frm_attach_file,
+       hum.empno
+  FROM patboardfrm frm
+ INNER JOIN humbasicinfo hum ON hum.syspayno = frm.wri_psn_syspayno
+ WHERE 1=1
+   AND frm.frm_id = #{frm_id}
+</select>
+
+<!-- 묻고답하기 단건 조회 -->
+<select id="selectItemQnaBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo" resultType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pbd.selectItemQnaBoard */   
+       qna.qna_id, 
+       qna.quest_psn_syspayno, 
+       chg.nm AS quest_psn_syspaynm,
+       TO_CHAR(qna.regst_daytm, '%Y%m%d') AS quest_daytm, 
+       ofi.patofic_nm,
+       ofi.contac_loc,
+       qna.quest_title,
+       qna.quest_comment,
+       qna.quest_attach_file,
+       qna.regst_syspayno ,
+       qna.answer_psn_syspayno,
+       hum.nm AS answer_psn_syspaynm,         
+       TO_CHAR(qna.answer_daytm, '%Y%m%d') AS answer_daytm,
+       qna.answer_comment,
+       qna.answer_attach_file,
+       qna.answer_ex,
+       qna.send_clsf,
+       hum.empno
+
+  FROM patboardqna qna
+  JOIN patoficcharg chg ON chg.id = qna.quest_psn_syspayno
+  JOIN patoffice ofi On ofi.patofic_cd = chg.patofic_cd
+  LEFT JOIN humbasicinfo hum ON hum.syspayno = qna.answer_psn_syspayno
+ WHERE qna.qna_id = #{qna_id}
+   AND NVL(qna.del_yn,'N') != 'Y'
+</select>
+
+  <update id="updatePatPbdQnaDtl" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo">
+/* XDA : kitech.pat.pbd.qna.xda.PatPbdQnaDtlSU02 시스템자동문의 상태값 업데이트 단건*/
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pbd.updatePatPbdQnaDtl */ 
+		 patboardqna SET
+send_clsf = 'Y'
+WHERE qna_id = #{qna_id}
+  </update>
+
+<!-- 공지사항 등록 -->
+<insert id="insertItemNoticeBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatNoticeVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.pbd.insertItemNoticeBoard */ 
+  INTO patboardnotice ( notice_id,
+                        notice_title,
+                        wri_daytm,
+                        important,
+                        wri_psn_syspayno,
+                        regst_syspayno,
+                        notice_start_date,
+                        notice_end_date,
+                        notice_comment,
+                        notice_attach_file,
+                        regst_daytm)
+
+SELECT fn_uid(''),
+ 	   CAST(#{notice_title} as VARCHAR(255)) as notice_title, 
+ 	   CAST(TO_DATE(#{wri_daytm},'%Y%m%d') as DATE) as wri_daytm,
+ 	   CAST(#{important} as CHAR(1)) as important,
+ 	   CAST(#{wri_psn_syspayno} as CHAR(8)) as wri_psn_syspayno,
+ 	   CAST(#{wri_psn_syspayno} as CHAR(8)) as regst_syspayno,
+ 	   CAST(#{notice_start_date} as CHAR(8)) as notice_start_date,
+ 	   CAST(#{notice_end_date} as CHAR(8)) as notice_end_date,
+ 	   CAST(#{notice_comment} as LVARCHAR(30000)) as notice_comment,
+ 	   CAST(#{notice_attach_file} as CHAR(13)) as notice_attach_file,
+       CURRENT
+ FROM DUAL
+</insert>
+
+<!-- 자주묻는질문 등록 -->
+<insert id="insertItemFaqBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFaqVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.pbd.insertItemFaqBoard */ 
+  INTO patboardfaq ( faq_id,
+                     faq_title,
+                     wri_daytm,
+                     wri_psn_syspayno,
+                     regst_syspayno,
+                     faq_comment,
+                     faq_attach_file,
+                     regst_daytm)
+
+SELECT fn_uid(''),
+ 	   CAST(#{faq_title} as VARCHAR(255)) as faq_title, 
+ 	   CAST(TO_DATE(#{wri_daytm},'%Y%m%d') as DATE) as wri_daytm,
+ 	   CAST(#{wri_psn_syspayno} as CHAR(8)) as wri_psn_syspayno,
+ 	   CAST(#{wri_psn_syspayno} as CHAR(8)) as regst_syspayno,
+ 	   CAST(#{faq_comment} as LVARCHAR(30000)) as faq_comment,
+ 	   CAST(#{faq_attach_file} as CHAR(13)) as faq_attach_file,
+       CURRENT
+ FROM DUAL
+</insert>
+
+<!-- 양식함 등록 -->
+<insert id="insertItemFrmBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFrmVo">
+INSERT /* QueryID : kr.re.kitech.biz.pat.pbd.insertItemFrmBoard */ 
+  INTO patboardfrm ( frm_id,
+                     frm_title,
+                     wri_daytm,
+                     wri_psn_syspayno,
+                     regst_syspayno,
+                     frm_comment,
+                     frm_attach_file,
+                     regst_daytm)
+
+SELECT fn_uid(''),
+ 	   CAST(#{frm_title} as VARCHAR(255)) as frm_title, 
+ 	   CAST(TO_DATE(#{wri_daytm},'%Y%m%d') as DATE) as wri_daytm,
+ 	   CAST(#{wri_psn_syspayno} as CHAR(8)) as wri_psn_syspayno,
+ 	   CAST(#{wri_psn_syspayno} as CHAR(8)) as regst_syspayno,
+ 	   CAST(#{frm_comment} as LVARCHAR(30000)) as frm_comment,
+ 	   CAST(#{frm_attach_file} as CHAR(13)) as frm_attach_file,
+       CURRENT
+ FROM DUAL
+</insert>
+
+<!-- 공지사항 삭제 -->
+<delete id="deleteItemNoticeBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatNoticeVo">
+DELETE /* QueryID : kr.re.kitech.biz.pat.pbd.deleteItemNoticeBoard */ 
+  FROM patboardnotice
+ WHERE notice_id = #{notice_id}
+</delete>   
+
+<!-- 자주묻는질문 삭제 -->
+<delete id="deleteItemFaqBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFaqVo">
+DELETE /* QueryID : kr.re.kitech.biz.pat.pbd.deleteItemFaqBoard */ 
+  FROM patboardfaq
+ WHERE faq_id = #{faq_id}
+</delete>   
+
+<!-- 양식함 삭제 -->
+<delete id="deleteItemFrmBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFrmVo">
+DELETE /* QueryID : kr.re.kitech.biz.pat.pbd.deleteItemFrmBoard */ 
+  FROM patboardfrm
+ WHERE frm_id = #{frm_id}
+</delete>
+
+<!-- 묻고답하기 삭제 -->
+<delete id="deleteItemQnaBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo">
+DELETE /* QueryID : kr.re.kitech.biz.pat.pbd.deleteItemQnaBoard */ 
+  FROM patboardqna
+ WHERE qna_id = #{qna_id}
+</delete>
+
+<!-- 공지사항 수정 -->
+<update id="updateItemNoticeBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatNoticeVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pbd.updateItemNoticeBoard */ 
+      patboardnotice
+  SET <if test="wri_psn_syspayno != null"> wri_psn_syspayno = #{wri_psn_syspayno}, </if>
+      <if test="wri_daytm != null"> wri_daytm = TO_DATE(#{wri_daytm},'%Y%m%d'), </if> 
+      <if test="important != null"> important = #{important}, </if> 
+      <if test="notice_title != null"> notice_title = #{notice_title}, </if>
+      <if test="wri_psn_syspayno != null"> wri_psn_syspayno = #{wri_psn_syspayno}, </if>
+      <if test="notice_start_date != null"> notice_start_date = #{notice_start_date}, </if>
+      <if test="notice_end_date != null"> notice_end_date = #{notice_end_date}, </if>
+      <if test="notice_comment != null"> notice_comment = #{notice_comment}, </if>
+      <if test="notice_attach_file != null"> notice_attach_file = #{notice_attach_file}, </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE notice_id = #{notice_id}
+</update>
+
+<!-- 자주묻는질문 수정 -->
+<update id="updateItemFaqBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFaqVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pbd.updateItemFaqBoard */ 
+      patboardfaq
+  SET <if test="wri_psn_syspayno != null"> wri_psn_syspayno = #{wri_psn_syspayno}, </if>
+      <if test="wri_daytm != null"> wri_daytm = TO_DATE(#{wri_daytm},'%Y%m%d'), </if> 
+      <if test="faq_title != null"> faq_title = #{faq_title}, </if>
+      <if test="wri_psn_syspayno != null"> wri_psn_syspayno = #{wri_psn_syspayno}, </if>
+      <if test="faq_comment != null"> faq_comment = #{faq_comment}, </if>
+      <if test="faq_attach_file != null"> faq_attach_file = #{faq_attach_file}, </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE faq_id = #{faq_id}
+</update>
+
+<!-- 양식함 수정 -->
+<update id="updateItemFrmBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatFrmVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pbd.updateItemFrmBoard */ 
+      patboardfrm
+  SET <if test="wri_psn_syspayno != null"> wri_psn_syspayno = #{wri_psn_syspayno}, </if>
+      <if test="wri_daytm != null"> wri_daytm = #{wri_daytm}, </if> 
+      <if test="frm_title != null"> frm_title = #{frm_title}, </if>
+      <if test="wri_psn_syspayno != null"> wri_psn_syspayno = #{wri_psn_syspayno}, </if>
+      <if test="frm_comment != null"> frm_comment = #{frm_comment}, </if>
+      <if test="frm_attach_file != null"> frm_attach_file = #{frm_attach_file}, </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE frm_id = #{frm_id}
+</update>
+
+<!-- 묻고답하기 수정 -->
+<update id="updateItemQnaBoard" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pbd.updateItemQnaBoard */ 
+      patboardqna
+  SET <if test="answer_psn_syspayno != null"> answer_psn_syspayno = #{answer_psn_syspayno}, </if>
+      <if test="answer_daytm != null"> answer_daytm = #{answer_daytm}, </if>
+      <if test="answer_comment != null"> answer_comment = #{answer_comment}, </if> 
+      <if test="answer_attach_file != null"> answer_attach_file = #{answer_attach_file}, </if>
+       updt_syspayno = #{updt_syspayno},
+       updt_daytm = SYSDATE
+ WHERE qna_id = #{qna_id}
+</update>
+  <!-- 시스템자동문의 요청자 조회 -->
+  <select id="selectreqUserInfo" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo" resultType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo">
+/* XDA : kitech.pat.pbd.qna.xda.PatPbdQnaDtlSS02 시스템자동문의 요청자 조회 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.pat.pbd.selectPatQna */ 
+		  hum.syspayno
+        , hum.empno
+        , dep.dept_cd
+        , dep.dept_new_ymd
+        , dep.dept_nm
+        , TO_CHAR(CURRENT, '%Y%m%d') AS req_ymd
+        , TO_CHAR(CURRENT, '%H%M%S') AS req_time
+        , TO_CHAR(CURRENT + 7 UNITS DAY,  '%Y%m%d') AS complt_demnd_ymd
+        , TO_CHAR(CURRENT + 7 UNITS DAY,  '%H%M%S') AS complt_demnd_time
+FROM humbasicinfo hum
+JOIN xodhdeptinfo dep ON hum.dept_cd = dep.dept_cd AND hum.dept_new_ymd = dep.dept_new_ymd
+WHERE hum.syspayno = #{syspayno}
+  </select>
+  <insert id="insertPatQna" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo">
+/* XDA : kitech.com.bas.xda.ComBasSystemSI 요구사항신청 (BASDEMNDITEM)테이블의 정보 입력 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.pat.pbd.insertPatQna */ 
+		 into basdemnditem
+( demnd_item_mngmt_no, 
+req_sys, 
+req_bizwrk, 
+req_base_clsf, 
+req_objct_clsf, 
+progrss_state, 
+req_ymd, 
+req_time, 
+complt_demnd_ymd, 
+complt_demnd_time, 
+rcpt_psn_empno,
+req_dept, 
+req_psn_syspayno, 
+req_subj, 
+regst_psn_syspayno, 
+regst_daytm, 
+req_kind,
+qna_id,
+infr_mgr_no)
+values(#{demnd_item_mngmt_no}, #{req_sys}, #{req_bizwrk}, #{req_base_clsf}, #{req_objct_clsf}, #{progrss_state}, #{req_ymd}, to_char(current,'%H%M%S'), #{complt_demnd_ymd}, #{complt_demnd_time}, #{rcpt_psn_empno}, #{req_dept}, #{req_psn_syspayno}, #{req_subj}, #{regst_psn_syspayno}, sysdate,#{req_kind},#{qna_id},#{infr_mgr_no})
+  </insert>
+  <insert id="insertPatQnaDetail" parameterType="kr.re.kitech.biz.pat.pbd.vo.PatQnaVo">
+/* XDA : kitech.com.bas.xda.ComBasSystemReqDetlsSI 요구사항상세 (BASDEMNDITEMDETLS)테이블의 정보 입력 단건*/
+INSERT /* QueryID : kr.re.kitech.biz.pat.pbd.insertPatQnaDetail */ 
+		 into basdemnditemdetls
+ ( demnd_item_mngmt_no, 
+ req_contnt, 
+ req_cause, 
+ req_base, 
+ expec_efct, 
+ expec_efct_selt, 
+ rcpt_yn, 
+ actn_plan, 
+ relat_menu_id, 
+ attach_file_no, 
+ elecapp_yn, 
+ regst_psn_syspayno, 
+ regst_daytm,cause_analysis_yn )
+values(#{demnd_item_mngmt_no}, #{req_contnt}, #{req_cause}, #{req_base}, #{expec_efct}, #{expec_efct_selt}, #{rcpt_yn}, #{actn_plan}, #{relat_menu_id}, #{attach_file_no}, #{elecapp_yn}, #{regst_psn_syspayno}, sysdate,#{cause_analysis_yn})
+  </insert>    
+</mapper>

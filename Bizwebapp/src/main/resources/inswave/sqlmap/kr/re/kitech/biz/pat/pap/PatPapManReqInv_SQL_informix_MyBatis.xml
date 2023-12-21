@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.pap">
+  <select id="selectPatPapManReqInvSS01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo" resultType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.req.xda.PatPapManReqInvSS01 */
+SELECT /* QueryID : kr.re.kitech.biz.pat.pap.selectPatPapManReqInvSS01 */
+         app.app_id ref_id                                                        /*출원 의뢰번호*/
+        , mst.req_no                                                            /*신청번호*/
+        , mst.mngmt_no                                                          /*관리번호*/
+        , app.job_state_cd                                                      /*업무진행상태코드*/
+        , pst.state_desc AS job_state_nm_detail                                 /*업무진행상태코드명*/
+        , fn_state_desc(app.job_state_cd) job_state_nm                          /*업무명*/
+        , app.req_psn_syspayno                                                  /*요청자 개인번호*/
+        , fun_emp_nm(app.req_psn_syspayno) req_psn_nm                           /*요청자명*/
+        , app.req_daytm                                                         /*요청 일시*/
+        , DECODE(NVL(app.req_app_clsf, ''), '', mst.smitapp_occr_clsf, app.req_app_clsf) req_app_clsf                                                                    /*요청 출원 구분*/
+        , fun_xodxcommst_cd_nm(DECODE(NVL(app.req_app_clsf, ''), '', mst.smitapp_occr_clsf, app.req_app_clsf), 0) req_app_clsf_nm                                           /*요청 출원 구분명*/
+        , app.req_pub_yn                                                        /*요청 공개 유무*/
+        , case app.req_pub_yn when 'Y' then '예'
+                               WHEN 'N' then '아니오'
+                        else '' end req_pub_yn_nm                               /*요청 공개 유무*/
+        , app.req_claim_yn                                                      /*요청 심사청구 유무*/
+        , case app.req_claim_yn when 'Y' then '출원 후 즉시 자동신청'
+                            else '추후 별도 신청' end req_claim_yn_nm           /*요청 심사청구 유무*/
+        , app.req_due_date                                                      /*요청 기한일*/
+        , app.req_comment                                                       /*요청 내용*/
+        , app.req_attach_file                                                   /*요청 기타첨부*/
+        , mst.patofic_cd
+        , pof.patofic_nm
+        , mst.patofic_charg_id
+        , fn_ofic_user_nm(mst.patofic_charg_id) AS patofic_charg_nm
+FROM patapp app
+INNER JOIN patmastr mst ON mst.req_no = app.req_no AND mst.mngmt_no = app.mngmt_no
+INNER JOIN patoffice pof ON pof.patofic_cd = mst.patofic_cd
+LEFT JOIN patstatecode pst ON pst.state_cd = app.job_state_cd
+WHERE app.app_id = #{app_id}
+  </select>
+<update id="updatePatMastrSU01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.req.xda.PatMastrSU01 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pap.updatePatMastrSU01 */
+         patmastr
+   SET state            = #{state}
+     , patofic_cd       = #{patofic_cd}
+     , patofic_nm       = #{patofic_nm}
+     , patofic_charg_id = #{patofic_charg_id}
+     , patofic_charg_nm = #{patofic_charg_nm}
+     , updt_syspayno    = #{updt_syspayno}
+     , updt_daytm       = CURRENT
+ WHERE req_no           = #{req_no}
+   AND mngmt_no         = #{mngmt_no}
+  </update>
+<update id="updatePatPapManReqSU01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.req.xda.PatPapManReqSU01 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pap.updatePatPapManReqSU01 */
+         patapp
+   SET job_state_cd = #{job_state_cd}
+     , req_psn_syspayno = #{req_psn_syspayno}
+     , req_daytm = CURRENT
+     , req_app_clsf = #{req_app_clsf}
+     , req_ntis_no = #{req_ntis_no}
+     , com_patofic_cd         = #{com_patofic_cd}
+     , com_patofic_charg_id   = #{com_patofic_charg_id}
+     , req_pub_yn = #{req_pub_yn}
+     , req_claim_yn = #{req_claim_yn}
+     , req_comment = #{req_comment}
+     , req_attach_file = #{req_attach_file}
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm = CURRENT
+WHERE app_id = #{app_id}
+  </update>
+<insert id="insertPatPapManReqSI01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.req.xda.PatPapManReqSI01 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.pap.insertPatPapManReqSI01 */
+         INTO patapp (app_id
+                     , req_no
+                     , mngmt_no
+                     , job_state_cd
+                     , req_psn_syspayno
+                     , req_daytm
+                     , req_app_clsf
+                     , req_ntis_no
+                     , req_pub_yn
+                     , req_claim_yn
+                     , req_comment
+                     , req_attach_file
+                     , com_patofic_cd
+                     , com_patofic_charg_id
+                     , regst_syspayno
+                     , regst_daytm)
+VALUES (#{app_id}
+        , #{req_no}
+        , #{mngmt_no}
+        , 'P0510'
+        , #{req_psn_syspayno}
+        , current
+        , #{req_app_clsf}
+        , #{req_ntis_no}
+        , #{req_pub_yn}
+        , #{req_claim_yn}
+        , #{req_comment}
+        , #{req_attach_file}
+        , #{com_patofic_cd}
+        , #{com_patofic_charg_id}
+        , #{regst_syspayno}
+        , current)
+  </insert>
+<update id="updatePatPapReqSI01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.req.xda.PatPapReqSI01 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pap.updatePatPapReqSI01 */
+         patapp
+   SET job_state_cd           = #{job_state_cd}
+     , com_psn_syspayno       = #{com_psn_syspayno}
+     , com_daytm              = CURRENT
+     , com_due_date           = #{com_due_date}
+     , com_comment            = #{com_comment}
+     , com_attach_file        = #{com_attach_file}
+     , updt_syspayno          = #{updt_syspayno}
+     , updt_daytm             = CURRENT
+ WHERE app_id                 = #{app_id}
+  </update>
+<select id="selectPatPapReqInvSS01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo" resultType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.req.xda.PatPapReqInvSS01 */
+SELECT /* QueryID : kr.re.kitech.biz.pat.pap.selectPatPapReqInvSS01 */
+         pap.app_id                                                          /*출원 의뢰번호*/
+        , pap.req_no                                                            /*신청번호*/
+        , pap.mngmt_no                                                          /*관리번호*/
+        , pap.job_state_cd                                                      /*업무진행상태코드*/
+        , pst.state_desc AS job_state_nm_detail                                 /*업무진행상태코드명*/
+        , fn_state_desc(pap.job_state_cd) job_state_nm                          /*업무명*/
+        , pap.req_psn_syspayno                                                  /*요청자 개인번호*/
+        , fun_emp_nm(pap.req_psn_syspayno) req_psn_nm                           /*요청자명*/
+        , TO_CHAR(pap.req_daytm, '%Y%m%d') req_daytm                            /*요청 일시*/
+        , pap.req_app_clsf                                                      /*요청 출원 구분*/
+        , fun_xodxcommst_cd_nm(pap.req_app_clsf, 0) req_app_clsf_nm             /*요청 출원 구분명*/
+        , pap.req_pub_yn                                                        /*요청 공개 유무*/
+        , CASE pap.req_pub_yn WHEN 'Y' THEN '유'
+                              ELSE '무' END req_pub_yn_nm                       /*요청 공개 유무*/
+        , pap.req_claim_yn                                                      /*요청 심사청구 유무*/
+        , CASE pap.req_claim_yn WHEN 'Y' THEN '출원 후 즉시 자동신청'
+                                 ELSE '추후 별도 신청' END req_claim_yn_nm       /*요청 심사청구 유무*/
+        , pap.req_comment                                                       /*요청 내용*/
+        , pap.req_attach_file                                                   /*요청 기타첨부*/
+        , pap.com_psn_syspayno                                                  /*지시자 개인번호*/
+        , fun_emp_nm(pap.com_psn_syspayno) com_psn_nm                           /*지시자명*/
+        , TO_CHAR(pap.com_daytm, '%Y%m%d') com_daytm                            /*지시 일시*/
+        , pap.com_patofic_cd                                                    /*지시 특허사무소*/
+        , pof.patofic_nm AS com_patofic_nm                         /*지시 특허사무소명*/
+        , pap.com_patofic_charg_id                                              /*지시 사무소 담당자 ID*/
+        , fn_ofic_user_nm(pap.com_patofic_charg_id) com_patofic_charg_nm        /*지시 사무소 담당자명*/
+        , pap.com_due_date                                                      /*지시 기한일*/
+        , pap.com_comment                                                       /*지시 내용*/
+        , pap.com_attach_file                                                   /*지시 첨부파일*/
+        , pap.req_ntis_no
+        , mst.patofic_cd
+        , pof2.patofic_nm AS patofic_nm
+FROM patapp pap
+INNER JOIN patmastr mst ON mst.req_no = pap.req_no AND mst.mngmt_no = pap.mngmt_no
+LEFT JOIN patstatecode pst ON pst.state_cd = pap.job_state_cd
+LEFT JOIN patoffice pof ON pof.patofic_cd = pap.com_patofic_cd
+LEFT JOIN patoffice pof2 ON pof2.patofic_cd = mst.patofic_cd
+WHERE pap.app_id = #{app_id}
+  </select>
+<update id="updatePatMastrSU04" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.com.xda.PatMastrSU04 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pap.updatePatMastrSU04 */
+         patmastr
+   SET state         = #{state}
+     , updt_syspayno = #{psn_syspayno}
+     , updt_daytm    = current
+ WHERE req_no        = #{req_no}
+   AND mngmt_no      = #{mngmt_no}
+  </update>
+<select id="selectPatPapReeInvSS01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo" resultType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.ree.xda.PatPapReeInvSS01 */
+SELECT /* QueryID : kr.re.kitech.biz.pat.pap.selectPatPapReeInvSS01 */
+         pap.app_id ref_id                                                        /*출원 의뢰번호*/
+        , pap.req_no                                                            /*신청번호*/
+        , pap.mngmt_no                                                          /*관리번호*/
+        , pap.job_state_cd                                                      /*업무진행상태코드*/
+        , pst.state_desc job_state_nm_detail                                    /*업무진행상태코드명*/
+        , fn_state_desc(pap.job_state_cd) job_state_nm                          /*업무명*/
+        , pap.req_psn_syspayno                                                  /*요청자 개인번호*/
+        , fun_emp_nm(pap.req_psn_syspayno) req_psn_nm                           /*요청자명*/
+        , TO_CHAR(pap.req_daytm, '%Y%m%d') req_daytm                            /*요청 일시*/
+        , pap.req_app_clsf                                                      /*요청 출원 구분*/
+        , fun_xodxcommst_cd_nm(pap.req_app_clsf, 0) req_app_clsf_nm             /*요청 출원 구분명*/
+        , pap.req_pub_yn                                                        /*요청 공개 유무*/
+        , case pap.req_pub_yn when 'Y' then '유'
+                        else '무' end req_pub_yn_nm                       /*요청 공개 유무*/
+        , pap.req_claim_yn                                                      /*요청 심사청구 유무*/
+        , case pap.req_claim_yn when 'Y' then '출원 후 즉시 자동신청'
+                            else '추후 별도 신청' end req_claim_yn_nm       /*요청 심사청구 유무*/
+        , pap.req_due_date                                                      /*요청 기한일*/
+        , TRIM(pap.req_comment::char(3000)) req_comment                        /*요청 내용*/
+        , pap.req_attach_file                                                   /*요청 기타첨부*/
+        , pap.com_psn_syspayno                                                  /*지시자 개인번호*/
+        , fun_emp_nm(pap.com_psn_syspayno) com_psn_nm                           /*지시자명*/
+        , TO_CHAR(pap.com_daytm, '%Y%m%d') com_daytm                            /*지시 일시*/
+        , pap.com_patofic_cd                                                    /*지시 특허사무소*/
+        , pof.patofic_nm AS com_patofic_nm                                      /*지시 특허사무소명*/
+        , pap.com_patofic_charg_id                                              /*지시 사무소 담당자 ID*/
+        , fn_ofic_user_nm(pap.com_patofic_charg_id) com_patofic_charg_nm        /*지시 사무소 담당자명*/
+        , pap.com_due_date                                                     /*지시 기한일*/
+        , TRIM(pap.com_comment::char(3000)) com_comment                        /*지시 내용*/
+        , pap.com_attach_file                                                   /*지시 첨부파일*/
+        , pap.rcpt_wri_id                                                       /*접수 작성자 ID*/
+        , pap.rcpt_psn_id                                                       /*접수자 ID*/
+        , pap.rcpt_adm_id                                                       /*접수 행정담당자 ID*/
+        , fn_ofic_user_nm(pap.rcpt_wri_id) rcpt_wri_nm                          /*접수 작성자명*/
+        , fn_ofic_user_nm(pap.rcpt_psn_id) rcpt_psn_nm                          /*접수자명*/
+        , fn_ofic_user_nm(pap.rcpt_adm_id) rcpt_adm_nm                          /*접수 행정담당자*/
+        , pap.rcpt_daytm                                                        /*접수 일시*/
+        , pap.rcpt_charg_psn_id                                                 /*접수 사무소 담당자 ID*/
+        , fn_ofic_user_nm(pap.rcpt_charg_psn_id) rcpt_charg_psn_nm              /*접수 사무소 담당자명*/
+        , pap.rcpt_patofic_mng_no                                               /*접수 사무소관리 번호*/
+        , pap.prt_wri_id                                                        /*보고 작성자 ID*/
+        , pap.prt_psn_id                                                        /*보고자 ID*/
+        , pap.prt_adm_id                                                        /*보고 행정담당자 ID*/
+        , fn_ofic_user_nm(pap.prt_wri_id) prt_wri_nm                            /*보고 작성자명*/
+        , fn_ofic_user_nm(pap.prt_psn_id) prt_psn_nm                            /*보고자명*/
+        , fn_ofic_user_nm(pap.prt_adm_id) prt_adm_nm                            /*보고 행정담당자명*/
+        , TO_CHAR(pap.prt_daytm, '%Y%m%d') prt_daytm                            /*보고 일시*/
+        , pap.prt_charg_psn_id                                                  /*보고 사무소 담당자 ID*/
+        , fn_ofic_user_nm(pap.prt_charg_psn_id) prt_charg_psn_nm                /*보고 사무소 담당자명*/
+        , pap.prt_app_no                                                        /*보고 출원번호*/
+        , pap.prt_app_date                                                      /*보고 출원일*/
+        , pap.prt_indep_cnt                                                     /*보고 독립항수*/
+        , pap.prt_depen_cnt                                                     /*보고 종속항수*/
+        , pap.prt_spec_cnt                                                      /*보고 명세서수*/
+        , pap.prt_draw_cnt                                                      /*보고 도면수*/
+        , TRIM(pap.prt_ko_app_title::char(400)) prt_ko_app_title               /*보고 국문출원명칭*/
+        , TRIM(pap.prt_en_app_title::char(400)) prt_en_app_title               /*보고 영문출원명칭*/
+        , TRIM(pap.prt_comment::char(3000)) prt_comment                        /*보고 내용*/
+        , pap.prt_app_attach_file                                               /*보고 출원서파일*/
+        , pap.prt_attach_file                                                   /*보고 기타첨부파일*/
+        , pap.eval_psn_syspayno                                                 /*평가자 시스템개인번호*/
+        , fun_emp_nm(pap.com_psn_syspayno) eval_psn_nm                          /*평가자명*/
+        , TO_CHAR(pap.eval_daytm, '%Y%m%d') eval_daytm                          /*평가 완료일자*/
+        , pap.eval_service_scr                                                  /*평가 서비스 점수*/
+        , pap.eval_result_scr                                                   /*평가 결과물 점수*/
+        , TRIM(pap.eval_comment::char(3000)) eval_comment                      /*평가 내용*/
+        , mst.eval_expir_ymd
+FROM patapp pap
+INNER JOIN patmastr mst ON mst.mngmt_no = pap.mngmt_no
+LEFT JOIN patstatecode pst ON pst.state_cd = pap.job_state_cd
+LEFT JOIN patoffice pof ON pof.patofic_cd = pap.com_patofic_cd
+WHERE pap.app_id = #{app_id}
+  </select>
+<update id="updatePatPapReeInvSU01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.ree.xda.PatPapReeInvSU01 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pap.updatePatPapReeInvSU01 */
+         patapp
+    SET job_state_cd           = #{job_state_cd}
+      , eval_psn_syspayno      = #{eval_psn_syspayno}
+      , eval_daytm             = CURRENT
+      , eval_service_scr       = #{eval_service_scr}
+      , eval_result_scr        = #{eval_result_scr}
+      , eval_comment           = #{eval_comment}
+      , fnsh_daytm             = CURRENT
+      , updt_syspayno          = #{updt_syspayno}
+      , updt_daytm             = CURRENT
+  WHERE app_id                 = #{app_id}
+  </update>
+<update id="updatePatMastrSU02" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.ree.xda.PatMastrSU02 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pap.updatePatMastrSU02 */
+         patmastr
+   SET state          = #{state}
+     , eval_demnd_ex  = 'N'
+     , smitapp_reg_ymd = #{smitapp_reg_ymd}
+     , updt_syspayno  = #{updt_syspayno}
+     , updt_daytm     = CURRENT
+ WHERE req_no         = #{req_no}
+   AND mngmt_no       = #{mngmt_no}
+  </update>
+<insert id="insertPatPapReeSI01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.ree.xda.PatPapReeSI01 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.pap.insertPatPapReeSI01 */
+         INTO patdemnd (
+      demnd_id
+    , req_no
+    , mngmt_no
+    , job_state_cd
+    , ask_psn_syspayno
+    , ask_daytm
+    , req_psn_syspayno
+    , req_daytm
+    , req_patofic_cd
+    , hope_patofic_charg_id
+    , req_due_date
+    , regst_syspayno
+    , regst_daytm
+    , req_comment)
+VALUES (
+      #{demnd_id}
+    , #{req_no}
+    , #{mngmt_no}
+    , #{job_state_cd}
+    , #{ask_psn_syspayno}
+    , CURRENT
+    , '20100355'
+    , CURRENT
+    , #{req_patofic_cd}
+    , #{hope_patofic_charg_id}
+    , TO_CHAR(TODAY + 30 UNITS day, '%Y%m%d')
+    , #{regst_syspayno}
+    , CURRENT
+    , '자동의뢰')
+  </insert>
+<insert id="insertPatPapHistorySI01" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pap.xda.PatPapHistorySI01 */
+INSERT /* QueryID : kr.re.kitech.biz.pat.pap.insertPatPapHistorySI01 */
+         INTO PATACTHISTORY (
+             hist_id
+            , act_no
+            , act_sn
+            , act_cd
+            , req_no
+            , mngmt_no
+            , act_syspayno
+            , act_blong_clsf
+            , act_daytm
+            , regst_syspayno
+            , regst_daytm
+       ) VALUES(FN_UID('')
+              , #{act_no}
+              , '1'
+              , #{act_cd}
+              , (SELECT req_no FROM PATAPP WHERE app_id = #{req_no})
+              , (SELECT mngmt_no FROM PATAPP WHERE app_id = #{mngmt_no})
+              , #{act_syspayno}
+              , '1'
+              , current
+              , #{regst_syspayno}
+              , current)
+  </insert>
+<update id="updatePatMastrSU03" parameterType="kr.re.kitech.biz.pat.pap.vo.PatPapManReqInvVo">
+/* XDA : kitech.pat.pex.req.xda.PatMastrSU01 */
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pap.updatePatMastrSU03 */
+         patmastr
+   SET state         = #{state}
+     , eval_demnd_ex = 'Y'
+     , updt_syspayno = #{updt_syspayno}
+     , updt_daytm    = current
+ WHERE req_no        = #{req_no}
+   AND mngmt_no      = #{mngmt_no}
+  </update>
+</mapper>

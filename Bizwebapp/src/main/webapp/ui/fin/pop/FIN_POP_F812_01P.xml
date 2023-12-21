@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="미확인결의번호 조회" meta_programDesc="매출계산서(관) 매뉴에서 [미확인조회]버튼 클릭시 오픈" meta_author="이영희" meta_date="2023.10.04.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="slip_no" name="확정번호" dataType="text"></w2:column>
+            			<w2:column id="accnt_ymd" name="확정일자" dataType="text"></w2:column>
+            			<w2:column id="decsn_psn_nm" name="확정자" dataType="text"></w2:column>
+            			<w2:column id="pay_slip_no" name="지출결의번호" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="from_ymd" name="시작일자"></w2:key>
+            			<w2:key dataType="text" id="to_ymd" name="종료일자"></w2:key>
+            			<w2:key dataType="text" id="bill_type" name="매출매입구분"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+            <!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' action="" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 미확인결의번호 조회
+ 	 * 변경 이력 : 2023-10-04	이영희	최초 작성
+ 	 ****************************************************/  
+    /**
+	* 페이지 로드
+	*/  
+	scwin.onpageload = function() {
+		dma_search.setJSON(com.getParameter());
+		
+		scwin.search();
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};	
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(){
+		if(dma_search.get("from_ymd") == "" || dma_search.get("to_ymd") == ""){
+			com.alert(com.getMsg("message.xom.ui.fin.026", "발행일자"));
+			return;
+		}
+		
+		if(dma_search.get("bill_type") == "1"){ // 매출계산서
+			sbm_selectData.action = "/SvcFINTAXR05.pwkjson";
+		}else{
+			sbm_selectData.action = "/SvcFINPURTAXR02.pwkjson";
+		}
+		com.execute(sbm_selectData,{
+			successCallback : function(e) {
+				dlt_grd.setJSON(e.responseJSON.finBillUnConfirmVoList);
+				tbx_cnt.setValue(dlt_grd.getRowCount());
+			}
+		});
+	}
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};	
+	
+	/**
+	 * 조회버튼 클릭 이벤트
+	 */
+	scwin.btn_search_onclick = function(e) {
+		scwin.search();
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="searchSection " id="" style="">
+    			<xf:group class="schbox" id="">
+    				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="width:230px;" tagname="col"></xf:group>
+    						<xf:group style="width:70px;" tagname="col"></xf:group>
+    						<xf:group style="" tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group style="" tagname="tr">
+    						<xf:group class="w2tb_th" style="" tagname="th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox id="" label="발행일자" style="" tagname="span"></w2:textbox>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="ica_from" placeholder="시작일" ref="data:dma_search.from_ymd" renderDiv="true" rightAlign="false" style="">
+    							</w2:inputCalendar>
+    							<w2:textbox class="dash" id="" label="~" style="" tagname="span"></w2:textbox>
+    							<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false"
+    								footerDiv="false" id="ica_to" placeholder="종료일" ref="data:dma_search.to_ymd" renderDiv="true" rightAlign="false" style="">
+    							</w2:inputCalendar>
+    						</xf:group>
+    						<xf:group class="w2tb_td" style="" tagname="td">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    								<w2:colspan>2</w2:colspan>
+    								<w2:rowspan>1</w2:rowspan>
+    							</w2:attributes>
+    							<xf:select1 appearance="full" class="radioGroup" cols="" id="" ref="data:dma_search.bill_type"
+    								renderType="radiogroup" rows="" selectedIndex="-1" style="" disabled="true">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[매입]]></xf:label>
+    										<xf:value><![CDATA[2]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[매출]]></xf:label>
+    										<xf:value><![CDATA[1]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="schbtn" id="">
+    				<xf:trigger class="btn search" id="btn_search" style="" type="button" ev:onclick="scwin.btn_search_onclick">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="titleSection" id="" style="margin-top:5px;">
+    			<xf:group class="le" id="">
+    				<xf:group class="result" id="" style="">
+    					<w2:span id="" label="*총건수" style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_cnt" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group class="ri" id=""></xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			visibleRowNum="15" summaryAuto="true" ev:oncelldblclick="scwin.grd_accntCd_oncelldblclick" sortable="true"
+    			filterFocusMode="outfocus" readOnly="true">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="확정번호" width="80"></w2:column>
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="확정일자" width="100"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column10" value="확정자" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="column12" value="지출결의" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" id="slip_no" inputType="text" readOnly="true" style="height:28px;" width="80"
+    						value="">
+    					</w2:column>
+    					<w2:column class="" displayMode="label" id="accnt_ymd" inputType="text" readOnly="true" style="height:28px;"
+    						width="100" dataType="date" displayFormat="yyyy-MM-dd">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="decsn_psn_nm" value="" displayMode="label"></w2:column>
+    					<w2:column width="80" inputType="text" style="height:28px" id="pay_slip_no" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

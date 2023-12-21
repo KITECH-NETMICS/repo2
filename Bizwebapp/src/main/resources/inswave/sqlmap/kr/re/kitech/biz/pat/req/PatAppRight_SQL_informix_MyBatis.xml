@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.req">
+  <select id="selectPatRightMntSS02" parameterType="kr.re.kitech.biz.pat.req.vo.PatAppRightVo" resultType="kr.re.kitech.biz.pat.req.vo.PatAppRightVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.req.selectPatRightMntSS02 */ 
+		  t1.mngmt_no,
+        t1.right_req_no,
+        t1.mnt_seq,
+        t2.invnt_krn_nm,
+        t3.nm                   AS invnt_nm,
+        t3.empno                AS invnt_empno,
+        t3.syspayno             AS invnt_syspayno,
+        t4.dept_nm,
+        '한국생산기술연구원'    AS smitapp_psn,
+        t2.smitapp_natn_nm,
+        t2.smitapp_ymd,
+        t2.smitapp_no,
+        t2.regst_ymd,
+        t2.regst_no,
+        t1.thsyear_evyearfee_pay_close_ymd,     -- 납부마감일
+        t1.governpay_fee                        -- 관납료(유지비용)        
+FROM    patrightmnt         t1,
+        patmastr            t2,
+        humbasicinfo        t3,
+        xodhdeptinfo        t4
+WHERE   t1.req_no           = t2.req_no
+AND     t1.mngmt_no         = t2.mngmt_no
+AND     t2.invnt_syspayno   = t3.syspayno
+AND     t3.dept_cd          = t4.dept_cd
+AND     t3.dept_new_ymd     = t4.dept_new_ymd
+AND     t1.right_req_no     = #{right_req_no}
+  </select>
+  <select id="selectPatResLstMS01" parameterType="kr.re.kitech.biz.pat.req.vo.PatResLstVo" resultType="kr.re.kitech.biz.pat.req.vo.PatResLstVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.req.selectPatResLstMS01 */ 
+                  t1.accnt_no,
+        t1.prj_no,
+        t1.accnt_no_nm  AS prj_nm,
+        t1.start_ymd||'~'||t1.cls_ymd AS prj_term,
+        t1.accnt_rspns AS accnt_rspns_syspayno,
+        t4.nm  AS accnt_rspns_nm,
+        t5.syspayno AS resch_rspns_syspayno,
+        t5.nm  AS resch_rspns_nm,
+        t1.accnt_state,
+        fun_xodxcommst_cd_nm(t1.accnt_state, 0) AS accnt_state_nm,
+        t1.accnt_clsf ,
+        t2.prj_state,
+        fun_xodxcommst_cd_nm(t1.accnt_clsf, 0) AS accnt_clsf_nm,
+        fun_xodxcommst_cd_nm(t2.prj_state, 0)  AS progress,
+        fun_xodxcommst_cd_nm(t2.bsns_cd_inout, 0)  AS bsns_cd_inout_nm
+FROM resbgacctm t1 
+JOIN resinpmast t2 ON t1.prj_no = t2.prj_no
+JOIN humbasicinfo t4 ON t1.accnt_rspns = t4.syspayno -- 계정책임자
+JOIN humbasicinfo t5 ON t2.curr_resch_rspns = t5.syspayno -- 연구책임자
+WHERE  (t1.accnt_no LIKE #{accnt_no_like} 
+        OR t1.accnt_no_nm LIKE #{accnt_no_nm_like}  
+        OR t4.nm LIKE #{accnt_rspns_nm_like}  
+        OR t5.nm LIKE #{resch_rspns_nm_like} )
+AND ( '' = #{accnt_clsf} OR t1.accnt_clsf = #{accnt_clsf} )
+AND ( '' = #{accnt_no} OR t1.accnt_no = #{accnt_no} )
+ORDER BY  t1.start_ymd DESC
+  </select>
+</mapper>

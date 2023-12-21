@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.edu">
+  <select id="selectSptTechEducContributeList" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducContributeVo" resultType="kr.re.kitech.biz.sup.edu.vo.SptTechEducContributeVo">
+SELECT /* QueryID : kr.re.kitech.biz.sup.edu.selectSptTechEducContributeList */ 
+		  t1.biz_clsf,
+        fun_xodxcommst_cd_nm(t1.biz_clsf, 0) AS biz_clsf_nm,
+        t1.mngmt_no,
+        t1.syspayno,
+        t2.empno,
+        t2.nm,
+        t2.ext_no,
+        t1.stake_dept,
+        t1.contribute_rt,
+        t1.rmk,
+        t3.dept_nm
+FROM    spttecheduccontribute t1,
+        humbasicinfo          t2,
+        xodhdeptinfo          t3
+WHERE   t1.syspayno     = t2.syspayno
+AND     t2.dept_cd      = t3.dept_cd
+AND     t2.dept_new_ymd = t3.dept_new_ymd
+AND     t1.biz_clsf     = #{biz_clsf}
+AND     t1.mngmt_no     = #{mngmt_no}
+ORDER BY t1.contribute_rt DESC,
+         t1.stake_dept DESC
+  </select>
+  
+	<update id="mergeSptTechEducContribute" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducContributeVo">
+		MERGE /* kr.re.kitech.biz.sup.edu.mergeSptTechEducContribute */
+		 INTO spttecheduccontribute AS t1
+		USING dual AS t2 ON t1.biz_clsf = #{biz_clsf} AND t1.mngmt_no = #{mngmt_no} AND t1.syspayno = #{syspayno}
+		 WHEN MATCHED  THEN
+		 UPDATE
+		    SET stake_dept    = #{stake_dept},
+		        contribute_rt = #{contribute_rt},
+		        rmk           = #{rmk},
+		        updt_syspayno = #{updt_syspayno},
+		        updt_daytm    = SYSDATE
+		 WHEN NOT MATCHED THEN
+		 INSERT (
+		 	biz_clsf,
+            mngmt_no,
+            syspayno,
+            stake_dept,
+            contribute_rt,
+            rmk,
+            regst_syspayno,
+            regst_daytm
+		 ) VALUES(
+		 	#{biz_clsf}, 		/* biz_clsf */
+            #{mngmt_no}, 		/* mngmt_no */
+            #{syspayno}, 		/* syspayno */
+            #{stake_dept}, 		/* stake_dept */
+            #{contribute_rt}, 	/* contribute_rt */
+            #{rmk}, 			/* rmk */
+            #{regst_syspayno}, 	/* regst_syspayno */
+            SYSDATE 			/* regst_daytm|now */
+		 )
+	</update>
+	
+	<delete id="deletePartSptTechEducContribute" parameterType="kr.re.kitech.biz.sup.edu.vo.SptTechEducContributeVo">
+		DELETE /* QueryID : kr.re.kitech.biz.sup.edu.deletePartSptTechEducContribute */ 
+		  FROM spttecheduccontribute
+		 WHERE biz_clsf = #{biz_clsf}
+		   AND mngmt_no = #{mngmt_no}
+	</delete>
+  
+  
+</mapper>

@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="인수자산수익 계획상세" meta_programId="FIN_TAX_F000_01D" meta_programDesc="인수자산수익 계획 상세내역" meta_author="전재우" meta_date="2022.10.09.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<!-- 조회 -->
+            	<w2:dataMap dataType="text" id="dma_aset" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="plan_req_no" name="계획번호"></w2:key>
+            			<w2:key dataType="text" id="aset_no" name="자산번호"></w2:key>
+						<w2:key dataType="text" id="suply_value" name="공급가액"></w2:key>
+						<w2:key dataType="text" id="add_tax" name="부가세"></w2:key>
+            			<w2:key dataType="text" id="chrg_info" name="담당자"></w2:key>
+            			<w2:key dataType="text" id="plan_st_ymd" name="계획시작일"></w2:key>
+            			<w2:key dataType="text" id="plan_ed_ymd" name="계획종료일"></w2:key>
+            			<w2:key dataType="text" id="acq_intro_ymd" name="도입일자"></w2:key>
+            			<w2:key dataType="text" id="intro_ymd" name="취득일자"></w2:key>
+            			<w2:key dataType="text" id="aset_clsf" name="자산구분"></w2:key>	
+            			<w2:key dataType="text" id="aset_nm" name="자산명"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="aset_no" name="자산번호"></w2:key>
+            			<w2:key dataType="text" id="plan_req_no" name="계획번호"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	
+            	<!-- 계획생성 -->
+            	<w2:dataMap baseNode="map" id="dma_plan" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="plan_req_no" name="계획번호"></w2:key>
+            			<w2:key dataType="text" id="plan_seq" name="계획순번"></w2:key>
+            			<w2:key dataType="text" id="rec_ymd" name="계상일자"></w2:key>
+            			<w2:key dataType="text" id="suply_value" name="공급가액"></w2:key>
+						<w2:key dataType="text" id="add_tax" name="부가세"></w2:key>
+						<w2:key dataType="text" id="unslip_no" name="결의번호"></w2:key>
+						<w2:key dataType="text" id="unslip_odr" name="결의순번"></w2:key>
+						<w2:key dataType="text" id="rmk" name="비고"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            	
+            	<!-- 생성된 계획조회 -->
+            	<w2:dataList baseNode="list" id="dma_plan_list" repeatNode="map" saveRemovedData="true" style="">
+            		<w2:columnInfo>
+            			<w2:column dataType="text" id="rec_ymd" name="계상일자"></w2:column>
+            			<w2:column dataType="text" id="suply_value" name="공급가액"></w2:column>
+            			<w2:column dataType="text" id="add_tax" name="부가세"></w2:column>
+            			<w2:column dataType="text" id="total_amt" name="합계"></w2:column>
+            			<w2:column dataType="text" id="rmk" name="적요"></w2:column>
+            			<w2:column dataType="text" id="unslip_no" name="결의번호"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            <xf:submission id="sbm_selectAcqAset" ref='data:json,[{"id":"dma_search", "key":"finAcqAsetPlanMstrVo"},{"id":"dma_search", "key":"finAcqAsetPlanDtlVo"}]' 
+            	target='data:json,[{"id":"dma_aset", "key":"finAcqAsetPlanMstrVo"},{"id":"dma_plan_list", "key":"finAcqAsetPlanDtlListVo"}]'
+        		action="SvcFINTAXACQ02.pwkjson" method="post" mediatype="application/json" mode="asynchronous" processMsg="조회중...">
+        	</xf:submission>
+        	<xf:submission id="sbm_saveAcqAsetPlan" ref='data:json,[{"id":"dma_aset", "key":"finAcqAsetPlanMstrVo"},{"id":"dma_plan", "key":"finAcqAsetPlanDtlVo"}]'
+        		target='data:json,[{"id":"dma_aset", "key":"finAcqAsetPlanMstrVo"},{"id":"dma_plan_list", "key":"finAcqAsetPlanDtlListVo"}]'
+        		action="SvcFINTAXACQ03.pwkjson" method="post" mediatype="application/json" mode="asynchronous" processMsg="저장중...">
+        	</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 인수자산 수익 계획생성
+ 	 * 변경 이력 : 2022-10-10	전재우	최초 작성
+ 	 ****************************************************/   	
+	scwin.onpageload = function() {
+		// 목록에서 넘어온 파라미터 데이터 세팅 후 조회
+		var param = com.getParameter();
+		var paramAsetNo = param.aset_no;
+		var paramPlanReqNo = param.plan_req_no;
+		
+		aset_no.setValue(paramAsetNo);
+		dma_search.set("aset_no", paramAsetNo);
+		
+		plan_req_no.setValue(paramPlanReqNo);
+		dma_search.set("plan_req_no", paramPlanReqNo);
+		
+		scwin.search();
+	};
+	
+	/**
+	* 인수자산 정보 조회
+	*/
+	scwin.search = function(){
+		com.execute(sbm_selectAcqAset, {
+			successCallback : function(e){
+				plan_ed_ymd.setValue("20291130");
+			}
+		});
+	};
+	
+	/**
+	 * 계획생성
+	 */
+	scwin.btn_save_onclick = function(e) {		
+		// 저장 전 체크	
+		if (!scwin.checkPreSave()) return;
+		
+		com.confirm("message.xom.wq.017"/*저장 하시겠습니까?*/, function(ret){
+			if(ret) scwin.save();
+		});
+	};
+	
+	scwin.checkPreSave = function() {
+	debugger;
+		if(acq_intro_ymd.getValue() == ""){
+			alert("도입일자를 입력해주세요.");
+			return false;
+		}
+		
+		if(add_tax.getValue() == "" || add_tax.getValue() == 0){
+			alert("부가세를 입력해주세요.");
+			return false;
+		}
+		
+		if(plan_st_ymd.getValue() == ""){
+			alert("계획 시작일을 입력해주세요.");
+			return false;
+		}
+		
+		if(plan_ed_ymd.getValue() == ""){
+			alert("계획 종료일을 입력해주세요.");
+			return false;
+		}
+		
+		var unslipNoArr = dma_plan_list.getColData("unslip_no");
+		for(var i=0 ; i<unslipNoArr.length ; i++){
+			if (unslipNoArr[i].trim() != "") {
+				alert("이미 생성된 결의번호가 있습니다.\n계획을 재생성 할 수 없습니다.");
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * 저장실행
+	 */
+	scwin.save = function(){
+		com.execute(sbm_saveAcqAsetPlan, {
+			successCallback : function(e) { // 성공 콜백				
+				com.alert("message.xom.wq.023"/*정상적으로 처리되었습니다.*/, function(){
+					// 조회
+					dma_search.set("plan_req_no", dma_aset.get("plan_req_no"));
+					scwin.search();
+				});
+			}
+		});
+	};
+	
+	/**
+	 * 엑셀 다운로드 버튼 클릭 이벤트
+	 */
+	scwin.btn_excel_onclick = function(e) {
+		var option = {
+			    fileName : "인수자산 계획생성 내역.xls"
+			  , useDataFormat : true
+			  , hiddenVisible : true
+		};
+		com.downloadGridExcel(grd_plan_list, option);
+	};
+	
+	scwin.btn_pre_onclick = function(e) {	
+		com.moveList("F834");
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group class="searchSection step" id="" style="">
+    			<xf:group class="le" id="" style="">
+    				<xf:trigger class="btn" id="btn_pre" style="" type="button" ev:onclick="scwin.btn_pre_onclick">
+    					<xf:label><![CDATA[목록]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    			<xf:group class="btnbox" id="">
+    				<xf:trigger class="btn" id="btn_evid_view" style="" type="button" ev:onclick="scwin.btn_evid_view_onclick"
+    					disabled="true">
+    					<xf:label><![CDATA[미리보기]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class="btn blue" id="btn_save" style="" type="button" ev:onclick="scwin.btn_save_onclick"
+    					disabled="false">
+    					<xf:label><![CDATA[계획생성]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group class="w2tb tbl " id="" style="" tagname="table">
+    			<w2:attributes>
+    				<w2:summary></w2:summary>
+    			</w2:attributes>
+    			<xf:group tagname="caption" text="과제정보입력"></xf:group>
+    			<xf:group style="" tagname="colgroup">
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="width:369px;" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    				<xf:group style="width:140px;" tagname="col"></xf:group>
+    				<xf:group style="" tagname="col"></xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="자산번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp" id="aset_no" readOnly="true" ref="data:dma_aset.aset_no" style=""
+    						title="자산번호">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="장비구분" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:group class="flex" id=""></xf:group>
+    					<xf:input adjustMaxLength="false" class="inp" id="aset_clsf" readOnly="true" ref="data:dma_aset.aset_clsf" style=""
+    						title="장비구분">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="담당자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp" id="chrg_info" readOnly="true" ref="data:dma_aset.chrg_info" style=""
+    						title="담당자">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group style="" tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="자산명" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes>
+    						<w2:colspan>3</w2:colspan>
+    						<w2:rowspan>1</w2:rowspan>
+    					</w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp full" id="aset_nm" style="" title="자산명" ref="data:dma_aset.aset_nm"
+    						readOnly="true">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="도입금액" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:group class="flex" id=""></xf:group>
+    					<xf:input adjustMaxLength="false" class="inp" id="suply_value" readOnly="true" ref="data:dma_aset.suply_value"
+    						style="" title="도입금액" displayFormat="###,###,###,###">
+    					</xf:input>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="취득일자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false"
+    						id="intro_ymd" ref="data:dma_aset.intro_ymd" renderDiv="true" rightAlign="false" style="" title="취득일자">
+    					</w2:inputCalendar>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="도입일자" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:group class="flex" id=""></xf:group>
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false"
+    						id="acq_intro_ymd" placeholder="자산도입일자" ref="data:dma_aset.acq_intro_ymd" renderDiv="true" rightAlign="false" style=""
+    						title="도입일자">
+    					</w2:inputCalendar>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="시작일" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false"
+    						id="plan_st_ymd" placeholder="계획시작일" ref="data:dma_aset.plan_st_ymd" renderDiv="true" rightAlign="false" style="" title="계획시작일">
+    					</w2:inputCalendar>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group tagname="tr">
+    				<xf:group class="w2tb_th" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:textbox id="" label="계획번호" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:input adjustMaxLength="false" class="inp" id="plan_req_no" readOnly="true" ref="data:dma_aset.plan_req_no"
+    						style="" title="계획번호">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="부가세" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<xf:group class="flex" id=""></xf:group>
+    					<xf:input adjustMaxLength="false" class="inp" id="add_tax" readOnly="false" ref="data:dma_aset.add_tax" style=""
+    						title="부가세" displayFormat="###,###,###,###">
+    					</xf:input>
+    				</xf:group>
+    				<xf:group class="w2tb_th" style="" tagname="th">
+    					<w2:attributes>
+    						<w2:scope>row</w2:scope>
+    					</w2:attributes>
+    					<w2:span class="bul_req" id="" label="[필수입력항목]" style=""></w2:span>
+    					<w2:textbox id="" label="종료일" style="" tagname="span"></w2:textbox>
+    				</xf:group>
+    				<xf:group class="w2tb_td" style="" tagname="td">
+    					<w2:attributes></w2:attributes>
+    					<w2:inputCalendar calendarValueType="yearMonthDate" class="inpcal" focusOnDateSelect="false" footerDiv="false"
+    						id="plan_ed_ymd" placeholder="계획종료일" ref="data:dma_aset.plan_ed_ymd" renderDiv="true" rightAlign="false" style="" title="계획종료일"
+    						readOnly="true">
+    					</w2:inputCalendar>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<xf:group id="" class="le">
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:group style="" id="" class="btnarea">
+
+    					<xf:trigger class="btn icon down" ev:onclick="scwin.btn_excel_onclick" id="btn_excel" style="" type="button">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>  
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="false" selectedCellColor="#fbf2cd" rowNumWidth="50"
+    			dataList="data:dma_plan_list" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_plan_list"
+    			visibleRowNum="20" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="" sortable="true"
+    			filterFocusMode="outfocus">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column5" value="계상일자" displayMode="label"></w2:column>
+    					<w2:column width="150" inputType="text" style="height:28px;" id="column3" value="공급가액" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column20" value="부가세" displayMode="label"></w2:column>
+    					<w2:column width="150" inputType="text" style="height:28px;" id="column29" value="합계" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column27" value="결의번호" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="rec_ymd" displayMode="label"
+    						displayFormat="####-##-##">
+    					</w2:column>
+    					<w2:column width="150" inputType="text" readOnly="true" style="height:28px;" id="suply_value" displayMode="label"
+    						escape="false" displayFormat="###,###,###,###">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="add_tax" displayMode="label"
+    						displayFormat="###,###,###,###">
+    					</w2:column>
+    					<w2:column width="150" inputType="text" style="height:28px;" id="total_amt" displayMode="label" readOnly="true"
+    						displayFormat="###,###,###,###">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="unslip_no" displayMode="label" readOnly="true"
+    						class="">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    			<w2:footer style="" id="footer1">
+    				<w2:row style="" id="row3">
+    					<w2:column width="100" inputType="text" style="height:20px" id="column34" value="합 계" displayMode="label"></w2:column>
+    					<w2:column width="150" inputType="expression" style="height:20px" id="column32" value="" displayMode="label" expression="sum('suply_value')" displayFormat="###,###,###,###"></w2:column>
+    					<w2:column width="100" inputType="expression" style="height:20px" id="column31" value="" displayMode="label" expression="sum('add_tax')" displayFormat="###,###,###,###"></w2:column>
+    					<w2:column width="150" inputType="expression" style="height:20px" id="column30" value="" displayMode="label" expression="sum('total_amt')" displayFormat="###,###,###,###"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:20px" id="column33" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:footer>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

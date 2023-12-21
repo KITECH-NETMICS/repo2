@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="이메일/문자 전송">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_tgt" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="cust_nm" name="cust_nm" dataType="text"></w2:column>
+            			<w2:column id="send_type_01" name="send_type_01" dataType="text"></w2:column>
+            			<w2:column id="send_type_02" name="send_type_02" dataType="text"></w2:column>
+            			<w2:column id="send_type_03" name="send_type_03" dataType="text"></w2:column>
+            			<w2:column id="cust_no" name="cust_no" dataType="text"></w2:column>
+            			<w2:column id="cn" name="cn" dataType="text"></w2:column>
+            			<w2:column id="sn" name="sn" dataType="text"></w2:column>
+            			<w2:column id="celphonenumber" name="celphonenumber" dataType="text"></w2:column>
+            			<w2:column id="serviceId" name="serviceId" dataType="text"></w2:column>
+            			<w2:column id="email" name="email" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_tgt_info" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="dest_syspayno" name="dest_syspayno" dataType="text"></w2:column>
+				       <w2:column id="dest_nm" name="dest_nm" dataType="text"></w2:column>
+				       <w2:column id="dest_phone" name="dest_phone" dataType="text"></w2:column>
+				       <w2:column id="email" name="email" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+    		<xf:submission id="sbm_selectSptTltSendList" ref='data:json,[{"id":"dlt_tgt","key":"SptDisPatchPrcondVoList"}]'
+    			target='' action="SvcSUPTLTSENDSR01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+        </xf:model>
+     	<script src="/cm/js/biz/apr.js" cache="false" />
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = function() {
+		scwin.in_it();
+	};
+	
+	scwin.onpageunload = function() {
+	};
+	
+	scwin.in_it = function(){
+		var param = com.getParameter();
+		dlt_tgt.setJSON(param);
+		
+		var senderId = dlt_tgt.getCellData(0, 'serviceId');
+		if(senderId == 'S684'){ // 파견기업 : 기업담당자, 멘토, 기업지원연구직 전송가능
+			rdo_chk_box_01.setDisabled(false);
+			rdo_chk_box_02.setDisabled(false);
+			rdo_chk_box_03.setDisabled(false);
+			grd_tgt.setDisabled('column', 'send_type_01', false);
+			grd_tgt.setDisabled('column', 'send_type_02', false);
+			grd_tgt.setDisabled('column', 'send_type_03', false);
+		}else if(senderId == 'S676'){ // 활동보고서 : 기업지원연구직 전송가능
+			rdo_chk_box_03.setDisabled(false);
+			grd_tgt.setDisabled('column', 'send_type_03', false);
+		}else if(senderId == 'S677'){ // 방문면담표 : 멘토 전송가능
+			rdo_chk_box_02.setDisabled(false);
+			grd_tgt.setDisabled('column', 'send_type_02', false);
+		}
+	};
+	
+	// 상단 라디오클릭시
+	scwin.rdo_chk_box_01_onviewchange = function(info) {
+		scwin.rdo_chk_box_event('send_type_01', info.checked);
+	};
+	scwin.rdo_chk_box_02_onviewchange = function(info) {
+		scwin.rdo_chk_box_event('send_type_02', info.checked);
+	};
+	scwin.rdo_chk_box_03_onviewchange = function(info) {
+		scwin.rdo_chk_box_event('send_type_03', info.checked);
+	};
+	scwin.rdo_chk_box_event = function(gbn , checked) {
+		for(var i=0;i<dlt_tgt.getRowCount();i++){
+			dlt_tgt.setCellData(i, gbn, checked);
+		}
+	};
+	
+	// 문자전송 버튼 클릭
+	scwin.btn_sms_onclick = function(e) {
+		scwin.gbn = 'sms';
+		scwin.search_target();
+	};
+	
+	// 메일전송 버튼 클릭
+	scwin.btn_mail_onclick = function(e) {
+		scwin.gbn = 'mail';
+		scwin.search_target();
+	};
+	
+	// 대상자 정보 조회
+	scwin.search_target = function(){
+		com.execute(sbm_selectSptTltSendList, {
+			successCallback : function(e) {
+				dlt_tgt_info.setJSON(e.responseJSON.elData.SptDisPatchPrcondVoList);
+				scwin.search_target_after();
+			}
+		});
+	};
+	scwin.search_target_after = function(){
+		var smsTargets = [];
+		var emailTargets = [];
+		for(var i=0;i<dlt_tgt_info.getRowCount();i++){
+				smsTargets.push(dlt_tgt_info.getCellData(i, 'dest_nm') + "|" + dlt_tgt_info.getCellData(i, 'dest_phone'));
+				emailTargets.push(dlt_tgt_info.getCellData(i, 'email'));
+		}
+		if(scwin.gbn == 'sms'){
+			
+			// 디폴트 메시지 처리
+			var param = "&isDisableTalk=true&receivers="+ encodeURI(encodeURIComponent(smsTargets.join(',')));
+		 	var url = '/filter/index.jsp?serviceid=X605'+ param; 
+		 	
+		 	biz.apr.openPopupByNative(url, 'messagePopup', {width:670, height:575}, "BIZ2");
+		}else{ // mail
+			var sender = emailTargets.join(';');
+			com.biz.openMailPop(sender);
+		}
+	};
+		
+	// 닫기 버튼 클릭
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+		
+		// grd_tgt
+		// dlt_tgt
+		// rdo_chk_box
+		// all
+		// send_type_01
+		// send_type_02
+		// send_type_03
+	
+	
+	
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pop_contents" id="" style="">
+    		<xf:group class="titleSection pt0" id="" style="">
+    			<xf:group class="le" id=""></xf:group>
+    			<xf:group class="ri" id="" style="">
+    				<xf:select appearance="full" class="chkGroup" cols="" id="rdo_chk_box_01" ref="" renderType="checkboxgroup" rows=""
+    					selectedindex="-1" style="" ev:onviewchange="scwin.rdo_chk_box_01_onviewchange" disabled="true">
+    					<xf:choices>
+    						<xf:item>
+    							<xf:label><![CDATA[담당자]]></xf:label>
+    							<xf:value><![CDATA[1]]></xf:value>
+    						</xf:item>
+    					</xf:choices>
+    				</xf:select>
+    				<xf:select appearance="full" class="chkGroup" cols="" id="rdo_chk_box_02" ref="" renderType="checkboxgroup" rows=""
+    					selectedindex="-1" style="" ev:onviewchange="scwin.rdo_chk_box_02_onviewchange" disabled="true">
+    					<xf:choices>
+    						<xf:item>
+    							<xf:label><![CDATA[멘토]]></xf:label>
+    							<xf:value><![CDATA[1]]></xf:value>
+    						</xf:item>
+    					</xf:choices>
+    				</xf:select>
+    				<xf:select appearance="full" class="chkGroup" cols="" id="rdo_chk_box_03" ref="" renderType="checkboxgroup" rows=""
+    					selectedindex="-1" style="" ev:onviewchange="scwin.rdo_chk_box_03_onviewchange" disabled="true">
+    					<xf:choices>
+    						<xf:item>
+    							<xf:label><![CDATA[기업지원연구직]]></xf:label>
+    							<xf:value><![CDATA[1]]></xf:value>
+    						</xf:item>
+    					</xf:choices>
+    				</xf:select>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_tgt" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_tgt" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="50" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 196px;"
+    			visibleRowNum="6" visibleRowNumFix="false" showSortableImage="true">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column27" inputType="text" style="height:28px" value="기업명" width="300" sortable="true"></w2:column>
+    					<w2:column displayMode="label" id="column29" inputType="text" style="height:28px" value="담당자" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column31" inputType="text" style="height:28px" value="멘토" width="100"></w2:column>
+    					<w2:column displayMode="label" id="column33" inputType="text" style="height:28px" value="기업지원연구직" width="150"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" id="cust_nm" inputType="text" style="height:28px" value="" width="300" readOnly="true" class="le"></w2:column>
+    					<w2:column displayMode="label" id="send_type_01" inputType="checkbox" style="height:28px" value="" width="100" valueType="boolean" disabled="true"></w2:column>
+    					<w2:column displayMode="label" id="send_type_02" inputType="checkbox" style="height:28px" value="" width="100" valueType="boolean" disabled="true"></w2:column>
+    					<w2:column displayMode="label" id="send_type_03" inputType="checkbox" style="height:28px" value="" width="150" valueType="boolean" disabled="true"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group class="btnGroup" id="" style="">
+    			<xf:group class="le" id="" style=""></xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:trigger class=" btn pro " id="btn_sms" style="" type="button" ev:onclick="scwin.btn_sms_onclick">
+    					<xf:label><![CDATA[문자 전송]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro " id="btn_mail" style="" type="button" ev:onclick="scwin.btn_mail_onclick">
+    					<xf:label><![CDATA[메일 전송]]></xf:label>
+    				</xf:trigger>
+    				<xf:trigger class=" btn pro " id="btn_close" style="" type="button" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

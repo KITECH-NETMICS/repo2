@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.sup.pop">
+<!-- 카드처리내역 팝업 조회(외부기술지원(유상)) -->
+<select id="selectSptTranTable" parameterType="kr.re.kitech.biz.sup.pop.vo.SptTranTableVo" resultType="kr.re.kitech.biz.sup.pop.vo.SptTranTableVo">
+SELECT /* kr.re.kitech.biz.sup.pop.selectSptTranTable */
+       a.dcontrolno  -- PG거래일련번호 
+     , a.dmembdealno -- 접수번호
+     , a.dtrandate -- 거래발생일자
+     , a.dsaleamt -- 거래금액
+     , a.dapplno -- 승인번호
+     , a.unslip_no -- 미수결의번호
+     , a.unslip_odr
+     , d.dorderdate -- 정산예정일
+     , d.dmembtrno -- 거래번호
+     , d.dprovfee -- 수수료
+     , d.dprovvat -- 부가세
+     , b.card_appl_no
+     , b.card_issu_ymd
+     , b.prcs_state
+     , b.decsn_amt
+     , DECODE(NVL(c.decsn_ex,'N'), 'Y' , '확정', '미확정')  unslip_chk  -- 결의확정
+  FROM spt_tran_table /* 거래테이블 */ a 
+  LEFT JOIN spttecrcptinfo b ON a.dmembdealno = b.kolas_no
+  LEFT JOIN fspsliph c ON a.unslip_no = c.unslip_no
+  LEFT JOIN spt_prov_table /* 지급테이블 */ d ON a.dcontrolno = d.dcontrolno AND a.dapplno = d.dapplno
+ WHERE a.dsettletype /* 결제수단코드*/ = '01' -- 01 신용카드, 03 계좌이체, 04 휴대폰, 05 ARS
+   AND a.ddealgubun = 'A' -- (A 승인, C 취소, D 매입취소, P 부분취소)
+   AND (b.unslip_no = '' OR b.unslip_no IS NULL)
+   AND a.dmembdealno = #{kolas_no} /* 접수번호 */ 
+  <if test ='dtrandate != null and dtrandate != ""'> AND a.dtrandate = #{dtrandate} /* 승인일자 */</if>   
+  <if test ='dsaleamt != null and dsaleamt != 0'> AND a.dsaleamt= #{dsaleamt} </if>
+ ORDER BY a.dcontrolno, a.dapplno, a.dmembdealno
+</select>
+
+<!-- SMS결제 팝업 조회 -->
+<select id="selectEasyPayInfoPop" parameterType="kr.re.kitech.biz.sup.tec.vo.SptTecSrcVo" resultType="kr.re.kitech.biz.sup.pop.vo.EasyPayInfoVo">
+SELECT /* kr.re.kitech.biz.sup.pop.selectEasyPayInfoPop */
+       FIRST 1
+       a.prcs_state
+     , b.order_no
+     , c.cno
+     , b.user_nm
+     , b.user_mail
+     , b.user_phone1
+     , b.rcv_mobile_no
+     , c.res_cd
+     , c.amount
+     , c.res_msg
+  FROM spttecrcptinfo a
+  JOIN easypay_request_info b ON a.kolas_no = b.order_no
+  LEFT JOIN (
+             SELECT sa.order_no,sa.amount, sa.cno, sa.res_cd, sa.res_msg
+              FROM easypay_noti_info sa
+              LEFT JOIN easypay_noti_info sb ON sa.cno = sb.cno AND sb.stat_cd IN ('TS02','TS05','TS06')
+             WHERE sa.stat_cd IN ('TS01','TS03','TS04','TS08')
+               AND sa.order_no = #{kolas_no}
+               AND sb.cno IS NULL
+            ) c ON b.order_no = c.order_no AND b.product_amt = c.amount
+ WHERE a.tech_supt_req_no = #{tech_supt_req_no}
+ ORDER BY b.regst_daytm DESC
+</select>
+</mapper>

@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.cwl">
+  <select id="selectListCwlFwLoanReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectListCwlFwLoanReq */ 
+			 a.req_no,
+	         a.centr_nm,
+	         a.dept_nm,
+	         a.req_ymd,
+	         a.req_psn,
+	         fun_posi_nm(c.posi_cd) AS posi_nm,         
+	         a.req_psn_syspayno,
+	         fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 1) as empno,
+	         a.dept_tel,
+	         a.loan_amt,
+	         a.req_cause,
+	         a.month_dedct_amt,
+	         a.req_state,
+	         b.apr_state,    
+	         fun_xodxcommst_cd_nm(b.apr_state, 0) as req_state_nm,
+	         a.pay_amt,
+	         a.pay_ymd,
+	         a.rmk
+	FROM     cwlfwloanreq a 
+	INNER JOIN xomxintfatab b ON a.req_no = b.req_no 
+	INNER JOIN humbasicinfo c ON a.req_psn_syspayno = c.syspayno
+	WHERE a.req_ymd between #{req_ymd1} AND #{req_ymd2}
+	AND   a.req_psn_syspayno LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno})
+	AND   a.dept_cd LIKE DECODE(#{dept_cd},'','%',#{dept_cd})
+	AND   b.apr_state LIKE DECODE(#{apr_state},'','%',#{apr_state})
+	AND   a.req_no LIKE DECODE(#{inputReq_no},'','%',#{inputReq_no})
+	AND   c.empno LIKE DECODE(#{inputEmp_no},'','%',#{inputEmp_no})
+  </select>
+  
+  <select id="selectCwlFwLoanReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlFwLoanReq */ 
+			  a.req_no
+	         ,a.centr_nm
+	         ,a.dept_nm
+	         ,a.req_ymd
+	         ,a.req_psn
+	         ,a.req_psn_syspayno
+	         ,fun_humbasicinfo_cd_nm(a.req_psn_syspayno, 1) as empno
+	         ,a.dept_tel
+	         ,a.loan_amt
+	         ,a.req_cause
+	         ,a.month_dedct_amt
+	         ,a.req_state
+	         ,fun_xodxcommst_cd_nm(a.req_state, 0) as req_state_nm
+	         ,a.pay_amt
+	         ,decode(a.pay_ymd, null, to_char(current, '%Y%m%d'), '        ', to_char(current, '%Y%m%d'), a.pay_ymd) as pay_ymd
+	         ,nvl(a.depst_clsf, '') as depst_clsf
+	         ,a.depst_bankaccnt_no
+	         ,a.depst_bank_cd
+	         ,a.depst_bank_nm
+	         ,a.depstr_nm
+	         ,a.rmk
+	         ,a.repay_month
+	         ,a.fix_repay_month
+	         ,b.email
+	         ,c.sci_tech_anuty
+	         ,DECODE(b.occugrp_cd,'HAA045','20181001',b.entr_ymd) as entr_ymd
+	         ,c.salry_bank as pay_bank_cd
+	         ,fun_xodxcommst_cd_nm(c.salry_bank,0) as pay_bank_nm
+	         ,c.bankaccnt_no as pay_bankaccnt
+	         ,c.depstr as pay_depstr
+	         ,nvl(d.bankaccnt_no, '') as oth_bankaccnt
+	         ,nvl(d.bank, '') as oth_bank_cd
+	         ,nvl(fun_xodxcommst_cd_nm(d.bank,0), '') as oth_bank_nm
+	         ,nvl(d.depstr_nm, '') as oth_depstr
+	         ,e.apr_state
+	FROM cwlfwloanreq a, 
+	     outer humbasicinfo b,
+	     outer humslbasinfo c,
+	     outer fbaapartaccnt d,
+	     xomxintfatab e 
+	WHERE a.req_psn_syspayno = b.syspayno
+	and a.req_psn_syspayno = c.syspayno
+	and a.req_psn_syspayno = d.syspayno
+	and a.req_no = e.req_no
+	and a.req_no = #{req_no}
+  </select>
+  
+  <!-- 기대출금조회 -->
+  <select id="selectloanRamtInfo" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectloanRamtInfo */ 
+	    SUM(loan_ramt) as loan_ramt, 
+	    SUM(aid_loan_ramt) as aid_loan_ramt, 
+	    SUM(univ_loan_ramt) as univ_loan_ramt
+	FROM 
+	    (
+	    SELECT 
+	        syspayno ,    
+	        loan_cd ,    
+	        loan_ymd ,
+	        nvl(loan_tot_liq,0) as loan_tot_liq,
+	        nvl(loan_ramt,0) as loan_ramt,
+	        nvl(loan_ramt,0) as aid_loan_ramt,
+	        0 as univ_loan_ramt,
+	        MAX(updt_daytm) as updt_daytm
+	    FROM cwlloan
+	    WHERE 1=1
+	    AND syspayno LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno})
+	    AND loan_cd  = '507'
+	    AND (dedct_progrss_state  = '1' OR dedct_progrss_state  = '')
+	    GROUP BY syspayno, loan_cd, loan_ymd, loan_tot_liq, loan_ramt
+	    UNION ALL
+	    SELECT 
+	        syspayno ,    
+	        loan_cd ,    
+	        loan_ymd ,
+	        nvl(loan_tot_liq,0) as loan_tot_liq,
+	        nvl(loan_ramt,0) as loan_ramt,
+	        0 as aid_loan_ramt,
+	        nvl(loan_ramt,0) as univ_loan_ramt,
+	        MAX(updt_daytm) as updt_daytm
+	    FROM cwlloan
+	    WHERE 1=1
+	    AND syspayno LIKE DECODE(#{req_psn_syspayno},'','%',#{req_psn_syspayno})
+	    AND loan_cd  = '525'
+	    AND (dedct_progrss_state  = '1' OR dedct_progrss_state  = '')
+	    GROUP BY syspayno, loan_cd, loan_ymd, loan_tot_liq, loan_ramt
+	    )
+	GROUP BY syspayno
+  </select>
+  
+  <!-- 퇴직연금 가입시 연금공제이력 합계로 퇴직금 -->
+  <select id="selectHumSlmmPayCd" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	select /* QueryID : kr.re.kitech.biz.ccs.cwl.selectHumSlmmPayCd */ 
+	    (sci_anuty_kitech + --퇴직연금원부담금
+	     sci_trans_amt)   --퇴직연금이관금액
+	    as retire_appro 
+	 from
+	    (
+	      select 
+	           sum(decode(salry_cd, 815, salry_cd_amt, 0)) as sci_anuty_kitech
+	          ,max(nvl(sci_trans_amt, 0)) as sci_trans_amt 						-- 과학기술인연금이관금액
+	      from (
+	            select 
+	            	  syspayno
+	            	 ,salry_cd	   -- 급여코드
+	            	 ,salry_cd_amt -- 급여코드금액
+	             from humslmmpaycd 
+	               where belng_yrmon not like round(to_char(current, '%Y')) || '%'
+	               and syspayno = #{req_psn_syspayno} 
+	               and salry_cd = '815') a
+	      inner join humslbasinfo b 
+	      on a.syspayno = b.syspayno 
+	      and nvl(b.sci_tech_anuty,'') = 'Y'
+	    )
+  </select>
+  
+  <!-- 퇴직연금 미가입시 퇴직충당금 -->
+  <select id="selectHumSlmmPayAmt" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	select /* QueryID : kr.re.kitech.biz.ccs.cwl.selectHumSlmmPayAmt */ 
+			 b.syspayno
+	        ,b.nm
+	        ,a.retire_appro
+	 from humslmmpayamt a
+	     ,humbasicinfo b
+	   where a.syspayno = b.syspayno
+	   and b.syspayno = #{req_psn_syspayno}
+	   and a.belng_yrmon = (select max(belng_yrmon)
+                           	  from humslmmpayamt 
+                           	    where syspayno = #{req_psn_syspayno} 
+                           	    and belng_yrmon = year(sysdate) - 1 || '12'
+                           )
+  </select>
+  
+  <!-- 전별금 -->
+  <select id="selectCwlFriHpScaRwl" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	select /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlFriHpScaRwl */ 
+	      a.amt - b.pay_amt as avail_sum
+	  from
+	     (
+	      select first 1
+	             nvl(farwl_mny_tot_amt, 0) as amt
+	        from cwlfrihpscfarwl
+	          where syspayno = #{req_psn_syspayno}
+	         ORDER by base_yr desc
+	     ) a
+	    ,(
+	      select
+	            nvl(sum(pay_amt), 0) as pay_amt
+	       from cwlfrihpscfarwlpay
+	         where syspayno = #{req_psn_syspayno}
+	     ) b
+  </select>
+  
+  <!-- 급여계좌정보 조회 -->
+  <select id="selectHumBankBasicInfo" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectHumBankBasicInfo */ 
+	       a.salry_bank as pay_bank_cd,
+	       fun_xodxcommst_cd_nm(a.salry_bank,0) as pay_bank_nm,
+	       a.bankaccnt_no as pay_bankaccnt,
+	       a.depstr as pay_depstr,
+	       b.bankaccnt_no as oth_bankaccnt,
+	       b.bank as oth_bank_cd,
+	       fun_xodxcommst_cd_nm(b.bank,0) as oth_bank_nm,
+	       b.depstr_nm as oth_depstr
+	  FROM humslbasinfo a
+	      ,outer fbaapartaccnt b
+	    WHERE a.syspayno = b.syspayno
+		  AND a.syspayno = #{req_psn_syspayno}
+  </select>
+  
+  <!-- 확정내역 조회 -->
+  <select id="selectDecideInfo" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectDecideInfo */ 
+	       req_no
+	FROM cwlloan
+	  WHERE req_no = #{req_no}
+	     OR rmk like '%'||#{req_no}||'%'  --하루에 대출 두건 실행의 경우로 추가(단, 비고란에 해당 신청번호 존재해야 함)
+  </select>
+  
+  <insert id="insertCwlFwLoanReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	INSERT /* QueryID : kr.re.kitech.biz.ccs.cwl.insertCwlFwLoanReq */ 
+			 INTO cwlfwloanreq
+	(    req_no
+	    ,centr_cd
+	    ,centr_nm
+	    ,dept_cd
+	    ,dept_new_ymd
+	    ,dept_nm
+	    ,req_ymd
+	    ,req_psn
+	    ,req_psn_syspayno
+	    ,dept_tel
+	    ,loan_amt
+	    ,req_cause
+	    ,month_dedct_amt
+	    ,loan_orign_ymd
+	    ,loan_cls_ymd
+	    ,req_state
+	    ,pay_amt
+	    ,pay_ymd
+	    ,depst_clsf
+	    ,depst_bankaccnt_no
+	    ,depst_bank_cd
+	    ,depst_bank_nm
+	    ,depstr_nm
+	    ,rmk
+	    ,repay_month
+	    ,regst_psn_syspayno
+	    ,regst_daytm
+	)
+	VALUES(
+		   #{req_no}
+		  ,#{centr_cd}
+		  ,#{centr_nm}
+		  ,#{dept_cd}
+		  ,#{dept_new_ymd}
+		  ,#{dept_nm}
+		  ,#{req_ymd}
+		  ,#{req_psn}
+		  ,#{req_psn_syspayno}
+		  ,#{dept_tel}
+		  ,#{loan_amt}
+		  ,#{req_cause}
+		  ,#{month_dedct_amt}
+		  ,''
+		  ,''
+		  ,#{req_state}
+		  ,#{pay_amt}
+		  ,#{pay_ymd}
+		  ,#{depst_clsf}
+		  ,#{depst_bankaccnt_no}
+		  ,#{depst_bank_cd}
+		  ,#{depst_bank_nm}
+		  ,#{depstr_nm}
+		  ,#{rmk}
+		  ,#{repay_month}
+		  ,#{regst_syspayno}
+		  ,sysdate)
+  </insert>
+  
+  <update id="updateCwlFwLoanReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cwl.updateCwlFwLoanReq */ 
+			    cwlfwloanreq
+	SET loan_amt = #{loan_amt},
+	    req_cause = #{req_cause},     
+	    pay_amt = #{pay_amt},
+	    pay_ymd = #{pay_ymd},
+	    depst_clsf = #{depst_clsf},
+	    depst_bankaccnt_no = #{depst_bankaccnt_no},
+	    depst_bank_cd = #{depst_bank_cd},
+	    depst_bank_nm = #{depst_bank_nm},
+	    month_dedct_amt = #{month_dedct_amt},
+	    repay_month = #{repay_month},
+	    fix_repay_month = #{fix_repay_month},
+	    updt_psn_syspayno = #{updt_syspayno},
+	    updt_daytm = sysdate
+	WHERE    1=1
+	AND      req_no = #{req_no}
+  </update>
+  
+  <delete id="deleteCwlFwLoanReq" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlFwLoanReqVo">
+	DELETE /* QueryID : kr.re.kitech.biz.ccs.cwl.deleteCwlFwLoanReq */ 
+			 FROM cwlfwloanreq
+	WHERE req_no = #{req_no}
+  </delete>
+  
+  <!-- 현재 이자율 조회 -->
+  <select id="selectCwlLoanRts" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo" resultType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cwl.selectCwlLoanRts */ 
+	    mngmt_item_1 AS loan_rts
+	FROM xodxcommst
+	WHERE cd_clsf = 'CWL' --대출금이율구분
+	AND cd = 'CWL001' --상조회대출금이율
+  </select>
+  
+  <!-- 대출금마스터 등록 -->
+  <insert id="insertCwlLoanMaster" parameterType="kr.re.kitech.biz.ccs.cwl.vo.CwlLoanMasterVo">
+	INSERT /* QueryID : kr.re.kitech.biz.ccs.cwl.insertCwlLoanMaster */ 
+			 INTO cwlloan(
+	     syspayno ,
+	     loan_cd ,
+	     loan_ymd ,
+	     loan_tot_liq ,
+	     loan_ramt ,
+	     loan_rts ,
+	     tot_repay_amt ,
+	     tot_repay_intrst ,
+	     month_repay_amt ,
+	     thmon_intrst_amt ,
+	     repay_schdl_tot_times ,
+	     repay_times ,
+	     dedct_start_ymd ,
+	     midway_repay_ymd ,
+	     final_dedct_ymd ,
+	     tot_midway_repay_amt,
+	     tot_midway_repay_intrst,
+	     midway_repay_times ,
+	     thmon_midway_repay_intrst_amt,
+	     dedct_progrss_state ,
+	     def_intrst ,
+	     repay_intrst ,
+	     tot_intrst_amt ,
+	     confirm_day ,
+	     req_defer ,
+	     req_repay ,
+	     req_repay_month ,
+	     rmk ,
+	     req_no ,
+	     regst_psn_syspayno ,
+	     regst_daytm     
+	) VALUES ( #{syspayno}
+			  ,#{loan_cd}
+			  ,#{loan_ymd}
+			  ,#{loan_tot_liq}
+			  ,#{loan_ramt}
+			  ,#{loan_rts}
+			  ,#{tot_repay_amt}
+			  ,#{tot_repay_intrst}
+			  ,#{month_repay_amt}
+			  ,#{thmon_intrst_amt}
+			  ,#{repay_schdl_tot_times}
+			  ,#{repay_times}
+			  ,#{dedct_start_ymd}
+			  ,#{midway_repay_ymd}
+			  ,#{final_dedct_ymd}
+			  ,#{tot_midway_repay_amt}
+			  ,#{tot_midway_repay_intrst}
+			  ,#{midway_repay_times}
+			  ,#{thmon_midway_repay_intrst_amt}
+			  ,#{dedct_progrss_state}
+			  ,#{def_intrst}
+			  ,#{repay_intrst}
+			  ,#{tot_intrst_amt}
+			  ,#{confirm_day}
+			  ,#{req_defer}
+			  ,#{req_repay}
+			  ,#{req_repay_month}
+			  ,#{rmk}
+			  ,#{req_no}
+			  ,#{regst_syspayno}
+			  ,CURRENT)
+  </insert>
+</mapper>

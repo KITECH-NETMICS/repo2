@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.bmg">
+	
+	<select id="selectBookReport" parameterType="kr.re.kitech.biz.kbk.bmg.vo.BmgSearchVo" resultType="kr.re.kitech.biz.kbk.bmg.vo.BmgBookReportVo">
+		SELECT
+		        regst_no,
+		        book_nm,
+		        auth_nm,
+		        retrn_schdl_ymd,
+		        retrn_ymd, 
+		        resv_psn_syspayno,  
+		        accnt_no,
+		        accnt_rspns_nm,
+		        loan_no,
+		        centr_cd,
+		        centr_nm,
+		        clsfsgn,
+		        authcd, 
+		        resv_ymd,
+		        loan_yn,
+		        resv_yn,
+		        clsf,
+		        publ_vend,
+		        loan_yn_nm,
+		        loan_psn_nm,
+		        resv_yn_nm,
+		        regst_ymd       
+		FROM    (
+            SELECT  a.regst_no as regst_no,
+                    a.book_nm as book_nm,
+                    a.auth_nm as auth_nm,
+                    NVL(b.retrn_schdl_ymd,'') as retrn_schdl_ymd,
+                    NVL(b.retrn_ymd,'') as retrn_ymd, 
+                    NVL(b.resv_psn_syspayno,'') as resv_psn_syspayno,  
+                    a.accnt_no as accnt_no,
+                    e.nm as accnt_rspns_nm,
+                    b.loan_no as loan_no,
+                    a.centr_cd as centr_cd,
+                    fun_xodxcommst_cd_nm(a.centr_cd,0) as centr_nm,
+                    a.clsfsgn as clsfsgn,
+                    a.authcd as authcd, 
+                    NVL(b.resv_ymd,'') AS resv_ymd,
+                    decode(b.retrn_ymd,'','Y','N') as loan_yn,
+                    decode(nvl(b.resv_ymd, ''),'','N','Y') as resv_yn,
+                    'KAD001' as clsf,
+                     publ_vend,
+                    decode(b.retrn_ymd,'','대출중','대출가능') as loan_yn_nm,
+                    decode(b.retrn_ymd,'',c.nm,'') as loan_psn_nm,
+                    decode(nvl(b.resv_ymd, ''),'','예약없음','예약있음') as resv_yn_nm,
+                    a.regst_ymd
+            FROM    kbkbook a 
+                    LEFT JOIN kbkbookloan b ON a.regst_no = b.loan_book_no AND b.valid_yn  = '0'
+                    LEFT OUTER JOIN humbasicinfo c ON b.loan_psn_syspayno = c.syspayno
+                    LEFT OUTER JOIN resbgacctm d ON a.accnt_no = d.accnt_no
+                    LEFT OUTER JOIN humbasicinfo e ON d.accnt_rspns = e.syspayno
+            WHERE   a.regst_ymd BETWEEN #{reg_from} AND #{reg_to}
+             <if test="book_nm 	!= null and book_nm != ''">		AND  replace(upper(a.book_nm),' ','')     LIKE DECODE(#{book_nm},'','%',concat(concat('%',replace(upper(#{book_nm}),' ','')),'%'))		</if>
+             <if test="auth_nm != null and auth_nm != ''">		AND  replace(upper(a.auth_nm),' ','')     LIKE DECODE(#{auth_nm},'','%',concat(concat('%',replace(upper(#{auth_nm}),' ','')),'%'))		</if>
+             <if test="publ_vend != null and publ_vend != ''">	AND  replace(upper(a.publ_vend),' ','')    LIKE DECODE(#{publ_vend},'','%',concat(concat('%',replace(upper(#{publ_vend}),' ','')),'%'))	</if>
+             <if test="centr_cd != null and centr_cd != ''">	AND  a.centr_cd  = #{centr_cd}																											</if>
+             <if test="accnt_no != null and accnt_no != ''">	AND  a.accnt_no    LIKE DECODE(#{accnt_no},'','%','%' || #{accnt_no} || '%')																			</if>
+             <if test="regst_no != null and regst_no != ''">	AND  a.regst_no  = #{regst_no}																											</if>
+             <if test="clsfsgn != null and clsfsgn != ''">		AND  a.clsfsgn LIKE DECODE(#{clsfsgn},'','%','%' || #{clsfsgn} || '%')																				</if>
+             <if test='"Y".equals(retrn_yn)'>					AND  b.retrn_ymd == ''																						</if>
+             <if test='"N".equals(retrn_yn)'>					AND  (b.retrn_ymd != '' OR b.retrn_ymd IS NULL)																							</if>
+             <if test='"Y".equals(resv_yn)'>					AND   b.resv_psn_syspayno != ''																											</if>
+             <if test='"N".equals(resv_yn)'>					AND   b.resv_psn_syspayno == ''																											</if>
+            ORDER BY a.regst_no DESC 
+
+            UNION ALL
+             
+            SELECT  a.regst_no AS regst_no,
+                    a.rptp_nm AS book_nm,
+                    a.resch_respn_psn AS auth_nm,
+                    '' AS retrn_schdl_ymd,
+                    NVL(b.retrn_ymd,'') AS retrn_ymd,
+                    NVL(b.resv_psn_syspayno,'') AS resv_psn_syspayno,
+                    a.rptp_no AS accnt_no,
+                    e.nm as accnt_rspns_nm,
+                    b.loan_no  AS loan_no,
+                    a.centr_cd AS centr_cd,  
+                    fun_xodxcommst_cd_nm(a.centr_cd,0) AS centr_nm,
+                    '' AS clsfsgn,
+                    '' AS authcd,
+                    NVL(b.resv_ymd,'') AS resv_ymd,
+                    DECODE(NVL(b.retrn_ymd, ""),'','Y','N') AS loan_yn,
+                    DECODE(NVL(b.resv_ymd, ""),'','N','Y') AS resv_yn,
+                    'KAD002' AS clsf, 
+                    '' AS publ_vend,
+                    DECODE(b.retrn_ymd,'','대출중','대출가능') AS loan_yn_nm,
+                    DECODE(b.retrn_ymd,'',c.nm,'') AS loan_psn_nm,
+                    DECODE(NVL(b.resv_ymd, ''),'','예약없음','예약있음') AS resv_yn_nm,
+                    a.regst_ymd
+            FROM    kbkreschrptp a 
+                    LEFT JOIN kbkbookloan b ON a.regst_no = b.loan_book_no AND b.valid_yn  = '0'
+                    LEFT OUTER JOIN humbasicinfo c ON b.loan_psn_syspayno = c.syspayno
+                    LEFT OUTER JOIN resbgacctm d ON a.rptp_no = d.accnt_no
+                    LEFT OUTER JOIN humbasicinfo e ON d.accnt_rspns = e.syspayno
+            WHERE   a.regst_ymd BETWEEN #{reg_from} AND #{reg_to}
+             <if test="rptp_nm != null and rptp_nm != ''">		AND REPLACE(UPPER(a.rptp_nm),' ','') LIKE DECODE(#{rptp_nm},'','%',concat(concat('%',REPLACE(UPPER(#{rptp_nm}),' ','')),'%'))	</if>
+             <if test="rptp_no != null and rptp_no != ''">		AND a.rptp_no LIKE '%' || #{rptp_no} || '%'																									</if>
+             <if test="rptp_psn != null and rptp_psn != ''">	AND (resch_respn_psn LIKE DECODE(#{rptp_psn},'','%','%' || #{rptp_psn} || '%') OR attnce_reschr_psn LIKE DECODE(#{rptp_psn},'','%','%' || #{rptp_psn}) || '%')	</if>
+             <if test="centr_cd != null and centr_cd != ''">	AND a.centr_cd  = #{centr_cd}																									</if>
+             <if test="regst_no != null and regst_no != ''">	AND a.regst_no  = #{regst_no}																									</if>
+             <if test='"Y".equals(retrn_yn)'>						AND (b.retrn_ymd != '' OR b.retrn_ymd IS NOT NULL)																				</if>
+             <if test='"N".equals(retrn_yn)'>						AND (b.retrn_ymd == '' OR b.retrn_ymd IS NULL)																					</if>
+             <if test='"Y".equals(resv_yn)'>				AND b.resv_psn_syspayno != ''																									</if>
+             <if test='"N".equals(resv_yn)'>				AND b.resv_psn_syspayno == ''																									</if>
+            ORDER BY a.regst_no DESC 
+      )
+	</select>
+	
+		<select id="selectBook" parameterType="kr.re.kitech.biz.kbk.bmg.vo.BmgSearchVo" resultType="kr.re.kitech.biz.kbk.bmg.vo.BmgBookReportVo">
+            SELECT  a.regst_no as regst_no,
+                    a.book_nm as book_nm,
+                    a.auth_nm as auth_nm,
+                    NVL(b.retrn_schdl_ymd,'') as retrn_schdl_ymd,
+                    NVL(b.retrn_ymd,'') as retrn_ymd, 
+                    NVL(b.resv_psn_syspayno,'') as resv_psn_syspayno,  
+                    a.accnt_no as accnt_no,
+                    e.nm as accnt_rspns_nm,
+                    b.loan_no as loan_no,
+                    a.centr_cd as centr_cd,
+                    fun_xodxcommst_cd_nm(a.centr_cd,0) as centr_nm,
+                    a.clsfsgn as clsfsgn,
+                    a.authcd as authcd, 
+                    NVL(b.resv_ymd,'') AS resv_ymd,
+                    decode(b.retrn_ymd,'','Y','N') as loan_yn,
+                    decode(nvl(b.resv_ymd, ''),'','N','Y') as resv_yn,
+                    'KAD001' as clsf,
+                     publ_vend,
+                    decode(b.retrn_ymd,'','대출중','대출가능') as loan_yn_nm,
+                    decode(b.retrn_ymd,'',c.nm,'') as loan_psn_nm,
+                    decode(nvl(b.resv_ymd, ''),'','예약없음','예약있음') as resv_yn_nm,
+                    a.regst_ymd
+            FROM    kbkbook a 
+                    LEFT JOIN kbkbookloan b ON a.regst_no = b.loan_book_no AND b.valid_yn  = '0'
+                    LEFT OUTER JOIN humbasicinfo c ON b.loan_psn_syspayno = c.syspayno
+                    LEFT OUTER JOIN resbgacctm d ON a.accnt_no = d.accnt_no
+                    LEFT OUTER JOIN humbasicinfo e ON d.accnt_rspns = e.syspayno
+            WHERE   a.regst_ymd BETWEEN #{reg_from} AND #{reg_to}
+             <if test="book_nm 	!= null and book_nm != ''">		AND  replace(upper(a.book_nm),' ','')     LIKE DECODE(#{book_nm},'','%',concat(concat('%',replace(upper(#{book_nm}),' ','')),'%'))		</if>
+             <if test="auth_nm != null and auth_nm != ''">		AND  replace(upper(a.auth_nm),' ','')     LIKE DECODE(#{auth_nm},'','%',concat(concat('%',replace(upper(#{auth_nm}),' ','')),'%'))		</if>
+             <if test="publ_vend != null and publ_vend != ''">	AND  replace(upper(a.publ_vend),' ','')    LIKE DECODE(#{publ_vend},'','%',concat(concat('%',replace(upper(#{publ_vend}),' ','')),'%'))	</if>
+             <if test="centr_cd != null and centr_cd != ''">	AND  a.centr_cd  = #{centr_cd}																											</if>
+             <if test="accnt_no != null and accnt_no != ''">	AND  a.accnt_no    LIKE DECODE(#{accnt_no},'','%','%' || #{accnt_no} || '%')																			</if>
+             <if test="regst_no != null and regst_no != ''">	AND  a.regst_no  = #{regst_no}																											</if>
+             <if test="clsfsgn != null and clsfsgn != ''">		AND  a.clsfsgn LIKE DECODE(#{clsfsgn},'','%','%' || #{clsfsgn} || '%')																				</if>
+             <if test='"Y".equals(retrn_yn)'>					AND  b.retrn_ymd == ''																						</if>
+             <if test='"N".equals(retrn_yn)'>					AND  (b.retrn_ymd != '' OR b.retrn_ymd IS NULL)																							</if>
+             <if test='"Y".equals(resv_yn)'>					AND   b.resv_psn_syspayno != ''																											</if>
+             <if test='"N".equals(resv_yn)'>					AND   b.resv_psn_syspayno == ''																											</if>
+            ORDER BY a.regst_no DESC
+	</select>
+	
+		<select id="selectReport" parameterType="kr.re.kitech.biz.kbk.bmg.vo.BmgSearchVo" resultType="kr.re.kitech.biz.kbk.bmg.vo.BmgBookReportVo">
+            SELECT  a.regst_no AS regst_no,
+                    a.rptp_nm AS book_nm,
+                    a.resch_respn_psn AS auth_nm,
+                    '' AS retrn_schdl_ymd,
+                    NVL(b.retrn_ymd,'') AS retrn_ymd,
+                    NVL(b.resv_psn_syspayno,'') AS resv_psn_syspayno,
+                    a.rptp_no AS accnt_no,
+                    e.nm as accnt_rspns_nm,
+                    b.loan_no  AS loan_no,
+                    a.centr_cd AS centr_cd,  
+                    fun_xodxcommst_cd_nm(a.centr_cd,0) AS centr_nm,
+                    '' AS clsfsgn,
+                    '' AS authcd,
+                    NVL(b.resv_ymd,'') AS resv_ymd,
+                    DECODE(NVL(b.retrn_ymd, ""),'','Y','N') AS loan_yn,
+                    DECODE(NVL(b.resv_ymd, ""),'','N','Y') AS resv_yn,
+                    'KAD002' AS clsf, 
+                    '' AS publ_vend,
+                    DECODE(b.retrn_ymd,'','대출중','대출가능') AS loan_yn_nm,
+                    DECODE(b.retrn_ymd,'',c.nm,'') AS loan_psn_nm,
+                    DECODE(NVL(b.resv_ymd, ''),'','예약없음','예약있음') AS resv_yn_nm,
+                    a.regst_ymd
+            FROM    kbkreschrptp a 
+                    LEFT JOIN kbkbookloan b ON a.regst_no = b.loan_book_no AND b.valid_yn  = '0'
+                    LEFT OUTER JOIN humbasicinfo c ON b.loan_psn_syspayno = c.syspayno
+                    LEFT OUTER JOIN resbgacctm d ON a.rptp_no = d.accnt_no
+                    LEFT OUTER JOIN humbasicinfo e ON d.accnt_rspns = e.syspayno
+            WHERE   a.regst_ymd BETWEEN #{reg_from} AND #{reg_to}
+             <if test="rptp_nm != null and rptp_nm != ''">		AND REPLACE(UPPER(a.rptp_nm),' ','') LIKE DECODE(#{rptp_nm},'','%',concat(concat('%',REPLACE(UPPER(#{rptp_nm}),' ','')),'%'))	</if>
+             <if test="rptp_no != null and rptp_no != ''">		AND a.rptp_no LIKE '%' || #{rptp_no} || '%'																									</if>
+             <if test="rptp_psn != null and rptp_psn != ''">	AND (a.resch_respn_psn LIKE DECODE(#{rptp_psn},'','%','%' || #{rptp_psn} || '%') OR a.attnce_reschr_psn LIKE DECODE(#{rptp_psn},'','%','%' || #{rptp_psn} || '%'))	</if>
+             <if test="centr_cd != null and centr_cd != ''">	AND a.centr_cd  = #{centr_cd}																									</if>
+             <if test="regst_no != null and regst_no != ''">	AND a.regst_no  = #{regst_no}																									</if>
+             <if test='"Y".equals(retrn_yn)'>						AND (b.retrn_ymd != '' OR b.retrn_ymd IS NOT NULL)																				</if>
+             <if test='"N".equals(retrn_yn)'>						AND (b.retrn_ymd == '' OR b.retrn_ymd IS NULL)																					</if>
+             <if test='"Y".equals(resv_yn)'>				AND b.resv_psn_syspayno != ''																									</if>
+             <if test='"N".equals(resv_yn)'>				AND b.resv_psn_syspayno == ''																									</if>
+            ORDER BY a.regst_no DESC
+	</select>
+	
+	<update id="updateBookReserve" parameterType="kr.re.kitech.biz.kbk.bmg.vo.BmgSearchVo">
+		UPDATE kbkbookloan
+  		SET resv_psn_syspayno = #{resv_psn_syspayno},
+       	resv_ymd = #{resv_ymd}
+ 		WHERE loan_no = #{loan_no}
+	</update>
+	
+</mapper>

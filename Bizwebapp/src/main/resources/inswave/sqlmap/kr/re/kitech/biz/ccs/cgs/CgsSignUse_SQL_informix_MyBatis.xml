@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.ccs.cgs">
+  <select id="selectListCgsSignUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo">
+-- 결재시스템의 외부시행문 정보조회
+    SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListItemCgsSignUse */ 
+    'apr' AS gubun, --구분명
+    to_char(b.rqid) AS req_no, --신청번호
+    b.rqdocno AS stamp_no, --날인관리번호
+    'CGA001' AS seal_clsf, --계인코드
+    '직인' AS seal_clsf_nm, --계인명
+    to_char(b.rqdate, '%Y%m%d') AS req_ymd, -- 신청일자
+    d.empsn AS req_psn_syspayno, --신청자시스템개인번호
+    fun_emp_nm(d.empsn) AS req_psn_nm,
+    b.rqpartcd AS req_dept_cd, --신청자부서코드
+    b.rqpartnm AS req_dept_nm, --신청자부서명
+    c.resname AS final_apprvl_psn, -- 최종결재자
+    b.rcpartnm AS recv_loc, --수신처
+    b.rqdoctitle AS docu_subj, --문서제목
+    1 AS qty, --부수
+    b.rqdocno AS docu_no, --문서번호
+    '' AS premnth_way,
+    '' AS premnth_way_nm,
+    '' AS attach_file_no, --첨부파일번호
+    '' AS rmk, --비고
+    b.rqpartcd AS supvis_dept_cd, --날인자부서코드
+    b.rqpartnm AS supvis_dept_nm, --날인자부서명
+    to_char(b.rqdate, '%Y%m%d') AS stamp_ymd, --날인일자
+    d.empsn AS stamp_psn_syspayno, --날인자시스템개인번호
+    b.rqempnm AS stamp_psn_nm, --날인자성명
+    'CGB003' AS req_state, --결재상태코드
+    '완료' AS req_nm --결재상태명
+    FROM (SELECT a.instid, MAX(a.taskid) AS maxtaskid 
+        FROM bpm_worklist a 
+        INNER JOIN bpm:bpm_procinst b ON b.instid = a.instid 
+        INNER JOIN bpm_procdef c ON c.defid = b.defid AND c.ALIAS = 'SendExApprProcess'
+        INNER JOIN appv_rqrcworklist d ON d.rqinstid = a.instid
+            AND to_char(d.rqdate,'%Y%m%d') BETWEEN #{req_ymd1} AND #{req_ymd2} --[req_ymd1][req_ymd2]
+   AND ((#{seal_clsf} = 'CGA001' AND d.rqdocno LIKE '%') OR (#{seal_clsf} = '' AND d.rqdocno LIKE '%') OR (#{seal_clsf} != 'CGA001' AND d.rqdocno = '999AAA')) --[seal_clsf][seal_clsf][seal_clsf]
+   AND ((#{req_state} = 'CGB003' AND d.rqdocno LIKE '%') OR (#{req_state} = '' AND d.rqdocno LIKE '%') OR (#{req_state} != 'CGB003' AND d.rqdocno = '999AAA')) --[req_state][req_state][req_state]
+            AND (#{req_dept_cd} = '' OR d.rqpartcd = #{req_dept_cd}) --[req_dept_cd][req_dept_cd]
+        WHERE a.tool = 'formApprovalHandler' 
+        AND a.status = 'COMPLETED' 
+        GROUP BY a.instid
+        ) a 
+    INNER JOIN appv_rqrcworklist b ON b.rqinstid = a.instid 
+    INNER JOIN bpm_worklist c ON c.taskid = a.maxtaskid
+    INNER JOIN bpm:emptable d ON d.empcode = b.rqempcd AND (#{req_psn_syspayno} = '' OR d.empsn = #{req_psn_syspayno}) --[req_psn_syspayno][req_psn_syspayno]
+    UNION ALL
+    -- 직인인감날인신청 정보조회
+    SELECT 
+     'biz' AS gubun,
+     req_no, 
+     stamp_no,
+     seal_clsf,
+     fun_xodxcommst_cd_nm(seal_clsf, 0) AS seal_clsf_nm,
+     req_ymd,
+     req_psn_syspayno,
+     fun_emp_nm(req_psn_syspayno) AS req_psn_nm,
+     req_dept_cd,
+     req_dept_nm,
+     final_apprvl_psn,
+     recv_loc,
+     docu_subj,
+     qty,
+     docu_no,
+     premnth_way,
+     fun_xodxcommst_cd_nm(premnth_way, 0) AS premnth_way_nm,
+     attach_file_no,
+     rmk,
+     req_dept_cd AS supvis_dept_cd,
+     req_dept_nm AS supvis_dept_nm,
+     req_ymd AS stamp_ymd,
+     req_psn_syspayno AS stamp_psn_syspayno,
+     DECODE(NVL(stamp_psn_syspayno,''), '', fun_humbasicinfo_cd_nm(req_psn_syspayno, 0),fun_humbasicinfo_cd_nm(stamp_psn_syspayno, 0)) AS stamp_psn_nm, 
+     req_state,     
+     CASE WHEN req_state = 'CGB005' THEN '저장중'
+      WHEN req_state = 'CGB001' THEN '신청'
+      WHEN req_state = 'CGB002' THEN '반려'
+      WHEN req_state = 'CGB003' THEN '완료' END AS req_nm
+    FROM cgssignuse
+    WHERE 1=1
+    AND req_ymd BETWEEN #{req_ymd1} AND #{req_ymd2} --[req_ymd1][req_ymd2]
+    AND (#{seal_clsf} = '' OR seal_clsf = #{seal_clsf}) --[seal_clsf][seal_clsf]
+    AND (#{req_state} = '' OR req_state = #{req_state}) --[req_state][req_state]
+    AND (#{req_psn_syspayno} = '' OR req_psn_syspayno = #{req_psn_syspayno}) --[req_psn_syspayno][req_psn_syspayno]
+    AND (#{req_dept_cd} = '' OR req_dept_cd = #{req_dept_cd}) --[req_dept_cd][req_dept_cd]
+    UNION ALL
+    SELECT
+     'res' AS gubun, --구분명
+     a.req_no, --신청번호
+     a.req_no AS stamp_no, --날인관리번호
+     'CGA002' AS seal_clsf, --계인코드
+     '인감' AS seal_clsf_nm, --계인명
+     a.req_ymd, --신청일자
+     a.req_psn AS req_psn_syspayno,  --신청자시스템개인번호
+     fun_emp_nm(a.req_psn) AS req_psn_nm,
+     b.dept_cd AS req_dept_cd, --신청자부서코드
+     b.dept_nm AS req_dept_nm, --신청자부서명
+     '직인/인감담당자' AS final_apprvl_psn, -- 최종결재자
+     a.exclsv_agncy AS recv_loc, --수신처
+     '사업비 청구서' AS docu_subj, --문서제목
+     1 AS qty, --부수
+     a.req_no AS docu_no, --문서번호
+     '' AS premnth_way,
+     '' AS premnth_way_nm,
+     '' AS attach_file_no, -- 첨부파일번호
+     '' AS rmk, --비고
+     b.dept_cd AS supvis_dept_cd, --날인자부서코드
+     b.dept_nm AS supvis_dept_nm, --날인자부서명
+     a.req_ymd AS stamp_ymd, --날인일자
+     a.req_psn AS stamp_psn_syspayno, --날인자시스템개인번호 (신청자개인번호 채워주세요)
+     b.nm AS stamp_psn_nm, --날인자성명
+     'CGB003' AS req_state, --결재상태코드
+     '완료' AS req_nm --결재상태명
+    FROM resappreschamt a --사업연구비신청
+    JOIN v_humbasicinfo b ON a.req_psn = b.syspayno
+    JOIN xomxintfatab x ON a.req_no = x.req_no AND x.apr_state = 'XAD100'
+    WHERE a.req_ymd BETWEEN #{req_ymd1} AND #{req_ymd2} --[req_ymd1][req_ymd2]
+  </select>
+  
+  <select id="selectCgsSignUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectCgsSignUse */ 
+	 a.req_no,
+	 a.stamp_no,
+	 a.seal_clsf,
+	 a.req_ymd,
+	 a.req_psn_syspayno,
+	 fun_humbasicinfo_cd_nm(a.req_psn_syspayno,0) AS req_psn_syspayno_nm,
+	 a.req_dept_cd,
+	 a.req_dept_nm,
+	 a.final_apprvl_psn,
+	 b.empno AS final_apprvl_psn_emp_no,
+	 fun_humbasicinfo_cd_nm(a.final_apprvl_psn,0) AS final_apprvl_psn_nm,
+	 b.email AS final_apprvl_psn_email,
+	 a.recv_loc,
+	 a.docu_subj,
+	 a.qty,
+	 a.docu_no,
+	 a.premnth_way,
+	 a.addr_clsf,
+	 a.addr,
+	 a.attach_file_no,
+	 a.rmk,
+	 a.supvis_dept_cd,
+	 a.supvis_dept_nm,
+	 a.stamp_ymd,
+	 a.stamp_psn_syspayno,
+	 a.stamp_psn_nm,
+	 a.req_state,
+	 a.regst_psn_syspayno,
+	 a.regst_daytm,
+	 a.updt_psn_syspayno,
+	 a.updt_daytm 
+	FROM cgssignuse AS a
+	INNER JOIN humbasicinfo AS b on b.syspayno = a.req_psn_syspayno
+	WHERE req_no = #{req_no}
+  </select>
+  
+  <insert id="insertCgsSignUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo">
+	INSERT /* QueryID : kr.re.kitech.biz.ccs.cgs.insertCgsSignUse */ 
+	INTO cgssignuse(
+	     req_no ,
+	     stamp_no ,
+	     seal_clsf,
+	     req_ymd,
+	     req_psn_syspayno ,
+	     req_dept_cd ,
+	     req_dept_nm ,
+	     final_apprvl_psn ,
+	     recv_loc ,
+	     docu_subj ,
+	     qty ,
+	     docu_no ,
+	     premnth_way,
+	     addr_clsf,
+	     addr,
+	     attach_file_no ,
+	     rmk ,
+	     supvis_dept_cd ,
+	     supvis_dept_nm ,
+	     stamp_ymd ,
+	     stamp_psn_syspayno ,
+	     stamp_psn_nm ,
+	     req_state ,
+	     regst_psn_syspayno ,
+	     regst_daytm     
+	) VALUES ( 
+	     #{req_no}
+	   , substring(to_char(sysdate,'%Y') from 3 for 2)||to_char(sysdate,'%m')||'-'||lpad(seq_stamp_no.nextval,5,'0')
+	   , #{seal_clsf}
+	   , #{req_ymd}
+	   , #{req_psn_syspayno}
+	   , #{req_dept_cd}
+	   , #{req_dept_nm}
+	   , #{final_apprvl_psn}
+	   , #{recv_loc}
+	   , #{docu_subj}
+	   , #{qty}
+	   , #{docu_no}
+	   , #{premnth_way}
+	   , #{addr_clsf}
+	   , #{addr}
+	   , #{attach_file_no}
+	   , #{rmk}
+	   , #{supvis_dept_cd}
+	   , #{supvis_dept_nm}
+	   , #{stamp_ymd}
+	   , #{stamp_psn_syspayno}
+	   , #{stamp_psn_nm}
+	   , #{req_state}
+	   , #{regst_syspayno}
+	   , CURRENT
+			 )
+  </insert>
+  
+  <update id="updateCgsSignUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCgsSignUse */ 
+			 cgssignuse 
+	SET 
+	 final_apprvl_psn = #{final_apprvl_psn},
+	 <if test="addr_clsf != null and addr_clsf != ''">
+	 seal_clsf = #{seal_clsf},
+	 </if>
+	 recv_loc = #{recv_loc},
+	 docu_subj = #{docu_subj},
+	 qty = #{qty},
+	 docu_no = #{docu_no},
+	 addr_clsf = #{addr_clsf},
+	 addr = #{addr},
+	 <if test="premnth_way != null and premnth_way != ''">
+	 	premnth_way = #{premnth_way},
+	 </if>
+	 <if test="attach_file_no != null and attach_file_no != ''">
+	 	attach_file_no = #{attach_file_no},
+	 </if>
+	 <if test="req_state != null and req_state != ''">
+	 	req_state = #{req_state},
+	 </if>
+ 	 rmk = #{rmk},
+	 updt_psn_syspayno=#{updt_syspayno},
+	 updt_daytm = CURRENT
+	WHERE req_no = #{req_no}
+  </update>
+  
+  <delete id="deleteCgsSignUse" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo">
+	DELETE /* QueryID : kr.re.kitech.biz.ccs.cgs.deleteCgsSignUse */ 
+			 FROM cgssignuse
+	WHERE req_no = #{req_no}
+  </delete>
+  
+  <select id="selectListCgsSignUseAddr" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo">
+	SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListCgsSignUseAddr */ 
+			 cd
+	      ,cd_nm
+	      ,cd_desc
+	      ,cd_clsf
+	      ,sys_clsf
+	      ,seq
+	      ,use_ex
+	      ,mngmt_item_1 AS addr
+	      ,mngmt_item_2
+	      ,mngmt_item_3
+	      ,mngmt_item_4
+	      ,mngmt_item_5
+	      ,mngmt_item_6
+	      ,mngmt_item_7
+	      ,mngmt_no_1
+	      ,mngmt_no_2
+	      ,mngmt_no_3
+	      ,mngmt_no_4
+	      ,mngmt_no_5
+	      ,mngmt_no_6
+	      ,mngmt_no_7
+	FROM  xodxcommst
+	WHERE 1=1
+	<if test="addr_clsf != null and addr_clsf != ''">
+		 and cd = #{addr_clsf}
+	</if>
+  </select>
+  
+  <select id="selectListItemCgsSignUseMnt" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo" resultType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo">
+    -- 직인인감날인신청 정보조회
+    SELECT /* QueryID : kr.re.kitech.biz.ccs.cgs.selectListItemCgsSignUseMnt */
+     'biz' AS gubun,
+     req_no, 
+     stamp_no,
+     seal_clsf,
+     fun_xodxcommst_cd_nm(seal_clsf, 0) AS seal_clsf_nm,
+     req_ymd,
+     req_psn_syspayno,
+     fun_emp_nm(req_psn_syspayno) AS req_psn_nm,
+     req_dept_cd,
+     req_dept_nm,
+     final_apprvl_psn,
+     recv_loc,
+     docu_subj,
+     qty,
+     docu_no,
+     premnth_way,
+     fun_xodxcommst_cd_nm(premnth_way, 0) AS premnth_way_nm,
+     attach_file_no,
+     rmk,
+     req_dept_cd AS supvis_dept_cd,
+     req_dept_nm AS supvis_dept_nm,
+     req_ymd AS stamp_ymd,
+     req_psn_syspayno AS stamp_psn_syspayno,
+     DECODE(NVL(stamp_psn_syspayno,''), '', fun_humbasicinfo_cd_nm(req_psn_syspayno, 0),fun_humbasicinfo_cd_nm(stamp_psn_syspayno, 0)) AS stamp_psn_nm, 
+     req_state,     
+     CASE WHEN req_state = 'CGB005' THEN '저장중'
+      WHEN req_state = 'CGB001' THEN '신청'
+      WHEN req_state = 'CGB002' THEN '반려'
+      WHEN req_state = 'CGB003' THEN '완료' END AS req_nm
+    FROM cgssignuse
+    WHERE 1=1
+    AND req_ymd BETWEEN #{req_ymd1} AND #{req_ymd2} --[req_ymd1][req_ymd2]
+    AND (#{seal_clsf} = '' OR seal_clsf = #{seal_clsf}) --[seal_clsf][seal_clsf]
+    AND (#{req_state} = '' OR req_state = #{req_state}) --[req_state][req_state]
+    AND (#{req_psn_syspayno} = '' OR req_psn_syspayno = #{req_psn_syspayno}) --[req_psn_syspayno][req_psn_syspayno]
+    AND (#{req_dept_cd} = '' OR req_dept_cd = #{req_dept_cd}) --[req_dept_cd][req_dept_cd]
+    UNION ALL
+    SELECT
+     'res' AS gubun, --구분명
+     a.req_no, --신청번호
+     a.req_no AS stamp_no, --날인관리번호
+     'CGA002' AS seal_clsf, --계인코드
+     '인감' AS seal_clsf_nm, --계인명
+     a.req_ymd, --신청일자
+     a.req_psn AS req_psn_syspayno,  --신청자시스템개인번호
+     fun_emp_nm(a.req_psn) AS req_psn_nm,
+     b.dept_cd AS req_dept_cd, --신청자부서코드
+     b.dept_nm AS req_dept_nm, --신청자부서명
+     '직인/인감담당자' AS final_apprvl_psn, -- 최종결재자
+     a.exclsv_agncy AS recv_loc, --수신처
+     '사업비 청구서' AS docu_subj, --문서제목
+     1 AS qty, --부수
+     a.req_no AS docu_no, --문서번호
+     '' AS premnth_way,
+     '' AS premnth_way_nm,
+     '' AS attach_file_no, -- 첨부파일번호
+     '' AS rmk, --비고
+     b.dept_cd AS supvis_dept_cd, --날인자부서코드
+     b.dept_nm AS supvis_dept_nm, --날인자부서명
+     a.req_ymd AS stamp_ymd, --날인일자
+     a.req_psn AS stamp_psn_syspayno, --날인자시스템개인번호 (신청자개인번호 채워주세요)
+     b.nm AS stamp_psn_nm, --날인자성명
+     'CGB003' AS req_state, --결재상태코드
+     '완료' AS req_nm --결재상태명
+    FROM resappreschamt a --사업연구비신청
+    JOIN v_humbasicinfo b ON a.req_psn = b.syspayno
+    JOIN xomxintfatab x ON a.req_no = x.req_no AND x.apr_state = 'XAD100'
+    WHERE a.req_ymd BETWEEN #{req_ymd1} AND #{req_ymd2} --[req_ymd1][req_ymd2]
+  </select> 
+  
+  <update id="updateCgsSignUseMnt" parameterType="kr.re.kitech.biz.ccs.cgs.vo.CgsSignUseVo">
+	UPDATE /* QueryID : kr.re.kitech.biz.ccs.cgs.updateCgsSignUseMnt */ 
+			 cgssignuse 
+	SET  qty = #{qty}, 
+	     stamp_ymd=#{stamp_ymd} ,
+	     stamp_psn_syspayno=#{stamp_psn_syspayno} ,
+	     stamp_psn_nm=#{stamp_psn_nm} ,
+	     req_state=#{req_state} ,    
+	     updt_psn_syspayno=#{updt_syspayno} ,
+	     updt_daytm=CURRENT
+	WHERE req_no=#{req_no}
+  </update> 
+</mapper>

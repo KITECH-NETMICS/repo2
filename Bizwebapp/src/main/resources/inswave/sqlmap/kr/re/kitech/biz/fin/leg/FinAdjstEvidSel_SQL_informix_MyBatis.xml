@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.fin.leg">
+<!-- 정산증빙자료 조회 -->
+  <select id="selectFinAdjstEvidSel" parameterType="kr.re.kitech.biz.fin.leg.vo.FinAdjstEvidSelVo" resultType="kr.re.kitech.biz.fin.leg.vo.FinAdjstEvidSelVo">
+SELECT /* QueryID : kr.re.kitech.biz.fin.leg.selectFinAdjstEvidSel */ 
+   TRIM(NVL(c.slip_no || '-' || TO_CHAR(c.slip_odr,TRIM('<![CDATA[<<<<<]]>')),'')) AS slip_no,
+    a.unslip_no,
+    a.accnt_ymd,
+    b.accnt_no,
+    b.req_no,
+    a.wrte_ymd,
+    a.wrte_psn,
+    d.nm,
+    a.wrte_dept,
+    e.dept_nm,
+    CASE b.base_debit_cr WHEN '1' THEN b.unslip_amt ELSE 0 END AS dr_amt,
+    CASE b.base_debit_cr WHEN '2' THEN b.unslip_amt ELSE 0 END AS cr_amt,
+    b.evid_cd AS evid_cd,
+    fun_xodxcommst_cd_nm(g.itm_clsf,0) AS expns_itm,
+    TRIM(b.rmk_1) AS rmk
+FROM fspsliph a
+JOIN fspslipd b ON b.unslip_no = a.unslip_no
+JOIN humbasicinfo d ON d.syspayno = a.wrte_psn
+JOIN xodhdeptinfo e ON e.dept_cd = d.dept_cd AND e.dept_new_ymd = d.dept_new_ymd
+JOIN resbgacctm f ON b.accnt_no = f.accnt_no
+LEFT JOIN fbaitmaccnt g ON f.itm_solve_base = g.itm_solve_base AND b.accnt_cd = g.accnt_cd
+LEFT JOIN fbaitmbase h ON g.itm_solve_base = h.itm_solve_base
+LEFT JOIN fspslipdecsnd c ON c.unslip_no = b.unslip_no AND c.unslip_odr = b.unslip_odr
+WHERE a.slip_ymd BETWEEN #{to_ymd} AND #{from_ymd}
+<if test = 'slip_no != null and slip_no != ""'>AND a.slip_no = #{slip_no}</if>
+<if test = 'unslip_no != null and unslip_no != ""'>AND a.unslip_no = #{unslip_no}</if>
+<if test = 'empno != null and empno != ""'>AND d.empno = #{empno}</if>
+<if test = 'roleSelectYn == "Y"'>AND a.slip_typ_cd NOT IN ('270','272') </if>
+<if test = 'itm_clsf != null and itm_clsf != ""'>AND g.itm_clsf = #{itm_clsf}</if>
+<if test='accnt_no != null and accnt_no != "" and sub_yn == "Y"'> AND b.accnt_no LIKE #{accnt_no_itm} </if>
+<if test='accnt_no != null and accnt_no != "" and sub_yn == "N"'> AND b.accnt_no = #{accnt_no} </if>
+AND   ((#{accnt_clsf} = 'Y' and f.accnt_clsf = 'RAR003') OR 
+	  (#{accnt_clsf} = 'Z' and f.accnt_clsf LIKE 'RAR004') OR
+	  (#{accnt_clsf} = 'X' and f.accnt_clsf IN('RAR003','RAR004')) OR
+	  (#{accnt_clsf} = 'N' and f.accnt_clsf NOT IN('RAR003','RAR004')) OR 
+	  (#{accnt_clsf} = '%' and f.accnt_clsf LIKE '%')) 
+ORDER BY a.wrte_ymd DESC
+  </select>
+</mapper>

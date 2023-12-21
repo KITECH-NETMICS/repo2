@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.sup.par">
+  <select id="selectSptParCustProList" parameterType="kr.re.kitech.biz.sup.par.vo.SptParCustProVo" resultType="kr.re.kitech.biz.sup.par.vo.SptParCustProVo">
+  	/* QueryID : kr.re.kitech.biz.sup.par.selectSptParCustProList */ 
+	SELECT '<![CDATA[① R&D 공동연구(수요대응형 공동지원사업 포함)]]>' AS program
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)>0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_o
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)=0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_x
+	  FROM sptcustbaseinfo t1
+	  JOIN resinppaco t2 ON t1.cust_no = t2.vend_cd
+	  JOIN resinpmast t3 ON t3.prj_no = t2.prj_no
+	  JOIN resbgacctm t4 ON t3.prj_no = t4.prj_no AND t4.accnt_clsf = 'RAR001'
+	  JOIN resinpyear t5 ON t3.prj_no = t5.prj_no
+	  JOIN resinpbugt t6 ON t3.prj_no = t6.prj_no
+	 WHERE t1.cust_no = #{cust_no}
+	   AND SUBSTR(t3.tot_resch_prd_cls_ymd,0,4) <![CDATA[ >= ]]> TO_CHAR(SYSDATE,'%Y')-'3'
+	 UNION ALL
+	SELECT '② 기술상담(기술자문/정보제공)' AS program
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)>0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_o
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)=0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_x
+	  FROM spttecinfosuply t1
+	  LEFT JOIN sptcustbaseinfo t2 ON t1.cust_no = t2.cust_no
+	  LEFT JOIN sptcticunslcontnt t3 ON t1.cunsl_rcpt_no = t3.cunsl_rcpt_no
+	  JOIN xodxcommst t4 ON t1.tech_guide_clsf = t4.cd AND t4.cd_clsf = 'STQ'
+	 WHERE t1.cust_no = #{cust_no}
+	   AND SUBSTR(t1.tech_supt_ymd,0,4) <![CDATA[ >= ]]> TO_CHAR(SYSDATE,'%Y')-'3'
+	 UNION ALL
+	SELECT '③ 파트너기업 커뮤니티' AS program
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)>0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_o
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)=0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_x
+	  FROM sptcustbaseinfo t1
+	  JOIN sptcommunityjoincmpy t2 ON t1.cust_no = t2.cust_no
+	  JOIN sptteccommunity t3 ON t2.cmnty_no = t3.cmnty_no
+	 WHERE t1.cust_no = #{cust_no}
+	   AND (t3.opr_cls_ymd = '' OR SUBSTR(t3.opr_cls_ymd,0,4) <![CDATA[ >= ]]> TO_CHAR(SYSDATE,'%Y')-'3')
+	 UNION ALL
+	SELECT '④ 장비활용' AS program
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)>0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_o
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)=0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_x
+	  FROM spttecrcptinfo t1
+	  JOIN sptcustbaseinfo t2 ON t1.cust_no = t2.cust_no
+	 WHERE t1.supt_clsf IN ('STD010', 'STD020', 'STD030')
+	   AND t2.cust_no = #{cust_no}
+	   AND SUBSTR(t1.rcpt_ymd,0,4) <![CDATA[ >= ]]> TO_CHAR(SYSDATE,'%Y')-'3'
+	 UNION ALL
+	SELECT '⑤ 기술이전' AS program
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)>0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_o
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)=0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_x
+	  FROM respstcrtpagr t1
+	  JOIN respstmast t2 ON t1.tech_fee_no = t2.tech_fee_no
+	 WHERE t1.vend_cd = #{cust_no}
+	   AND SUBSTR(t2.contrct_cls_ymd,0,4) <![CDATA[ >= ]]> TO_CHAR(SYSDATE,'%Y')-'3'
+	 UNION ALL
+	SELECT '⑥ 인력지원' AS program
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)>0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_o
+		 , CASE WHEN #{cust_no} = '' THEN 'Z'
+		 		WHEN COUNT(*)=0 THEN 'Y'
+		 		ELSE 'N'
+		   END AS utill_x
+	  FROM sptcustbaseinfo t1
+	  JOIN sptdispatchbaseinfo t2 ON t1.cust_no = t2.cust_no
+	  JOIN sptdispatchrequest t3 ON t2.mngmt_no = t3.mngmt_no
+	 WHERE t1.cust_no = #{cust_no}
+	   AND SUBSTR(t2.distrct_ymd,0,4) <![CDATA[ >= ]]> TO_CHAR(SYSDATE,'%Y')-'3'
+  </select>
+</mapper>

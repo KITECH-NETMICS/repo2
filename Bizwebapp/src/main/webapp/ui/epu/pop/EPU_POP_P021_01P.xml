@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="구매요구조달진행상태" meta_author="이영희" meta_date="2023.01.06.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="pur_req_no" name="구매요구번호" dataType="text"></w2:column>
+            			<w2:column id="bid_noti_no" name="공고번호" dataType="text"></w2:column>
+            			<w2:column id="chg_no" name="공고차수" dataType="text"></w2:column>
+            			<w2:column id="progress_status" name="진행상태" dataType="text"></w2:column>
+            			<w2:column id="item_gdnm" name="품명" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="pur_req_no" name="구매요구번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+             <!-- 조회 -->
+            <xf:submission id="sbm_selectGrid" ref="data:json,dma_search" target='' 
+            	action="SvcEPUREQPOPR10.pwkjson" method="post" mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous"
+        		processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+        	</xf:submission>        	
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 구매요구 조달 진행상태
+ 	 * 변경 이력 : 2023-01-06	이영희	최초 작성
+ 	 ****************************************************/
+ 	 scwin.saveFlag = false;
+ 	/**
+	 * 페이지 로딩 이벤트
+	 */           
+	scwin.onpageload = function() {
+		dma_search.set("pur_req_no", com.getParameter("pur_req_no"));
+		
+		// 조회
+		scwin.search();		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */ 
+	scwin.search = function(){
+		com.execute(sbm_selectGrid, {
+			successCallback : function(e){
+				dlt_grd.setJSON(e.responseJSON.purReqNotiStatusVoList);
+				ifrtest.setSrc("/ui/epu/pop/purStatePop.jsp?pur_req_no="+dlt_grd.getCellData( 0, "pur_req_no")+"&bid_noti_no="+dlt_grd.getCellData( 0, "bid_noti_no").trim()+"&chg_no="+dlt_grd.getCellData( 0, "chg_no").trim());	
+			}
+		});
+	};	
+	
+	/**
+	 * 닫기 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_close_onclick = function(e) {
+		if(scwin.saveFlag){
+			com.closePopup({saveFlag : true});
+		}else{
+			com.closePopup();
+		}
+	};
+
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<w2:iframe id="ifrtest" style="height:525px; width:100%;" />
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    		id="grd_eval" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    		rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="35" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    		scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    		summaryAuto="true" visibleRowNum="5" ev:onrowindexchange="scwin.grd_eval_onrowindexchange" editModeEvent="onclick" readOnly="true">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="구매요구번호" width="100"></w2:column>
+    				<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="공고번호" width="100"></w2:column>
+    				<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="공고차수" width="60"></w2:column>
+    				<w2:column displayMode="label" id="column29" inputType="text" style="height:28px;" value="품명" width="250" />
+    				<w2:column width="100" inputType="text" style="height:28px" id="column30" value="진행상태" displayMode="label"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column displayMode="label" escape="false" id="pur_req_no" inputType="text" style="height:28px;" width="100"
+    					class="">
+    				</w2:column>
+    				<w2:column displayMode="label" escape="false" id="bid_noti_no" inputType="text" style="height:28px;" width="100" class=""
+    					dataType="text">
+    				</w2:column>
+    				<w2:column displayMode="label" id="chg_no" inputType="text" style="height:28px;" width="60" class=""></w2:column>
+    				<w2:column displayMode="label" id="item_gdnm" inputType="text" readOnly="true" style="height:28px;" width="250" class="le"></w2:column>
+    				<w2:column width="100" inputType="text" style="height:28px" id="progress_status" value="" displayMode="label"></w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

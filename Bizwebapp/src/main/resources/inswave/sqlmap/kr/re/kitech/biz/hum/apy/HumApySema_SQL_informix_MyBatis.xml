@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.hum.apy">
+
+  <!-- kitech.hum.apy.xda.HumApySemaMS01 -->
+  <select id="selectHumApySemaList" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySemaList */ 
+		 a.req_no
+       , a.req_ymd
+       , a.syspayno
+       , a.req_typ
+       , f.cd_nm AS req_typ_nm
+       , b.empno
+       , b.nm
+       , b.dept_cd
+       , b.dept_nm
+       , b.posi_cd
+       , b.posi_nm
+       , NVL(a.incrdecr_bankaccnt_no,0) AS incrdecr_bankaccnt_no      --가입구좌수
+       , NVL(a.incrdecr_bankaccnt_no * c.calc_base,0) AS incrdecr_amt --가입금액
+       , NVL(a.tot_bankaccnt_no,0) AS tot_bankaccnt_no                --총구좌수
+       , NVL(a.tot_bankaccnt_no * c.calc_base,0) AS tot_amt           --총 금액
+       , d.apr_state             --결제상태코드
+       , e.cd_nm AS apr_state_nm --결제상태이름
+FROM humapysema a          --적립형공제신청
+       , v_humbasicinfo b
+       , (SELECT calc_base
+          FROM xodhslcode  --급여코드
+          WHERE base_ymd = (SELECT MAX(base_ymd)
+                            FROM xodhslcode
+                            WHERE salry_cd = '560')
+                                  AND salry_cd = '560') c
+       , xomxintfatab d
+       , xodxcommst e
+       , xodxcommst f
+WHERE a.syspayno=b.syspayno
+        AND a.REQ_NO=d.REQ_NO
+        AND d.apr_state=e.cd
+        and a.req_typ = f.cd
+        AND d.state_inform_flag = '1'
+<if test="syspayno != null and syspayno != ''">
+	 and a.syspayno  = #{syspayno}
+</if>
+<if test="req_no != null and req_no != ''">
+	 and a.req_no LIKE '%'||#{req_no}||'%'
+</if>
+<if test="dept_cd != null and dept_cd != ''">
+	 and b.dept_cd  = #{dept_cd}
+</if>
+<if test="req_typ != null and req_typ != ''">
+	 and a.req_typ  = #{req_typ}
+</if>
+<if test="apr_state != null and apr_state != ''">
+	 and d.apr_state  = #{apr_state}
+</if>
+<if test="req_ymd_from != null and req_ymd_from != ''">
+	 and a.req_ymd  >=  #{req_ymd_from}
+</if>
+<if test="req_ymd_to != null and req_ymd_to != ''">
+	 and a.req_ymd <![CDATA[ <=]]>  #{req_ymd_to}
+</if>
+ORDER BY a.req_no DESC
+  </select>
+  
+  <!-- kitech.hum.apy.xda.HumBasicInfoSS08 -->
+  <select id="selectHumApySemaEmpBasicInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumBasicInfo */ 
+ a.nm,
+ fun_dept_nm(a.dept_cd, a.dept_new_ymd) AS dept_nm,
+ a.posi_cd,
+ fun_posi_nm(a.posi_cd) AS posi_nm,
+ a.empno,
+ a.dept_cd,
+ a.dept_new_ymd,
+ a.home_tel,
+ a.ext_no,
+ a.mobile,
+ a.email,
+ a.addr_postmt_no,
+ a.addr_base,
+ a.addr_detls,
+ a.entr_ymd,
+ a.appont_contrct_ymd,
+ a.appont_cls_ymd,
+ b.longwk_cntfr_ymd,
+ a.resid_no,
+ b.sci_tech_anuty,
+ b.savng_shape_dedct,
+ b.own_driv_sub_pay,
+ a.syspayno,
+ DECODE(NVL(b.tot_bankaccnt_no,''),'','0',TO_CHAR(b.tot_bankaccnt_no)) AS tot_bankaccnt_no,
+ fun_sema_dect_yymm(a.syspayno, c.req_ymd) AS sema_mm,
+ a.occutyp_cd,
+ a.occugrp_cd, --직종코드 추가
+ DECODE(NVL(d.keep_charg,''),d.keep_charg,'Y','','N') AS card_keeper,
+ NVL(e.contrct_cls_ymd,'') AS contrct_cls_ymd,
+ f.carmdl,
+ f.car_no,
+ f.car_clr
+FROM humbasicinfo a
+INNER JOIN humslbasinfo b ON a.syspayno = b.syspayno
+LEFT OUTER JOIN (SELECT syspayno, MAX(NVL(req_ymd,'')) AS req_ymd FROM humapysema WHERE syspayno = #{syspayno} GROUP BY syspayno) c ON a.syspayno = c.syspayno 
+LEFT OUTER JOIN (SELECT FIRST 1 keep_charg FROM fbacard WHERE card_clsf = 'FAI001' AND keep_charg = #{syspayno} AND NVL(retrn_ymd,'') = '') d ON a.syspayno = d.keep_charg --법인카드 소지구분
+LEFT OUTER JOIN (SELECT a.contrct_cls_ymd ,a.syspayno 
+                    FROM humrctbasinfo a
+                    INNER JOIN (
+                            SELECT syspayno,MAX(req_ymd) AS req_ymd,MAX(req_no) AS req_no
+                            FROM humrctbasinfo
+                            GROUP BY syspayno) b ON a.req_no = b.req_no) e ON a.syspayno = e.syspayno --별정직 계약종료일
+LEFT OUTER JOIN humetcinfo f ON a.syspayno = f.syspayno
+WHERE a.syspayno = #{syspayno}
+  </select>  
+  
+  <!-- kitech.hum.apy.xda.HumApySemaSS01 -->
+  <select id="selectHumApySemaInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySemaInfo */ 
+        c.req_no,
+ 		a.syspayno,
+		a.empno,
+		a.nm,
+		fun_dept_nm(a.dept_cd, a.dept_new_ymd) dept_nm,
+		fun_posi_nm(a.posi_cd) posi_nm,
+		a.dept_cd,
+		a.dept_new_ymd,
+		fun_xodxcommst_cd_nm(d.apr_state,0) apr_state_nm,
+		c.req_ymd    ,    			--신청일
+		a.entr_ymd, 				--입사일
+		a.resid_no,
+		req_typ    ,    			--신청유형     
+		c.postmt_no addr_postmt_no, --우편번호          
+		c.base_addr addr_base,    	--기본주소          
+		c.detls_addr addr_detls,    --상세주소            
+		cmpy_postmt_no   ,    		--회사우편번호      
+		cmpy_base_addr   ,    		--회사기본주소      
+		cmpy_detls_addr   ,    		--회사상세주소      
+		c.home_tel,  				--집전화
+		c.mobile,   				--핸드폰
+		c.ext_no,   				--내선
+		c.email,  	 				--email
+		req_befr_bankaccnt_no  ,    --신청전구좌수  
+		incrdecr_bankaccnt_no  ,    --증감구좌수   
+		c.tot_bankaccnt_no ,       	--총구좌수 
+		req_cause   ,    		--신청사유          
+		attach_file_no ,      	--첨부파일번호     
+		d.mngmt_item_3 cole_yn,
+		d.apr_state,
+		b.savng_shape_dedct
+FROM humbasicinfo a,
+	humslbasinfo b,
+	humapysema c,
+	xomxintfatab d
+WHERE
+ c.req_no = #{req_no}
+ AND c.syspayno = a.syspayno
+ AND a.syspayno = b.syspayno
+ AND c.req_no = d.req_no
+ AND state_inform_flag = '1'
+  </select>  
+  
+  <!-- kitech.hum.apy.xda.HumApySemaSI01 -->
+  <insert id="insertHumApySemaInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+INSERT /* QueryID : kr.re.kitech.biz.hum.apy.insertHumApySemaInfo */ 
+		 INTO humapysema(
+ req_no   , 		--신청번호          
+ req_ymd   , 		--신청일            
+ syspayno  , 		--시스템개인번호    
+ dept_cd   , 		--부서코드          
+ dept_new_ymd  , 	--부서신설일        
+ req_typ   , 		--신청유형          
+ postmt_no  , 		--우편번호          
+ base_addr  , 		--기본주소          
+ detls_addr  , 		--상세주소          
+ cmpy_postmt_no  , 	--회사우편번호      
+ cmpy_base_addr  , 	--사기본주소      
+ cmpy_detls_addr  , --회사상세주소  
+ home_tel,
+ mobile,
+ ext_no,
+ email,
+ req_befr_bankaccnt_no , --신청전구좌수      
+ incrdecr_bankaccnt_no , --증감구좌수        
+ tot_bankaccnt_no , 	--총구좌수          
+ req_cause  , 			--신청사유          
+ attach_file_no  , 		--첨부파일번호      
+ regst_syspayno  , 		--등록시스템개인번호
+ regst_daytm   			--등록일시          
+)VALUES(
+ #{req_no}  , 			--신청번호          
+ #{req_ymd}  , 			--신청일            
+ #{syspayno}  , 		--시스템개인번호    
+ #{dept_cd}  , 			--부서코드          
+ #{dept_new_ymd}  , 	--부서신설일        
+ #{req_typ}  , 			--신청유형          
+ #{postmt_no}  , 		--우편번호          
+ #{base_addr}  , 		--기본주소          
+ #{detls_addr}  , 		--상세주소          
+ #{cmpy_postmt_no}  , 		--회사우편번호      
+ #{cmpy_base_addr}  , 		--사기본주소      
+ #{cmpy_detls_addr}  , 		--회사상세주소    
+ #{home_tel},
+ #{mobile},
+ #{ext_no},
+ #{email},  
+ #{req_befr_bankaccnt_no}  , 	--신청전구좌수      
+ #{incrdecr_bankaccnt_no}  , 	--증감구좌수        
+ #{tot_bankaccnt_no}  , --총구좌수          
+ #{req_cause}  , 		--신청사유          
+ #{attach_file_no}  , 	--첨부파일번호      
+ #{regst_syspayno}  , 	--등록시스템개인번호
+ CURRENT   --등록일시    
+)
+  </insert>  
+  
+  <!-- kitech.hum.apy.xda.HumApySemaSU01 -->
+  <update id="updateHumApySemaInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApySemaInfo */ 
+		 humapysema SET
+ req_ymd  = #{req_ymd} , 			--신청일            
+ syspayno = #{syspayno} , 			--시스템개인번호    
+ dept_cd  = #{dept_cd} , 			--부서코드          
+ dept_new_ymd = #{dept_new_ymd} , 	--부서신설일        
+ req_typ  = #{req_typ} , 			--신청유형          
+ postmt_no = #{postmt_no} , 		--우편번호          
+ base_addr = #{base_addr} , 		--기본주소          
+ detls_addr = #{detls_addr} , 		--상세주소          
+ cmpy_postmt_no = #{cmpy_postmt_no} , 				--회사우편번호      
+ cmpy_base_addr = #{cmpy_base_addr} , 				--사기본주소      
+ cmpy_detls_addr = #{cmpy_detls_addr} , 			--회사상세주소   
+ home_tel = #{home_tel},
+ mobile = #{mobile},
+ ext_no = #{ext_no},
+ email = #{email},
+ req_befr_bankaccnt_no = #{req_befr_bankaccnt_no}, --신청전구좌수      
+ incrdecr_bankaccnt_no = #{incrdecr_bankaccnt_no}, --증감구좌수        
+ tot_bankaccnt_no = #{tot_bankaccnt_no}, 			--총구좌수          
+ req_cause = #{req_cause} , 						--신청사유          
+ attach_file_no = #{attach_file_no}  				--첨부파일번호   
+WHERE
+ req_no = #{req_no}
+  </update>
+  
+  <!-- kitech.hum.apy.xda.HumApySemaSD01 -->
+  <delete id="deleteHumApySemaInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+DELETE /* QueryID : kr.re.kitech.biz.hum.apy.deleteHumApySemaInfo */ 
+		 FROM humapysema WHERE req_no = #{req_no}
+  </delete>
+      
+  <!-- kitech.hum.apy.xda.HumApySemaSS03 -->
+  <select id="selectHumApySemaDupCheck" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySemaDupCheck */ 
+		 COUNT(*) cnt
+FROM humapysema a -- 적립형공제
+INNER JOIN xomxintfatab b ON b.req_no = a.req_no AND b.apr_state != 'XAD100'
+WHERE a.syspayno = #{syspayno}
+  </select>  
+  
+  <!-- kitech.hum.apy.xda.XodhSlCodeSS01 -->
+  <select id="selectHumApySemaCalcBase" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.apy.selectHumApySemaCalcBase */ 
+		 TRUNC(calc_base,1) AS calc_base
+     , DECODE(fretax_yn,'Y',fretax_amt,0) AS fretax_amt
+     , TO_NUMBER(calc_base) AS calc_base_2
+FROM xodhslcode 
+WHERE salry_cd = #{salry_cd} 
+	<choose>
+		<when test="base_ymd != null and base_ymd != ''">
+	and base_ymd = #{base_ymd}
+		</when>
+		<otherwise>
+	and base_ymd = (SELECT MAX(base_ymd) FROM xodhslcode)
+		</otherwise>
+	</choose>
+	</select>
+	
+  <!-- kitech.hum.apy.xda.HumSlBasInfoSU01 -->	
+  <update id="updateHumApySemaSlBasInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApySemaSlBasInfo */ 
+		 humslbasinfo SET
+updt_syspayno = #{updt_syspayno},
+updt_daytm = CURRENT
+  <if test="salry_bank != null and salry_bank != ''">
+	 , salry_bank = #{salry_bank}
+</if>
+  <if test="bankaccnt_no != null and bankaccnt_no != ''">
+	 , bankaccnt_no = #{bankaccnt_no}
+</if>
+  <if test="depstr != null and depstr != ''">
+	 , depstr = #{depstr}
+</if>
+  <if test="savng_shape_dedct != null and savng_shape_dedct != ''">
+	 , savng_shape_dedct = #{savng_shape_dedct}
+</if>
+  <if test="sci_tech_anuty != null and sci_tech_anuty != ''">
+	 , sci_tech_anuty = #{sci_tech_anuty}
+</if>
+  <if test="add_pay_amt != null and add_pay_amt != ''">
+	 , add_pay_amt = add_pay_amt + #{add_pay_amt}
+</if>
+  <if test="tot_bankaccnt_no != null and tot_bankaccnt_no != ''">
+	 , tot_bankaccnt_no = #{tot_bankaccnt_no}
+</if>
+  <if test="own_driv_sub_pay != null and own_driv_sub_pay != ''">
+	 , own_driv_sub_pay = #{own_driv_sub_pay}
+</if>
+WHERE
+ syspayno = #{syspayno}
+  </update>	
+  
+  <!-- kitech.hum.apy.xda.HumBasicInfoSU02 -->
+  <update id="updateHumApySemaEmpBasicInfo" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+UPDATE /* QueryID : kr.re.kitech.biz.hum.apy.updateHumApySemaEmpBasicInfo */ 
+		 humbasicinfo SET
+  email = #{email},
+  home_tel = #{home_tel},          
+  mobile = #{mobile},
+  ext_no = #{ext_no},
+  addr_postmt_no = #{addr_postmt_no},
+  addr_base = #{addr_base},
+  addr_detls = #{addr_detls}
+WHERE
+ syspayno = #{syspayno}
+  </update> 
+  
+  <!-- kitech.hum.tax.xda.HumyTaxTmpMS01 -->
+  <select id="selectHumyApySemaTaxTmp" parameterType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo" resultType="kr.re.kitech.biz.hum.apy.vo.HumApySemaInfoVo">
+select /* QueryID : kr.re.kitech.biz.hum.tax.selectHumyApySemaTaxTmp */ 
+		 returnmsg
+from humytaxtmp
+where syspayno=#{syspayno}
+  </select>   
+</mapper>

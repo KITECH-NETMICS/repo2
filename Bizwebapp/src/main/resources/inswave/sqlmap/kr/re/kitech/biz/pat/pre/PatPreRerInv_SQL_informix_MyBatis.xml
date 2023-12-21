@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.pat.pre">
+  <select id="selectPatPreRerInv" parameterType="kr.re.kitech.biz.pat.pre.vo.PatPreRerInvVo" resultType="kr.re.kitech.biz.pat.pre.vo.PatPreRerInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pre.selectPatPreRerInv */ 
+		 pre.reg_id
+        , pre.req_no
+        , pre.mngmt_no
+        , pre.job_state_cd
+        , pst.state_desc AS job_state_nm_detail
+        , fn_state_desc(pre.job_state_cd) job_state_nm
+        , pre.req_wri_id
+        , pre.req_psn_id
+        , pre.req_adm_id
+        , fn_ofic_user_nm(pre.req_wri_id) req_wri_nm
+        , fn_ofic_user_nm(pre.req_psn_id) req_psn_nm
+        , fn_ofic_user_nm(pre.req_adm_id) req_adm_nm
+        , TO_CHAR(pre.req_daytm, '%Y%m%d') req_daytm
+        , pre.req_charg_psn_id
+        , fn_ofic_user_nm(pre.req_charg_psn_id) req_charg_psn_nm
+        , pre.req_reg_date
+        , pre.req_due_date
+        , TRIM(pre.req_comment::CHAR(3000)) req_comment
+        , pre.req_attach_file
+FROM   patreg pre
+LEFT JOIN patstatecode pst ON pst.state_cd = pre.job_state_cd
+WHERE  reg_id = #{reg_id}
+  </select>
+  <update id="updatePatPreReqInv" parameterType="kr.re.kitech.biz.pat.pre.vo.PatPreRerInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pre.updatePatPreReqInv */ 
+		 patreg
+   SET pre_psn_syspayno  = #{pre_psn_syspayno}
+     , pre_daytm         = CURRENT
+     , updt_syspayno     = #{updt_syspayno}
+     , updt_daytm        = CURRENT
+ WHERE reg_id             = #{reg_id}
+  </update>
+    <select id="selectPatPreGetOA" parameterType="kr.re.kitech.biz.pat.pre.vo.PatPreRecInvVo" resultType="int">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pre.selectPatPreGetOA */ 
+         count(*) AS cnt
+FROM pattodo
+WHERE 1 = 1
+AND req_no = #{req_no}
+AND mngmt_no = #{mngmt_no}
+AND end_yn != 'Y'
+AND reg_cd in ('P1410','P1411','P1412','P1413','P1414','P1415','P1416')
+  </select>
+  <select id="selectPatPreRecInv" parameterType="kr.re.kitech.biz.pat.pre.vo.PatPreRecInvVo" resultType="kr.re.kitech.biz.pat.pre.vo.PatPreRecInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pre.selectPatPreRecInv */ 
+		 pre.reg_id
+        , pre.req_no
+        , pre.mngmt_no
+        , pre.job_state_cd
+        , pst.state_desc AS job_state_nm_detail
+        , fn_state_desc(pre.job_state_cd) job_state_nm
+        , pre.req_wri_id
+        , pre.req_psn_id
+        , pre.req_adm_id
+        , fn_ofic_user_nm(pre.req_wri_id) req_wri_nm
+        , fn_ofic_user_nm(pre.req_psn_id) req_psn_nm
+        , fn_ofic_user_nm(pre.req_adm_id) req_adm_nm
+        , TO_CHAR(pre.req_daytm, '%Y%m%d') req_daytm
+        , pre.req_charg_psn_id
+        , fn_ofic_user_nm(pre.req_charg_psn_id) req_charg_psn_nm
+        , pre.req_reg_date
+        , pre.req_due_date
+        , TRIM(pre.req_comment) req_comment
+        , pre.req_attach_file
+        , pre.com_psn_syspayno
+        , fun_emp_nm(pre.com_psn_syspayno) com_psn_syspaynm
+        , TO_CHAR(pre.com_daytm, '%Y%m%d') com_daytm
+        , pre.com_patofic_cd
+        , pof2.patofic_nm AS com_patofic_nm
+        , pre.com_patofic_charg_id
+        , fn_ofic_user_nm(pre.com_patofic_charg_id) com_patofic_charg_nm
+        , pre.com_due_date
+        , TRIM(pre.com_comment) com_comment
+        , pre.com_attach_file
+        , pre.prt_wri_id
+        , pre.prt_psn_id
+        , pre.prt_adm_id
+        , fn_ofic_user_nm(pre.prt_wri_id) prt_wri_nm
+        , fn_ofic_user_nm(pre.prt_psn_id) prt_psn_nm
+        , fn_ofic_user_nm(pre.prt_adm_id) prt_adm_nm
+        , TO_CHAR(pre.prt_daytm, '%Y%m%d') prt_daytm
+        , pre.prt_charg_psn_id
+        , fn_ofic_user_nm(pre.prt_charg_psn_id) prt_charg_psn_nm
+        , pre.prt_reg_no
+        , pre.prt_reg_date
+        , pre.prt_indep_cnt
+        , pre.prt_depen_cnt
+        , pre.prt_spec_cnt
+        , pre.prt_draw_cnt
+        , TRIM(pre.prt_ko_reg_title) prt_ko_reg_title
+        , TRIM(pre.prt_en_reg_title) prt_en_reg_title
+        , TRIM(pre.prt_comment) prt_comment
+        , pre.prt_regist_attach_file
+        , pre.prt_reg_org_attach_file
+        , pre.prt_reg_attach_file
+        , pre.prt_attach_file
+        , fun_emp_nm(pre.eval_psn_syspayno) AS eval_psn_syspaynm
+        , TO_CHAR(pre.eval_daytm, '%Y%m%d') AS eval_daytm
+        , pre.eval_result_scr
+        , pre.eval_service_scr
+        , pre.eval_comment
+        , mst.patofic_cd
+        , pof.patofic_nm
+        , pre.eval_year_month
+        , pof3.patofic_nm AS keep_mngmt_offc_nm
+        , pre.right_expir_ymd
+FROM   patreg pre
+INNER JOIN patmastr mst ON mst.req_no = pre.req_no AND mst.mngmt_no = pre.mngmt_no
+INNER JOIN patoffice pof ON pof.patofic_cd = mst.patofic_cd
+LEFT JOIN patstatecode pst ON pst.state_cd = pre.job_state_cd
+LEFT JOIN patoffice pof2 ON pof2.patofic_cd = pre.com_patofic_cd
+LEFT JOIN patoffice pof3 ON pof3.patofic_cd = mst.keep_mngmt_offc
+WHERE  pre.reg_id = #{reg_id}
+  </select>
+  <update id="updatePatPreRecInvSU01" parameterType="kr.re.kitech.biz.pat.pre.vo.PatPreRecInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pre.updatePatPreRecInvSU01 */ 
+         patreg
+   SET job_state_cd            = #{job_state_cd}
+      , eval_psn_syspayno      = #{eval_psn_syspayno}
+      , eval_daytm             = CURRENT
+      , eval_service_scr       = #{eval_service_scr}
+      , eval_result_scr        = #{eval_result_scr}
+      , eval_comment           = #{eval_comment}
+      , eval_year_month        = #{eval_year_month}
+      , eval_annual_patofic_cd = #{eval_annual_patofic_cd}
+      , fnsh_daytm             = CURRENT
+      , updt_syspayno          = #{updt_syspayno}
+      , updt_daytm             = CURRENT
+WHERE reg_id                   = #{reg_id}
+  </update>
+    <select id="selectPatPreReqInv" parameterType="kr.re.kitech.biz.pat.pre.vo.PatPreReqInvVo" resultType="kr.re.kitech.biz.pat.pre.vo.PatPreReqInvVo">
+SELECT /* QueryID : kr.re.kitech.biz.pat.pre.selectPatPreReqInv */ 
+		 prg.reg_id
+        , prg.req_no
+        , prg.mngmt_no
+        , prg.job_state_cd
+        , pst.state_desc AS job_state_nm_detail
+        , fn_state_desc(prg.job_state_cd) job_state_nm
+        , prg.req_wri_id
+        , prg.req_psn_id
+        , prg.req_adm_id
+        , fn_ofic_user_nm(prg.req_wri_id) req_wri_nm
+        , fn_ofic_user_nm(prg.req_psn_id) req_psn_nm
+        , fn_ofic_user_nm(prg.req_adm_id) req_adm_nm
+        , TO_CHAR(prg.req_daytm, '%Y%m%d') req_daytm
+        , prg.req_charg_psn_id
+        , fn_ofic_user_nm(prg.req_charg_psn_id) req_charg_psn_nm
+        , prg.req_reg_date
+        , prg.req_due_date
+        , TRIM(prg.req_comment::CHAR(3000)) req_comment
+        , prg.req_attach_file
+        , prg.com_psn_syspayno
+        , fun_emp_nm(prg.com_psn_syspayno) com_psn_syspaynm
+        , TO_CHAR(prg.com_daytm, '%Y%m%d') com_daytm
+        , prg.com_patofic_cd
+        , pof2.patofic_nm com_patofic_nm
+        , prg.com_patofic_charg_id
+        , fn_ofic_user_nm(prg.com_patofic_charg_id) com_patofic_charg_nm
+        , TO_CHAR(prg.com_due_date, '%Y%m%d') com_due_date
+        , TRIM(prg.com_comment::CHAR(3000)) com_comment
+        , prg.com_attach_file
+        , mst.patofic_cd
+        , pof.patofic_nm
+FROM   patreg prg
+INNER JOIN patmastr mst ON mst.req_no = prg.req_no AND mst.mngmt_no = prg.mngmt_no
+INNER JOIN patoffice pof ON pof.patofic_cd = mst.patofic_cd
+LEFT JOIN patstatecode pst ON pst.state_cd = prg.job_state_cd
+LEFT JOIN patoffice pof2 ON pof2.patofic_cd = prg.com_patofic_cd
+WHERE  reg_id = #{reg_id}
+  </select>
+  <update id="updatePatPreReqInvSU01" parameterType="kr.re.kitech.biz.pat.pre.vo.PatPreReqInvVo">
+UPDATE /* QueryID : kr.re.kitech.biz.pat.pre.updatePatPreReqInvSU01 */ 
+         patreg
+   SET job_state_cd            = #{job_state_cd}
+      , com_psn_syspayno       = #{com_psn_syspayno}
+      , com_daytm              = CURRENT
+      , com_patofic_cd         = #{com_patofic_cd}
+      , com_patofic_charg_id   = #{com_patofic_charg_id}
+      , com_due_date           = #{com_due_date}
+      , com_comment            = #{com_comment}
+      , com_attach_file        = #{com_attach_file}
+      , updt_syspayno          = #{updt_syspayno}
+      , updt_daytm             = CURRENT
+WHERE reg_id                   = #{reg_id}
+  </update>
+    <select id="selectResultCheck" parameterType="kr.re.kitech.biz.pat.pre.vo.PatPreRerInvVo" resultType="kr.re.kitech.biz.pat.pre.vo.PatPreRerInvVo">
+SELECT a.req_no, b.mngmt_no, a.regst_syspayno, a.invnt_krn_nm, c.accnt_no, a.charg_syspayno, b.pat_clsf  
+FROM   patappmastr a 
+    JOIN
+        patmastr b ON a.req_no = b.req_no
+    LEFT JOIN
+        patapprelatreschprj c ON a.req_no = c.req_no
+WHERE a.req_no = #{req_no}
+  </select>
+  <insert id="insertResultCheck" parameterType="kr.re.kitech.biz.pat.pre.vo.PatPreRerInvVo">
+INSERT INTO ressmlrvewd(key_1, key_2, seq, biz_clsf, item_clsf, item_seq, rvew_objct, syspayno, accnt_no, chrg_psn, regst_syspayno, regst_daytm) 
+VALUES(#{req_no}, #{mngmt_no}, 1, "RBS007", "LBL001", 1, #{invnt_krn_nm}, #{regst_syspayno}, #{accnt_no}, #{charg_syspayno}, #{syspayno}, CURRENT)
+  </insert>    
+</mapper>

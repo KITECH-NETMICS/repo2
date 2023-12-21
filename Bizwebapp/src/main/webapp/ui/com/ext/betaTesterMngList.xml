@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="양식화/제약/이중화 관리 목록">
+    	<w2:type>DEFAULT</w2:type>
+    	<w2:buildDate />
+    	<xf:model>
+    		<xf:instance>
+    			<data xmlns="" />
+    		</xf:instance>
+    		<w2:dataCollection baseNode="map">
+    			<w2:dataList baseNode="list" repeatNode="map" id="dlt_appMap" saveRemovedData="true" ev:onbeforecelldatachange="scwin.dlt_appMap_onbeforecelldatachange">
+    				<w2:columnInfo>
+    					<w2:column id="parentDivCode" name="부모코드(공통코드)" dataType="text"></w2:column>
+    					<w2:column id="cn" name="양식명" dataType="text"></w2:column>
+    					<w2:column id="serviceID" name="화면ID" dataType="text"></w2:column>
+    					<w2:column id="alias" name="문서번호" dataType="text"></w2:column>
+    					<w2:column id="betaServiceYN" name="사용여부" dataType="text"></w2:column>
+    					<w2:column id="xslurl" name="스냅샷위치" dataType="text"></w2:column>
+    					<w2:column id="xslurl_ready" name="개발스냅샷 위치" dataType="text"></w2:column>
+    					<w2:column id="cnServiceFullName" name="전체메뉴명" dataType="text"></w2:column>
+    					<w2:column id="serviceNewUrl" name="전체메뉴명" dataType="text"></w2:column>
+    				</w2:columnInfo>
+    			</w2:dataList>
+    			<w2:dataMap baseNode="map" id="dma_appMap">
+    				<w2:keyInfo>
+    					<w2:key id="parentDivCode" name="부모코드(공통코드)" dataType="text"></w2:key>
+    					<w2:key id="cn" name="양식명" dataType="text"></w2:key>
+    					<w2:key id="serviceID" name="화면ID" dataType="text"></w2:key>
+    					<w2:key id="alias" name="문서번호" dataType="text"></w2:key>
+    					<w2:key id="betaServiceYN" name="사용여부" dataType="text"></w2:key>
+    				</w2:keyInfo>
+    			</w2:dataMap>
+    			<w2:dataMap baseNode="map" id="dma_appvMap">
+    				<w2:keyInfo>
+    					<w2:key id="alias" name="알리아스" dataType="text"></w2:key>
+    					<w2:key id="xslurl" name="xslurl" dataType="text"></w2:key>
+    					<w2:key id="xslurl_ready" name="xslurl_ready" dataType="text"></w2:key>
+    				</w2:keyInfo>
+    			</w2:dataMap>
+    		</w2:dataCollection>
+    		<w2:workflowCollection></w2:workflowCollection>
+    		<xf:submission id="sbm_selectAppMapList" ref='data:json,dma_appMap'
+    			target='data:json,{"id":"dlt_appMap","key":"betaTesterVoList"}' action="SvcCOMCONSVCR01.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous">
+    		</xf:submission>
+    		<xf:submission id="sbm_saveServiceNewURL" ref='data:json,{"action":"modified","id":"dlt_appMap","key":"betaTesterVoList"}'
+    			action="SvcCOMCONSVCM03.pwkjson" method="post"
+    			mediatype="application/json" encoding="UTF-8" mode="asynchronous" target="" instance="" replace="" errorHandler="" customHandler="" processMsg="" ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+    		</xf:submission>
+    	</xf:model>
+    	<script type="text/javascript" lazy="false"><![CDATA[
+        
+	scwin.onpageload = async function() {
+		var codeOptions = [ { code : "XAX", compID :"sbx_bsns_clsf" } //useEx이 'N'인 항목은 재선택 불가
+		];
+
+		await com.setCmnCd(codeOptions);
+		com.setEnterKeyEvent(grpSch, scwin.search);
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	scwin.search = function() {
+		com.execute(sbm_selectAppMapList, {
+			successCallback : function(e) {
+				tbx_result.setValue(dlt_appMap.getTotalRow());
+			}
+		});
+	};
+		
+	scwin.openDetail = function(data) {
+		com.openTabUrl("병행운영관리" , "/ui/com/ext/betaTesterMng.xml", 1, data, function() {
+			
+		});
+		// com.openTabMenu("C947", data, function() {
+		// 	scwin.search();
+		// });
+	};
+	
+	scwin.betaServiceFormatter = function(value) {
+		if (value == "") return "-";
+
+		return value === "N" ? "오픈" : "베타";
+	};
+
+	scwin.btn_search_onclick = function() {
+		scwin.search();
+	};
+	
+	scwin.btn_down_excel_onclick = function() {
+		var now = com.getServerDateTime("yyyyMMdd");
+		var name = '관리목록_' + now + '.xlsx';
+		
+		var option = {
+				fileName : name
+		};
+		com.downloadGridExcel(grd_docList, option);
+	};
+	
+	scwin.grd_docList_oncellclick = async function(row,col,colId) {
+		let rowJSON = dlt_appMap.getRowJSON(row);
+		if (colId == "serviceID") {
+			scwin.openDetail(rowJSON);
+		} else if (colId == "alias" && com.isNotEmpty(dlt_appMap.getCellData(row, colId))) {
+			scwin.openDetail(rowJSON);
+		}
+	};
+
+	scwin.btn_saveNewUrl_onclick = async function() {
+		if (!com.isModified(dlt_appMap)) {
+			com.alert("message.xom.wq.013");
+			return false;
+		}
+		let modifiedJSON = dlt_appMap.getModifiedJSON();
+		if (await com.confirm(`${modifiedJSON.length} 개의 xslurl이 수정됩니다. 저장하시겠습니까?`)) {
+			let ret = await com.execute(sbm_saveServiceNewURL);
+			if (ret.responseJSON.elHeader.resSuc) {
+				await com.alert("message.xom.wq.023");
+				scwin.search();
+			}
+		}
+	};
+
+	scwin.dlt_appMap_onbeforecelldatachange = function(info) {
+		let alias = dlt_appMap.getCellData(info.rowIndex, "alias");
+
+		if (com.isEmpty(alias)) {
+			com.alert("문서번호가 없는 문서는 XslUrl을 수정할 수 없습니다.");
+			dlt_appMap.setCellData(info.rowIndex, info.colID, info.oldValue);
+
+			return false;
+		}
+
+		return true;
+	};
+
+	// 메뉴 리로드
+	scwin.btn_menuReload_onclick = function() {
+		com.executeDynamic(
+			{ 
+				id : "SvcReloadMenus",
+				requestData: { 
+					serviceCode : "1000000000"
+				}, 
+				action : "SvcReloadMenus.pwkjson"
+			}, 
+			{	
+				successCallback : function() {
+					$p.top().wfm_side.scope.scwin.selectAllMenu();
+				}
+			}
+		);
+	}
+]]></script>
+   	<style>
+   		.font_red { 
+   			color : red;
+   		}
+   		
+   		.txt_sys {
+			display: inline-block;   		
+   		}
+   		.font_bold { font-weight : bold; }
+   		.fs12 { font-size : 12px;}
+   		.df_tit{padding:0 0 0 15px;font-size:12px;line-height:24px;font-weight:bold;background:url(/cm/images/sample/bg_df_tit_ico.png) no-repeat 0 7px}
+   	</style>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<w2:wframe id="wfm_title" src="/cm/xml/contentTitle.xml" style=""></w2:wframe>
+    	<xf:group id="" class="pageWrap">
+    		<xf:group style="" id="" class="searchSection">
+    			<xf:group id="grpSch" class="schbox">
+    				<xf:group tagname="table" style="" id="" class="w2tb tbl">
+    					<w2:attributes>
+    						<w2:summary></w2:summary>
+    					</w2:attributes>
+    					<xf:group tagname="caption"></xf:group>
+    					<xf:group tagname="colgroup">
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:300px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col" style="width:250px;"></xf:group>
+    						<xf:group tagname="col" style="width:60px;"></xf:group>
+    						<xf:group tagname="col"></xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr" style="" id="">
+    						<xf:group tagname="th" style="" class="w2tb_th">
+    							<w2:attributes>
+    								<w2:scope>row</w2:scope>
+    							</w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="업무구분"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" style="" class="w2tb_td">
+
+    							<xf:select1 allOption="" appearance="minimal" chooseOption="true" chooseOptionLabel="-전체-" class="sel"
+    								direction="auto" disabled="false" disabledClass="w2selectbox_disabled" id="sbx_bsns_clsf" ref="data:dma_appMap.parentDivCode"
+    								style="width:150px;" submenuSize="auto" title="업무구분" visibleRowNum="10">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[전자결재]]></xf:label>
+    										<xf:value><![CDATA[APR]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="문서명"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" style="" id="ibx_doc_nm" class="inp" title="문서명 "
+    								ref="data:dma_appMap.cn">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="베타유무"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:select1 appearance="full" class="radioGroup" cols="" id="rbx_isBeta" ref="data:dma_appMap.betaServiceYN"
+    								renderType="radiogroup" rows="1" style="" title="베타 구분">
+    								<xf:choices>
+    									<xf:item>
+    										<xf:label><![CDATA[전체]]></xf:label>
+    										<xf:value><![CDATA[]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[베타]]></xf:label>
+    										<xf:value><![CDATA[Y]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[3.0 운영]]></xf:label>
+    										<xf:value><![CDATA[3]]></xf:value>
+    									</xf:item>
+    									<xf:item>
+    										<xf:label><![CDATA[2.0 운영]]></xf:label>
+    										<xf:value><![CDATA[2]]></xf:value>
+    									</xf:item>
+    								</xf:choices>
+    							</xf:select1>
+    						</xf:group>
+    					</xf:group>
+    					<xf:group tagname="tr">
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="서비스ID"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" style="" id="ibx_serviceId" class="inp" title="문서명 "
+    								ref="data:dma_appMap.serviceID">
+    							</xf:input>
+    						</xf:group>
+    						<xf:group tagname="th" class="w2tb_th">
+    							<w2:attributes></w2:attributes>
+    							<w2:textbox tagname="span" style="" id="" label="문서번호"></w2:textbox>
+    						</xf:group>
+    						<xf:group tagname="td" class="w2tb_td">
+    							<w2:attributes></w2:attributes>
+    							<xf:input adjustMaxLength="false" style="" id="ibx_alias" class="inp" title="문서명 "
+    								ref="data:dma_appMap.alias">
+    							</xf:input>
+    						</xf:group>
+    					</xf:group>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="schbtn">
+    				<xf:trigger class="btn search" ev:onclick="scwin.btn_search_onclick" id="btn_search" style="" type="button">
+    					<xf:label><![CDATA[조회]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    		<xf:group style="" id="" class="titleSection">
+    			<xf:group class="le" id="" style="">
+    				<xf:group class="result" id="">
+    					<w2:span id="" label="*조회결과 " style=""></w2:span>
+    					<w2:span class="numtotal" id="tbx_result" label="0" style=""></w2:span>
+    					<w2:span id="" label="건" style=""></w2:span>
+    				</xf:group>
+    			</xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:group style="" id="" class="btnarea">
+    					<xf:trigger class="btn" id="btn_menuReload" style="" type="button" ev:onclick="scwin.btn_menuReload_onclick">
+							<xf:label><![CDATA[메뉴 리로드]]></xf:label>
+						</xf:trigger>
+    					<xf:trigger class="btn" ev:onclick="scwin.btn_saveNewUrl_onclick" id="btn_saveNewUrl" style="" type="button">
+    						<xf:label><![CDATA[수정사항 반영]]></xf:label>
+    					</xf:trigger>
+    					<xf:trigger style="" id="btn_down_excel" type="button" class="btn icon down"
+    						ev:onclick="scwin.btn_down_excel_onclick">
+    						<xf:label><![CDATA[엑셀다운로드]]></xf:label>
+    					</xf:trigger>
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView scrollByColumnAdaptive="false" rowNumVisible="true" rowStatusWidth="50" selectedRowColor="#fbf2cd"
+    			rowNumHeaderValue="No." scrollByColumn="false" defaultCellHeight="28" rowStatusHeaderValue="상태" noResultMessage="조회 결과가 없습니다."
+    			rowNumBackgroundColor="#fff" noResultMessageClass="noResult" rowStatusVisible="true" selectedCellColor="#fbf2cd" rowNumWidth="60"
+    			dataList="data:dlt_appMap" evenRowBackgroundColor="#f7faff" style="height: 85px;" autoFit="allColumn" id="grd_docList"
+    			visibleRowNum="20" class="grid" rowMouseOverColor="#e7f0fb" summaryAuto="true" ev:oncellclick="scwin.grd_docList_oncellclick"
+    			fixedRow="0" filterFocusMode="outfocus" sortEvent="onclick" sortable="true">
+    			<w2:caption style="" id="caption1" value="this is a grid caption."></w2:caption>
+    			<w2:header style="" id="header1">
+    				<w2:row style="" id="row1">
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column28" value="서비스ID" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:28px;" id="column7" value="문서명" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column5" value="문서번호" displayMode="label"></w2:column>
+    					<w2:column width="100" inputType="text" style="height:28px;" id="column4" value="베타유무" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:28px;" id="column3" value="xslurl" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" style="height:28px;" id="column2" value="xslurl_ready"
+    						displayMode="label">
+    					</w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody style="" id="gBody1">
+    				<w2:row style="" id="row2">
+    					<w2:column width="100" inputType="link" readOnly="true" style="height:28px;" id="serviceID" displayMode="label"></w2:column>
+    					<w2:column width="300" inputType="text" readOnly="true" style="height:28px;" id="cnServiceFullName" class="le"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="link" readOnly="true" style="height:28px;" id="alias" class="" escape="false"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="100" inputType="text" readOnly="true" style="height:28px;" id="betaServiceYN" class=""
+    						escape="false" displayMode="label" displayFormatter="scwin.betaServiceFormatter">
+    					</w2:column>
+    					<w2:column width="300" inputType="text" readOnly="false" style="height:28px;" id="xslurl" class="le"
+    						displayMode="label">
+    					</w2:column>
+    					<w2:column width="300" inputType="text" readOnly="false" style="height:28px;" id="xslurl_ready" class="le"
+    						displayMode="label">
+    					</w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

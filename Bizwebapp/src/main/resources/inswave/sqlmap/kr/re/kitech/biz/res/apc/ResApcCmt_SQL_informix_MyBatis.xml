@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.re.kitech.biz.res.apc">
+
+<!-- 선정평가위원회 팝업 사업신청 선정건수 조회 -->
+<select id="selectApcCmtCnt" parameterType="java.lang.String" resultType="int">
+SELECT /* QueryID : kr.re.kitech.biz.res.apc.selectApcCmtCnt */
+      COUNT(*) cnt
+  FROM resapceval
+ WHERE bsns_req_no = #{bsns_req_no}
+</select>
+	
+	<!-- 사업신청 선정평가 위원회 목록-->
+	<select id="selectApcCmtList" parameterType="kr.re.kitech.biz.res.apc.vo.ResApcCmtVo" resultType="kr.re.kitech.biz.res.apc.vo.ResApcCmtVo">
+		select 					/* QueryID : kr.re.kitech.biz.res.apc.selectApcCmtList */
+			   t1.cmitt_no,
+		       t1.cmitt_nm,
+		       t1.cmitt_clsf,
+		       t2.cd_nm as cmitt_clsf_nm, 
+		       t1.open_ymd
+		from 
+		resapextmm  t1
+		inner join (select cd , cd_nm from xodxcommst where cd_clsf = 'REX') t2   on   t1.cmitt_clsf = t2.cd  
+		where t1.cmitt_clsf = #{cmitt_clsf}
+		<if test="cmitt_nm != null and cmitt_nm != ''">and t1.cmitt_nm like #{cmitt_nm} </if>
+		order by 1
+	</select>
+	
+<!-- 사업신청 선정평가 위원회 조회 -->
+<select id="selectApcCmtDetailList" parameterType="java.lang.String" resultType="kr.re.kitech.biz.res.apc.vo.ResApcCmtVo">
+SELECT /* kr.re.kitech.biz.res.apc.selectApcCmtDetailList */
+      a.cmitt_no 
+     , b.cmitt_nm 
+     , a.state_clsf 
+     , a.inout_clsf 
+     , a.membr_no
+     , a.membr_nm
+     , a.blong  
+     , a.posi_nm  
+     , CASE WHEN LENGTH(TRIM(a.resid_no)) > 0 THEN SUBSTR(a.resid_no, 0, 7) || '*******' END AS resid_no 
+     , a.empno
+     , 'U' AS cud_type
+  FROM (
+         SELECT t1.cmitt_no, t1.state_clsf, t1.inout_clsf, t1.membr_no, t1.membr_nm, t4.dept_nm AS blong, t5.posi_nm,  t2.resid_no, t2.empno
+           FROM resapceval /* 선정평가 */ t1 
+           JOIN humbasicinfo t2 ON t1.membr_no = t2.syspayno
+           JOIN xodhdeptinfo t4 ON t2.dept_cd = t4.dept_cd and  t2.dept_new_ymd = t4.dept_new_ymd
+           LEFT JOIN xodhposiinfo t5 ON t2.posi_cd = t5.posi_cd           
+          WHERE t1.bsns_req_no = #{bsns_req_no}
+      UNION ALL 
+         SELECT t1.cmitt_no , t1.state_clsf , t1.inout_clsf, t1.membr_no , t1.membr_nm, t2.blong , t2.posi , t2.resid_reg_no, t1.membr_no
+           FROM resapceval t1 
+           JOIN resapextcm /* 외부위원 */ t2 ON t1.membr_no = t2.extr_mber_no          
+          WHERE t1.bsns_req_no = #{bsns_req_no}
+   ) a 
+ JOIN resapextmm b ON a.cmitt_no  =b.cmitt_no
+</select>
+	
+<!-- 평가위원 선정평가 내역 등록 -->
+<insert id="insertApcCmt" parameterType="kr.re.kitech.biz.res.apc.vo.ResApcCmtVo">
+INSERT /* kr.re.kitech.biz.res.apc.insertApcCmt */
+  INTO resapceval(bsns_req_no , 
+                  odr, 
+                  cmitt_no, 
+                  state_clsf, 
+                  inout_clsf, 
+                  membr_no, 
+                  membr_nm, 
+                  regst_syspayno, 
+                  regst_daytm)
+VALUES( #{bsns_req_no}, 
+        #{odr},
+        #{cmitt_no}, 
+        #{state_clsf},
+        #{inout_clsf},
+        #{expt_mber_no},
+        #{nm}, 
+        #{regst_syspayno}, 
+        SYSDATE)
+</insert>
+	
+<!-- 평가위원 선정평가 내역 삭제 -->
+<delete id="deleteApcCmt" parameterType="java.lang.String">
+DELETE /* kr.re.kitech.biz.res.apc.deleteApcCmt */
+  FROM resapceval
+ WHERE bsns_req_no = #{bsns_req_no}
+</delete>
+
+<!-- 위원회 참여인원조회 -->	
+<select id="selectResApExtmmDtlList" resultType="kr.re.kitech.biz.res.apc.vo.ResApcCmtVo" parameterType="java.lang.String">
+SELECT /* kr.re.kitech.biz.res.apc.selectResApExtmmDtlList */
+       cmitt_no,
+       inout_clsf,
+       membr_no,
+       empno, 
+       membr_nm,
+       CASE WHEN NVL(resid_no, '') != '' THEN SUBSTR(resid_no, 0, 6) || '-*******' ELSE '' END AS resid_no,
+       blong,
+       posi_nm
+FROM (
+      SELECT t1.cmitt_no,
+             t1.inout_clsf,
+             t2.empno,
+             t1.expt_mber_no AS membr_no,
+             t2.nm AS membr_nm,
+             t2.resid_no,
+             t4.dept_nm AS blong,
+             t5.posi_nm
+        FROM resapextmmdtl /* 위원회참여인원 */ t1
+        JOIN humbasicinfo t2 ON t1.expt_mber_no = t2.syspayno
+        JOIN xodhdeptinfo t4 ON t2.dept_cd = t4.dept_cd AND t2.dept_new_ymd = t4.dept_new_ymd
+        LEFT JOIN xodhposiinfo t5  on t2.posi_cd = t5.posi_cd
+       WHERE cmitt_no = #{cmitt_no}
+      UNION ALL
+      SELECT t1.cmitt_no,
+             t1.inout_clsf,
+             t1.expt_mber_no AS empno,
+             t1.expt_mber_no AS membr_no,
+             t2.extr_mber_name,
+             t2.resid_reg_no,
+             t2.blong,
+             t2.posi
+        FROM resapextmmdtl t1 
+        JOIN resapextcm t2 on t1.expt_mber_no = t2.extr_mber_no   
+       WHERE cmitt_no = #{cmitt_no}
+   )
+</select>
+</mapper>

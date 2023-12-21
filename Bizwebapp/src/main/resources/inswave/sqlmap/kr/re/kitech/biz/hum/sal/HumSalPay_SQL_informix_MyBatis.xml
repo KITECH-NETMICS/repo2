@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.hum.sal">
+<select id="selectHumSalYrMonClose" parameterType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo" resultType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo">
+-- 급여마감 조회
+SELECT COUNT(*) AS cnt  /*kr.re.kitech.biz.hum.sal.selectHumSalYrMonClose*/
+FROM humslmmpayamt
+WHERE belng_yrmon BETWEEN #{fr_ymd} AND #{to_ymd}
+AND close_yn = 'N'
+</select>
+<select id="selectHumslallow" parameterType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo" resultType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo">
+/* XDA : kitech.hum.sal.xda.HumslallowMS03 급여내역조회 - 메인조회(selectHumSalAllowList) 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumslallow */ 
+	   a.syspayno
+      ,b.empno
+      ,b.nm
+      ,fun_xodxcommst_cd_nm(b.occugrp_cd ,0 ) occugrp_nm
+      ,fun_occutyp_nm(b.occutyp_cd) occutyp_nm
+      ,fun_posi_nm(b.posi_cd) posi_nm
+      ,fun_xodxcommst_cd_nm(b.duty_cd ,0 ) duty_nm
+      ,a.tot_work_incom
+      , (payup_mny - payup_mny_incomtax - payup_mny_residtax) + (a.tot_dedct_amt + a.incomtax + a.residtax + a.ffvstax) tot_dedct_amt
+      ,a.ofic_pay
+      ,a.notice_contnt
+      ,a.user_div
+      ,d.cd_nm AS salry_bank
+      ,c.bankaccnt_no
+FROM humslmmpayamt a
+INNER JOIN humbasicinfo b ON b.syspayno = a.syspayno
+INNER JOIN humslmmpay c ON c.belng_yrmon = a.belng_yrmon AND c.syspayno = a.syspayno
+INNER JOIN xodxcommst d ON d.cd = c.salry_bank
+WHERE a.syspayno = #{syspayno}
+AND a.belng_yrmon = #{belng_yrmon}
+<if test="user_div != null and user_div != ''">
+a.user_div = #{user_div}
+</if>
+</select>
+<select id="selectHumSlmmPayCd" parameterType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo" resultType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo">
+/* XDA : kitech.hum.sal.xda.HumSlmmPayCdMS02 급여내역조회 - 수당정보 조회(selectHumSlmmPayCdList01) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumSlmmPayCd */ 
+		 a.salry_cd
+      ,b.salry_cd_nm
+      ,a.pay_typ as pay_typ_cd
+      ,fun_xodxcommst_cd_nm(a.pay_typ, 0) pay_typ
+      ,decode(b.fretax_yn, 'Y', '1', '0') as fretax_yn
+      ,a.fretax_amt
+      ,(a.salry_cd_amt * d.mngmt_no_1) salry_cd_amt
+      ,d.mngmt_no_1
+  FROM humslmmpaycd a
+      ,xodhslcode b
+      ,xodxcommst d
+WHERE a.salry_cd_base_ymd = b.base_ymd
+  AND a.salry_cd = b.salry_cd
+  AND a.pay_typ not in ('HSD080') --지급유형 : 퇴사자통계반영 제외
+  AND b.cd_clsf = 'HSP010' --코드구분 : 수당
+  AND a.pay_typ = d.cd
+  AND a.syspayno = #{syspayno}
+  AND a.belng_yrmon = #{belng_yrmon}
+<if test="user_div != null and user_div != ''">
+	 and a.user_div = #{user_div}
+</if>
+ORDER BY b.disp_seq
+</select>
+<select id="selectHumSlmmDeductPayCd" parameterType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo" resultType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo">
+/* XDA : kitech.hum.sal.xda.HumSlmmPayCdMS03 급여내역조회 - 공제정보 조회(searchHumSlmmPayCdList02) 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumSlmmDeductPayCd */ 
+		 b.disp_seq, a.salry_cd
+      ,b.salry_cd_nm
+      ,a.pay_typ
+      ,decode(b.fretax_yn, 'Y', '1', '0') as fretax_yn
+      ,a.fretax_amt
+      ,case when a.pay_typ = 'HSD040' then a.salry_cd_amt * -1 else a.salry_cd_amt end as salry_cd_amt  
+FROM humslmmpaycd a
+      ,xodhslcode b
+WHERE a.salry_cd_base_ymd = b.base_ymd
+  AND a.salry_cd = b.salry_cd
+  AND b.cd_clsf in ('HSP020','HSP030')
+  AND a.salry_cd_amt != 0
+  AND a.syspayno = #{syspayno}
+  AND a.belng_yrmon = #{belng_yrmon}
+<if test="user_div != null and user_div != ''">
+	 and a.user_div = #{user_div}
+	</if>
+UNION
+SELECT b.disp_seq, a.salry_cd
+      ,b.salry_cd_nm
+      ,a.pay_typ
+      ,decode(b.fretax_yn, 'Y', '1', '0') as fretax_yn
+      ,a.fretax_amt
+      ,(a.salry_cd_amt - a.incomtax - a.residtax - a.ffvstax) as salry_cd_amt
+  FROM humslmmpaycd a
+      ,xodhslcode b
+WHERE a.salry_cd_base_ymd = b.base_ymd
+  AND a.salry_cd = b.salry_cd
+  AND a.pay_typ = 'HSD020'
+  AND b.cd_clsf = 'HSP010'
+  AND a.syspayno = #{syspayno}
+  AND a.belng_yrmon = #{belng_yrmon} 
+<if test="user_div != null and user_div != ''">
+	 and a.user_div = #{user_div}
+	</if>
+ORDER BY b.disp_seq
+</select>
+<select id="selectHumSlmmPayAmt" parameterType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo" resultType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo">
+/* XDA : kitech.hum.sal.xda.HumSlmmPayAmtMS04 급여내역조회 - 정산정보 조회(selectHumSlmmPayAmtList) 단건*/
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumSlmmPayAmt */ 
+    pa.tot_work_incom  -- 총근로소득
+    ,pa.fretax_work_incom  -- 비과세근로소득
+    ,pa.tot_salry_liq  -- 총급여액
+    ,pa.work_incom_dedct  -- 근로소득공제
+    ,pa.work_incom_amt  -- 근로소득금액
+    ,pa.tot_incom_dedct_amt  -- 총소득공제금액
+    ,pa.human_dpnd_fam  -- 인적소득공제부양가족
+    ,pa.payup_mny + pa.payup_mny_incomtax + pa.payup_mny_residtax AS payup_mny_amt
+    ,pa.tax_std  -- 과세표준
+    ,pa.calc_taxamt  -- 산출세액
+    ,pa.taxamt_dedct_dedct  -- 세액공제감면
+    ,pa.decsn_taxamt  -- 결정세액
+    ,pa.decsn_taxrts  -- 결정세액율
+    ,pa.salry_taxrts  -- 급여적용세율
+    ,pa.incomtax  -- 소득세
+    ,pa.residtax  -- 주민세
+    ,pa.ffvstax  -- 농특세
+    ,pa.human_self  -- 인적소득공제본인
+    ,pa.human_wife  -- 인적소득공제배우자
+    ,pa.human_path_prefrt_hedcnt -- 인적소득공제경로우대인원
+    ,pa.human_disapsn_no  -- 인적소득공제장애인수
+    ,pa.human_child_nutur_hedcnt -- 인적소득공제자녀양육인원
+    ,NVL(pcs1.nation_amt, 0) AS nation_amt
+    ,NVL(pcs2.heath_amt, 0) AS heath_amt
+    ,NVL(pcs3.emp_amt, 0) AS emp_amt
+    ,NVL(pcs4.reti_amt_part1, 0) + NVL(pcs5.reti_amt_part2, 0) AS reti_amt
+    ,pa.human_woman_psn -- 부녀자공제
+    ,pa.tot_human_dedct -- 총인적공제
+    ,pa.add_many_child_hedcnt -- 다자녀수
+    ,pa.human_path_prefrt -- 인적소득공제경로우대
+    ,pa.human_disapsn  -- 인적소득공제장애인
+    ,pa.human_child_nutur -- 인적소득공제자녀양육
+    ,pa.add_many_child  -- 다자녀추가공제
+    ,pa.tot_incom_dedct_amt - pa.tot_human_dedct AS tot_etc_tax
+    ,pa.payup_mny_incomtax
+    ,pa.payup_mny_residtax
+    ,pa.tot_work_incom_tax
+FROM humslmmpayamt AS pa
+LEFT JOIN (
+    SELECT a.syspayno, a.belng_yrmon, SUM(a.salry_cd_amt * b.mngmt_no_1) AS nation_amt
+    FROM humslmmpaycd AS a JOIN xodxcommst AS b ON b.cd = a.pay_typ AND b.use_ex = 'Y'
+    WHERE a.syspayno = #{syspayno} AND a.belng_yrmon = #{belng_yrmon} AND a.salry_cd = '501'
+    GROUP BY 1, 2
+) AS pcs1 ON pcs1.syspayno = pa.syspayno AND pcs1.belng_yrmon = pa.belng_yrmon
+LEFT JOIN (
+    SELECT a.syspayno, a.belng_yrmon, SUM(a.salry_cd_amt * b.mngmt_no_1) AS heath_amt
+    FROM humslmmpaycd AS a JOIN xodxcommst AS b ON b.cd = a.pay_typ AND b.use_ex = 'Y'
+    WHERE a.syspayno = #{syspayno} AND a.belng_yrmon = #{belng_yrmon} AND a.salry_cd = '503'
+    GROUP BY 1, 2
+) AS pcs2 ON pcs2.syspayno = pa.syspayno AND pcs2.belng_yrmon = pa.belng_yrmon
+LEFT JOIN (
+    SELECT a.syspayno, a.belng_yrmon, SUM(a.salry_cd_amt * b.mngmt_no_1) AS emp_amt
+    FROM humslmmpaycd AS a JOIN xodxcommst AS b ON b.cd = a.pay_typ AND b.use_ex = 'Y'
+    WHERE a.syspayno = #{syspayno} AND a.belng_yrmon = #{belng_yrmon} AND a.salry_cd = '504'
+    GROUP BY 1, 2
+) AS pcs3 ON pcs3.syspayno = pa.syspayno AND pcs3.belng_yrmon = pa.belng_yrmon
+LEFT JOIN (
+    SELECT a.syspayno, a.belng_yrmon, SUM(a.salry_cd_amt * b.mngmt_no_1) AS reti_amt_part1
+    FROM humslmmpaycd AS a JOIN xodxcommst AS b ON b.cd = a.pay_typ AND b.use_ex = 'Y'
+    WHERE a.syspayno = #{syspayno} AND a.belng_yrmon = #{belng_yrmon} AND a.salry_cd = '561'
+    GROUP BY 1, 2
+) AS pcs4 ON pcs4.syspayno = pa.syspayno AND pcs4.belng_yrmon = pa.belng_yrmon
+LEFT JOIN (
+    SELECT a.syspayno, a.belng_yrmon, SUM(a.salry_cd_amt * b.mngmt_no_1) AS reti_amt_part2
+    FROM humslmmpaycd AS a JOIN xodxcommst AS b ON b.cd = a.pay_typ AND b.use_ex = 'Y'
+    WHERE a.syspayno = #{syspayno} AND a.belng_yrmon = #{belng_yrmon} AND a.salry_cd = '562'
+    GROUP BY 1, 2
+) AS pcs5 ON pcs5.syspayno = pa.syspayno AND pcs5.belng_yrmon = pa.belng_yrmon
+WHERE pa.syspayno = #{syspayno} AND pa.belng_yrmon = #{belng_yrmon}
+</select>
+<select id="selectHumSlmmPayMonList" parameterType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo" resultType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumSlmmPayMonList */ 
+		 a.disp_seq,                                                                   ---- 조회순서 
+          max(decode(nvl(a.smal_grp_nm,''),'', c.salry_cd_nm, a.smal_grp_nm)) pay_sarly_cd_nm,         ---- 급여코드명
+          sum(decode(substr(b.belng_yrmon,5,2),'01',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_01,  ---- 1월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'02',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_02,  ---- 2월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'03',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_03,  ---- 3월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'04',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_04,  ---- 4월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'05',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_05,  ---- 5월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'06',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_06,  ---- 6월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'07',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_07,  ---- 7월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'08',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_08,  ---- 8월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'09',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_09,  ---- 9월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'10',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_10,  ---- 10월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'11',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_11,  ---- 11월지급분
+          sum(decode(substr(b.belng_yrmon,5,2),'12',b.salry_cd_amt,0)*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) pay_12,   ---- 12월지급분
+          sum(b.salry_cd_amt*decode(c.amt_adjst,'-',-1,1)*d.mngmt_no_1*f.mngmt_no_1) payTotal   ---- 합계
+     FROM xodhslgrp a JOIN humslmmpaycd b
+     	  ON a.salry_cd = b.salry_cd
+          JOIN xodhslcode c
+          ON b.salry_cd_base_ymd = c.base_ymd 
+          AND b.salry_cd = c.salry_cd 
+          JOIN xodxcommst d      ---- 지급유형(상시,기지급,추가,환입,소급,퇴직자통계..+/-금액처리)
+          ON b.pay_typ = d.cd 
+          JOIN xodxcommst f       ---- 코드구분(지급,공제,직접세액,원부담..+/-금액처리)
+          ON c.cd_clsf = f.cd
+    WHERE 1=1          
+          AND a.base_ymd = (select max(base_ymd) from xodhslgrp where base_ymd <![CDATA[ <= ]]> #{to_ymd}||'21' and salry_cd_grp = 'HSC120') 
+		  AND a.salry_cd_grp = 'HSC120'           
+          AND a.nottn_yn = 'Y' 
+          AND b.syspayno = #{syspayno} 
+          AND b.belng_yrmon BETWEEN #{fr_ymd} AND #{to_ymd}  
+<if test='slGubn == "1"'>AND b.pay_typ  not in('HSD080','HSD090','HSD100')</if>
+<if test='slGubn == "2"'>AND b.pay_typ  in('HSD080','HSD090','HSD100')</if>
+<if test='slGubn == "%"'>AND b.pay_typ  != 'HSD021'</if>
+ GROUP BY a.disp_seq
+ ORDER BY a.disp_seq
+</select>
+<select id="selectHumSlMmPayTotListCd" parameterType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo" resultType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumSlMmPayTotListCd */ 
+		 a.disp_seq,
+         max(decode(nvl(a.smal_grp_nm,''),'', c.salry_cd_nm, a.smal_grp_nm)) salry_cd_nm,
+         d.cd_nm pay_typ,
+         sum(b.salry_cd_amt * d.mngmt_no_1) salry_cd_amt,
+         d.mngmt_no_1
+FROM humslmmpaycd b JOIN xodhslcode c
+ON b.salry_cd_base_ymd = c.base_ymd
+AND b.salry_cd = c.salry_cd
+AND c.cd_clsf = 'HSP010'
+JOIN xodhslgrp a
+ON  b.salry_cd = a.salry_cd
+JOIN xodxcommst d
+ON  b.pay_typ = d.cd
+AND  d.cd_clsf = 'HSD'
+WHERE 1=1 
+AND      a.base_ymd = (select max(base_ymd) from xodhslgrp where  base_ymd <![CDATA[ <= ]]> #{to_ymd}||'21' and salry_cd_grp = 'HSC060')
+AND      a.salry_cd_grp = 'HSC060' 
+AND      a.nottn_yn = 'Y'
+<if test="syspayno != null and syspayno != ''">
+AND b.syspayno = #{syspayno}
+</if>
+<if test="fr_ymd == null and belng_yrmon != null and belng_yrmon != ''">
+AND b.belng_yrmon = #{belng_yrmon}
+</if>
+<if test="fr_ymd != null and fr_ymd != ''">
+AND b.belng_yrmon <![CDATA[ >= ]]> #{fr_ymd}
+</if>
+<if test="to_ymd != null and to_ymd != ''">
+AND b.belng_yrmon <![CDATA[ <= ]]> #{to_ymd}
+</if>
+<if test="user_div != null and user_div != ''">
+AND b.user_div = #{user_div}
+</if>
+<if test='slGubn == "1"'>AND b.pay_typ  not in('HSD080','HSD090','HSD100')</if>
+<if test='slGubn == "2"'>AND b.pay_typ  in('HSD080','HSD090','HSD100')</if>
+<if test='slGubn == "%"'>AND b.pay_typ  != 'HSD021'</if>
+GROUP BY a.disp_seq,d.cd_nm,d.mngmt_no_1
+ORDER BY a.disp_seq,d.cd_nm
+</select>
+<select id="selectHumSlmmDeductPayTotLilstCd" parameterType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo" resultType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo">
+/* XDA : kitech.hum.sal.xda.HumSlMmPayCdMS05 급여지급총괄표 - 공제조회 다건*/
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumSlmmDeductPayTotLilstCd */ 
+		 a.disp_seq,
+       MAX(DECODE(NVL(a.smal_grp_nm,''),'', c.salry_cd_nm, a.smal_grp_nm)) AS salry_cd_nm,
+       SUM(b.salry_cd_amt * d.mngmt_no_1) AS salry_cd_amt,
+       a.salry_cd
+FROM humslmmpaycd b,
+       xodhslcode c,
+       xodhslgrp a,
+       xodxcommst d
+WHERE b.salry_cd_base_ymd = c.base_ymd
+AND    b.salry_cd = c.salry_cd 
+AND    b.pay_typ = d.cd 
+AND    a.salry_cd = b.salry_cd 
+AND    c.cd_clsf in ('HSP020','HSP030') 
+AND    a.base_ymd = (SELECT MAX(base_ymd) FROM xodhslgrp WHERE  base_ymd <![CDATA[ <= ]]> #{belng_yrmon}||'21'  AND salry_cd_grp = 'HSC060') -- belng_ymd
+AND    a.salry_cd_grp = 'HSC060' 
+AND    a.nottn_yn = 'Y'
+<if test="syspayno != null and syspayno != ''">
+	 AND b.syspayno = #{syspayno}
+	</if>
+<if test="fr_ymd == null and belng_yrmon != null and belng_yrmon != ''">
+AND b.belng_yrmon = #{belng_yrmon}
+</if>
+<if test="fr_ymd != null and fr_ymd != ''">
+AND b.belng_yrmon <![CDATA[ >= ]]> #{fr_ymd}
+</if>
+<if test="to_ymd != null and to_ymd != ''">
+AND b.belng_yrmon <![CDATA[ <= ]]> #{to_ymd}
+</if>
+<if test="user_div != null and user_div != ''">
+	 AND b.user_div = #{user_div}
+	</if>
+<if test='slGubn == "1"'>AND b.pay_typ  not in('HSD080','HSD090','HSD100')</if>
+<if test='slGubn == "2"'>AND b.pay_typ  in('HSD080','HSD090','HSD100')</if>
+<if test='slGubn == "%"'>AND b.pay_typ  != 'HSD021'</if>
+GROUP BY a.disp_seq,a.salry_cd
+ORDER BY a.disp_seq,a.salry_cd
+</select>
+<select id="selectHumSlMmPayTotAmt" parameterType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo" resultType="kr.re.kitech.biz.hum.sal.vo.HumSalPayVo">
+SELECT /* QueryID : kr.re.kitech.biz.hum.sal.selectHumSlMmPayTotAmt */ 
+		 MAX(pay_ymd) pay_ymd,
+ MAX(unslip_no) unslip_no, 
+ COUNT(*) work_cnt,   --지급인원
+ NVL(SUM(tot_work_incom), 0) AS tot_work_incom,   --총근로소득
+ NVL(SUM((payup_mny - payup_mny_incomtax - payup_mny_residtax)+(tot_dedct_amt + incomtax + residtax + ffvstax)), 0) AS tot_dedct_amt,  --총 공제금액
+ NVL(SUM(ofic_pay), 0) ofic_pay,   --총 실지급액
+ MAX(close_yn) AS close_yn
+FROM humslmmpayamt
+WHERE 1=1
+<if test="fr_ymd == null and belng_yrmon != null and belng_yrmon != ''">
+AND belng_yrmon = #{belng_yrmon}
+</if>
+<if test="fr_ymd != null and fr_ymd != ''">
+AND belng_yrmon <![CDATA[ >= ]]> #{fr_ymd}
+</if>
+<if test="to_ymd != null and to_ymd != ''">
+AND belng_yrmon <![CDATA[ <= ]]> #{to_ymd}
+</if>
+<if test="syspayno != null and syspayno != ''">
+AND  syspayno = #{syspayno} 
+	</if> 
+<if test="user_div == '%'">user_div in ('HYY010', 'HYY020')</if>
+<if test="user_div == 'HYY010'">user_div = 'HYY010'</if>
+<if test="user_div == 'HYY020'">user_div = 'HYY020'</if>  
+</select>
+</mapper>

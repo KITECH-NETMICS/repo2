@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.re.kitech.biz.kbk.inv">
+		
+	<select id="selectAccntBookList1" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvAccntBookVo" resultType="kr.re.kitech.biz.kbk.inv.vo.InvAccntBookVo">
+		SELECT fun_xodxcommst_cd_nm(pur_way_cd, 0) pur_way_cd,       
+		       accnt_no,        
+		       regst_no,
+		       regst_ymd,        
+		       book_nm,        
+		       auth_nm,        
+		       pur_amt   
+		  FROM kbkbook  
+		 WHERE 1 = 1    
+	   <if test='accnt_no != null and accnt_no != ""'> AND accnt_no LIKE '%' || #{accnt_no} || '%' </if>
+	   <if test='pur_way_cd != null and pur_way_cd != ""'> AND pur_way_cd LIKE '%' || #{pur_way_cd} || '%' </if>
+	   <if test='regst_fr_ymd != null and regst_fr_ymd != ""'> AND regst_ymd BETWEEN #{regst_fr_ymd} AND #{regst_to_ymd} </if>
+		 ORDER BY pur_way_cd, accnt_no
+	</select>
+
+	<select id="selectAccntBookList2" parameterType="kr.re.kitech.biz.kbk.inv.vo.InvAccntBookVo" resultType="kr.re.kitech.biz.kbk.inv.vo.InvAccntBookVo">
+		SELECT 	accnt_no,        
+		       	count(accnt_no) AS no,       
+		       	sum(pur_amt) AS pur_amt   
+ 	  	FROM 	kbkbook  
+     	WHERE 	1 = 1  
+	   <if test='accnt_no != null and accnt_no != ""'> AND accnt_no LIKE '%' || #{accnt_no} || '%' </if>
+	   <if test='pur_way_cd != null and pur_way_cd != ""'> AND pur_way_cd LIKE '%' || #{pur_way_cd} || '%' </if>
+	   <if test='regst_fr_ymd != null and regst_fr_ymd != ""'> AND regst_ymd BETWEEN #{regst_fr_ymd} AND #{regst_to_ymd} </if>
+	  	GROUP BY accnt_no
+ 		ORDER BY accnt_no
+	</select>
+
+</mapper>

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.kitech.biz.uss.bas">
+
+	<!-- 자산 검색 팝업 -->
+	<select id="selectListItemXomBasAssPopup" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasIPReqVo" resultType="kr.re.kitech.biz.uss.bas.vo.ComBasIPReqAssVo">
+		SELECT /* QueryID : kr.re.kitech.biz.uss.bas.selectListItemXomBasAssInfo */ 
+				  t1.mngmt_mbody,                         /* 관리 주체 */
+		        t6.cd_nm AS mngmt_mbody_nm,             /* 관리 주체 명 */
+		        t2.aset_clsf,                           /* 자산 분류 */
+		        t7.cd_nm AS aset_clsf_nm,               /* 자산 분류 명 */
+		        t1.aset_no,                             /* 자산 번호 */
+		        t1.old_aset_no,                         /* 구 자산 번호 */
+		        t2.intro_ymd,                           /* 도입 일자 */
+		        t1.aset_nm,                             /* 자산 명 */
+		        t2.intro_amt,                           /* 도입 금액 */
+		        t1.user_syspayno,                       /* 사용자 시스템 개인 번호 */
+		        t3.nm AS user_nm,                       /* 사용자 이름 */
+		        t3.empno AS user_empno,                 /* 사용자 개인 번호 */
+		        t4.dept_nm AS user_dept_nm,             /* 사용자 부서 */
+		        t5.empno AS respn_empno,                /* 부서장 개인 번호 */
+		        t5.nm AS respn_nm,                      /* 부서장 성명 */
+		        t8.cd_nm AS aset_posi_region_nm,        /* 자산위치지역 */
+		        t9.cd_nm AS aset_posi_build_nm,         /* 자산위치건물 */
+		        t1.posi_floor AS aset_posi_floor,       /* 자산위치층 */
+		        t1.posi_detls AS aset_posi_detls,       /* 자산위치상세 */
+		        t8.cd_nm  || " " ||t9.cd_nm  || " " || t1.posi_floor || " " || t1.posi_detls  AS aset_hear,
+		        t2.pur_req_no,                          /* 구매 요청 번호 */
+		        t1.slip_no,                             /* 결의번호 */
+		        t1.slip_odr,                             /* 결의순번 */
+		        t10.empno as reg_empno,
+		        t10.nm as reg_nm
+		FROM    assmastrb               t1,
+		        assmastrh               t2,
+		        humbasicinfo            t3,
+		        OUTER(xodhdeptinfo      t4,
+		        humbasicinfo            t5,
+		        xodxcommst              t6,
+		        xodxcommst              t7,
+		        xodxcommst              t8,
+		        xodxcommst              t9,
+		        humbasicinfo            t10)
+		WHERE   t1.aset_no          = t2.aset_no
+		AND     t1.user_syspayno    = t3.syspayno
+		AND     t3.dept_new_ymd     = t4.dept_new_ymd
+		AND     t3.dept_cd          = t4.dept_cd
+		AND     t4.depthed          = t5.syspayno
+		AND     t1.mngmt_mbody      = t6.cd
+		AND     t2.aset_clsf        = t7.cd
+		and     t2.regst_syspayno = t10.syspayno
+		AND     t1.posi_region      = t8.cd
+		AND     t1.posi_build       = t9.cd
+		AND     t2.aset_typ         IN ('AAA010','AAA030')
+		AND     t2.aset_state       = 'AAI010'             
+		    <if test="aset_no != null and aset_no != ''">
+			 AND t1.aset_no = #{aset_no}
+		</if>
+		    <if test="user_empno != null and user_empno != ''">
+			 AND t3.empno= #{user_empno}
+		</if>
+		ORDER BY t2.aset_clsf,
+		         t1.aset_no
+	</select>
+	
+	<!-- IP신청서에 저장 되어있는 자산 조회 -->
+	<select id="selectListItemXomBasAss" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasIPReqVo" resultType="kr.re.kitech.biz.uss.bas.vo.ComBasIPReqAssVo">
+		SELECT aply_no,
+		       aply_type,
+		       aset_no,
+		       aset_nm,
+		       aset_type,
+		       aset_usg,
+		       aset_region_1,
+		       aset_region_2,
+		       aset_region_3,
+		       opr_sys,
+		       etc,
+		       aply_ip,
+		       ip_addr,
+		       sub_mask,
+		       gateway,
+		       base_dns,
+		       sub_dns,
+		       use_nm_full,
+		       dept_nm,
+		       mobile,       
+		       use_syspayno,
+		       fun_humbasicinfo_cd_nm(use_syspayno, 11) as email,
+		       fun_emp_nm(use_syspayno) AS use_syspaynm,
+		       use_empno,
+		       result_opn
+		 FROM  xombasipasetitem
+		WHERE  aply_no = #{aply_no}
+	</select>
+	
+	<select id="selectItemXomBasIPAply" parameterType="kr.re.kitech.biz.uss.bas.vo.ComBasIPReqVo" resultType="kr.re.kitech.biz.uss.bas.vo.ComBasIPReqVo">
+		select /* QueryID : kr.re.kitech.biz.uss.bas.selectListItemXomBasIPAply */ 
+				 a.aply_no,
+		       a.aply_clsf,
+		       a.comp_charg_sys_psn_no,
+		       a.use_ex,
+		       a.aply_sys_psn_no,
+		       b.empno as aply_empno,
+		       a.aply_pns_posi,
+		       a.user_id,
+		       a.aply_psn_krchar_nm,
+		       a.aply_psn_eng_nm,
+		       a.blong_divsn,
+		       a.blong_dept,
+		       a.blong_ofic,
+		       a.ofic_region_1,
+		       a.ofic_region_2,
+		       a.ofic_region_3,
+		       a.ofic_fax,
+		       a.ofic_tel,
+		       a.aply_psn_mobile_no,
+		       a.attach_file_no,
+		       a.attach_file_path,
+		       a.rmk,
+		       a.bizwrk_prcs_state,
+		       a.apprvl_prcs_state,
+		       a.aply_daytm,
+		       a.bizwrk_daytm,
+		       a.apprvl_daytm,
+		       b.ext_no,
+		       b.email
+		  FROM xombasipaplydocu a
+		  JOIN humbasicinfo b on a.aply_sys_psn_no = b.syspayno 
+		 WHERE aply_no = #{aply_no}
+		   AND aply_clsf = #{aply_clsf}
+	</select>
+</mapper>

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="외부강의수정이력">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_updateCtr" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="req_no" name="신청번호" dataType="text"></w2:column>
+            			<w2:column id="regst_syspayno" name="등록자시스템개인번호" dataType="text"></w2:column>
+            			<w2:column id="modify_item" name="변경항목" dataType="text"></w2:column>
+            			<w2:column id="modify_cause" name="변경이유" dataType="text"></w2:column>
+            			<w2:column id="modify_daytm" name="참석유형" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="req_no" name="신청번호" dataType="text"></w2:key>
+            			<w2:key id="syspayno" name="시스템개인번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>            	
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_reqPsn" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="req_no" name="신청번호" dataType="text"></w2:column>
+            			<w2:column id="nm" name="등록자시스템개인번호" dataType="text"></w2:column>
+            			<w2:column id="posi_nm" name="직급" dataType="text"></w2:column>
+            			<w2:column id="dept_nm" name="부서명" dataType="text"></w2:column>
+            			<w2:column id="duty_nm" name="업무" dataType="text"></w2:column>
+            			<w2:column id="req_daytm" name="등록일시" dataType="text"></w2:column>
+            			<w2:column id="empno" name="사번" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	
+            </w2:dataCollection>
+            <w2:workflowCollection></w2:workflowCollection>
+            
+            <xf:submission id="sbm_selectCtrUpdateList" ref='data:json,dma_search'
+				target='' action="SvcCCSCTRCTPR03.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+            
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+ 	 * 화면 설명 : 외부강의수정이력 	 
+ 	 * 변경 이력 : 2022-05-19   박영훈	최초 작성
+ 	 ****************************************************/        
+	scwin.onpageload = function() {			
+		var param = com.getParameter();	
+		dma_search.setJSON(param);
+		
+		com.pop.open(com.pop.TYPE.HUM, {empno:param.empno}, function(ret) {
+			dlt_reqPsn.setRowJSON(0, ret);
+			dlt_reqPsn.setCellData(0,"req_no", param.req_no);
+			dlt_reqPsn.setCellData(0, "req_daytm", param.req_daytm);
+		});	
+				
+		
+		// 수정이력 조회
+		com.execute(sbm_selectCtrUpdateList, {
+			successCallback : function(e) {
+				dlt_updateCtr.setJSON(e.responseJSON.ctrTripInviteVoList);
+				var length = e.responseJSON.ctrTripInviteVoList.length;				
+				if(length == 0){
+					not_empty.hide();
+				}else{
+					empty.hide();	
+				}	
+			}
+		});
+			
+		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	scwin.btn_check_onclick = function(e) {
+		com.closePopup(); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+	};
+	
+	
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group class="titleSection pt0" id="" style="">
+    		<xf:group class="le" id="">
+    			<w2:textbox class="tit_tbl" id="" label="외부강의 등 수정 신고 현황" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    	</xf:group>
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_reqPsn" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    		id="" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    		rowNumHeaderValue="No." rowNumVisible="false" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    		scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height:58px;"
+    		summaryAuto="true" visibleRowNum="10">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="신청번호" width="100"></w2:column>
+    				<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="신청자" width="100"></w2:column>
+    				<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="개인번호" width="70"></w2:column>
+    				<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="부서" width="150"></w2:column>
+    				<w2:column displayMode="label" id="column29" inputType="text" style="height:28px;" value="직급" width="70"></w2:column>
+    				<w2:column displayMode="label" id="column30" inputType="text" style="height:28px" value="직 책" width="70"></w2:column>
+    				<w2:column displayMode="label" id="column32" inputType="text" style="height:28px" value="신청일" width="150"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column displayMode="label" id="req_no" inputType="text" readOnly="true" style="height:28px;" width="100"></w2:column>
+    				<w2:column displayMode="label" escape="false" id="nm" inputType="text" readOnly="true" style="height:28px;"
+    					width="100">
+    				</w2:column>
+    				<w2:column displayMode="label" escape="false" id="empno" inputType="text" readOnly="true" style="height:28px;"
+    					width="70">
+    				</w2:column>
+    				<w2:column class="" displayMode="label" id="dept_nm" inputType="text" readOnly="true" style="height:28px;" width="150"></w2:column>
+    				<w2:column displayMode="label" id="posi_nm" inputType="text" readOnly="true" style="height:28px;" width="70"></w2:column>
+    				<w2:column displayMode="label" id="duty_nm" inputType="text" style="height:28px" value="" width="70" readOnly="true"></w2:column>
+    				<w2:column displayMode="label" id="req_daytm" inputType="text" style="height:28px" value="" width="150" readOnly="true"></w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group class="titleSection " id="" style="">
+    		<xf:group class="le" id="">
+    			<w2:textbox class="tit_tbl" id="" label="수정/변경 이력" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    	</xf:group>
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_updateCtr" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    		id="not_empty" noResultMessage="외부강의 등 회의 에 대한 수정 이력이 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    		rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    		scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height:104px;"
+    		summaryAuto="true" visibleRowNum="10">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    			
+    				<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="항목" width="250"></w2:column>
+    				<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="사유" width="250"></w2:column>
+    				<w2:column displayMode="label" id="column20" inputType="text" style="height:28px;" value="일시" width="150"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				
+    				<w2:column displayMode="label" escape="false" id="modify_item" inputType="text" readOnly="true" style="height:28px;"
+    					width="250">
+    				</w2:column>
+    				<w2:column displayMode="label" escape="false" id="modify_cause" inputType="text" readOnly="true" style="height:28px;"
+    					width="250">
+    				</w2:column>
+    				<w2:column class="" displayMode="label" id="modify_daytm" inputType="text" readOnly="true" style="height:28px;" width="160"></w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group id="empty" class="linebox">
+    		<w2:textbox tagname="span" style="" id="" label="외부강의 등 회의 에 대한 수정 이력이 없습니다."></w2:textbox>
+    	</xf:group>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_check" type="button" class=" btn pro" ev:onclick="scwin.btn_check_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

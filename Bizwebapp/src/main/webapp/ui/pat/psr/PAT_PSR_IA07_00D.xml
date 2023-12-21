@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="지식재산권 메일이력탭 조회">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            
+				<w2:dataMap baseNode="map" id="dma_search">
+				  <w2:keyInfo>
+				       <w2:key id="req_no" name="req_no" dataType="text"></w2:key>
+				       <w2:key id="mngmt_no" name="mngmt_no" dataType="text"></w2:key>
+				 </w2:keyInfo>
+				</w2:dataMap>
+				
+				<w2:dataList baseNode="list" repeatNode="map" id="dlt_list" saveRemovedData="true">
+				  <w2:columnInfo>
+				       <w2:column id="mail_id" name="mail_id" dataType="text"></w2:column>
+				       <w2:column id="send_name" name="send_name" dataType="text"></w2:column>
+				       <w2:column id="mail_subject" name="mail_subject" dataType="text"></w2:column>
+				       <w2:column id="send_date" name="send_date" dataType="text"></w2:column>
+				  </w2:columnInfo>
+				</w2:dataList>
+            
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>
+            
+			<!-- 출원업무 메일 이력 조회 -->
+			<xf:submission id="sbm_svcpatpsrmstr01" 
+						   ref='data:json,dma_search' 
+						   target='data:json,{"id":"dlt_list","key":"patPsrMailLVoList"}' 
+						   action="SvcPATPSRMSTR01.pwkjson" 
+						   ev:submitdone="" method="post" mediatype="application/json" encoding="UTF-8" mode="asynchronous"></xf:submission>
+			
+
+        </xf:model>
+         <script src="/cm/js/biz/pat.js" cache="false" />
+         <script type="text/javascript" lazy="false"><![CDATA[
+        
+			scwin.GLOBAL_VARS = {
+				p_param: com.getParameter(),
+				revParam: {}
+			};
+			
+			scwin.onpageload = function() {
+			
+				dma_search.set("req_no", scwin.GLOBAL_VARS.p_param.req_no);
+				dma_search.set("mngmt_no", scwin.GLOBAL_VARS.p_param.mngmt_no);
+				
+				com.execute(sbm_svcpatpsrmstr01);
+				
+			};
+			
+			scwin.open_detail_popup = function(row, col, colId){
+			  if(colId === "mail_subject"){
+				const mailId = dlt_list.getRowJSON(row).mail_id;
+				
+				const data = {
+			      mail_id: mailId
+			    };
+			
+			    com.pop.open(biz.pat.pop.TYPE.PAT_MAIL, data, function(ret) {});
+			  }
+			};
+			
+			scwin.onpageunload = function() {
+				
+			};
+		
+		]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload" ev:onpageunload="scwin.onpageunload">
+    	<xf:group class="pageWrap" id="" style="">
+    		<xf:group class="titleSection" id="" style="">
+    			<w2:textbox class="tit_tbl" id="" label="메일 이력" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    		<w2:gridView id="grid" class="grid" dataList="data:dlt_list" style="height: 75px;"
+			  ev:oncellclick="scwin.open_detail_popup" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"  rowNumHeaderValue="No." noResultMessage="조회 결과가 없습니다." rowStatusHeaderValue="상태" noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff" rowNumVisible="true" rowNumWidth="60" rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" summaryAuto="true" visibleRowNum="20" autoFit="allColumn">
+			  <w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+			  <w2:header id="header1">
+			    <w2:row id="row1">
+			      <w2:column width="70" inputType="text" displayMode="label" id="send_date" value="발송일시"></w2:column>
+			      <w2:column width="70" inputType="text" displayMode="label" id="send_name" value="발송자"></w2:column>
+			      <w2:column width="300" inputType="text" displayMode="label" id="mail_subject" value="제목"></w2:column>
+			      <w2:column width="100" inputType="text" displayMode="label" id="mail_id" value="empty"></w2:column>
+			    </w2:row>
+			  </w2:header>
+			  <w2:gBody id="gBody1">
+			    <w2:row id="row2">
+			      <w2:column inputType="text" id="send_date" dataType="date" displayFormat="yyyy-MM-dd" readOnly="true"></w2:column>
+			      <w2:column inputType="text" id="send_name" readOnly="true"></w2:column>
+			      <w2:column inputType="link" id="mail_subject" readOnly="true"></w2:column>
+			      <w2:column inputType="text" id="mail_id" readOnly="true" hidden="true"></w2:column>
+			      </w2:row>
+			  </w2:gBody>
+			</w2:gridView>
+    	</xf:group>
+    </body>
+</html>

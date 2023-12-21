@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="출장신청 이용계정내역">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+        	<xf:instance>
+        		<data xmlns="" />
+        	</xf:instance>
+        	<w2:dataCollection baseNode="map">
+        		<w2:dataMap baseNode="map" id="dma_recntAccnt">
+        			<w2:keyInfo>
+        				<w2:key id="biztrip_psn_syspayno" name="출장자시스템번호" dataType="text"></w2:key>
+        				<w2:key id="cls_ymd" name="종료일" dataType="text"></w2:key>
+        				<w2:key id="flag" name="출장구분" dataType="text"></w2:key>
+        			</w2:keyInfo>
+        		</w2:dataMap>
+        		<w2:dataList baseNode="list" repeatNode="map" id="dlt_recntAccnt" saveRemovedData="true">
+        			<w2:columnInfo>
+        				<w2:column id="accnt_no" name="계정번호" dataType="text"></w2:column>
+        				<w2:column id="accnt_no_nm" name="계정번호명" dataType="text"></w2:column>
+        				<w2:column id="accnt_dept_cd" name="계정부서코드" dataType="text"></w2:column>
+        				<w2:column id="accnt_dept_new_ymd" name="계정부서신설일자" dataType="text"></w2:column>
+        				<w2:column id="accnt_respn_psn_syspayno" name="계정책임자시스템번호" dataType="text"></w2:column>
+        				<w2:column id="accnt_respn_psn_empno" name="계정책임자사원번호" dataType="text"></w2:column>
+        				<w2:column id="accnt_respn_psn_nm" name="계정책임자명" dataType="text"></w2:column>
+        				<w2:column id="fomat_unit" name="편성단위" dataType="text"></w2:column>
+        				<w2:column id="start_ymd" name="시작일자" dataType="text"></w2:column>
+        				<w2:column id="cls_ymd" name="종료일자" dataType="text"></w2:column>
+        				<w2:column id="cnt" name="이용횟수" dataType="text"></w2:column>
+        				<w2:column id="accnt_state" name="계정상태" dataType="text"></w2:column>
+        				<w2:column id="prj_no" name="과제번호" dataType="text"></w2:column>
+        				<w2:column id="tax_cd" name="과세구분" dataType="text"></w2:column>
+        			</w2:columnInfo>
+        		</w2:dataList>
+        	</w2:dataCollection>
+        	<w2:workflowCollection></w2:workflowCollection>
+        	<xf:submission id="sbm_searchRecntAccnt" ref="data:json,dma_recntAccnt" target='data:json,dlt_recntAccnt' action="SvcCCSCTRLPRR01.pwkjson" method="post" mediatype="application/json" encoding="UTF-8"
+        		instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+        		ev:submiterror="" abortTrigger="">
+        	</xf:submission>
+        </xf:model>
+        <script type="text/javascript" lazy="false"><![CDATA[
+    /*************************************************************************************************************
+     *
+     *	페이지 이벤트 함수
+     *
+     *************************************************************************************************************/
+    /*
+     * 페이지 열기
+     */
+	scwin.onpageload = function() {
+		dma_recntAccnt.setJSON(com.getParameter());
+		dma_recntAccnt.set("cls_ymd", com.getParameter("biztrip_ymd"));
+		
+		com.execute(sbm_searchRecntAccnt, {
+			successCallback : function(e) {
+				dlt_recntAccnt.setJSON(e.responseJSON.objectList, false);
+			}
+		});
+	};
+	
+	/*
+     * 페이지 닫기
+     */
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	/*************************************************************************************************************
+     *
+     *	컴포넌트 이벤트 함수
+     *
+     *************************************************************************************************************/
+    /*
+     * 닫기
+     */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	
+	/*
+     * 그리드 선택
+     */
+	scwin.grd_recntAccnt_oncelldblclick = function(row, col, colId) {
+		com.closePopup(dlt_recntAccnt.getRowJSON(row));
+	};
+	
+	/**
+	* 확인 버튼 클릭
+	*/
+	scwin.btn_conf_onclick = function(e) {
+		scwin.grd_recntAccnt_oncelldblclick(grd_recntAccnt.getFocusedRowIndex());
+	}
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<xf:group class="titleSection pt0" id="" style="">
+    			<xf:group class="le" id="">
+    				<w2:span class="note blue" id="" label="※ 최근 출장에 사용한 계정입니다."
+    					style="">
+    				</w2:span>
+    			</xf:group>
+    			<xf:group class="ri" id="">
+    				<xf:group class="btnarea" id="" style="">
+    				</xf:group>
+    			</xf:group>
+    		</xf:group>
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_recntAccnt" defaultCellHeight="28"
+    			evenRowBackgroundColor="#f7faff" id="grd_recntAccnt" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult"
+    			rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="60"
+    			rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false"
+    			selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;" summaryAuto="true" visibleRowNum="10"
+    			ev:oncelldblclick="scwin.grd_recntAccnt_oncelldblclick">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="계정번호" width="70"></w2:column>
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="계정명" width="300"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column17" value="과세구분" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="종료일" width="70"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column14" value="계정책임자" displayMode="label"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column15" value="이용횟수" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column class="" displayMode="label" id="accnt_no" inputType="text" readOnly="true" style="height:28px;"
+    						width="70">
+    					</w2:column>
+    					<w2:column class="le" displayMode="label" escape="false" id="accnt_no_nm" inputType="text" readOnly="true"
+    						style="height:28px;" width="300">
+    					</w2:column>
+    					<w2:column width="70" inputType="select" style="height:28px" id="tax_cd" value="" displayMode="label" allOption=""
+    						chooseOption="" ref="">
+    						<w2:choices>
+    							<w2:item>
+    								<w2:label><![CDATA[과세]]></w2:label>
+    								<w2:value><![CDATA[FTX001]]></w2:value>
+    							</w2:item>
+    							<w2:item>
+    								<w2:label><![CDATA[비과세]]></w2:label>
+    								<w2:value><![CDATA[FTX002]]></w2:value>
+    							</w2:item>
+    						</w2:choices>
+    					</w2:column>
+    					<w2:column displayMode="label" escape="false" id="cls_ymd" inputType="text" readOnly="true" style="height:28px;"
+    						width="70" dataType="date">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="accnt_respn_psn_nm" value="" displayMode="label"
+    						readOnly="true">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column16" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+	    			<xf:trigger style="" id="btn_conf" type="button" class=" btn pro conf" ev:onclick="scwin.btn_conf_onclick">
+	    				<xf:label><![CDATA[확인]]></xf:label>
+	    			</xf:trigger>
+    				<xf:trigger style="" id="btn_close" type="button" class=" btn pro conf" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

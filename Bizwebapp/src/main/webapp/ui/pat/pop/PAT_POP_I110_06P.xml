@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="출입희망국">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="cd_no" name="국가코드" dataType="text"></w2:column>
+            			<w2:column id="cd_nm" name="국가코드명" dataType="text"></w2:column>
+            			<w2:column id="cd_desc" name="국가코드상세" dataType="text"></w2:column>
+            			<w2:column id="chk" name="선택" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="grp_clsf" name="name1" dataType="text"></w2:key>
+            			<w2:key id="up_cd_no" name="name2" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+             <!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref='data:json,dma_search' target='' action="SvcPATPOPR04.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit="" ev:submitdone=""
+				ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+	/****************************************************
+	 * 화면 설명 : 출원희망국 조회
+	 * 변경 이력 : 2023-03-16 이영희 최초생성
+	 ****************************************************/     
+	/**
+	 * 페이지 로딩 이벤트
+	 */  
+	scwin.onpageload = function() {		
+		dma_search.set("grp_clsf", "1");
+		dma_search.set("up_cd_no", "000392");
+		
+		scwin.search();		
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	/**
+	 * 조회
+	 */ 
+	scwin.search = function(){
+		com.execute(sbm_selectData, {
+			successCallback : function(e){
+				dlt_grd.setJSON(e.responseJSON.patCodeMastrVoList);		
+				
+				for(var i=0; i< dlt_grd.getRowCount(); i++){
+					if(dlt_grd.getCellData(i, "cd_nm") == "KR"){
+						grd_natn.setCellDisabled(i, "chk", true);
+						break;
+					}
+				}	
+			}
+		});
+	};
+	
+	/**
+	 * 선택 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_save_onclick = function(e) {
+		var arr = grd_natn.getCheckedIndex("chk");
+		
+		if(arr.length == 0){
+			alert("출원희망국가를 선택하세요.");
+			return;
+		}
+		
+		var cdNms =[];
+		var cdDescs = [];
+		var num = 0;
+		for(var i=0; i< arr.length; i++){
+			cdNms.push(dlt_grd.getCellData(arr[i], "cd_nm"));
+			cdDescs.push(dlt_grd.getCellData(arr[i], "cd_desc"));
+			num++;
+		}
+		
+		var data = {
+			smitapp_hope_natn_cd : cdNms.join(","),
+			smitapp_hope_natn_nm : cdDescs.join(","),
+			cnt : num
+		};
+		
+		com.closePopup(data);
+	};
+	
+	/**
+	 * 닫기 버튼 클릭 이벤트
+	 */ 
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup();
+	};
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group class="titleSection pt0" id="" style="">
+    		<xf:group class="le" id="">
+    			<w2:textbox class="tit_tbl" id="" label="조회결과" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    	</xf:group>
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    		id="grd_natn" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    		rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    		scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    		summaryAuto="true" visibleRowNum="10">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column width="40" inputType="text" style="height:28px" id="column10" value="선택" displayMode="label"></w2:column>
+    				<w2:column displayMode="label" id="column9" inputType="text" style="height:28px;" value="국가명" width="200"></w2:column>
+    				<w2:column displayMode="label" id="column7" inputType="text" style="height:28px;" value="약어" width="100"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column width="40" inputType="checkbox" style="height:28px" id="chk" value="" displayMode="label"></w2:column>
+    				<w2:column displayMode="label" id="cd_desc" inputType="text" readOnly="true" style="height:28px;" width="200" class="le"></w2:column>
+    				<w2:column displayMode="label" id="cd_nm" inputType="text" readOnly="true" style="height:28px;" width="100"></w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    			<xf:trigger style="" id="btn_save" type="button" class=" btn pro conf" ev:onclick="scwin.btn_save_onclick">
+    				<xf:label><![CDATA[선택]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>

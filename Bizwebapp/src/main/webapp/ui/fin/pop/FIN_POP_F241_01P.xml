@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="회의록 계정과 국내출장 계정 비고" meta_author="이영희" meta_date="2023.11.01.">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_grd" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="req_no" name="출장신청번호" dataType="text"></w2:column>
+            			<w2:column id="meet_member" name="출장자" dataType="text"></w2:column>
+            			<w2:column id="biztrip_accnt_no" name="출장계정번호" dataType="text"></w2:column>
+            			<w2:column id="accnt_no" name="정산계정번호" dataType="text"></w2:column>
+            			<w2:column id="meet_accnt_no" name="회의록계정" dataType="text"></w2:column>
+            			<w2:column id="match_yn" name="일치여부" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search" style="">
+            		<w2:keyInfo>
+            			<w2:key dataType="text" id="req_no_list" name="출장신청번호"></w2:key>
+            			<w2:key id="accnt_no" name="계정번호" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection/>
+            <!-- 조회 -->
+			<xf:submission id="sbm_selectData" ref="data:json,dma_search" target='' action="SvcFINSPMETCR08.pwkjson" method="post"
+				mediatype="application/json" encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg=""
+				ev:submit="" ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+    /****************************************************
+ 	 * 화면 설명 : 회의록 계정과 국내출장 계정 비교
+ 	 * 변경 이력 : 2023-11-01	이영희	최초 작성
+ 	 ****************************************************/  
+    /**
+	* 페이지 로드
+	*/  
+	scwin.onpageload = function() {
+		dma_search.setJSON(com.getParameter());
+		
+		scwin.search();
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};	
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(){		
+		com.execute(sbm_selectData,{
+			successCallback : function(e) {
+				dlt_grd.setJSON(e.responseJSON.fspMeetVoList);
+				
+				var accntNo = dma_search.get("accnt_no");
+				
+				for(var i=0; i<dlt_grd.getRowCount(); i++){
+					dlt_grd.setCellData(i, "meet_accnt_no", accntNo);
+
+					if(dlt_grd.getCellData(i, "accnt_no").trim() != ""){
+						if(dlt_grd.getCellData(i, "accnt_no").includes(accntNo)){
+							dlt_grd.setCellData(i, "match_yn", "일치");
+							grd_list.setCellColor(i, "match_yn", "blue");
+						}else{
+							dlt_grd.setCellData(i, "match_yn", "불일치");
+							grd_list.setCellColor(i, "match_yn", "red");
+						}
+					}else{
+						if(dlt_grd.getCellData(i, "biztrip_accnt_no").includes(accntNo)){
+							dlt_grd.setCellData(i, "match_yn", "일치");
+							grd_list.setCellColor(i, "match_yn", "blue");
+						}else{
+							dlt_grd.setCellData(i, "match_yn", "불일치");
+							grd_list.setCellColor(i, "match_yn", "red");
+						}
+					}
+					
+				}
+			}
+		});
+	}
+	
+	/**
+	 * 닫기
+	 */
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup({});
+	};		
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    	<xf:group id="" class="pop_contents">
+    		<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_grd" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    			id="grd_list" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb" rowNumBackgroundColor="#fff"
+    			rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태" rowStatusVisible="false" rowStatusWidth="50"
+    			scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd" selectedRowColor="#fbf2cd" style="height: 85px;"
+    			summaryAuto="true" visibleRowNum="10" readOnly="true">
+    			<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    			<w2:header id="header1" style="">
+    				<w2:row id="row1" style="">
+    					<w2:column displayMode="label" id="column5" inputType="text" style="height:28px;" value="출장신청번호" width="110"></w2:column>
+    					<w2:column displayMode="label" id="column32" inputType="text" style="height:28px" value="출장자" width="120"></w2:column>
+    					<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="출장계정번호" width="110"></w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="column34" value="정산계정번호" displayMode="label"></w2:column>
+    					<w2:column displayMode="label" id="column33" inputType="text" style="height:28px" value="회의록계정" width="80"></w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="column36" value="일치여부" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:header>
+    			<w2:gBody id="gBody1" style="">
+    				<w2:row id="row2" style="">
+    					<w2:column displayMode="label" escape="false" id="req_no" inputType="text" readOnly="true" style="height:28px;"
+    						width="110">
+    					</w2:column>
+    					<w2:column displayMode="label" id="meet_member" inputType="text"
+    						readOnly="true" style="height:28px" width="120">
+    					</w2:column>
+    					<w2:column class="" displayMode="label" escape="false" id="biztrip_accnt_no" inputType="text" readOnly="true"
+    						style="height:28px;" width="110">
+    					</w2:column>
+    					<w2:column width="90" inputType="text" style="height:28px" id="accnt_no" value="" displayMode="label"></w2:column>
+    					<w2:column class="" displayMode="label" id="meet_accnt_no" inputType="text" readOnly="true" style="height:28px" width="80">
+    					</w2:column>
+    					<w2:column width="70" inputType="text" style="height:28px" id="match_yn" value="" displayMode="label"></w2:column>
+    				</w2:row>
+    			</w2:gBody>
+    		</w2:gridView>
+    		<xf:group style="" id="" class="btnGroup">
+    			<xf:group style="" id="" class="le"></xf:group>
+    			<xf:group id="" class="ri">
+    				<xf:trigger style="" id="btn_close" type="button" class="btn pro" ev:onclick="scwin.btn_close_onclick">
+    					<xf:label><![CDATA[닫기]]></xf:label>
+    				</xf:trigger>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    </body>
+</html>

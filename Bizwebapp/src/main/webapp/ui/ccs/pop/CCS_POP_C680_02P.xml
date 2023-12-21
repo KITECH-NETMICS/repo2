@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+    <head meta_programName="대외활동 참여현황">
+    	<w2:type>DEFAULT</w2:type>
+        <w2:buildDate/>
+        <xf:model>
+            <xf:instance>
+                <data xmlns=""/>
+            </xf:instance>
+            <w2:dataCollection baseNode="map">
+            	            	
+            	<w2:dataList baseNode="list" repeatNode="map" id="dlt_ctrMonth" saveRemovedData="true">
+            		<w2:columnInfo>
+            			<w2:column id="row_num" name="No" dataType="text"></w2:column>
+            			<w2:column id="period_date" name="강의일시" dataType="text"></w2:column>
+            			<w2:column id="period_minute" name="강의시간(분)" dataType="text"></w2:column>
+            			<w2:column id="reward_amt" name="사례금(원)" dataType="text"></w2:column>
+            			<w2:column id="invite_org_nm" name="요청기관명" dataType="text"></w2:column>
+            			<w2:column id="econo_gain_clsf" name="보상구분" dataType="text"></w2:column>
+            			<w2:column id="attnce_clsf" name="참여정도" dataType="text"></w2:column>
+            		</w2:columnInfo>
+            	</w2:dataList>
+            	<w2:dataMap baseNode="map" id="dma_search">
+            		<w2:keyInfo>
+            			<w2:key id="syspayno" name="시스템번호" dataType="text"></w2:key>
+            			<w2:key id="act_clsf" name="활동구분" dataType="text"></w2:key>
+            			<w2:key id="activity_cd" name="활동유형" dataType="text"></w2:key>
+            		</w2:keyInfo>
+            	</w2:dataMap>
+            </w2:dataCollection>
+            <w2:workflowCollection>
+            </w2:workflowCollection>             				
+			<xf:submission id="sbm_selectListctrMonth" ref='data:json,dma_search'
+				target='' action="SvcCCSCTRCTPR05.pwkjson" method="post" mediatype="application/json"
+				encoding="UTF-8" instance="" replace="" errorHandler="" customHandler="" mode="asynchronous" processMsg="" ev:submit=""
+				ev:submitdone="" ev:submiterror="" abortTrigger="">
+			</xf:submission>            
+        </xf:model>
+         <script type="text/javascript" lazy="false"><![CDATA[
+     /****************************************************
+	 * 화면 설명 : 외부강의 신고 월간현황
+	 * 변경 이력 : 2022-05-20	박영훈	최초 작성
+	 ****************************************************/        
+	scwin.onpageload = function() {		
+		group_empty.hide();
+		
+		var param = com.getParameter();
+		dma_search.setJSON(param);	
+		
+		tbx_yyyymm.setValue(param.yyyymm.substring(0, 4) + '년 ' + param.yyyymm.substring(4) + '월');
+		tbx_user_nm.setValue(param.nm);
+		
+		var codeOptions = [ 
+							{ code : "HCQ", compID :"grid_month:econo_gain_clsf"}, // 보상구분
+							{ code : "HCN", compID :"grid_month:attnce_clsf"},
+						];
+		com.setCmnCd(codeOptions, function() {	
+			if(/CLA001|CLA002/.test(param.act_clsf) || /CCF005|CCF006/.test(param.activity_cd)){ // 겸직, 타업종사 현황 필요없음
+				grid_month.hide();
+			}else{
+				grid_month.show();
+			
+				if(param.act_clsf == "CLA003"){
+					grid_month.setColumnVisible("invite_org_nm", false);
+					grid_month.setColumnVisible("attnce_clsf", false);
+				}else{
+					grid_month.setHeaderValue("head_period_date", "활동일시");
+					grid_month.setHeaderValue("head_period_minute", "활동시간");
+				}
+				scwin.search();
+			}
+		});
+	};
+	
+	scwin.onpageunload = function() {
+		
+	};
+	
+	
+	scwin.btn_close_onclick = function(e) {
+		com.closePopup({}); // 팝업 닫기 (콜백 수행을 위해 빈 객체 넘김)
+	};
+	
+	/**
+	 * 조회
+	 */
+	scwin.search = function(){
+		com.execute(sbm_selectListctrMonth, {
+			successCallback : function(e) {
+			 	var cnt = e.responseJSON.cvnTripReqMonthVoList.length;
+			 	if(cnt > 0){
+				 	dlt_ctrMonth.setJSON(e.responseJSON.cvnTripReqMonthVoList);
+				 	
+					group_empty.hide();
+					grid_month.show();
+				}else{
+					spn_act_clsf.setValue(com.getParameter("act_clsf_nm"));
+					group_empty.show();
+					grid_month.hide();		
+				}
+			}
+		});
+	}				
+				
+	]]></script>
+    </head>
+    <body ev:onpageload="scwin.onpageload">
+    <xf:group id="" class="pop_contents">
+    	<xf:group class="titleSection pt0" id="grp_title" style="">
+    		<xf:group class="le" id="">
+    			<w2:textbox class="tit_tbl" id="tbx_yyyymm" label="2017년 8월" style="" tagname="h3"></w2:textbox>
+    			<w2:textbox class="tit_tbl" id="" label="대외활동 신고이력 :" style="" tagname="h3"></w2:textbox>
+    			<w2:textbox class="tit_tbl " id="tbx_user_nm" label="홍길동" style="" tagname="h3"></w2:textbox>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group id="group_empty" class="linebox">
+    		<w2:textbox tagname="span" style="" id="" label="당월에 대외활동[ "></w2:textbox>
+    		<w2:textbox id="spn_act_clsf" label="00" style="" tagname="span"></w2:textbox>
+    		<w2:textbox id="" label=" ] 대한 신고 이력이 없습니다." style="" tagname="span"></w2:textbox>
+    	</xf:group>
+    	<w2:gridView autoFit="allColumn" class="grid" dataList="data:dlt_ctrMonth" defaultCellHeight="28" evenRowBackgroundColor="#f7faff"
+    		id="grid_month" noResultMessage="조회 결과가 없습니다." noResultMessageClass="noResult" rowMouseOverColor="#e7f0fb"
+    		rowNumBackgroundColor="#fff" rowNumHeaderValue="No." rowNumVisible="true" rowNumWidth="40" rowStatusHeaderValue="상태"
+    		rowStatusVisible="false" rowStatusWidth="50" scrollByColumn="false" scrollByColumnAdaptive="false" selectedCellColor="#fbf2cd"
+    		selectedRowColor="#fbf2cd" style="height: 85px;" summaryAuto="true" visibleRowNum="3">
+    		<w2:caption id="caption1" style="" value="this is a grid caption."></w2:caption>
+    		<w2:header id="header1" style="">
+    			<w2:row id="row1" style="">
+    				<w2:column displayMode="label" id="head_period_date" inputType="text" style="height:28px;" value="강의일시" width="100"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column10" value="참여정도" displayMode="label"></w2:column>
+    				<w2:column displayMode="label" id="head_period_minute" inputType="text" style="height:28px;" value="강의시간(분)"
+    					width="70">
+    				</w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="column8" value="기관명" displayMode="label"></w2:column>
+    				<w2:column width="70" inputType="text" style="height:28px" id="column9" value="보상구분" displayMode="label"></w2:column>
+    				<w2:column displayMode="label" id="column3" inputType="text" style="height:28px;" value="사례금(원)" width="80"></w2:column>
+    			</w2:row>
+    		</w2:header>
+    		<w2:gBody id="gBody1" style="">
+    			<w2:row id="row2" style="">
+    				<w2:column class="" displayMode="label" id="period_date" inputType="text" readOnly="true" style="height:28px;"
+    					width="100">
+    				</w2:column>
+    				<w2:column width="70" inputType="select" style="height:28px" id="attnce_clsf" value="" displayMode="label" readOnly="true"></w2:column>
+    				<w2:column class="" displayMode="label" escape="false" id="period_minute" inputType="text" readOnly="true"
+    					style="height:28px;" width="70">
+    				</w2:column>
+    				<w2:column width="150" inputType="text" style="height:28px" id="invite_org_nm" value="" displayMode="label" class="le"
+    					readOnly="true">
+    				</w2:column>
+    				<w2:column width="70" inputType="select" style="height:28px" id="econo_gain_clsf" value="" displayMode="label"></w2:column>
+    				<w2:column displayMode="label" escape="false" id="reward_amt" inputType="text" readOnly="true" style="height:28px;"
+    					width="80" class="ri" dataType="number" displayFormat="#,###">
+    				</w2:column>
+    			</w2:row>
+    		</w2:gBody>
+    	</w2:gridView>
+    	<xf:group class="helparea " id="" style="">
+    		<xf:group id="" style="" tagname="ol">
+    			<!--    			<xf:group id="" tagname="li">-->
+    			<!--    				<w2:textbox class="" id="" label='외부강의, 회의 등이 ' style="" tagname="span"></w2:textbox>-->
+    			<!--    				<w2:textbox class="red fwb" id="" label='월 3회를 초과' style="" tagname="span"></w2:textbox>-->
+    			<!--    				<w2:textbox class="" id="" label="한 경우, " style="" tagname="span"></w2:textbox>-->
+    			<!--    				<w2:textbox class=" fwb" id="" label='행동강령책임관' style="" tagname="span"></w2:textbox>-->
+    			<!--    				<w2:textbox class="" id="" label="의 검토를 거쳐 원장 승인을 받아야 합니다." style="" tagname="span"></w2:textbox>-->
+    			<!--    			</xf:group>-->
+    			<xf:group id="" tagname="li" style="" class="">
+    				<w2:textbox class=" fwb blue" id="" label="겸직 및 타업종사 승인 : 전결권한" style="" tagname="span" escape="false"></w2:textbox>
+    				<br />
+    				<w2:textbox class="blue" id="" label="º 겸직 : 차차상위자" style="" tagname="span"></w2:textbox>
+    				<br />
+    				<w2:textbox class="" id="" label=" &amp;nbsp;- 최종결재 전 인사위원회 심의 필수 " style="" tagname="span" escape="false"></w2:textbox>
+    				<br />
+    				<w2:textbox class="blue" id="" label="º 타업종사 : 차차상위자" style="" tagname="span"></w2:textbox>
+    				<br />
+    				<w2:textbox class="" id="" label=" &amp;nbsp;- 최종결재 전 인사위원회 심의 필수 " style="" tagname="span" escape="false"></w2:textbox>
+    				<br />
+    				<w2:textbox class="blue" id="" label=" &amp;nbsp;* 단, 대가(보수)가 없는 타업종사 활동은 인사위원회 심의를 하지 아니하고 원장 사전승인을 통해 허가 할 수 있음" style=""
+    					tagname="span" escape="false">
+    				</w2:textbox>
+    				<br />
+    			</xf:group>
+    			<xf:group id="" tagname="li">
+    				<w2:textbox class="fwb blue" id="" label='대외활동 월 3회 초과 시 승인 : 전결권한' style="" tagname="span"
+    					escape="false">
+    				</w2:textbox>
+    				<br></br>
+    				<w2:textbox class="blue" id="" label='º 외부강의' style="" tagname="span"></w2:textbox>
+    				<br></br>
+    				<w2:textbox class="" id="" label=' &amp;nbsp;- 소속 지원 및 그룹장, 부분장, 팀장, 실장, 부장 : &lt;b&gt;연구소(본부)장 &lt;/b&gt;' style=""
+    					tagname="span" escape="false">
+    				</w2:textbox>
+    				<br></br>
+    				<w2:textbox class="" id="" label=' &amp;nbsp;- 연구소(본부)장, 센터소장, 부원장 직속부서 : &lt;b&gt;원장 &lt;/b&gt;' style="" tagname="span"
+    					escape="false">
+    				</w2:textbox>
+    				<br></br>
+    				<w2:textbox class="" id="" label=' &amp;nbsp;- 부원장 : &lt;b&gt;원장&lt;/b&gt;' style="" tagname="span" escape="false"></w2:textbox>
+    				<br></br>
+    				<w2:textbox class="fwb" id="" label=' &amp;nbsp;※ 최종결재자 전 행동강령책임관 결재 필수' style="" tagname="span" escape="false"></w2:textbox>
+    				<br></br>
+    				<w2:textbox class="blue" id="" label='º 기타활동' style="" tagname="span"></w2:textbox>
+    				<br></br>
+    				<w2:textbox class="" id="" label=' &amp;nbsp;- 소속 지원 및 그룹장, 부분장, 팀장, 실장, 부장 : &lt;b&gt;연구소(본부)장 &lt;/b&gt;' style=""
+    					tagname="span" escape="false">
+    				</w2:textbox>
+    				<br></br>
+    				<w2:textbox class="" id="" label=' &amp;nbsp;- 연구소(본부)장, 센터소장, 부원장 직속부서 : &lt;b&gt;원장 &lt;/b&gt;' style="" tagname="span"
+    					escape="false">
+    				</w2:textbox>
+    				<br></br>
+    				<w2:textbox class="" id="" label=' &amp;nbsp;- 부원장 : &lt;b&gt;원장&lt;/b&gt;' style="" tagname="span" escape="false"></w2:textbox>
+    				<br></br>
+    				<w2:textbox class="fwb" id="" label=' &amp;nbsp;※ 최종결재자 전 행동강령책임관 결재 필수' style="" tagname="span" escape="false"></w2:textbox>
+    				<br></br>
+    				<w2:textbox class="blue" id="" label=' &amp;nbsp;* 국가 및 지자체 요청에 따른 정부지원할동 및 겸직허가를 받고 수행하는 대회활동은 그 횟수에 포함하지 아니함' style="" tagname="span" escape="false"></w2:textbox>
+    				<br></br>
+    				<w2:textbox class="blue" id="" label=' &amp;nbsp;* 대가(보수)가 없는 학회 활동 및 연구과제 기획 · 평가 · 발표 · 토론 등 연구사업 기회를&lt;br/&gt; &amp;nbsp; &amp;nbsp; 확보할 수 있는 활동은 제외하지 않음' style="" tagname="span" escape="false"></w2:textbox>
+    				<br></br>
+    			</xf:group>
+    		</xf:group>
+    	</xf:group>
+    	<xf:group style="" id="" class="btnGroup">
+    		<xf:group style="" id="" class="le"></xf:group>
+    		<xf:group id="" class="ri">
+    			<xf:trigger style="" id="btn_close" type="button" class=" btn pro" ev:onclick="scwin.btn_close_onclick">
+    				<xf:label><![CDATA[닫기]]></xf:label>
+    			</xf:trigger>
+    		</xf:group>
+    	</xf:group>
+    </xf:group></body>
+</html>
